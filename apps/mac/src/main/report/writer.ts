@@ -7,8 +7,14 @@ import type { AppSettings } from '../settings/types.js'
 /** Why nobody writes the report. `none` is "nobody is set", `cooling` is "not right now". */
 export type WriterProblem = 'none' | 'cooling'
 
+/** The agent that takes the job, and the group it was drawn from when one was named. */
+export interface ReportWriter {
+  agent: Agent
+  groupId: string | null
+}
+
 export type ChosenWriter =
-  | { ok: true; agent: Agent; groupId: string | null }
+  | { ok: true; value: ReportWriter }
   | { ok: false; reason: WriterProblem }
 
 /**
@@ -32,8 +38,10 @@ export function chooseWriter(db: Db, settings: AppSettings): ChosenWriter {
   if (!agent) return { ok: false, reason: 'cooling' }
   return {
     ok: true,
-    agent,
-    groupId: settings.reportTargetKind === 'group' ? settings.reportTargetId : null
+    value: {
+      agent,
+      groupId: settings.reportTargetKind === 'group' ? settings.reportTargetId : null
+    }
   }
 }
 

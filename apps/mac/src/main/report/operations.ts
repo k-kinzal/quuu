@@ -18,7 +18,7 @@ import { REPORT_ASSETS, writeReportAssets } from './assets.js'
 import type { ReportChange } from './prompt.js'
 import { reportPrompt } from './prompt.js'
 import type { StoredReport, TaskReport } from './types.js'
-import type { ChosenWriter } from './writer.js'
+import type { ReportWriter } from './writer.js'
 import { chooseWriter } from './writer.js'
 
 /** How often a running generation is looked at. It stats two files, so it costs nothing. */
@@ -112,7 +112,7 @@ export class ReportOperations extends EventEmitter {
    * and which member takes it depends on what the rest of them are doing right now
    * (`report/writer.ts`).
    */
-  private writer(taskId: string): ChosenWriter | { ok: false; reason: string } {
+  private writer(taskId: string): { ok: true; value: ReportWriter } | { ok: false; reason: string } {
     const settings = this.getSettings()
     if (!settings.reportEnabled) return { ok: false, reason: t('report.turnedOff') }
     const chosen = chooseWriter(this.db, settings)
@@ -131,7 +131,7 @@ export class ReportOperations extends EventEmitter {
     const writer = this.writer(taskId)
     if (!writer.ok) throw new Error(writer.reason)
     const settings = this.getSettings()
-    const agent = writer.agent
+    const agent = writer.value.agent
     const place = this.place(taskId)
     if (!place.project.reportEnabled) throw new Error(t('report.projectTurnedOff'))
     if (!existsSync(place.dir)) throw new Error(t('report.dirMissing', { path: place.dir }))
@@ -210,7 +210,7 @@ export class ReportOperations extends EventEmitter {
        * A group's rotation counts this launch. The report went to the group, not to the member
        * that happened to be first, so the next one to be handed anything is somebody else.
        */
-      if (writer.groupId) repo.advanceGroupRotation(this.db, writer.groupId, agent.id)
+      if (writer.value.groupId) repo.advanceGroupRotation(this.db, writer.value.groupId, agent.id)
       repo.openReportSession(this.db, place.dir, startedAt, isoAfter(startedAt, TIMEOUT_MS))
       repo.saveTaskReport(this.db, {
         taskId,
