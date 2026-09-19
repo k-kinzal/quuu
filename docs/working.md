@@ -75,6 +75,8 @@ npm run check     # lint + check:architecture + typecheck + test. Always before 
 | `npm run storybook` | visual check of the design system | when you changed appearance |
 | `npm run build` | typecheck + bundle | when you touched the main process or build config |
 
+GitHub Actions (`ci.yml`) runs that same gate on every push to `main`.
+
 - Lint rules are in `eslint.config.js`, deliberately narrowed to **what type checking
   cannot catch but causes accidents** (swallowed Promises, `any`, `@ts-ignore`, React hook
   dependencies). Do not grow the rule set in a direction that makes people write

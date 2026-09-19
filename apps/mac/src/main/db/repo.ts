@@ -1216,12 +1216,16 @@ export function claimedSessionIds(db: Db, exceptRunId: string): Set<string> {
 
 export function listRunsByTask(db: Db, taskId: string): Run[] {
   return (
-    db.prepare('SELECT * FROM runs WHERE task_id = ? ORDER BY started_at DESC').all(taskId) as Row[]
+    db
+      .prepare('SELECT * FROM runs WHERE task_id = ? ORDER BY started_at DESC, rowid DESC')
+      .all(taskId) as Row[]
   ).map(toRun)
 }
 
 export function listRunsForProjection(db: Db): Run[] {
-  return (db.prepare('SELECT * FROM runs ORDER BY started_at DESC').all() as Row[]).map(toRun)
+  return (
+    db.prepare('SELECT * FROM runs ORDER BY started_at DESC, rowid DESC').all() as Row[]
+  ).map(toRun)
 }
 
 export function getTaskReviewBase(db: Db, taskId: string): TaskReviewBase | null {

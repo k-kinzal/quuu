@@ -193,6 +193,13 @@ To launch separated from production data for verification:
 QUUU_USER_DATA=/tmp/taskd-dev npm run dev
 ```
 
+## CI
+
+GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) runs the quality gate
+(`npm run check`) on every push to `main`. Lint, architecture, typecheck, and
+tests are separate steps so a failure names the layer. The runner is macOS
+because the tests build `quuu-pty` with `xcrun`.
+
 ## Releases
 
 GitHub Actions ([release.yml](../.github/workflows/release.yml)) builds the Mac app and

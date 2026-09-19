@@ -125,6 +125,43 @@ function followupOn(f: Fixture, title: string): string {
   return task
 }
 
+describe('the latest run of a task', () => {
+  it('is the later insert when two runs share a start time', () => {
+    const db = memoryDb()
+    const agent = makeAgent(db, { name: 'a' })
+    const project = makeProject(db, { name: 'p', targetId: agent, path: workdir })
+    const task = makeTask(db, project, 't')
+    const at = '2026-09-19T12:00:00.000Z'
+    const seed = (id: string, status: 'succeeded' | 'limited'): void => {
+      repo.insertRun(db, {
+        id,
+        taskId: task,
+        agentId: agent,
+        resolvedFromGroupId: null,
+        sessionId: `sess-${id}`,
+        kind: 'initial',
+        status,
+        attempt: 1,
+        fallbackFromRunId: null,
+        pid: null,
+        cwd: workdir,
+        command: 'echo',
+        args: [],
+        promptPreview: '',
+        exitCode: null,
+        errorKind: null,
+        errorMessage: '',
+        sessionLogPath: null,
+        stdoutLogPath: '/tmp/x.log',
+        startedAt: at
+      })
+    }
+    seed('run_old', 'succeeded')
+    seed('run_new', 'limited')
+    expect(repo.listRunsByTask(db, task)[0].id).toBe('run_new')
+  })
+})
+
 describe('a Limit that says when it lifts', () => {
   it('cools the agent until the moment it named, not for the configured guess', async () => {
     const f = fixture()
