@@ -210,6 +210,50 @@ describe('writing one', () => {
   }, LAUNCHES)
 })
 
+/*
+ * What import is told about the agent that wrote a report.
+ *
+ * The generator runs the same CLI in the same directory as the work itself, so import has to be
+ * able to say "that one was ours". The fact is kept apart from the task's report row on purpose:
+ * that row holds the report a task has **now** and is replaced every time one is written again,
+ * and reading the window off it meant a regenerated report handed the generation before it to
+ * import — which filed it as a task nobody asked for, in a project named after the worktree it
+ * ran in. That actually happened, 27 times.
+ */
+describe('what import is told about a generation', () => {
+  it('keeps the window of a generation that has since been written over', async () => {
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    await ops.generate(taskId)
+    const first = await settled(taskId)
+    expect(repo.hasOwnReportCovering(db, work, first!.startedAt)).toBe(true)
+
+    await ops.generate(taskId)
+    await settled(taskId)
+
+    expect(repo.hasOwnReportCovering(db, work, first!.startedAt)).toBe(true)
+  }, LAUNCHES)
+
+  it('keeps it after the task the report described is gone', async () => {
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    await ops.generate(taskId)
+    const report = await settled(taskId)
+
+    repo.deleteTask(db, taskId)
+
+    expect(repo.hasOwnReportCovering(db, work, report!.startedAt)).toBe(true)
+  }, LAUNCHES)
+
+  it('stops covering the directory the moment the generator is done', async () => {
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    await ops.generate(taskId)
+    const report = await settled(taskId)
+
+    const after = new Date(Date.parse(report!.endedAt!) + 1000).toISOString()
+    // Work somebody starts there next is theirs, and import must list it
+    expect(repo.hasOwnReportCovering(db, work, after)).toBe(false)
+  }, LAUNCHES)
+})
+
 describe('whether reaching review again writes one', () => {
   it('counts a worktree as reported only when a page exists for exactly that tree', () => {
     const tree = 'a'.repeat(40)

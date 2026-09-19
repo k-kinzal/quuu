@@ -177,7 +177,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('24')
+    expect(version.value).toBe('25')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -245,7 +245,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('24')
+    expect(version.value).toBe('25')
     db.close()
   })
 
@@ -531,6 +531,40 @@ describe('schema migration', () => {
     const reopened = openDatabase(path)
     expect(repo.reviewEvidence(reopened, 'tsk').pullRequests).toEqual([verified.url])
     reopened.close()
+  })
+
+  /*
+   * v24 -> v25: the reports written up to the upgrade stay recognized as ours.
+   *
+   * Their place and window used to be read off the task's report row, which the next generation
+   * replaces — so without carrying them across, the first report regenerated after an update would
+   * hand the one before it to import as work somebody did.
+   */
+  it('carries the reports a v24 DB already holds into the record import reads', () => {
+    makeV2Database()
+    const old = openDatabase(path)
+    const started = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const ended = new Date(Date.now() - 59 * 60 * 1000).toISOString()
+    repo.saveTaskReport(old, {
+      taskId: 'tsk', status: 'ready', cwd: '/tmp/work', revision: '', path: '', logPath: '',
+      exitPath: '', error: '', pid: null, pending: '', startedAt: started, endedAt: ended
+    })
+    // A DB from before this version: it knows where the report ran, and nothing else does
+    old.exec("DELETE FROM report_sessions; UPDATE meta SET value = '24' WHERE key = 'schema_version'")
+    old.close()
+
+    const migrated = openDatabase(path)
+    expect(repo.hasOwnReportCovering(migrated, '/tmp/work', started)).toBe(true)
+    // The window is still the one the generation had: what came after it is somebody's own work
+    expect(repo.hasOwnReportCovering(migrated, '/tmp/work', new Date().toISOString())).toBe(false)
+
+    // Writing the report again replaces the row, and the generation before it stays covered
+    repo.saveTaskReport(migrated, {
+      taskId: 'tsk', status: 'generating', cwd: '/tmp/work', revision: '', path: '', logPath: '',
+      exitPath: '', error: '', pid: null, pending: '', startedAt: new Date().toISOString(), endedAt: null
+    })
+    expect(repo.hasOwnReportCovering(migrated, '/tmp/work', started)).toBe(true)
+    migrated.close()
   })
 
   it('a fresh DB gets the indexes too', () => {

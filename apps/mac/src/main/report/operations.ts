@@ -175,6 +175,8 @@ export class ReportOperations extends EventEmitter {
         taskId,
         runId: id
       })
+      // Taken before the launch, so the window starts no later than the session the CLI opens in it
+      const startedAt = nowIso()
       const pid = spawnReport({
         command: agent.command,
         args,
@@ -192,6 +194,14 @@ export class ReportOperations extends EventEmitter {
           QUUU_EXIT_FILE: exitPath
         }
       })
+      /*
+       * Put on record that one of ours is working here, kept where the next report cannot erase it.
+       *
+       * The row below is the task's current report and is replaced the next time one is written;
+       * this is the fact import needs long after that - otherwise regenerating a report hands the
+       * previous generator's session to import, which reads it as work somebody did.
+       */
+      repo.openReportSession(this.db, place.dir, startedAt, isoAfter(startedAt, TIMEOUT_MS))
       repo.saveTaskReport(this.db, {
         taskId,
         status: 'generating',
@@ -201,7 +211,7 @@ export class ReportOperations extends EventEmitter {
         path: previous?.path ?? '',
         logPath: log,
         error: '',
-        startedAt: nowIso(),
+        startedAt,
         endedAt: null,
         pid,
         pending: page,
@@ -282,12 +292,15 @@ export class ReportOperations extends EventEmitter {
        */
       const said = ready ? '' : readLogTail(row.logPath, 600).trim()
       const why = said || reason(result.reason, result.exitCode)
+      const endedAt = nowIso()
+      // Nothing of ours is working there any more, so stop hiding what starts there next
+      repo.closeReportSession(this.db, row.cwd, row.startedAt, endedAt)
       repo.saveTaskReport(this.db, {
         ...row,
         status: result.status,
         path: ready ? row.pending : row.path,
         error: ready ? reason(result.reason, result.exitCode) : why,
-        endedAt: nowIso(),
+        endedAt,
         pid: null,
         pending: ''
       })
@@ -352,6 +365,11 @@ export function alreadyReported(previous: StoredReport | null, tree: string | nu
     previous.revision.length > 0 &&
     previous.revision === tree
   )
+}
+
+/** The same instant, `ms` later. */
+function isoAfter(iso: string, ms: number): string {
+  return new Date(Date.parse(iso) + ms).toISOString()
 }
 
 /** What a report failure or oddity says. Empty when there is nothing to add. */

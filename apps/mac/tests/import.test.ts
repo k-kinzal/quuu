@@ -309,6 +309,20 @@ describe('importing external sessions', () => {
     expect(repo.listProjects(db)).toHaveLength(0)
   })
 
+  /** A task in the working directory, standing in for one a report was written about. */
+  function reportedTask(db: Db): { id: string; title: string } {
+    const agent = makeAgent(db, { name: 'Reporter' })
+    const project = repo.insertProject(db, {
+      name: 'Quuu', path: work, color: '#fff', priority: 2, targetKind: 'agent',
+      targetId: agent, maxConcurrent: 1, enabled: true, sortOrder: 0
+    })
+    return repo.insertTask(db, { projectId: project.id, title: '色を直す', status: 'review' })
+  }
+
+  /** Quuu launches the generator a moment before the CLI opens its session, and bounds the window. */
+  const before = (iso: string): string => new Date(Date.parse(iso) - 1000).toISOString()
+  const after = (iso: string): string => new Date(Date.parse(iso) + 20 * 60 * 1000).toISOString()
+
   /*
    * A report being written is an agent too.
    *
@@ -322,22 +336,68 @@ describe('importing external sessions', () => {
     writeClaude('d1d1d1d1-1111-1111-1111-111111111111', 'レポートを書いていた', 60 * 60 * 1000, {
       startedAt
     })
-    const agent = makeAgent(db, { name: 'Reporter' })
-    const project = repo.insertProject(db, {
-      name: 'Quuu', path: work, color: '#fff', priority: 2, targetKind: 'agent',
-      targetId: agent, maxConcurrent: 1, enabled: true, sortOrder: 0
-    })
-    const task = repo.insertTask(db, { projectId: project.id, title: '色を直す', status: 'review' })
-    repo.saveTaskReport(db, {
-      taskId: task.id, status: 'generating', revision: '', path: '', logPath: '', error: '',
-      cwd: work, pid: null, pending: '', exitPath: '',
-      startedAt: new Date(Date.parse(startedAt) - 1000).toISOString(), endedAt: null
-    })
+    const task = reportedTask(db)
+    repo.openReportSession(db, work, before(startedAt), after(startedAt))
 
     const result = new SessionImporter(db).sync(settings)
 
     expect(result.createdTasks).toBe(0)
-    expect(repo.listTasks(db).map((t) => t.title)).toEqual(['色を直す'])
+    expect(repo.listTasks(db).map((t) => t.title)).toEqual([task.title])
+  })
+
+  /*
+   * Writing the report again must not hand the previous one to import.
+   *
+   * A task's report row is replaced every time a report is written, so a window read off it stops
+   * covering the generation before. What followed was a task - and, when the report had run in a
+   * worktree, a project named after it - appearing seconds after a report was regenerated, which
+   * is exactly what it looked like from outside: Quuu filing its own reporter as work somebody did.
+   */
+  it('still does not import it after the report is written again', () => {
+    const db = memoryDb()
+    const first = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    writeClaude('d2d2d2d2-2222-2222-2222-222222222222', '前のレポート', 60 * 60 * 1000, {
+      startedAt: first
+    })
+    const task = reportedTask(db)
+    repo.openReportSession(db, work, before(first), after(first))
+    repo.closeReportSession(db, work, before(first), after(first))
+
+    // The same task reaches review again and a second generation starts, replacing its report row
+    const second = new Date().toISOString()
+    repo.saveTaskReport(db, {
+      taskId: task.id, status: 'generating', revision: '', path: '', logPath: '', error: '',
+      cwd: work, pid: null, pending: '', exitPath: '', startedAt: second, endedAt: null
+    })
+    repo.openReportSession(db, work, second, after(second))
+
+    const result = new SessionImporter(db).sync(settings)
+
+    expect(result.createdTasks).toBe(0)
+    expect(repo.listProjects(db)).toHaveLength(1)
+    expect(repo.listTasks(db).map((t) => t.title)).toEqual([task.title])
+  })
+
+  /*
+   * Deleting the task must not hand its reports to import either.
+   *
+   * The report row goes with the task (ON DELETE CASCADE); what the generator left in the session
+   * directory does not.
+   */
+  it('still does not import it after the task it described is deleted', () => {
+    const db = memoryDb()
+    const startedAt = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    writeClaude('d3d3d3d3-3333-3333-3333-333333333333', '消されたタスクのレポート', 60 * 60 * 1000, {
+      startedAt
+    })
+    const task = reportedTask(db)
+    repo.openReportSession(db, work, before(startedAt), after(startedAt))
+    repo.deleteTask(db, task.id)
+
+    const result = new SessionImporter(db).sync(settings)
+
+    expect(result.createdTasks).toBe(0)
+    expect(repo.listTasks(db)).toHaveLength(0)
   })
 
   it('does not import codex exec either (a run driven from a program)', () => {

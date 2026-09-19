@@ -238,6 +238,25 @@ CREATE TABLE IF NOT EXISTS task_reports (
   ended_at   TEXT
 );
 
+/*
+ * Every agent Quuu launched to write a report: where it worked, and between when and when.
+ *
+ * Kept apart from task_reports on purpose. That row is a task's **current** report - the next
+ * generation writes over it, and deleting the task takes it with it - while import asks about the
+ * past: "was one of ours working in this directory at that moment?". Read off a row that gets
+ * replaced, the answer turns to "no" the moment a report is written again, and the previous
+ * generation's session is filed as work a person did: a task nobody asked for, plus a project when
+ * the report ran in a worktree. That actually happened, 27 times.
+ */
+CREATE TABLE IF NOT EXISTS report_sessions (
+  cwd        TEXT NOT NULL,
+  started_at TEXT NOT NULL,
+  -- When it stopped. Until it does, the moment Quuu would take it down: a generation nobody lives
+  -- to settle must stop covering, or every later session in that directory stays out of import.
+  ended_at   TEXT NOT NULL,
+  PRIMARY KEY (cwd, started_at)
+);
+
 CREATE TABLE IF NOT EXISTS agent_cooldowns (
   agent_id TEXT PRIMARY KEY,
   until    TEXT NOT NULL,
@@ -307,7 +326,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 24
+  const target = 25
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -546,6 +565,23 @@ function migrate(db: Db): void {
     db.prepare("UPDATE tasks SET priority = ? WHERE hold = 1 AND status <> 'done' AND archived = 0")
       .run(HOLDING_PRIORITY)
     db.exec('ALTER TABLE tasks DROP COLUMN hold')
+  }
+
+  /*
+   * v24 -> v25: what a report generator left behind, somewhere the next report cannot erase it.
+   *
+   * v22 put the place and the window on the task's report row, and that row is replaced every time
+   * a report is written again - so regenerating handed the previous generation's session back to
+   * import, which filed it as work somebody did. The reports already on disk are carried across so
+   * an upgrade does not expose the ones written up to now. A generation still running gets the
+   * bound it is running under (20 minutes, `report/operations.ts`); the settle that follows the
+   * upgrade narrows it to when it really ended.
+   */
+  if (current < 25) {
+    db.exec(`INSERT OR IGNORE INTO report_sessions (cwd, started_at, ended_at)
+             SELECT cwd, started_at,
+                    COALESCE(ended_at, strftime('%Y-%m-%dT%H:%M:%S.000Z', started_at, '+20 minutes'))
+             FROM task_reports WHERE cwd <> ''`)
   }
 
   setSchemaVersion(db, target)

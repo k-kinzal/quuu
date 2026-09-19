@@ -42,7 +42,11 @@ export interface TaskReport {
  * is what lets the next launch settle a generation that finished while the app was gone.
  */
 export interface StoredReport extends TaskReport {
-  /** Where the generator ran. Import needs it to tell a report apart from work someone did. */
+  /**
+   * Where the generator ran, and the half of the key that identifies its row in `report_sessions`
+   * (the other half is `startedAt`). That is the record import reads to tell a report apart from
+   * work someone did; this row only says where the report a task has now was written.
+   */
   cwd: string
   pid: number | null
   /** The page the running generation writes. It becomes `path` only once it exists. */

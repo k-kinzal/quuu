@@ -1299,18 +1299,41 @@ export function hasOwnRunCovering(db: Db, cwd: string, atIso: string): boolean {
 }
 
 /**
+ * A report generator started working in `cwd`.
+ *
+ * `until` is the moment Quuu would take it down. The window is bounded from the start because a
+ * generation is not guaranteed a settle - the app can be gone before it ends, the task can be
+ * deleted underneath it - and an unbounded one would keep every session started in that directory
+ * afterwards out of import forever.
+ */
+export function openReportSession(db: Db, cwd: string, startedAt: string, until: string): void {
+  db.prepare(
+    'INSERT OR REPLACE INTO report_sessions (cwd, started_at, ended_at) VALUES (?,?,?)'
+  ).run(cwd, startedAt, until)
+}
+
+/** The generation ended. Narrows the window from the bound to what actually happened. */
+export function closeReportSession(db: Db, cwd: string, startedAt: string, endedAt: string): void {
+  db.prepare('UPDATE report_sessions SET ended_at = ? WHERE cwd = ? AND started_at = ?')
+    .run(endedAt, cwd, startedAt)
+}
+
+/**
  * Was a report being written there at that moment?
  *
  * The generator is an agent and leaves a session log like any other, so without this import reads
  * it as work somebody did outside Quuu and a task appears out of nowhere. Matched by place and
  * window, the same way a run Quuu started is matched.
+ *
+ * **Asked of `report_sessions`, never of the task's report row.** The row holds the report a task
+ * has now; this question is about every generator Quuu has ever launched, including the ones whose
+ * page has since been written over.
  */
 export function hasOwnReportCovering(db: Db, cwd: string, atIso: string): boolean {
   const row = db
     .prepare(
-      `SELECT 1 AS x FROM task_reports
-       WHERE cwd <> '' AND cwd = ? AND started_at <= ?
-         AND (ended_at IS NULL OR ended_at >= ?)
+      `SELECT 1 AS x FROM report_sessions
+       WHERE cwd = ? AND started_at <= ? AND ended_at >= ?
        LIMIT 1`
     )
     .get(cwd, atIso, atIso) as Row | undefined
