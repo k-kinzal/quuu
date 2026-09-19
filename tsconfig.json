@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./apps/mac/tsconfig.json"
+    },
+    {
+      "path": "./apps/mobile/tsconfig.json"
+    },
+    {
+      "path": "./tsconfig.tests.json"
+    }
+  ]
+}

@@ -1,0 +1,382 @@
+#!/usr/bin/env node
+
+import { readFileSync } from 'node:fs'
+import { request } from 'node:http'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
+const HELP = `Operate Quuu tasks.
+
+Usage:
+  quuu projects list
+  quuu tasks list [--project ID|NAME|PATH] [--status STATUS] [--include-archived]
+  quuu tasks get TASK_ID
+  quuu tasks create --project ID|NAME|PATH --title TITLE [options]
+  quuu tasks update TASK_ID [options]
+  quuu tasks <action> TASK_ID
+  quuu tasks send TASK_ID (--message TEXT | --message-file PATH|-)
+  quuu tasks send-back TASK_ID (--message TEXT | --message-file PATH|-)
+
+Create options:
+  --prompt TEXT | --prompt-file PATH|-   Instruction body
+  --priority 0|1|2|3                    Default: 2 (P0 keeps its run slot until done)
+  --status draft|held|queued             Default: queued
+  --scheduled-at ISO8601
+  --agent AGENT_ID
+
+Update options:
+  --title TEXT
+  --prompt TEXT | --prompt-file PATH|-
+  --priority 0|1|2|3
+  --project ID|NAME|PATH
+  --scheduled-at ISO8601 | --clear-schedule
+  --review-note TEXT
+  --agent AGENT_ID | --clear-agent
+
+Actions:
+  enqueue, unqueue, hold, run, done, reopen, cancel,
+  archive, unarchive, delete
+
+Environment:
+  QUUU_SOCKET      Override the Unix socket path
+  QUUU_USER_DATA   Override the Quuu data directory
+`
+
+const BOOLEAN_OPTIONS = new Set(['include-archived', 'clear-schedule', 'clear-agent'])
+
+class CliError extends Error {
+  constructor(message, exitCode = 1) {
+    super(message)
+    this.exitCode = exitCode
+  }
+}
+
+function socketPath() {
+  if (process.env.QUUU_SOCKET) return process.env.QUUU_SOCKET
+  const data =
+    process.env.QUUU_USER_DATA ?? join(homedir(), 'Library', 'Application Support', 'taskd')
+  return join(data, 'quuu.sock')
+}
+
+function parseArgs(args) {
+  const positionals = []
+  const options = new Map()
+  for (let index = 0; index < args.length; index += 1) {
+    const argument = args[index]
+    if (!argument.startsWith('--')) {
+      positionals.push(argument)
+      continue
+    }
+    const equal = argument.indexOf('=')
+    const name = argument.slice(2, equal < 0 ? undefined : equal)
+    if (name.length === 0) throw new CliError(`cannot parse option: ${argument}`)
+    if (options.has(name)) throw new CliError(`duplicate option: --${name}`)
+    if (equal >= 0) {
+      options.set(name, argument.slice(equal + 1))
+      continue
+    }
+    if (BOOLEAN_OPTIONS.has(name)) {
+      options.set(name, true)
+      continue
+    }
+    const value = args[index + 1]
+    if (value === undefined || value.startsWith('--')) {
+      throw new CliError(`--${name} requires a value`)
+    }
+    options.set(name, value)
+    index += 1
+  }
+  return { positionals, options }
+}
+
+function assertOptions(options, allowed) {
+  const unknown = [...options.keys()].filter((name) => !allowed.includes(name))
+  if (unknown.length > 0) throw new CliError(`unsupported option: --${unknown.join(', --')}`)
+}
+
+function option(options, name) {
+  const value = options.get(name)
+  return typeof value === 'string' ? value : undefined
+}
+
+function requiredOption(options, name) {
+  const value = option(options, name)
+  if (!value) throw new CliError(`--${name} is required`)
+  return value
+}
+
+function textOption(options, directName, fileName) {
+  const direct = option(options, directName)
+  const path = option(options, fileName)
+  if (direct !== undefined && path !== undefined) {
+    throw new CliError(`--${directName} and --${fileName} cannot be combined`)
+  }
+  if (path === undefined) return direct
+  return readFileSync(path === '-' ? 0 : path, 'utf8')
+}
+
+function priorityOption(options) {
+  const value = option(options, 'priority')
+  if (value === undefined) return undefined
+  const priority = Number(value)
+  if (!Number.isInteger(priority) || priority < 0 || priority > 3) {
+    throw new CliError('--priority must be an integer from 0 to 3')
+  }
+  return priority
+}
+
+function requestJson(method, path, body) {
+  const payload = body === undefined ? null : JSON.stringify(body)
+  return new Promise((resolve, reject) => {
+    const req = request(
+      {
+        socketPath: socketPath(),
+        path,
+        method,
+        headers:
+          payload === null
+            ? { accept: 'application/json' }
+            : {
+                accept: 'application/json',
+                'content-type': 'application/json',
+                'content-length': Buffer.byteLength(payload)
+              }
+      },
+      (response) => {
+        const chunks = []
+        response.on('data', (chunk) => chunks.push(Buffer.from(chunk)))
+        response.on('end', () => {
+          const raw = Buffer.concat(chunks).toString('utf8')
+          let decoded
+          try {
+            decoded = JSON.parse(raw)
+          } catch {
+            reject(new CliError(`invalid response from Quuu: ${raw.trim()}`))
+            return
+          }
+          if (!decoded.ok) {
+            reject(new CliError(decoded.error?.message ?? `HTTP ${response.statusCode}`))
+            return
+          }
+          resolve(decoded.data)
+        })
+      }
+    )
+    req.on('error', (error) => {
+      const suffix = error.code === 'ENOENT' || error.code === 'ECONNREFUSED' ? '. Start the Quuu app.' : ''
+      reject(new CliError(`cannot connect to Quuu: ${error.message}${suffix}`))
+    })
+    if (payload !== null) req.write(payload)
+    req.end()
+  })
+}
+
+async function projects() {
+  const result = await requestJson('GET', '/v1/projects')
+  return result.projects
+}
+
+async function allTasks() {
+  const result = await requestJson('GET', '/v1/tasks?archived=include')
+  return result.tasks
+}
+
+async function resolveProject(reference) {
+  const matches = (await projects()).filter(
+    (project) =>
+      project.id === reference || project.name === reference || project.path === reference
+  )
+  if (matches.length === 0) throw new CliError(`project not found: ${reference}`)
+  if (matches.length > 1) {
+    throw new CliError(`ambiguous project name; specify an ID: ${reference}`)
+  }
+  return matches[0].id
+}
+
+async function resolveTask(reference) {
+  const tasks = await allTasks()
+  const exact = tasks.find((task) => task.id === reference)
+  if (exact) return exact.id
+  const matches = tasks.filter((task) => task.id.startsWith(reference))
+  if (matches.length === 0) throw new CliError(`task not found: ${reference}`)
+  if (matches.length > 1) throw new CliError(`multiple tasks match the ID prefix: ${reference}`)
+  return matches[0].id
+}
+
+async function listTasks(options) {
+  assertOptions(options, ['project', 'status', 'include-archived'])
+  const query = new URLSearchParams()
+  const project = option(options, 'project')
+  if (project) query.set('projectId', await resolveProject(project))
+  const status = option(options, 'status')
+  if (status) query.set('status', status)
+  if (options.get('include-archived') === true) query.set('archived', 'include')
+  const suffix = query.size > 0 ? `?${query.toString()}` : ''
+  return requestJson('GET', `/v1/tasks${suffix}`)
+}
+
+async function createTask(options) {
+  assertOptions(options, [
+    'project',
+    'title',
+    'prompt',
+    'prompt-file',
+    'priority',
+    'status',
+    'scheduled-at',
+    'agent'
+  ])
+  const prompt = textOption(options, 'prompt', 'prompt-file')
+  const body = {
+    projectId: await resolveProject(requiredOption(options, 'project')),
+    title: requiredOption(options, 'title'),
+    status: option(options, 'status') ?? 'queued'
+  }
+  if (prompt !== undefined) body.prompt = prompt
+  const priority = priorityOption(options)
+  if (priority !== undefined) body.priority = priority
+  const scheduledAt = option(options, 'scheduled-at')
+  if (scheduledAt !== undefined) body.scheduledAt = scheduledAt
+  const agent = option(options, 'agent')
+  if (agent !== undefined) body.agentOverrideId = agent
+  return requestJson('POST', '/v1/tasks', body)
+}
+
+async function updateTask(reference, options) {
+  assertOptions(options, [
+    'project',
+    'title',
+    'prompt',
+    'prompt-file',
+    'priority',
+    'scheduled-at',
+    'clear-schedule',
+    'review-note',
+    'agent',
+    'clear-agent'
+  ])
+  if (options.get('clear-schedule') === true && option(options, 'scheduled-at') !== undefined) {
+    throw new CliError('--scheduled-at and --clear-schedule cannot be combined')
+  }
+  if (options.get('clear-agent') === true && option(options, 'agent') !== undefined) {
+    throw new CliError('--agent and --clear-agent cannot be combined')
+  }
+
+  const body = {}
+  const project = option(options, 'project')
+  if (project !== undefined) body.projectId = await resolveProject(project)
+  const title = option(options, 'title')
+  if (title !== undefined) body.title = title
+  const prompt = textOption(options, 'prompt', 'prompt-file')
+  if (prompt !== undefined) body.prompt = prompt
+  const priority = priorityOption(options)
+  if (priority !== undefined) body.priority = priority
+  const scheduledAt = option(options, 'scheduled-at')
+  if (scheduledAt !== undefined) body.scheduledAt = scheduledAt
+  if (options.get('clear-schedule') === true) body.scheduledAt = null
+  const reviewNote = option(options, 'review-note')
+  if (reviewNote !== undefined) body.reviewNote = reviewNote
+  const agent = option(options, 'agent')
+  if (agent !== undefined) body.agentOverrideId = agent
+  if (options.get('clear-agent') === true) body.agentOverrideId = null
+
+  const taskId = await resolveTask(reference)
+  return requestJson('PATCH', `/v1/tasks/${encodeURIComponent(taskId)}`, body)
+}
+
+const ACTION_PATH = {
+  enqueue: 'enqueue',
+  unqueue: 'unqueue',
+  hold: 'hold',
+  run: 'run-now',
+  done: 'mark-done',
+  reopen: 'reopen',
+  cancel: 'cancel',
+  archive: 'archive',
+  unarchive: 'unarchive'
+}
+
+async function taskAction(action, reference, options) {
+  assertOptions(options, [])
+  const taskId = await resolveTask(reference)
+  if (action === 'delete') {
+    return requestJson('DELETE', `/v1/tasks/${encodeURIComponent(taskId)}`)
+  }
+  const path = ACTION_PATH[action]
+  if (!path) throw new CliError(`unknown task action: ${action}`)
+  const result = await requestJson('POST', `/v1/tasks/${encodeURIComponent(taskId)}/${path}`)
+  if (action === 'run' && result.run && !result.run.ok) process.exitCode = 2
+  return result
+}
+
+async function sendTask(action, reference, options) {
+  assertOptions(options, ['message', 'message-file'])
+  const message = textOption(options, 'message', 'message-file')
+  if (message === undefined || message.trim().length === 0) {
+    throw new CliError('--message or --message-file is required')
+  }
+  const taskId = await resolveTask(reference)
+  const path = action === 'send-back' ? 'send-back' : 'send'
+  const result = await requestJson('POST', `/v1/tasks/${encodeURIComponent(taskId)}/${path}`, {
+    message
+  })
+  if (action === 'send' && result.result && !result.result.ok) process.exitCode = 2
+  return result
+}
+
+async function main() {
+  const [resource, verb, ...rest] = process.argv.slice(2)
+  if (!resource || resource === 'help' || resource === '--help') {
+    process.stdout.write(HELP)
+    return
+  }
+
+  if ((resource === 'projects' || resource === 'project') && verb === 'list') {
+    const parsed = parseArgs(rest)
+    if (parsed.positionals.length > 0) throw new CliError('projects list takes no arguments')
+    assertOptions(parsed.options, [])
+    console.log(JSON.stringify({ projects: await projects() }, null, 2))
+    return
+  }
+
+  if (resource !== 'tasks' && resource !== 'task') throw new CliError(`unknown resource: ${resource}`)
+  if (!verb) throw new CliError('specify a task action')
+  const parsed = parseArgs(rest)
+  let result
+  if (verb === 'list') {
+    if (parsed.positionals.length > 0) throw new CliError('tasks list takes no arguments')
+    result = await listTasks(parsed.options)
+  } else if (verb === 'get') {
+    if (parsed.positionals.length !== 1) throw new CliError('usage: tasks get TASK_ID')
+    assertOptions(parsed.options, [])
+    const taskId = await resolveTask(parsed.positionals[0])
+    result = await requestJson('GET', `/v1/tasks/${encodeURIComponent(taskId)}`)
+  } else if (verb === 'create') {
+    if (parsed.positionals.length > 0) throw new CliError('tasks create takes no positional arguments')
+    result = await createTask(parsed.options)
+  } else if (verb === 'update') {
+    if (parsed.positionals.length !== 1) {
+      throw new CliError('usage: tasks update TASK_ID [options]')
+    }
+    result = await updateTask(parsed.positionals[0], parsed.options)
+  } else if (verb === 'send' || verb === 'send-back') {
+    if (parsed.positionals.length !== 1) {
+      throw new CliError(`usage: tasks ${verb} TASK_ID --message TEXT`)
+    }
+    result = await sendTask(verb, parsed.positionals[0], parsed.options)
+  } else {
+    if (parsed.positionals.length !== 1) {
+      throw new CliError(`usage: tasks ${verb} TASK_ID`)
+    }
+    result = await taskAction(verb, parsed.positionals[0], parsed.options)
+  }
+  console.log(JSON.stringify(result, null, 2))
+}
+
+try {
+  await main()
+} catch (error) {
+  const message = error instanceof Error ? error.message : String(error)
+  console.error(`quuu: ${message}`)
+  process.exitCode = error instanceof CliError ? error.exitCode : 1
+}

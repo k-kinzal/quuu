@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "taskId": "t1",
+  "hash": "fixture",
+  "generatedAt": "2026-08-23T09:00:00.000Z",
+  "title": "確認する",
+  "prompt": "指示",
+  "status": "review",
+  "runSeq": 1,
+  "pendingMessage": "",
+  "reservedMessage": "",
+  "truncated": false,
+  "messages": [
+    {
+      "id": "m1",
+      "role": "assistant",
+      "at": "2026-08-23T09:00:00.000Z",
+      "text": "**結果**",
+      "tools": 1
+    }
+  ],
+  "runs": []
+}

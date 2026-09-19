@@ -1,0 +1,35 @@
+{
+  "name": "quuu",
+  "version": "1.0.0",
+  "description": "Task runner that manages AI agent runs",
+  "main": "./out/main/index.js",
+  "author": "k-kinzal",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "quuu": "bin/quuu"
+  },
+  "scripts": {
+    "dev": "electron-vite dev",
+    "start": "electron-vite preview",
+    "build": "npm run build:pty && npm run typecheck && electron-vite build",
+    "build:pty": "bash scripts/build-pty.sh",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.tests.json",
+    "dist": "npm run build && npm run --prefix ../.. mobile:build && electron-builder --mac --dir --config.electronVersion=$(node -p \"require('electron/package.json').version\")",
+    "dist:dmg": "npm run build && npm run --prefix ../.. mobile:build && electron-builder --mac --config.electronVersion=$(node -p \"require('electron/package.json').version\")",
+    "app:restart": "bash scripts/restart-app.sh",
+    "dev:fixture": "vite-node -c ../../vitest.config.ts scripts/dev-fixture.ts -- /tmp/taskd-shot",
+    "dev:shot": "QUUU_USER_DATA=/tmp/taskd-shot QUUU_CODEX_SESSIONS_DIR=/tmp/taskd-shot/codex-sessions electron-vite dev --remoteDebuggingPort 9222",
+    "shot": "node scripts/shoot.mjs /tmp/taskd-shots 9222"
+  },
+  "dependencies": {
+    "@design-system/react": "*",
+    "@orpc/client": "1.15.0",
+    "@orpc/contract": "1.15.0",
+    "@orpc/server": "1.15.0",
+    "@tanstack/react-query": "5.102.8",
+    "i18next": "^26.4.2",
+    "zod": "4.3.6"
+  }
+}

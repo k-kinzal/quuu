@@ -1,0 +1,21 @@
+{
+  "name": "@quuu/mobile",
+  "version": "1.0.0",
+  "description": "Quuu iPhone app (screens in React, shell in Swift / WKWebView)",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run typecheck && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "ios:build": "bash ios/build.sh",
+    "ios:open": "open ios/Quuu.xcodeproj",
+    "ios:install": "bash ios/install.sh"
+  },
+  "dependencies": {
+    "@design-system/react": "*",
+    "i18next": "^26.4.2"
+  }
+}

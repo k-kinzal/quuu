@@ -1,0 +1,24 @@
+# Ignore whether a directory or a symlink (worktrees share it with the main checkout)
+node_modules
+out/
+release/
+dist/
+*.log
+*.tsbuildinfo
+.DS_Store
+.vite/
+apps/mac/build/pty/
+# Signing team (personal Team ID). Kept locally only (apps/mobile/ios/install.sh explains)
+apps/mobile/ios/Local.xcconfig
+# Agent session dumps land in the cwd; git add -A would otherwise commit them
+*.jsonl
+.env
+.env.*
+# Signing material and local SQLite. git add -A would otherwise commit them
+*.pem
+*.p12
+*.mobileprovision
+*.db
+*.sqlite
+xcuserdata/
+*.xcuserstate

@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "id": "i2",
+  "device": "phone",
+  "seq": 2,
+  "createdAt": "2026-08-23T09:00:00.000Z",
+  "baseRev": 7,
+  "op": {
+    "kind": "task.create",
+    "taskId": "new2",
+    "projectId": "p1",
+    "title": "追加",
+    "prompt": "指示",
+    "priority": 2,
+    "enqueue": false,
+    "action": "held"
+  },
+  "expect": null
+}

@@ -1,0 +1,45 @@
+appId: net.kinzal.quuu
+productName: Quuu
+directories:
+  buildResources: build
+  output: release
+files:
+  - out/**
+  - package.json
+# Dock image for dev launches. main reads it from process.resourcesPath/build.
+extraResources:
+  # CLI that calls the local API from AI agents and the terminal.
+  - from: bin/quuu
+    to: bin/quuu
+  # Pseudo-terminal host for the built-in terminal. Node pipes cannot handle interactive CLIs or screen size.
+  - from: build/pty/quuu-pty
+    to: bin/quuu-pty
+  - from: build
+    to: build
+    filter:
+      - icon.png
+  # Layered icon (Liquid Glass) for macOS 26+. CFBundleIconName resolves to this,
+  # so it sits directly under Contents/Resources. Pre-26 falls back to icon.icns.
+  - from: build/Assets.car
+    to: Assets.car
+  # The iPhone screens. The Mac distributes them via iCloud, so they **live inside
+  # the Mac app** (what gets distributed maps one-to-one to the running Quuu build)
+  - from: ../mobile/dist
+    to: mobile-web
+mac:
+  category: public.app-category.developer-tools
+  icon: build/icon.icns
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  darkModeSupport: true
+  extendInfo:
+    LSUIElement: false
+    NSAppleEventsUsageDescription: Used by Quuu to perform terminal operations.
+    # Icon name inside build/Assets.car (= the name of build/icon.icon)
+    CFBundleIconName: icon
+dmg:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+# Make the .app launchable even without a certificate (public CI). Rationale in the script.
+afterPack: scripts/adhoc-sign.mjs
+npmRebuild: false

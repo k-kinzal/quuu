@@ -1,0 +1,283 @@
+import { describe, expect, it } from 'vitest'
+import type { TaskRule, TaskRuleInput } from '../src/main/automation/conditions.js'
+import type { TaskStatus } from '../src/main/tasks/status.js'
+import { OPEN_STATUSES } from '../src/main/tasks/status.js'
+
+import * as repo from '../src/main/db/repo.js'
+import { enqueueRuleNow, nextDueAt, runTaskRules } from '../src/main/automation/evaluate.js'
+import { Runner } from '../src/main/execution/runner.js'
+import { Scheduler } from '../src/main/execution/scheduler.js'
+import { makeAgent, makeProject, makeTask, memoryDb, occupy, reviewed } from './helpers.js'
+import type { Db } from '../src/main/db/database.js'
+
+/**
+ * Automatic tasks. When the conditions line up, one task gets queued.
+ *
+ * All that is checked is **whether it queues or not**. What gets queued is an ordinary task, so
+ * pickup, execution and review all ride the existing paths.
+ */
+
+function makeRule(
+  db: Db,
+  projectId: string,
+  over: Partial<TaskRuleInput> & { dueAt?: string | null } = {}
+): TaskRule {
+  return repo.insertTaskRule(db, {
+    projectId,
+    name: over.name ?? 'Issue を消化する',
+    prompt: over.prompt ?? 'Issue を 1 つ選んで片付ける',
+    priority: over.priority ?? 2,
+    agentOverrideId: over.agentOverrideId ?? null,
+    whenIdle: over.whenIdle ?? false,
+    cron: over.cron ?? '',
+    blockStatuses: over.blockStatuses ?? [],
+    enabled: over.enabled ?? true,
+    sortOrder: over.sortOrder ?? 0,
+    dueAt: over.dueAt ?? null
+  })
+}
+
+function setup(): { db: Db; project: string; agent: string } {
+  const db = memoryDb()
+  const agent = makeAgent(db, { name: 'a', concurrency: 4 })
+  const project = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 4 })
+  return { db, project, agent }
+}
+
+describe('automatic tasks - what gets queued', () => {
+  it('queues as a waiting task and carries over the prompt, the priority and the agent choice', () => {
+    const { db, project, agent } = setup()
+    makeRule(db, project, {
+      name: 'Issue を消化する',
+      prompt: 'gh issue list から 1 つ選んで直す',
+      priority: 1,
+      agentOverrideId: agent,
+      blockStatuses: [...OPEN_STATUSES]
+    })
+
+    const { created } = runTaskRules(db)
+    expect(created).toHaveLength(1)
+
+    const task = repo.getTask(db, created[0].id)!
+    expect(task.status).toBe('queued')
+    expect(task.title).toBe('Issue を消化する')
+    expect(task.prompt).toBe('gh issue list から 1 つ選んで直す')
+    expect(task.priority).toBe(1)
+    expect(task.agentOverrideId).toBe(agent)
+    // Where it came from stays visible (both the duplicate check and the display read this marker)
+    expect(task.ruleId).not.toBeNull()
+  })
+
+  it('uses the name as the prompt when the prompt is empty', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { name: '雑に何か足す', prompt: '', blockStatuses: [...OPEN_STATUSES] })
+    const { created } = runTaskRules(db)
+    expect(created[0].prompt).toBe('雑に何か足す')
+  })
+
+  it('queues nothing for a disabled definition, or for a deleted or stopped project', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { enabled: false, whenIdle: true })
+    expect(runTaskRules(db).created).toHaveLength(0)
+
+    const other = makeProject(db, { name: 'off', targetId: 'x', enabled: false })
+    makeRule(db, other, { whenIdle: true })
+    expect(runTaskRules(db).created).toHaveLength(0)
+  })
+
+  it('queues nothing for a definition with no conditions at all (it would queue forever)', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { whenIdle: false, cron: '', blockStatuses: [] })
+    const result = runTaskRules(db)
+    expect(result.created).toHaveLength(0)
+    expect(result.warnings).toHaveLength(1)
+  })
+})
+
+describe('automatic tasks - when the queue is empty', () => {
+  it('does not queue while anything is waiting or running, and queues once nothing is left', () => {
+    const { db, project, agent } = setup()
+    makeRule(db, project, { whenIdle: true, blockStatuses: [...OPEN_STATUSES] })
+
+    const queued = makeTask(db, project, '先にやること')
+    expect(runTaskRules(db).created).toHaveLength(0)
+
+    const running = occupy(db, queued, agent)
+    expect(runTaskRules(db).created).toHaveLength(0)
+
+    repo.updateRun(db, running, { status: 'succeeded' })
+    repo.setTaskStatus(db, queued, 'review')
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+
+  it('counts review, failed and held as "empty" (it keeps moving while it waits on a human)', () => {
+    const { db, project, agent } = setup()
+    makeRule(db, project, { whenIdle: true })
+    reviewed(db, project, 'レビュー待ち', agent)
+    repo.setTaskStatus(db, makeTask(db, project, '失敗'), 'failed')
+    repo.setTaskStatus(db, makeTask(db, project, '保留'), 'held')
+
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+
+  it('queues whenever its own queue is empty, however busy another project is', () => {
+    const { db, project, agent } = setup()
+    const other = makeProject(db, { name: 'other', targetId: agent })
+    occupy(db, makeTask(db, other, '隣で実行中'), agent)
+    makeRule(db, project, { whenIdle: true })
+
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+
+  it('does not queue two definitions in one project at once, but takes turns', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { name: 'Issue 消化', whenIdle: true, sortOrder: 0 })
+    makeRule(db, project, { name: 'PR 消化', whenIdle: true, sortOrder: 1 })
+
+    const first = runTaskRules(db).created
+    expect(first.map((t) => t.title)).toEqual(['Issue 消化'])
+
+    // The second one waits until the first is cleared (the queue is not empty)
+    expect(runTaskRules(db).created).toHaveLength(0)
+    repo.setTaskStatus(db, first[0].id, 'review')
+    expect(runTaskRules(db).created.map((t) => t.title)).toEqual(['PR 消化'])
+  })
+})
+
+describe('automatic tasks - never queuing twice', () => {
+  const statuses = (list: TaskStatus[]): TaskStatus[] => list
+
+  it('does not queue while anything in a counted state remains', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { blockStatuses: [...OPEN_STATUSES] })
+
+    const first = runTaskRules(db).created[0]
+    expect(runTaskRules(db).created).toHaveLength(0)
+
+    // Review counts as still stuck (the default is everything but done)
+    repo.setTaskStatus(db, first.id, 'review')
+    expect(runTaskRules(db).created).toHaveLength(0)
+
+    repo.setTaskStatus(db, first.id, 'done')
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+
+  it('lets the counted states be chosen (drop review and it keeps going even as reviews pile up)', () => {
+    const { db, project } = setup()
+    makeRule(db, project, {
+      blockStatuses: statuses(['draft', 'held', 'queued', 'running', 'failed'])
+    })
+
+    const first = runTaskRules(db).created[0]
+    repo.setTaskStatus(db, first.id, 'review')
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+
+  it('counts anything stuck as failed (the whole point of never queuing twice)', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { blockStatuses: [...OPEN_STATUSES] })
+    const first = runTaskRules(db).created[0]
+    repo.setTaskStatus(db, first.id, 'failed')
+    expect(runTaskRules(db).created).toHaveLength(0)
+
+    // Archiving takes it out of the count (the way out of one stuck task)
+    repo.setTaskArchived(db, first.id, true)
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+
+  it('does not count the same content queued by hand (only what it created itself counts)', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { blockStatuses: [...OPEN_STATUSES] })
+    makeTask(db, project, 'Issue を消化する')
+    expect(runTaskRules(db).created).toHaveLength(1)
+  })
+})
+
+describe('automatic tasks - by time (Cron)', () => {
+  it('does not queue until the due time, then queues and moves on to the next due time', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, {
+      cron: '0 3 * * *',
+      dueAt: new Date('2026-08-19T18:00:00.000Z').toISOString()
+    })
+
+    expect(runTaskRules(db, new Date('2026-08-19T17:00:00.000Z')).created).toHaveLength(0)
+
+    const now = new Date('2026-08-19T18:30:00.000Z')
+    expect(runTaskRules(db, now).created).toHaveLength(1)
+
+    const after = repo.getTaskRule(db, rule.id)!
+    expect(after.lastEnqueuedAt).toBe(now.toISOString())
+    expect(after.dueAt).toBe(nextDueAt('0 3 * * *', now))
+    // A second one is not queued in the same tick
+    expect(runTaskRules(db, now).created).toHaveLength(0)
+  })
+
+  it('skips a due time while busy and queues once free (it never drops that day)', () => {
+    const { db, project } = setup()
+    makeRule(db, project, {
+      whenIdle: true,
+      cron: '0 3 * * *',
+      dueAt: new Date('2026-08-19T18:00:00.000Z').toISOString()
+    })
+    const busy = makeTask(db, project, '走っているもの')
+
+    const at3 = new Date('2026-08-19T18:00:30.000Z')
+    expect(runTaskRules(db, at3).created).toHaveLength(0)
+
+    // The due time is still past, so it queues the moment things free up
+    repo.setTaskStatus(db, busy, 'review')
+    expect(runTaskRules(db, new Date('2026-08-19T22:00:00.000Z')).created).toHaveLength(1)
+  })
+
+  it('queues nothing for an unreadable expression and warns with the reason (it never stalls silently)', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { cron: 'まいにち' })
+    const result = runTaskRules(db)
+    expect(result.created).toHaveLength(0)
+    expect(result.warnings[0]).toContain('cron expression')
+  })
+
+  it('refills the due time and defers to the next round when an expression has none', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { cron: '0 3 * * *', dueAt: null })
+    const now = new Date('2026-08-19T10:00:00.000Z')
+
+    expect(runTaskRules(db, now).created).toHaveLength(0)
+    expect(repo.getTaskRule(db, rule.id)!.dueAt).toBe(nextDueAt('0 3 * * *', now))
+  })
+})
+
+describe('automatic tasks - manual runs and cleaning up definitions', () => {
+  it('queues regardless of the conditions on "queue now"', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { whenIdle: true, blockStatuses: [...OPEN_STATUSES] })
+    makeTask(db, project, 'キューは埋まっている')
+
+    expect(runTaskRules(db).created).toHaveLength(0)
+    const task = enqueueRuleNow(db, rule.id)
+    expect(repo.getTask(db, task.id)!.status).toBe('queued')
+  })
+
+  it('leaves queued tasks behind when the definition is deleted (only the origin marker comes off)', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { blockStatuses: [...OPEN_STATUSES] })
+    const task = runTaskRules(db).created[0]
+
+    repo.deleteTaskRule(db, rule.id)
+    const after = repo.getTask(db, task.id)
+    expect(after?.title).toBe('Issue を消化する')
+    expect(after?.ruleId).toBeNull()
+  })
+
+  it('does not queue while the scheduler is stopped', async () => {
+    const { db, project } = setup()
+    makeRule(db, project, { whenIdle: true, blockStatuses: [...OPEN_STATUSES] })
+
+    const scheduler = new Scheduler(db, new Runner(db))
+    scheduler.pause()
+    await scheduler.tick()
+
+    expect(repo.listTasks(db)).toHaveLength(0)
+  })
+})

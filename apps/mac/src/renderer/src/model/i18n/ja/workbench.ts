@@ -1,0 +1,230 @@
+import type { workbench as en } from '../en/workbench.js'
+
+export const workbench: typeof en = {
+  taskComposer: {
+    agent: 'AI',
+    agentTitle: 'AI: {{name}}',
+    agentGroup: '{{name}}（グループ全体）',
+    label: 'タスクを追加',
+    runNowFailed: 'いま実行できませんでした',
+    afterRun: '実行後',
+    link: 'つながり',
+    priority: '優先度',
+    priorityTitle: '優先度 {{level}}',
+    titleLabel: 'タイトル',
+    titlePlaceholder: 'タスクの名前',
+    promptPlaceholder: 'エージェントへの指示…',
+    draftPlaceholder: 'タスクのタイトル…',
+    createFailed: 'タスクを追加できませんでした',
+    addMenuTitle: '追加のしかた',
+    menu: 'メニュー'
+  },
+  quickAdd: {
+    link: 'つながり',
+    linkedPlaceholder: '{{direction}}…',
+    titlePlaceholder: 'タスクのタイトル…',
+    targetTitle: '追加先: {{name}}\n{{path}}',
+    menu: 'メニュー',
+    createFailed: 'タスクを追加できませんでした'
+  },
+  taskMenu: {
+    open: '開く',
+    runNow: 'いま実行',
+    enqueue: '待機中にする',
+    hold: '保留にする',
+    unqueue: '下書きに戻す',
+    cancel: '中断',
+    markDone: '完了にする',
+    reopen: '再オープン',
+    priority: '優先度',
+    addLinked: '{{direction}}を追加…',
+    copyTitle: 'タイトルをコピー',
+    copyFailure: '失敗の理由をコピー',
+    archive: 'アーカイブ',
+    remove: '削除…',
+    deleteConfirm: '「{{title}}」を削除しますか？',
+    deleteDetail: 'このタスクと実行履歴が消えます。この操作は取り消せません。',
+    runFailed: '実行できませんでした'
+  },
+  sidebar: {
+    review: '要レビュー',
+    project: 'プロジェクト',
+    allTasks: '全タスク',
+    addTask: 'タスクを追加 (⌘N)',
+    minimize: '一覧を最小化する (⌘⌥2)',
+    listLabel: '{{section}}（↑↓ で選ぶ、⏎ で会話へ、⌘⌥⏎ で操作）',
+    holdMarker: 'P0: 完了まで実行枠を確保する',
+    rowTitle: '{{title}}\n（右クリックで実行・完了・削除）'
+  },
+  filterBar: {
+    filterBy: '{{axis}}で絞り込む',
+    resetTitle: '並び・列の幅・絞り込みを既定へ戻す',
+    reset: '表示を戻す',
+    menu: '絞り込み'
+  },
+  taskWorkbench: {
+    work: {
+      main: 'メイン',
+      terminal: 'ターミナル'
+    },
+    inspector: {
+      task: 'タスク詳細',
+      symbols: 'コード構造',
+      coverage: 'カバレッジ',
+      'project-tasks': 'プロジェクトタスク'
+    },
+    terminalFailed: 'ターミナルを操作できませんでした',
+    workArea: 'タスクの作業領域',
+    infoArea: '情報ペイン',
+    paneHeights: '{{first}}と{{second}}の高さ',
+    closeInspector: '{{name}}を閉じる'
+  },
+  workspace: {
+    runFailed: '実行できませんでした',
+    closeTitle: '閉じて一覧を最大化する (Esc)',
+    enqueueTitle: '保留を解いて、実行を待つ状態に戻す',
+    enqueue: '待機中にする',
+    runNow: 'いま実行',
+    markDoneTitle: '完了にする ⌘⇧D',
+    markDone: '完了',
+    reopen: '再オープン',
+    moreTitle: 'その他（このタスクへの操作）',
+    menuLabel: 'このタスクへの操作'
+  },
+  listEditor: {
+    add: '{{noun}}を足す',
+    remove: '選んでいる{{noun}}を消す',
+    addVariable: '変数を足す'
+  },
+  envEditor: {
+    add: '環境変数を足す',
+    remove: '選んでいる環境変数を消す'
+  },
+  columnMenu: {
+    all: 'すべて',
+    option: '{{label}}（{{n}}）',
+    includeDone: '完了も表示',
+    asc: '昇順',
+    desc: '降順',
+    sortBy: '{{column}}で並べ替え',
+    unsorted: '並べない（キュー順）',
+    filterBy: '{{axis}}で絞り込み',
+    resetWidth: 'この列の幅を既定に戻す',
+    resetView: '表示を戻す（並び・幅・絞り込み）'
+  },
+  sectionMenu: {
+    newTask: '新しいタスク',
+    includeDone: '完了も表示',
+    resetView: '表示を戻す（並び・幅・絞り込み）',
+    projectSettings: 'プロジェクト設定…',
+    copyDirectory: 'ディレクトリをコピー'
+  },
+  palette: {
+    groups: {
+      tasks: 'タスク',
+      go: '移動',
+      projects: 'プロジェクト',
+      actions: '操作'
+    },
+    allTasks: '全タスク',
+    review: '要レビュー',
+    count_one: '{{count}} 件',
+    count_other: '{{count}} 件',
+    settings: '設定',
+    categories: {
+      general: '一般',
+      agents: 'エージェント',
+      notifications: '通知',
+      appearance: '外観'
+    },
+    settingsCategory: '設定 › {{label}}',
+    openCount_one: '{{count}} 件未完了',
+    openCount_other: '{{count}} 件未完了',
+    projectSettings: 'プロジェクト設定: {{name}}',
+    addProject: 'プロジェクトを追加',
+    newTask: '新しいタスクを追加',
+    runNow: 'いま実行: {{title}}',
+    hold: '保留にする: {{title}}',
+    enqueue: '待機中にする: {{title}}',
+    markDone: '完了にする: {{title}}',
+    maximizeList: '一覧を最大化する',
+    restoreList: '一覧を戻す',
+    minimizeList: '一覧を最小化する',
+    hideInfo: '情報パネルを閉じる',
+    showInfo: '情報パネルを開く',
+    showMenu: 'メニューを開く',
+    hideMenu: 'メニューを閉じる',
+    pauseScheduler: 'スケジューラを一時停止',
+    resumeScheduler: 'スケジューラを再開',
+    runningCount: '実行中 {{active}} / {{total}}',
+    themeDark: 'テーマをダーク',
+    themeLight: 'テーマをライト',
+    themeSystem: 'テーマをシステムに合わせる',
+    placeholder: 'タスクを検索、コマンドを実行…',
+    empty: '一致する項目がありません',
+    footerMove: '移動',
+    footerRun: '実行',
+    footerClose: '閉じる',
+    keywords: {
+      allTasks: '全タスク all tasks いちらん 一覧',
+      review: '要レビュー review レビュー待ち 失敗',
+      settings: '設定 settings',
+      settingsCategory: '設定 {{label}} settings {{id}}',
+      projectSettings: 'プロジェクト 設定 {{name}} project settings',
+      addProject: 'プロジェクト 追加 project add new',
+      newTask: '新しい タスク 追加 new task create つくる',
+      runNow: 'いま実行 run {{title}}',
+      hold: '保留 あとで 後回し hold later {{title}}',
+      enqueue: '待機 キュー 積む enqueue queue {{title}}',
+      done: '完了 done {{title}}',
+      back: '一覧 最大化 戻る back list',
+      list: '一覧 最小化 表示 隠す sidebar list',
+      inspector: '情報 パネル inspector 属性',
+      menu: 'メニュー menu レール rail',
+      scheduler: 'スケジューラ 一時停止 再開 pause resume scheduler',
+      theme: 'テーマ theme {{theme}} ダーク ライト'
+    }
+  },
+  footer: {
+    slotReserved: '{{name}}（確保中）',
+    limitUntil: '{{names}} Limit {{time}} 復帰',
+    paused: 'スケジューラは一時停止中',
+    pause: 'スケジューラを一時停止',
+    resume: 'スケジューラを再開',
+    showReview: '要レビューを見る',
+    slotsTitle: '実行中の Run / 有効なスロット総数',
+    running: '実行中',
+    gauge: '実行枠',
+    queued: '待機',
+    reviewTitle: '人間のレビューを待っているタスク',
+    review: 'レビュー待ち',
+    failed: '失敗',
+    holdsTitle: 'P0 が確保中の実行枠（完了まで、この枠はほかのタスクに渡らない）',
+    holds: 'P0',
+    stateRunning: '稼働中',
+    statePaused: '一時停止'
+  },
+  rail: {
+    showMenu: 'メニューを開く (⌘⌥1)',
+    hideMenu: 'メニューを閉じる (⌘⌥1)',
+    label: '移動',
+    addProjectMenu: 'プロジェクトを追加…',
+    showMenuItem: 'メニューを開く',
+    hideMenuItem: 'メニューを閉じる',
+    allTasks: '全タスク',
+    review: '要レビュー',
+    projects: 'プロジェクト',
+    addProjectTitle: 'プロジェクトを追加 (⌘⇧N)',
+    add: '追加する',
+    settings: '設定',
+    open: '開く',
+    projectSettings: 'プロジェクト設定…',
+    copyDirectory: 'ディレクトリをコピー'
+  },
+  leftMenu: {
+    label: '左メニュー',
+    menuWidth: 'メニューの幅',
+    listWidth: 'タスク一覧の幅',
+    restoreList: '一覧を戻す (⌘⌥2)'
+  }
+}

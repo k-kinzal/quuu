@@ -1,0 +1,17 @@
+{
+  "extends": "./apps/mac/tsconfig.tests.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@design-system/react": [
+        "packages/design-system/src/index.ts"
+      ],
+      "@design-system/react/layout-spec": [
+        "packages/design-system/src/layoutSpec.ts"
+      ]
+    }
+  },
+  "include": [
+    "tests/**/*.ts"
+  ]
+}

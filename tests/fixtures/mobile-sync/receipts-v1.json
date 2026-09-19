@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updatedAt": "2026-08-23T09:00:00.000Z",
+  "entries": [
+    {
+      "intentId": "i1",
+      "device": "phone",
+      "seq": 1,
+      "taskId": "new1",
+      "at": "2026-08-23T09:00:00.000Z",
+      "outcome": "applied",
+      "reason": ""
+    }
+  ]
+}

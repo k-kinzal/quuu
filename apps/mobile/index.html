@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      viewport-fit=cover uses the screen to its edges; the notch and home bar
+      are cleared with env(safe-area-inset-*). maximum-scale=1 stops iOS from
+      zooming in on its own when an input is touched (never create a state that
+      needs undoing)
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="dark light" />
+    <!--
+      Loaded from the shell, so nothing goes out. Conversation bodies are treated
+      as strings written by someone else (images are not fetched either), so
+      there is no endpoint to connect to
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'"
+    />
+    <title>Quuu</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

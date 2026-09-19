@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "rev": 7,
+  "generatedAt": "2026-08-23T09:00:00.000Z",
+  "omittedDone": 0,
+  "scheduler": {
+    "running": false,
+    "activeRuns": 0,
+    "queued": 0
+  },
+  "projects": [
+    {
+      "id": "p1",
+      "name": "確認用",
+      "color": "#4EA8DE",
+      "priority": 2,
+      "enabled": true
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t1",
+      "projectId": "p1",
+      "title": "確認する",
+      "excerpt": "指示",
+      "status": "review",
+      "priority": 2,
+      "order": 0,
+      "updatedAt": "2026-08-23T09:00:00.000Z",
+      "runSeq": 1,
+      "lastRun": {
+        "status": "succeeded",
+        "endedAt": "2026-08-23T09:00:00.000Z",
+        "errorKind": ""
+      },
+      "hasPending": false,
+      "hasReserved": false,
+      "detailHash": "fixture"
+    }
+  ]
+}

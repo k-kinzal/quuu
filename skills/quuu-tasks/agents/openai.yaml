@@ -1,0 +1,4 @@
+interface:
+  display_name: "Quuu Tasks"
+  short_description: "Inspect, add, and operate Quuu tasks from the CLI"
+  default_prompt: "Use $quuu-tasks to add and manage tasks in Quuu."

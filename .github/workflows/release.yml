@@ -1,0 +1,74 @@
+# Build the Mac app and put a dmg on Releases.
+#
+# - Runs when a GitHub Release is published; attaches (or replaces) the dmg on that Release
+# - workflow_dispatch creates no Release; it only verifies the build passes and inspects artifacts
+# - Signing defaults to ad-hoc (unsigned distribution). To use an Apple Developer
+#   Program certificate, put CSC_LINK (base64 of the .p12) and CSC_KEY_PASSWORD in
+#   the repo Secrets and electron-builder switches to proper signing (its standard hook)
+# - The iPhone app is not released. Signed distribution needs the Apple Developer
+#   Program, so build and install it locally (apps/mobile/ios/install.sh)
+name: release
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Nothing that fails the quality gate (docs/working.md) gets shipped
+      - name: Quality gate
+        run: npm run check
+
+      # The dmg name is derived from the version in apps/mac/package.json.
+      # Shipping with it out of sync with the tag leaves users unable to tell which build they installed
+      - name: Verify tag matches version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          v="$(node -p "require('./apps/mac/package.json').version")"
+          if [ "v${v}" != "$TAG" ]; then
+            echo "tag ${TAG} does not match apps/mac/package.json version v${v}" >&2
+            exit 1
+          fi
+
+      - name: Build (arm64 / x64 dmg)
+        run: npm run dist:dmg -- --publish never
+        env:
+          # No certificate here, so stop the keychain search (afterPack's ad-hoc signing covers it).
+          # With CSC_LINK / CSC_KEY_PASSWORD in Secrets, electron-builder signs properly
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Attach dmg to Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          gh release upload "$TAG" apps/mac/release/Quuu-*.dmg --clobber
+
+      # Manual runs create no Release; just keep the outputs as workflow Artifacts
+      - name: Upload artifacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmg
+          path: apps/mac/release/Quuu-*.dmg
