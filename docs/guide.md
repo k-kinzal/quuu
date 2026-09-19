@@ -196,13 +196,13 @@ QUUU_USER_DATA=/tmp/taskd-dev npm run dev
 ## Releases
 
 GitHub Actions ([release.yml](../.github/workflows/release.yml)) builds the Mac app and
-puts dmgs (arm64 / x64) on the Release you published. Bump `version` in
-`apps/mac/package.json`, commit, then publish a GitHub Release whose tag is the same
-version (the tag is created with the Release). The workflow rewrites that Release by
-attaching the dmgs; it leaves the title and notes as you wrote them.
+puts dmgs (arm64 / x64) on the Release you published. Publish a GitHub Release (the tag
+is created with it). The workflow stamps `apps/mac/package.json` with that tag's version
+for the build, then rewrites the Release by attaching the dmgs. The version in git is
+not consulted. Title and notes stay as you wrote them.
 
 ```sh
-gh release create v1.0.0 --title v1.0.0 --generate-notes
+gh release create v0.1.0 --title v0.1.0 --generate-notes
 ```
 
 The GitHub Releases UI does the same. Publishing the Release is the trigger — a tag

@@ -20,6 +20,9 @@ permissions:
 jobs:
   release:
     runs-on: macos-15
+    env:
+      # Type-aware ESLint otherwise OOMs on the hosted runner's ~2GB default heap
+      NODE_OPTIONS: --max-old-space-size=8192
     steps:
       - uses: actions/checkout@v4
 
@@ -35,18 +38,18 @@ jobs:
       - name: Quality gate
         run: npm run check
 
-      # The dmg name is derived from the version in apps/mac/package.json.
-      # Shipping with it out of sync with the tag leaves users unable to tell which build they installed
-      - name: Verify tag matches version
+      # The Release tag is the version. Stamp it onto apps/mac/package.json so the
+      # dmg name and the built app match what was published; git's version is ignored.
+      - name: Stamp version from Release tag
         if: github.event_name == 'release'
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          v="$(node -p "require('./apps/mac/package.json').version")"
-          if [ "v${v}" != "$TAG" ]; then
-            echo "tag ${TAG} does not match apps/mac/package.json version v${v}" >&2
-            exit 1
-          fi
+          case "$TAG" in
+            v[0-9]*) ;;
+            *) echo "tag ${TAG} is not v<semver>" >&2; exit 1 ;;
+          esac
+          npm pkg set "version=${TAG#v}" -w quuu
 
       - name: Build (arm64 / x64 dmg)
         run: npm run dist:dmg -- --publish never
