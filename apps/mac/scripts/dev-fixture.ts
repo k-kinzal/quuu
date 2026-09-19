@@ -1300,6 +1300,82 @@ writeFileSync(
     .join('\n') + '\n'
 )
 
+/* ------------------- Conversation (a limit the agent wrote down itself) */
+
+/*
+ * A run that died against a usage limit, and a follow-up that reached the agent before one did.
+ *
+ * The CLI writes both halves into the session itself: the instruction it accepted, and the
+ * "you've reached your limit" it answers with. The failure box and the trailing "not yet sent"
+ * utterance are both decided against this conversation, so **only a log of this shape shows on
+ * the real screen whether either of them is saying what the conversation already says**. Both
+ * used to: the reason was printed at the head of the pane while the agent said it in the middle,
+ * and an instruction already handed over sat underneath as still to send.
+ */
+const LIMIT_SAID =
+  "You've reached your Fable limit. Switch to another model, or manage usage credits at claude.ai/settings/usage, to continue."
+
+function writeSession(runId: string, entries: Array<{ role: 'user' | 'assistant'; text: string; minutesAgo: number }>): void {
+  const sessionId = repo.getRun(db, runId)!.sessionId
+  writeFileSync(
+    join(dir, 'logs', `${runId}.jsonl`),
+    entries
+      .map((entry, i) =>
+        JSON.stringify({
+          type: entry.role,
+          uuid: `${runId}-${i}`,
+          sessionId,
+          timestamp: iso(entry.minutesAgo),
+          message: {
+            role: entry.role,
+            ...(entry.role === 'assistant' ? { model: 'claude-opus-4' } : {}),
+            content: [{ type: 'text', text: entry.text }]
+          }
+        })
+      )
+      .join('\n') + '\n'
+  )
+}
+
+const spentAsked = 'Add support for agy, grok and opencode.'
+const spent = repo.insertTask(db, {
+  projectId: projects[0].id,
+  title: 'Add the remaining agent CLIs',
+  prompt: spentAsked,
+  priority: 2,
+  status: 'queued'
+})
+const spentRun = addRun(spent.id, 'failed', 34, 4, LIMIT_SAID)
+repo.setTaskStatus(db, spent.id, 'failed', {
+  currentRunId: spentRun,
+  sessionId: repo.getRun(db, spentRun)!.sessionId
+})
+writeSession(spentRun, [
+  { role: 'user', text: spentAsked, minutesAgo: 34 },
+  { role: 'assistant', text: LIMIT_SAID, minutesAgo: 34 }
+])
+
+const heldAsked = 'Re-lay the fuzz targets over the core and DB implementations.'
+const held = repo.insertTask(db, {
+  projectId: projects[0].id,
+  title: 'Re-lay the fuzz targets',
+  prompt: heldAsked,
+  priority: 2,
+  status: 'queued'
+})
+const heldRun = addRun(held.id, 'limited', 62, 12)
+repo.setTaskStatus(db, held.id, 'queued', {
+  currentRunId: heldRun,
+  sessionId: repo.getRun(db, heldRun)!.sessionId,
+  pendingMessage: 'please continue'
+})
+writeSession(heldRun, [
+  { role: 'user', text: heldAsked, minutesAgo: 240 },
+  { role: 'assistant', text: 'Rewrote the core targets. The DB side is next.', minutesAgo: 236 },
+  // Handed over by the run that then hit the limit: the agent is holding it, unanswered
+  { role: 'user', text: 'please continue', minutesAgo: 61 }
+])
+
 /* -------------------------------------------------------------- Settings */
 
 // A real diff exercises the full project/change listing and deleted-file reads.
