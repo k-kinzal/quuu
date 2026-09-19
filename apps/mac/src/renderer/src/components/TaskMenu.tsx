@@ -63,7 +63,15 @@ export function taskMenuItems(
   if (task.status !== 'running' && task.status !== 'done') {
     items.push({ label: t('taskMenu.runNow'), accelerator: 'Cmd+R', onSelect: () => void runNow() })
   }
-  if (task.status === 'draft' || task.status === 'held') {
+  /*
+   * A failed task gets back in line the same way anything else does.
+   *
+   * "Run Now" was the only way back, and it jumps the queue: when a whole group went down with
+   * one account's limit, putting the work back meant taking a slot away from whatever was
+   * already waiting, one task at a time, by hand. Nothing about a run that died on someone
+   * else's limit needs a human to watch it start.
+   */
+  if (task.status === 'draft' || task.status === 'held' || task.status === 'failed') {
     items.push({
       label: t('taskMenu.enqueue'),
       onSelect: () => void window.quuu.tasks.enqueue(task.id)

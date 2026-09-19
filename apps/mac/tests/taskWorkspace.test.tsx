@@ -106,6 +106,18 @@ it.each([
   await waitFor(() => expect(operation).toHaveBeenCalledWith(task.id))
 })
 
+/*
+ * A failed task's only way back used to be "Run Now", which jumps the queue. When a whole group
+ * goes down with one account's limit, putting the work back should be the same act as queueing
+ * anything else - not taking the next slot away from whatever is already waiting.
+ */
+it('puts a failed task back in the queue from the header menu', async () => {
+  const header = show('failed')
+  fireEvent.click(within(header).getByRole('button', { name: 'More (actions for this task)' }))
+  fireEvent.click(screen.getByRole('menuitem', { name: 'Add to Queue' }))
+  await waitFor(() => expect(enqueue).toHaveBeenCalledWith(task.id))
+})
+
 it('can stop a running task from the header menu', async () => {
   const header = show('running')
   fireEvent.click(within(header).getByRole('button', { name: 'More (actions for this task)' }))

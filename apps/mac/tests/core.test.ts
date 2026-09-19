@@ -72,6 +72,26 @@ describe('run result classification', () => {
     expect(result.retryAt).toBe(new Date(2126, 8, 19, 19, 13, 0, 0).toISOString())
   })
 
+  it('reads a limit on one model as a limit, not an ordinary failure', () => {
+    /*
+     * Claude Code says this when the account is fine but that one model is spent. It never uses the
+     * words "usage limit", so it used to classify as a plain non-zero exit - and a plain failure is
+     * retried only on another candidate, which for a group whose other member was already cooling
+     * down meant the same model again. Every task in the queue ran, died in seconds, and was handed
+     * to a human, while the fallback stood idle.
+     */
+    const result = classifyRunResult({
+      ...base,
+      exitCode: 1,
+      output:
+        "You've reached your Fable limit. Switch to another model, or manage usage credits at claude.ai/settings/usage?from=cc_cli_limit_message, to continue."
+    })
+    expect(result.kind).toBe('limit')
+    expect(result.message).toContain('Fable limit')
+    // It says nothing about when, so the configured cooldown is all there is to go on
+    expect(result.retryAt).toBeNull()
+  })
+
   it('leaves the lift time unknown when the limit message never named one', () => {
     expect(classifyRunResult({ ...base, exitCode: 1, output: 'Overloaded' }).retryAt).toBeNull()
   })

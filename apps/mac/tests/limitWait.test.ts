@@ -162,6 +162,84 @@ describe('the latest run of a task', () => {
   })
 })
 
+/**
+ * A limit on one model, announced without a moment.
+ *
+ * Claude Code says "You've reached your Fable limit. Switch to another model" - the account is
+ * fine, that one model is spent, and no clock is given. Switching models is exactly what the
+ * fallback chain is for, so this is the case it has to cover.
+ */
+function modelLimitFixture(): { db: ReturnType<typeof memoryDb>; runner: Runner; scheduler: Scheduler; spent: string; fallback: string; project: string } {
+  const db = memoryDb()
+  const runner = new Runner(db)
+  const script =
+    `echo "You've reached your Fable limit. Switch to another model, or manage usage credits at claude.ai/settings/usage, to continue." >&2; exit 1`
+  const fallback = makeAgent(db, {
+    name: 'Opus',
+    command: '/bin/echo',
+    argsTemplate: ['ok'],
+    sortOrder: 1
+  })
+  const spent = makeAgent(db, {
+    name: 'Fable',
+    command: '/bin/sh',
+    argsTemplate: ['-c', script],
+    resumeArgsTemplate: ['-c', script],
+    fallbackAgentId: fallback,
+    cooldownSeconds: 900,
+    sortOrder: 0
+  })
+  const group = repo.insertGroup(db, {
+    name: 'Frontier Agents',
+    description: '',
+    strategy: 'least-busy',
+    memberIds: [spent],
+    sortOrder: 0
+  }).id
+  const project = makeProject(db, {
+    name: 'p',
+    targetKind: 'group',
+    targetId: group,
+    path: workdir,
+    maxConcurrent: 1
+  })
+  return { db, runner, scheduler: new Scheduler(db, runner), spent, fallback, project }
+}
+
+describe('a Limit on one model, with no moment named', () => {
+  it('moves the task to the fallback agent instead of handing it to a human', async () => {
+    const f = modelLimitFixture()
+    const task = makeTask(f.db, f.project, 'sql-catalogパッケージの作成')
+
+    const done = finishes(f.runner, 2)
+    await f.scheduler.tick()
+    await done
+
+    // Newest first: the model that was spent, then the one it falls back to
+    const runs = repo.listRunsByTask(f.db, task)
+    expect(runs.map((r) => r.agentId)).toEqual([f.fallback, f.spent])
+    expect(runs[1].status).toBe('limited')
+    expect(repo.getTask(f.db, task)?.status).toBe('review')
+  })
+
+  it('stops feeding the rest of the queue to the model that is spent', async () => {
+    const f = modelLimitFixture()
+    const tasks = ['sql-catalog', 'sql-fixture', 'sql-parser'].map((title) =>
+      makeTask(f.db, f.project, title)
+    )
+
+    // One run into the wall, then each task once on the fallback
+    const done = finishes(f.runner, 4)
+    await f.scheduler.tick()
+    await done
+
+    const spent = tasks.flatMap((id) => repo.listRunsByTask(f.db, id)).filter((r) => r.agentId === f.spent)
+    expect(spent).toHaveLength(1)
+    // Not one of them is left for a human to clear
+    expect(tasks.map((id) => repo.getTask(f.db, id)?.status)).toEqual(['review', 'review', 'review'])
+  })
+})
+
 describe('a Limit that says when it lifts', () => {
   it('cools the agent until the moment it named, not for the configured guess', async () => {
     const f = fixture()
