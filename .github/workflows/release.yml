@@ -54,13 +54,19 @@ jobs:
       # --publish never lives in the dist:dmg script. Passing it here as
       # `npm run dist:dmg -- --publish never` lets npm eat --publish.
       - name: Build (arm64 / x64 dmg)
-        run: npm run dist:dmg
         env:
           # No certificate here, so stop the keychain search (afterPack's ad-hoc signing covers it).
           # With CSC_LINK / CSC_KEY_PASSWORD in Secrets, electron-builder signs properly
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: |
+          # Empty secrets still arrive as "" and electron-builder treats CSC_LINK
+          # as a file path, which resolves to the app directory ("not a file").
+          if [ -z "${CSC_LINK:-}" ]; then
+            unset CSC_LINK CSC_KEY_PASSWORD
+          fi
+          npm run dist:dmg
 
       - name: Attach dmg to Release
         if: github.event_name == 'release'
