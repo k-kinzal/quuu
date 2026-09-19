@@ -1,12 +1,11 @@
 import { z } from 'zod'
+import { RunTargetKindSchema } from './agents.js'
 import { CommitIdentityModeSchema, CommitIdentitySchema } from './settings.js'
 import { RecordSourceSchema } from './tasks.js'
 
 // ---------------------------------------------------------------------------
 // Projects
 // ---------------------------------------------------------------------------
-export const RunTargetKindSchema = z.union([z.literal('agent'), z.literal('group')])
-export type RunTargetKind = z.infer<typeof RunTargetKindSchema>
 
 export const ProjectSchema = z.object({
   id: z.string(),

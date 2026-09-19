@@ -18,6 +18,8 @@ import { REPORT_ASSETS, writeReportAssets } from './assets.js'
 import type { ReportChange } from './prompt.js'
 import { reportPrompt } from './prompt.js'
 import type { StoredReport, TaskReport } from './types.js'
+import type { ChosenWriter } from './writer.js'
+import { chooseWriter } from './writer.js'
 
 /** How often a running generation is looked at. It stats two files, so it costs nothing. */
 const POLL_MS = 2000
@@ -103,19 +105,22 @@ export class ReportOperations extends EventEmitter {
     }
   }
 
-  /** Why a report cannot be generated for this task, or null when it can. */
-  private blocked(taskId: string): string | null {
+  /**
+   * Who writes this task's report, or why nobody does.
+   *
+   * Who is decided here rather than read off the setting, because the setting may name a group,
+   * and which member takes it depends on what the rest of them are doing right now
+   * (`report/writer.ts`).
+   */
+  private writer(taskId: string): ChosenWriter | { ok: false; reason: string } {
     const settings = this.getSettings()
-    if (!settings.reportEnabled) return t('report.turnedOff')
-    /*
-     * The chosen definition still has to be enabled. "Enabled" is the one switch that says a
-     * definition may be launched at all, and a disabled agent that keeps running reports would
-     * make that switch mean different things in two places.
-     */
-    const agent = settings.reportAgentId ? repo.getAgent(this.db, settings.reportAgentId) : null
-    if (!agent?.enabled) return t('report.noAgent')
-    if (!repo.getTask(this.db, taskId)) return t('tasks.notFound')
-    return null
+    if (!settings.reportEnabled) return { ok: false, reason: t('report.turnedOff') }
+    const chosen = chooseWriter(this.db, settings)
+    if (!chosen.ok) {
+      return { ok: false, reason: chosen.reason === 'cooling' ? t('report.allCooling') : t('report.noAgent') }
+    }
+    if (!repo.getTask(this.db, taskId)) return { ok: false, reason: t('tasks.notFound') }
+    return chosen
   }
 
   /**
@@ -123,10 +128,10 @@ export class ReportOperations extends EventEmitter {
    * writes. Returns without starting when there is nothing to do.
    */
   private async begin(taskId: string, trigger: 'automatic' | 'requested'): Promise<void> {
-    const blocked = this.blocked(taskId)
-    if (blocked) throw new Error(blocked)
+    const writer = this.writer(taskId)
+    if (!writer.ok) throw new Error(writer.reason)
     const settings = this.getSettings()
-    const agent = repo.getAgent(this.db, settings.reportAgentId)!
+    const agent = writer.agent
     const place = this.place(taskId)
     if (!place.project.reportEnabled) throw new Error(t('report.projectTurnedOff'))
     if (!existsSync(place.dir)) throw new Error(t('report.dirMissing', { path: place.dir }))
@@ -201,6 +206,11 @@ export class ReportOperations extends EventEmitter {
        * this is the fact import needs long after that - otherwise regenerating a report hands the
        * previous generator's session to import, which reads it as work somebody did.
        */
+      /*
+       * A group's rotation counts this launch. The report went to the group, not to the member
+       * that happened to be first, so the next one to be handed anything is somebody else.
+       */
+      if (writer.groupId) repo.advanceGroupRotation(this.db, writer.groupId, agent.id)
       repo.openReportSession(this.db, place.dir, startedAt, isoAfter(startedAt, TIMEOUT_MS))
       repo.saveTaskReport(this.db, {
         taskId,

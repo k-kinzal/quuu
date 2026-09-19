@@ -1,5 +1,14 @@
 import type { RecordSource } from '../tasks/status.js'
 
+/**
+ * What a run may be aimed at: one named agent, or a group that decides among its members.
+ *
+ * It lives beside the agents rather than with whoever chose one, because both things it names
+ * are agent definitions. A project picks one (`Project.targetKind`), and so does the report
+ * feature (`AppSettings.reportTargetKind`) - neither has to know about the other to say it.
+ */
+export type RunTargetKind = 'agent' | 'group'
+
 export interface Agent {
   id: string
   name: string

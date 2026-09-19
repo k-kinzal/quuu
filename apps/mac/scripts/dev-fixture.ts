@@ -1682,7 +1682,9 @@ repo.setSetting(
     autoStartScheduler: false,
     // The report surface is worth looking at, and the fixture agents run a harmless `true`
     reportEnabled: true,
-    reportAgentId: opus.id,
+    // Written by a group, so the screen shows the choice that is not a single name
+    reportTargetKind: 'group',
+    reportTargetId: agentGroup.id,
     // Do not mix in directly launched sessions (real history makes the screen unreadable)
     importExternalSessions: false,
     importCreateProjects: false,

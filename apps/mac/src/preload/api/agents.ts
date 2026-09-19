@@ -1,6 +1,14 @@
 import { z } from 'zod'
 import { RecordSourceSchema } from './tasks.js'
 
+/**
+ * What a run may be aimed at: one named agent, or a group that decides among its members.
+ * Both things it names are agent definitions, so it is declared here and read by whoever picks
+ * one - a project (`Project.targetKind`) or the report feature (`AppSettings.reportTargetKind`).
+ */
+export const RunTargetKindSchema = z.union([z.literal('agent'), z.literal('group')])
+export type RunTargetKind = z.infer<typeof RunTargetKindSchema>
+
 export const LogAdapterSchema = z.union([z.literal('claude'), z.literal('codex'), z.literal('cursor'), z.literal('grok'), z.literal('copilot'), z.literal('agy'), z.literal('opencode'), z.literal('stdout')])
 export type LogAdapter = z.infer<typeof LogAdapterSchema>
 

@@ -13,15 +13,19 @@ import { REPORT_ASSETS, REPORT_STYLE_FILE } from '../src/main/report/assets.js'
 import { reportPrompt } from '../src/main/report/prompt.js'
 import type { AppSettings } from '../src/main/settings/types.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
+import { isoPlusSeconds } from '../src/main/util.js'
 import { makeAgent, makeProject, makeTask, memoryDb } from './helpers.js'
 
-/** A shell "agent" that writes the page the instructions named. */
-const WRITES_A_PAGE = [
-  '-c',
-  `printf '<html>report</html>' > "$(printf '%s' "$1" | sed -n 's/^Write the page to: //p')"`,
-  'quuu',
-  '{{prompt}}'
-]
+/** A shell "agent" that writes the page the instructions named, signed so its writer is readable. */
+function writesAPage(signature: string): string[] {
+  return [
+    '-c',
+    `printf '<html>${signature}</html>' > "$(printf '%s' "$1" | sed -n 's/^Write the page to: //p')"`,
+    'quuu',
+    '{{prompt}}'
+  ]
+}
+const WRITES_A_PAGE = writesAPage('report')
 /**
  * These launch a real process, and the first one also resolves the login PATH (a login shell,
  * which is allowed five seconds of its own).
@@ -92,7 +96,7 @@ beforeEach(() => {
   const agentId = makeAgent(db, { name: 'Reporter', command: '/bin/sh', argsTemplate: WRITES_A_PAGE })
   const runner = makeAgent(db, { name: 'Runner' })
   projectId = makeProject(db, { name: 'Quuu', targetId: runner, path: work })
-  settings = { ...DEFAULT_SETTINGS, reportEnabled: true, reportAgentId: agentId }
+  settings = { ...DEFAULT_SETTINGS, reportEnabled: true, reportTargetKind: 'agent', reportTargetId: agentId }
   ops = new ReportOperations(db, () => settings, place)
 })
 
@@ -113,14 +117,14 @@ describe('what stops a report from being written', () => {
   })
 
   it('says so instead of starting when nobody is set to write one', async () => {
-    settings = { ...settings, reportAgentId: '' }
+    settings = { ...settings, reportTargetId: '' }
     const result = await ops.generate(makeTask(db, projectId, 'Rename the queue'))
     expect(result.ok).toBe(false)
   })
 
   it('does not use an agent whose definition is disabled', async () => {
     const disabled = makeAgent(db, { name: 'Resting', command: '/bin/sh', enabled: false })
-    settings = { ...settings, reportAgentId: disabled }
+    settings = { ...settings, reportTargetId: disabled }
     const result = await ops.generate(makeTask(db, projectId, 'Rename the queue'))
     expect(result.ok).toBe(false)
   })
@@ -131,6 +135,87 @@ describe('what stops a report from being written', () => {
     expect(result.ok).toBe(false)
     expect(ops.report(makeTask(db, projectId, 'Another'))).toBeNull()
   })
+})
+
+/**
+ * Who writes it.
+ *
+ * A single name and a group answer two different questions. A name says *that one*; a group says
+ * **whoever can take it**, which is the reason the choice exists at all — the agents doing the
+ * work are busy, and the report is the job to hand to whichever one is free.
+ */
+describe('who writes it', () => {
+  /** Members that sign their pages, so the one that took the job can be read off the result. */
+  function group(strategy: 'priority' | 'round-robin' | 'least-busy'): { id: string; first: string; second: string } {
+    const first = makeAgent(db, { name: 'First', command: '/bin/sh', argsTemplate: writesAPage('first') })
+    const second = makeAgent(db, { name: 'Second', command: '/bin/sh', argsTemplate: writesAPage('second') })
+    const id = repo.insertGroup(db, {
+      name: 'Writers',
+      description: '',
+      strategy,
+      memberIds: [first, second],
+      sortOrder: 0
+    }).id
+    settings = { ...settings, reportTargetKind: 'group', reportTargetId: id }
+    return { id, first, second }
+  }
+
+  async function wroteBy(taskId: string): Promise<string> {
+    const report = await settled(taskId)
+    expect(report?.status).toBe('ready')
+    return readFileSync(report!.path, 'utf8')
+  }
+
+  it('hands it to the member the strategy puts first', async () => {
+    group('priority')
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    expect((await ops.generate(taskId)).ok).toBe(true)
+    expect(await wroteBy(taskId)).toContain('first')
+  }, LAUNCHES)
+
+  it('passes over a member that is waiting out a limit', async () => {
+    const writers = group('priority')
+    repo.setCooldown(db, writers.first, isoPlusSeconds(600), 'Limit')
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    expect((await ops.generate(taskId)).ok).toBe(true)
+    expect(await wroteBy(taskId)).toContain('second')
+  }, LAUNCHES)
+
+  it('leaves out a member whose definition is disabled', async () => {
+    const writers = group('priority')
+    repo.updateAgent(db, writers.first, { enabled: false })
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    expect((await ops.generate(taskId)).ok).toBe(true)
+    expect(await wroteBy(taskId)).toContain('second')
+  }, LAUNCHES)
+
+  it('says so instead of starting when every member is waiting out a limit', async () => {
+    const writers = group('priority')
+    repo.setCooldown(db, writers.first, isoPlusSeconds(600), 'Limit')
+    repo.setCooldown(db, writers.second, isoPlusSeconds(600), 'Limit')
+    const result = await ops.generate(makeTask(db, projectId, 'Rename the queue'))
+    expect(result.ok).toBe(false)
+    expect(result.reason).toBeTruthy()
+  })
+
+  it('says so instead of starting when the group has nobody left to write', async () => {
+    const writers = group('priority')
+    repo.updateAgent(db, writers.first, { enabled: false })
+    repo.updateAgent(db, writers.second, { enabled: false })
+    expect((await ops.generate(makeTask(db, projectId, 'Rename the queue'))).ok).toBe(false)
+  })
+
+  // A report is a launch on the group, so it moves the same rotation a task's run does
+  it('moves a round-robin group on, so the next launch is somebody else', async () => {
+    const writers = group('round-robin')
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    await ops.generate(taskId)
+    expect(await wroteBy(taskId)).toContain('first')
+    expect(repo.groupRotation(db, writers.id)).toBe(writers.first)
+
+    await ops.generate(taskId)
+    expect(await wroteBy(taskId)).toContain('second')
+  }, LAUNCHES)
 })
 
 describe('how a generation ends', () => {
@@ -169,7 +254,7 @@ describe('writing one', () => {
 
   it('reports a generator that wrote nothing as a failure, not as an empty report', async () => {
     const silent = makeAgent(db, { name: 'Silent', command: '/bin/sh', argsTemplate: WRITES_NOTHING })
-    settings = { ...settings, reportAgentId: silent }
+    settings = { ...settings, reportTargetId: silent }
     const taskId = makeTask(db, projectId, 'Rename the queue')
     expect((await ops.generate(taskId)).ok).toBe(true)
 
@@ -186,7 +271,7 @@ describe('writing one', () => {
     expect(first?.status).toBe('ready')
 
     const slow = makeAgent(db, { name: 'Slow', command: '/bin/sh', argsTemplate: ['-c', 'sleep 30', 'quuu', '{{prompt}}'] })
-    settings = { ...settings, reportAgentId: slow }
+    settings = { ...settings, reportTargetId: slow }
     await ops.generate(taskId)
 
     const during = ops.report(taskId)
@@ -314,14 +399,14 @@ describe('whether reaching review again writes one', () => {
 
   it('tries again on its own when the last generation for this tree wrote no page', async () => {
     initGit()
-    const writer = settings.reportAgentId
+    const writer = settings.reportTargetId
     const silent = makeAgent(db, { name: 'Silent', command: '/bin/sh', argsTemplate: WRITES_NOTHING })
-    settings = { ...settings, reportAgentId: silent }
+    settings = { ...settings, reportTargetId: silent }
     const taskId = makeTask(db, projectId, 'Rename the queue')
     await ops.generate(taskId)
     expect((await settled(taskId))?.status).toBe('failed')
 
-    settings = { ...settings, reportAgentId: writer }
+    settings = { ...settings, reportTargetId: writer }
     await ops.requestReport(taskId)
     const report = await settled(taskId)
     expect(report?.status).toBe('ready')

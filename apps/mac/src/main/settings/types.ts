@@ -1,3 +1,4 @@
+import type { RunTargetKind } from '../agents/types.js'
 import type { CommitIdentity } from './identity.js'
 import { EMPTY_COMMIT_IDENTITY } from './identity.js'
 
@@ -41,13 +42,21 @@ export interface AppSettings {
   /**
    * Write a change report when a task reaches review.
    *
-   * Off until an agent is named, because the feature is one agent run per review and that is
+   * Off until a writer is named, because the feature is one agent run per review and that is
    * not a cost to start incurring on someone's behalf. A project can opt out
    * (`Project.reportEnabled`).
    */
   reportEnabled: boolean
-  /** The agent definition that writes reports. Empty means undecided. */
-  reportAgentId: string
+  /**
+   * Whether the writer named below is one agent or a group.
+   *
+   * A group is the answer to a different question than a name is: **"whoever can take it"**.
+   * The agents doing the work are busy, and a report is exactly the job to hand to whichever
+   * one is free, so the same choice a project makes about its runs is offered here.
+   */
+  reportTargetKind: RunTargetKind
+  /** The agent or group that writes reports. Empty means undecided. */
+  reportTargetId: string
   /**
    * Added to the end of the instructions handed to that agent.
    *
@@ -73,7 +82,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   editorApp: '',
   mobileSyncEnabled: true,
   reportEnabled: false,
-  reportAgentId: '',
+  reportTargetKind: 'agent',
+  reportTargetId: '',
   reportInstructions: '',
   theme: 'dark'
 }

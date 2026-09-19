@@ -132,6 +132,27 @@ describe('schema migration', () => {
     db.close()
   })
 
+  /*
+   * The writer used to be one agent ID of its own. Left to the defaults it reads back as "nobody",
+   * which leaves the feature switched on and quietly writing nothing.
+   */
+  it('keeps the agent a settings file named before a group could write reports', () => {
+    makeV2Database()
+    const seed = new DatabaseSync(path)
+    seed
+      .prepare("INSERT INTO settings (key,value) VALUES ('app',?)")
+      .run(JSON.stringify({ reportEnabled: true, reportAgentId: 'agt_opus' }))
+    seed.close()
+
+    const db = openDatabase(path)
+    expect(repo.getAppSettings(db)).toMatchObject({
+      reportEnabled: true,
+      reportTargetKind: 'agent',
+      reportTargetId: 'agt_opus'
+    })
+    db.close()
+  })
+
   it('opening a v2 DB adds the new columns and keeps existing data', () => {
     makeV2Database()
 

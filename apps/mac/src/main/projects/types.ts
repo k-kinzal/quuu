@@ -1,10 +1,9 @@
+import type { RunTargetKind } from '../agents/types.js'
 import type { RecordSource } from '../tasks/status.js'
 
 // ---------------------------------------------------------------------------
 // Projects
 // ---------------------------------------------------------------------------
-
-export type RunTargetKind = 'agent' | 'group'
 
 export interface Project {
   id: string

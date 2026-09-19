@@ -7,8 +7,10 @@ import { useSettings, useStore } from '../../state/store.js'
  * Settings > Report.
  *
  * A report is one agent run per review, so the feature waits to be turned on and waits to be
- * told who writes it. **Which agent is a real choice**: the ones doing the work are busy, and
- * this is the job to hand to whichever is idle.
+ * told who writes it. **Who writes is a real choice**: the ones doing the work are busy, and
+ * this is the job to hand to whichever is idle. A group is offered beside the single agents for
+ * exactly that reason — it names the idle one at the moment a report is due, rather than making
+ * someone pick again every time the busy one changes.
  *
  * The instructions field is the surface that matters. What belongs in a report is still being
  * found out, and the answer lives in the prompt — leaving it editable is what lets that be
@@ -19,6 +21,10 @@ export function ReportSettings(): JSX.Element {
   const snapshot = useStore((s) => s.snapshot)
   const setSettings = useStore((s) => s.setSettings)
   const agents = userAgents(snapshot?.agents ?? []).filter((agent) => agent.enabled)
+  const groups = snapshot?.groups ?? []
+  const target = settings.reportTargetId
+    ? `${settings.reportTargetKind}:${settings.reportTargetId}`
+    : ''
 
   return (
     <Page title={t('reportSettings.title')}>
@@ -28,19 +34,34 @@ export function ReportSettings(): JSX.Element {
           checked={settings.reportEnabled}
           onChange={(v: boolean) => void setSettings({ reportEnabled: v })}
         />
-        <Field label={t('reportSettings.agent')} width="md">
+        <Field label={t('reportSettings.target')} width="md">
           <Select
-            aria-label={t('reportSettings.agent')}
-            value={settings.reportAgentId}
-            onChange={(e) => void setSettings({ reportAgentId: e.target.value })}
+            aria-label={t('reportSettings.target')}
+            value={target}
+            onChange={(e) => {
+              const [kind, id] = e.target.value.split(':')
+              void setSettings({
+                reportTargetKind: kind === 'group' ? 'group' : 'agent',
+                reportTargetId: id ?? ''
+              })
+            }}
             options={[
-              { value: '', label: t('reportSettings.noAgent') },
-              ...agents.map((agent) => ({ value: agent.id, label: agent.name }))
+              { value: '', label: t('reportSettings.unset') },
+              ...groups.map((group) => ({
+                value: `group:${group.id}`,
+                label: group.name,
+                group: t('reportSettings.groupsGroup')
+              })),
+              ...agents.map((agent) => ({
+                value: `agent:${agent.id}`,
+                label: agent.name,
+                group: t('reportSettings.agentsGroup')
+              }))
             ]}
           />
         </Field>
-        {settings.reportEnabled && settings.reportAgentId.length === 0 && (
-          <FieldHint>{t('reportSettings.agentNeeded')}</FieldHint>
+        {settings.reportEnabled && settings.reportTargetId.length === 0 && (
+          <FieldHint>{t('reportSettings.targetNeeded')}</FieldHint>
         )}
       </Section>
 

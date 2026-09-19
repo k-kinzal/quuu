@@ -266,6 +266,7 @@ export const ja: typeof en = {
     failedToast: '「{{title}}」のレポートを作成できませんでした',
     turnedOff: '変更レポートは無効です',
     noAgent: '変更レポートを書くエージェントが設定されていません',
+    allCooling: '変更レポートを書くエージェントはすべて制限の解除待ちです',
     projectTurnedOff: 'このプロジェクトでは変更レポートが無効です',
     dirMissing: '作業ディレクトリがありません（{{path}}）',
     timedOut: '{{minutes}} 分以内にレポートが終わりませんでした',

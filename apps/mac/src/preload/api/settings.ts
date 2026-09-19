@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { RunTargetKindSchema } from './agents.js'
 
 
 // ---------------------------------------------------------------------------
@@ -76,12 +77,19 @@ export const AppSettingsSchema = z.object({
   /**
    * Whether a change report is written when a task reaches review.
    *
-   * Off until an agent is named: the feature costs one agent run per review, which is not a
+   * Off until a writer is named: the feature costs one agent run per review, which is not a
    * cost to start incurring on someone's behalf. A project can opt out (`Project.reportEnabled`).
    */
   reportEnabled: z.boolean(),
-  /** The agent definition that writes reports. Empty means undecided. */
-  reportAgentId: z.string(),
+  /**
+   * Whether the writer below is one agent or a group.
+   *
+   * A group says **"whoever can take it"**: the agents doing the work are busy, and a report is
+   * the job to hand to whichever one is free.
+   */
+  reportTargetKind: RunTargetKindSchema,
+  /** The agent or group that writes reports. Empty means undecided. */
+  reportTargetId: z.string(),
   /** Added to the end of the instructions handed to that agent. */
   reportInstructions: z.string(),
   theme: z.union([z.literal('dark'), z.literal('light'), z.literal('system')])

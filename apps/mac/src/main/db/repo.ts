@@ -1,8 +1,8 @@
 import type { LogAdapter } from '../agents/cliAdapter.js'
-import type { Agent, AgentCooldown, AgentGroup, AgentGroupInput, AgentInput, GroupStrategy } from '../agents/types.js'
+import type { Agent, AgentCooldown, AgentGroup, AgentGroupInput, AgentInput, GroupStrategy, RunTargetKind } from '../agents/types.js'
 import type { TaskRule, TaskRuleInput } from '../automation/conditions.js'
 import type { Run, RunErrorKind, RunKind, RunOutcome } from '../execution/types.js'
-import type { Project, ProjectInput, RunTargetKind } from '../projects/types.js'
+import type { Project, ProjectInput } from '../projects/types.js'
 import type { CommitIdentityMode } from '../settings/identity.js'
 import type { AppSettings } from '../settings/types.js'
 import { DEFAULT_SETTINGS } from '../settings/types.js'
@@ -542,6 +542,25 @@ function replaceGroupMembers(db: Db, groupId: string, memberIds: string[]): void
     'INSERT INTO agent_group_members (group_id, agent_id, sort_order) VALUES (?,?,?)'
   )
   memberIds.forEach((agentId, i) => stmt.run(groupId, agentId, i))
+}
+
+/**
+ * Who went last in that group's rotation (round-robin), or null when nobody has.
+ *
+ * **One position per group**, shared by everything that launches on it - the scheduler and the
+ * report feature both read and advance it. A position per caller would let the same group rotate
+ * on two clocks, and a member that just wrote a report would be next in line for a task as well.
+ */
+export function groupRotation(db: Db, groupId: string): string | null {
+  return getSetting(db, rotationKey(groupId))
+}
+
+export function advanceGroupRotation(db: Db, groupId: string, agentId: string): void {
+  setSetting(db, rotationKey(groupId), agentId)
+}
+
+function rotationKey(groupId: string): string {
+  return `rr:${groupId}`
 }
 
 export function deleteGroup(db: Db, id: string): void {
@@ -1427,10 +1446,18 @@ export function getAppSettings(db: Db): AppSettings {
   const raw = getSetting(db, APP_SETTINGS_KEY)
   if (!raw) return DEFAULT_SETTINGS
   try {
-    const saved = JSON.parse(raw) as Partial<AppSettings>
+    const saved = JSON.parse(raw) as Partial<AppSettings> & { reportAgentId?: string }
     return {
       ...DEFAULT_SETTINGS,
       ...saved,
+      /*
+       * Before a group could write reports, the writer was one agent ID under its own name.
+       * Carried over rather than defaulted away: dropping it leaves the feature switched on with
+       * nobody to write, which shows up as reports quietly no longer appearing.
+       */
+      ...(saved.reportTargetId === undefined && saved.reportAgentId
+        ? { reportTargetKind: 'agent' as const, reportTargetId: saved.reportAgentId }
+        : {}),
       // Merge the nested object with the defaults too, not just the top level. Old versions have no appId / setupVersion.
       commitIdentity: {
         ...DEFAULT_SETTINGS.commitIdentity,

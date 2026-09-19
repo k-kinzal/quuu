@@ -163,7 +163,7 @@ function orderByStrategy(db: Db, groupId: string, strategy: GroupStrategy, membe
       .map((agent) => [agent.id, repo.countActiveRunsByAgent(db, agent.id) + (holds.get(agent.id) ?? 0)])
     : [])
   return orderAgents(strategy, members, active,
-    strategy === 'round-robin' ? repo.getSetting(db, `rr:${groupId}`) : null)
+    strategy === 'round-robin' ? repo.groupRotation(db, groupId) : null)
 }
 
 export interface ResolveOptions {
@@ -284,7 +284,7 @@ export function resolveAgentForProject(
 
     const groupId =
       project.targetKind === 'group' && agent.id !== preferred?.id ? project.targetId : null
-    if (groupId) repo.setSetting(db, `rr:${groupId}`, agent.id)
+    if (groupId) repo.advanceGroupRotation(db, groupId, agent.id)
     return { ok: true, value: { agent, groupId } }
   }
 

@@ -266,6 +266,7 @@ export const en = {
     failedToast: 'The report for “{{title}}” was not written',
     turnedOff: 'Change reports are turned off',
     noAgent: 'No agent is set to write change reports',
+    allCooling: 'Every agent set to write change reports is waiting out a limit',
     projectTurnedOff: 'Change reports are turned off for this project',
     dirMissing: 'The working directory is gone ({{path}})',
     timedOut: 'The report did not finish within {{minutes}} minutes',
