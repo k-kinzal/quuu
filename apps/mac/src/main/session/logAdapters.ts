@@ -3,8 +3,17 @@ import type { Dirent } from 'node:fs'
 import { existsSync, readdirSync, realpathSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
-import { claudeProjectsDir, codexSessionsDir, copilotSessionsDir, cursorChatsDir, grokSessionsDir } from '../appPaths.js'
+import {
+  agyBrainDir,
+  claudeProjectsDir,
+  codexSessionsDir,
+  copilotSessionsDir,
+  cursorChatsDir,
+  grokSessionsDir,
+  opencodeDbPath
+} from '../appPaths.js'
 import { resolveSessionLogPath, sessionLogDir } from './claudePaths.js'
+import { opencodeSessionExists, readOpencodeSession } from './opencodeStore.js'
 
 /**
  * Which CLI leaves a session where, and in what shape. **All of it collected in this one place.**
@@ -49,6 +58,25 @@ export interface AdapterLayout {
    * Adapters with no companions may omit it.
    */
   companions?(logPath: string): string[]
+  /**
+   * Is the whole conversation re-read on every change, instead of followed from a byte offset?
+   *
+   * True for the two layouts that keep their content in SQLite (cursor / opencode): rows are
+   * rewritten as a turn streams in, so "read on from where we stopped" reads nothing at all.
+   */
+  readonly wholeStore?: boolean
+  /**
+   * Does **one file hold every session**? (opencode alone.)
+   *
+   * Everywhere else a path names a session. Where it does not, anything keyed by path - the
+   * materialized conversation pages above all - has to carry the session id as well.
+   */
+  readonly oneStore?: boolean
+  /**
+   * When that one session was last written.
+   * Only a shared store needs it: elsewhere the file's own timestamp already answers.
+   */
+  lastWrittenFor?(sessionId: string): number | null
 }
 
 /**
@@ -117,7 +145,8 @@ const LAYOUTS: Record<LogAdapter, AdapterLayout> = {
      * `store.db-shm` is left out. **Quuu merely reading it moves its mtime**, so including it
      * would make every chat look like it was written just now, forever.
      */
-    companions: (logPath) => [`${logPath}-wal`, join(dirname(logPath), 'meta.json')]
+    companions: (logPath) => [`${logPath}-wal`, join(dirname(logPath), 'meta.json')],
+    wholeStore: true
   },
 
   grok: {
@@ -135,6 +164,41 @@ const LAYOUTS: Record<LogAdapter, AdapterLayout> = {
     // cwd never becomes a directory name (it lives inside workspace.yaml)
     dirFor: () => null,
     logPathFor: (_cwd, sessionId) => join(copilotSessionsDir(), sessionId, 'events.jsonl')
+  },
+
+  agy: {
+    /*
+     * `--conversation` resumes an existing conversation and nothing else: handed an id that does
+     * not exist it prints `conversation "…" not found` and starts a new one under its own id
+     * (measured). The id it chose is picked up from the `init` line it writes to stdout
+     * (`session/stdoutSessionId.ts`).
+     */
+    acceptsSessionId: false,
+    root: agyBrainDir,
+    // Nothing in the tree is keyed by cwd; a conversation is found by its id alone
+    dirFor: () => null,
+    logPathFor: (_cwd, sessionId) =>
+      sessionId.length === 0
+        ? null
+        : join(agyBrainDir(), sessionId, '.system_generated', 'logs', 'transcript.jsonl')
+  },
+
+  opencode: {
+    // `--session` on an id that does not exist exits with "Session not found" (measured)
+    acceptsSessionId: false,
+    // One store, so there is no tree to sweep for a session that could not be found by id
+    root: () => '',
+    dirFor: () => null,
+    /*
+     * The store holds every session, so its mere existence says nothing. Answering with the path
+     * for a session that is not in there yet would put an **empty conversation** on screen and
+     * stop the run from ever falling back to its stdout.
+     */
+    logPathFor: (_cwd, sessionId) =>
+      sessionId.length > 0 && opencodeSessionExists(sessionId) ? opencodeDbPath() : null,
+    wholeStore: true,
+    oneStore: true,
+    lastWrittenFor: (sessionId) => readOpencodeSession(sessionId)?.updatedMs ?? null
   },
 
   stdout: {
@@ -165,6 +229,20 @@ export function readsExternalLog(adapter: LogAdapter): boolean {
 }
 
 /**
+ * Is the conversation re-read whole on every change, rather than followed from a byte offset?
+ * The read path, the preview and the iPhone export all have to agree on this, so it is answered
+ * in one place.
+ */
+export function readsWholeStore(adapter: LogAdapter): boolean {
+  return layoutFor(adapter).wholeStore === true
+}
+
+/** Does one file hold every session, so that a path alone does not name one? */
+export function sharesOneStore(adapter: LogAdapter): boolean {
+  return layoutFor(adapter).oneStore === true
+}
+
+/**
  * When that session was last written (in ms). null when it cannot be read.
  *
  * "How long has it been silent" is the only yardstick for deciding whether something is still
@@ -172,8 +250,17 @@ export function readsExternalLog(adapter: LogAdapter): boolean {
  * file's mtime and the other meta.json's makes the two disagree and flap - "one marks it done,
  * the other puts it back to running" (which is exactly what happened with Cursor).
  */
-export function lastWrittenMs(adapter: LogAdapter, logPath: string): number | null {
+export function lastWrittenMs(
+  adapter: LogAdapter,
+  logPath: string,
+  sessionId?: string
+): number | null {
   const layout = layoutFor(adapter)
+  /*
+   * In a store shared by every session the file's timestamp moves whenever **anyone** writes, so
+   * a session that finished hours ago would look busy for as long as the machine is.
+   */
+  if (sessionId && layout.lastWrittenFor) return layout.lastWrittenFor(sessionId)
   let newest: number | null = mtimeMs(logPath)
   for (const companion of layout.companions?.(logPath) ?? []) {
     const at = mtimeMs(companion)

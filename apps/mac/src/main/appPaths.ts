@@ -87,6 +87,51 @@ export function copilotSessionsDir(): string {
 }
 
 /**
+ * Where the Antigravity CLI (`agy`) keeps everything it wrote.
+ *
+ * It shares `~/.gemini` with the other Gemini tools, so the CLI's own root is one level in.
+ */
+export function agyDataDir(): string {
+  return process.env.QUUU_AGY_DIR ?? join(homedir(), '.gemini', 'antigravity-cli')
+}
+
+/**
+ * Root of the Antigravity CLI's conversations.
+ * One directory per conversation; the transcript sits under `.system_generated/logs/`.
+ */
+export function agyBrainDir(): string {
+  return join(agyDataDir(), 'brain')
+}
+
+/**
+ * The newest conversation per directory, as `{ "<cwd>": "<conversationId>" }`.
+ *
+ * The only place the Antigravity CLI writes a working directory at all: neither the transcript
+ * nor the conversation store names one (measured).
+ */
+export function agyConversationsCachePath(): string {
+  return join(agyDataDir(), 'cache', 'last_conversations.json')
+}
+
+/** Titles the Antigravity CLI generates. One `<conversationId>.pbtxt` per conversation. */
+export function agyAnnotationsDir(): string {
+  return join(agyDataDir(), 'annotations')
+}
+
+/**
+ * The one SQLite store the opencode CLI keeps **every** session in.
+ *
+ * Unlike every other CLI here there is no file per session, so a session is identified by its id
+ * inside this store, never by a path (`session/opencodeStore.ts`).
+ */
+export function opencodeDbPath(): string {
+  return (
+    process.env.QUUU_OPENCODE_DB ??
+    join(homedir(), '.local', 'share', 'opencode', 'opencode.db')
+  )
+}
+
+/**
  * Where the launch scripts handed to the terminal live.
  *
  * Under the app's data, not `/tmp`. Nothing deletes them right after handoff,

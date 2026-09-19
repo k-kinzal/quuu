@@ -18,7 +18,9 @@ const CLI_BRAND_NAME: Record<Exclude<LogAdapter, 'stdout'>, string> = {
   codex: 'Codex',
   cursor: 'Cursor',
   grok: 'Grok',
-  copilot: 'GitHub Copilot'
+  copilot: 'GitHub Copilot',
+  agy: 'Antigravity',
+  opencode: 'opencode'
 }
 
 export function externalAgentName(adapter: LogAdapter): string {

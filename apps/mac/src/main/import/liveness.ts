@@ -10,6 +10,7 @@ import {
 import { join } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import { claudeSessionsDir, codexLocksDir, copilotSessionsDir, cursorAgentLogsDir } from '../appPaths.js'
+import { readOpencodeSession } from '../session/opencodeStore.js'
 
 /**
  * Liveness probe for imported sessions.
@@ -24,6 +25,7 @@ import { claudeSessionsDir, codexLocksDir, copilotSessionsDir, cursorAgentLogsDi
  *   Claude Code … ~/.claude/sessions/<pid>.json      removed on exit. We also verify the pid is alive
  *   Codex       … ~/.codex/thread-writer-locks/<sessionId>.lock  held open for writing while running
  *   Copilot     … `session.shutdown` written at the tail of events.jsonl (a finish marker)
+ *   opencode    … `session_v2.time_idle` is set once the turn ends (a finish marker)
  *   Cursor      … $TMPDIR/cursor-agent-logs-<uid>/session-…-<pid>-<n>.log
  *                 running if the pid in the name is alive. The `conversation_id`
  *                 inside is the chat ID. **Only sessions started from cursor-agent
@@ -31,6 +33,8 @@ import { claudeSessionsDir, codexLocksDir, copilotSessionsDir, cursorAgentLogsDi
  *
  * Grok has no running marker (verified by observation: `active_sessions.json`
  * stays empty for `-p` non-interactive runs, and a session's `.lock` remains after exit).
+ * Neither has the Antigravity CLI: `presence/<conversationId>.lock` is left behind after the run
+ * exits (measured), so its mere presence says nothing.
  * Adapters without a marker, and sessions outside a marker, are judged by mtime.
  *
  * None of this is published spec. When facing an unreadable environment or a version
@@ -120,8 +124,12 @@ export function probeLiveSessions(now = Date.now()): LivenessProbe {
       if (adapter === 'cursor') return cursor.known.has(sessionId)
       return false
     },
-    finished: (adapter, sessionId) =>
-      adapter === 'copilot' ? copilotHasShutdown(sessionId) : false
+    finished: (adapter, sessionId) => {
+      if (adapter === 'copilot') return copilotHasShutdown(sessionId)
+      // opencode stamps the session the moment it goes idle, whatever wrote to the store since
+      if (adapter === 'opencode') return readOpencodeSession(sessionId)?.idleMs != null
+      return false
+    }
   }
 }
 

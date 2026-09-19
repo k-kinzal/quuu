@@ -88,6 +88,7 @@ packages/            the independent Design System
 | `apps/mac/src/main/db/repo.ts` | SQL is confined here. No raw SQL anywhere else |
 | `apps/mac/src/main/session/logAdapters.ts` | **which CLI leaves sessions where.** Adding CLI support starts here |
 | `apps/mac/src/main/agents/cli.ts` | **how each CLI resumes interactively.** The pair of the above — add to both |
+| `apps/mac/src/main/session/opencodeStore.ts` | the one CLI whose sessions are **not files**: opencode keeps every session in a single SQLite store, so it is named by id, never by path |
 | `apps/mac/src/main/platform/terminal.ts` | opens a terminal (writes a `.command`, hands it to `open`) |
 | `apps/mac/src/main/platform/editorApps.ts` | finds and opens installed IDEs / editors |
 | `apps/mac/src/main/platform/launch.ts` | the single `open(1)` path. **The reason we don't use AppleScript is documented here** |

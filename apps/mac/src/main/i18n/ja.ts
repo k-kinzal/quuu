@@ -29,6 +29,8 @@ export const ja: typeof en = {
     cursor: 'Cursor (~/.cursor/chats のセッションログ)',
     grok: 'Grok (~/.grok/sessions のセッションログ)',
     copilot: 'GitHub Copilot (~/.copilot のセッションログ)',
+    agy: 'Antigravity (~/.gemini/antigravity-cli の記録)',
+    opencode: 'opencode (~/.local/share/opencode のセッション)',
     stdout: '標準出力ログ'
   },
   groupStrategy: {
@@ -63,6 +65,8 @@ export const ja: typeof en = {
     cursor: 'Cursor CLI（cursor-agent）。--resume に未使用の ID を渡すと、その ID でチャットが作られる。',
     grok: 'Grok CLI。-p の 1 回実行。継続は --resume で同じセッションへ続ける。',
     copilot: 'GitHub Copilot CLI。セッション ID を渡す引数が無いので、Quuu が起動後に実体を拾い直す。',
+    agy: 'Antigravity CLI（agy）。--add-dir でプロジェクトを作業対象にする。付けないと CLI は別の場所で作業する。',
+    opencode: 'opencode CLI。run の 1 回実行。ダッシュで始まるプロンプトだけはこの CLI に渡せない。',
     opus: '既定のエージェント。Claude Code を非対話で実行する。',
     sonnet: 'Opus が Limit に達したときのフォールバック先。',
     group: 'Opus の枠が空いていればそれを使い、埋まっていれば Sonnet に回す。',

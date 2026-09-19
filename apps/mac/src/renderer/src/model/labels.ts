@@ -47,6 +47,8 @@ export const LOG_ADAPTER_LABEL: Record<LogAdapter, string> = {
   cursor: t('logAdapter.cursor'),
   grok: t('logAdapter.grok'),
   copilot: t('logAdapter.copilot'),
+  agy: t('logAdapter.agy'),
+  opencode: t('logAdapter.opencode'),
   stdout: t('logAdapter.stdout')
 }
 

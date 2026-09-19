@@ -1,12 +1,13 @@
 import { closeSync, existsSync, fstatSync, openSync, readFileSync, readSync } from 'node:fs'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import { t } from '../i18n/index.js'
+import { AgySessionParser } from '../session/agyParser.js'
 import { ClaudeSessionParser } from '../session/claudeParser.js'
 import { CodexSessionParser } from '../session/codexParser.js'
 import { CopilotSessionParser } from '../session/copilotParser.js'
-import { CursorSessionParser } from '../session/cursorParser.js'
 import { GrokSessionParser } from '../session/grokParser.js'
-import { stdoutToMessages } from '../session/sessionWatcher.js'
+import { readsWholeStore } from '../session/logAdapters.js'
+import { isStoreParser, newParser, stdoutToMessages } from '../session/sessionWatcher.js'
 import type { SessionMessage } from '../session/types.js'
 import type { SyncMessage } from './protocol.js'
 
@@ -81,10 +82,10 @@ function parseFile(
   sessionId: string,
   scanBytes: number
 ): { messages: SessionMessage[]; clipped: boolean } {
-  if (mode === 'cursor') {
-    // A Cursor log is not one file. How it is read is left to the parser
-    const parser = new CursorSessionParser()
-    parser.reload(logPath, sessionId)
+  if (readsWholeStore(mode)) {
+    // Not one file per session (Cursor / opencode). How it is read is left to the parser
+    const parser = newParser(mode)
+    if (isStoreParser(parser)) parser.reload(logPath, sessionId)
     return { messages: parser.messages, clipped: false }
   }
 
@@ -107,6 +108,11 @@ function parseLines(lines: string[], mode: LogAdapter): SessionMessage[] {
     }
     case 'copilot': {
       const parser = new CopilotSessionParser()
+      parser.pushLines(lines)
+      return parser.messages
+    }
+    case 'agy': {
+      const parser = new AgySessionParser()
       parser.pushLines(lines)
       return parser.messages
     }

@@ -267,6 +267,22 @@ export function listAgents(db: Db): Agent[] {
   return (db.prepare('SELECT * FROM agents ORDER BY sort_order, name').all() as Row[]).map(toAgent)
 }
 
+/**
+ * A note the app leaves itself, alongside the schema version.
+ *
+ * Used for "has this already been done once" — a question that belongs to no row, and whose
+ * answer must survive a restart (`seed.ts` remembers which definitions it has already offered).
+ */
+export function getMetaValue(db: Db, key: string): string | null {
+  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as Row | undefined
+  return row ? s(row.value) : null
+}
+
+export function setMetaValue(db: Db, key: string, value: string): void {
+  db.prepare('INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?')
+    .run(key, value, value)
+}
+
 export function getAgent(db: Db, id: string): Agent | null {
   const r = db.prepare('SELECT * FROM agents WHERE id = ?').get(id) as Row | undefined
   return r ? toAgent(r) : null

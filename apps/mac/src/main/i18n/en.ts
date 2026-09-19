@@ -28,6 +28,8 @@ export const en = {
     cursor: 'Cursor (session logs in ~/.cursor/chats)',
     grok: 'Grok (session logs in ~/.grok/sessions)',
     copilot: 'GitHub Copilot (session logs in ~/.copilot)',
+    agy: 'Antigravity (transcripts in ~/.gemini/antigravity-cli)',
+    opencode: 'opencode (sessions in ~/.local/share/opencode)',
     stdout: 'Standard output log'
   },
   groupStrategy: {
@@ -62,6 +64,8 @@ export const en = {
     cursor: 'Cursor CLI (cursor-agent). Passing an unused ID to --resume creates a chat under that ID.',
     grok: 'Grok CLI. One run with -p. Continues the same session with --resume.',
     copilot: 'GitHub Copilot CLI. It takes no argument for a session ID, so Quuu recovers the real one after launch.',
+    agy: 'Antigravity CLI (agy). --add-dir makes the project its workspace; without it the CLI works somewhere else.',
+    opencode: 'opencode CLI. One run with `run`. A prompt that opens with a dash cannot be passed to this CLI.',
     opus: 'The default agent. Runs Claude Code non-interactively.',
     sonnet: 'Where Opus falls back when it hits a Limit.',
     group: 'Uses an Opus slot when one is free, and passes to Sonnet when they are full.',

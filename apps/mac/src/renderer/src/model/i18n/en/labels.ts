@@ -28,6 +28,8 @@ export const labels = {
     cursor: 'Cursor (session logs in ~/.cursor/chats)',
     grok: 'Grok (session logs in ~/.grok/sessions)',
     copilot: 'GitHub Copilot (session logs in ~/.copilot)',
+    agy: 'Antigravity (transcripts in ~/.gemini/antigravity-cli)',
+    opencode: 'opencode (sessions in ~/.local/share/opencode)',
     stdout: 'Standard output log'
   },
   groupStrategy: {

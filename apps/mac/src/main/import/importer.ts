@@ -189,7 +189,9 @@ export class SessionImporter {
       if (!task) continue
 
       const path = this.locateLog(run)
-      const mtimeMs = path === null ? null : lastWrittenMs(adapterOf(run), path)
+      // The session id matters for a store shared by every session: the file's own timestamp
+      // would report someone else's work as this session still being busy
+      const mtimeMs = path === null ? null : lastWrittenMs(adapterOf(run), path, run.sessionId)
       // If the log is gone there is no way left to follow it. Close it rather than leave it running.
       const idleMs = mtimeMs === null ? Number.POSITIVE_INFINITY : now - mtimeMs
 

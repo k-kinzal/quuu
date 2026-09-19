@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { RecordSourceSchema } from './tasks.js'
 
-export const LogAdapterSchema = z.union([z.literal('claude'), z.literal('codex'), z.literal('cursor'), z.literal('grok'), z.literal('copilot'), z.literal('stdout')])
+export const LogAdapterSchema = z.union([z.literal('claude'), z.literal('codex'), z.literal('cursor'), z.literal('grok'), z.literal('copilot'), z.literal('agy'), z.literal('opencode'), z.literal('stdout')])
 export type LogAdapter = z.infer<typeof LogAdapterSchema>
 
 export const AgentSchema = z.object({

@@ -9,11 +9,11 @@ import * as repo from '../db/repo.js'
 import type { Run } from '../execution/types.js'
 import { REVIEW_EVIDENCE_VERSION } from '../review/evidence.js'
 import { ClaudeSessionParser } from './claudeParser.js'
-import { CursorSessionParser } from './cursorParser.js'
+import { readsWholeStore, sharesOneStore } from './logAdapters.js'
 import { IndexedMessages } from './messageBuffer.js'
 import { StdoutSessionParser } from './stdoutParser.js'
 import { sessionReadTarget, type SessionReadTarget } from './sessionAttach.js'
-import { newParser, snapshotStamp, stdoutToMessages } from './sessionWatcher.js'
+import { isStoreParser, newParser, snapshotStamp, stdoutToMessages } from './sessionWatcher.js'
 import type { SessionMessage, SessionSnapshot } from './types.js'
 
 export const SESSION_PAGE = 80
@@ -33,7 +33,13 @@ interface Reader {
 
 export function sessionKey(target: SessionReadTarget): string {
   // Bump when a parser change requires rebuilding previously materialized messages.
-  return `v1:${target.mode}:${target.logPath}`
+  const key = `v1:${target.mode}:${target.logPath}`
+  /*
+   * Where one store holds every session (opencode) the path names no session at all, so the id
+   * has to join the key. Two conversations sharing one key would materialize into each other's
+   * pages - you would open one session and read another.
+   */
+  return sharesOneStore(target.mode) ? `${key}:${target.sessionId}` : key
 }
 
 /** Durable pages are the read path. Parsing is scheduled separately, even with every window closed. */
@@ -117,7 +123,7 @@ export class SessionIndex extends EventEmitter {
     let exists = false
     let more = false
     let title: string | null = null
-    if (target.mode !== 'cursor') {
+    if (!readsWholeStore(target.mode)) {
       let fd: number | undefined
       try {
         const size = statSync(target.logPath).size
@@ -133,7 +139,7 @@ export class SessionIndex extends EventEmitter {
         if (target.mode === 'stdout') messages = stdoutToMessages(text)
         else {
           const parser = newParser(target.mode, sessionKey(target))
-          if (!(parser instanceof CursorSessionParser)) parser.pushLines(text.split('\n').slice(0, -1))
+          if (!isStoreParser(parser)) parser.pushLines(text.split('\n').slice(0, -1))
           messages = parser.messages
           title = parser.title
           this.saveImages(sessionKey(target), parser, messages)
@@ -190,7 +196,7 @@ export class SessionIndex extends EventEmitter {
     const stat = statSync(target.logPath)
     let reader = this.readers.get(key)
     if (!reader || reader.inode !== stat.ino || reader.offset > stat.size ||
-        (reader.offset === stat.size && target.mode !== 'cursor')) {
+        (reader.offset === stat.size && !readsWholeStore(target.mode))) {
       const generation = randomUUID()
       const buffer = new IndexedMessages(ordinal => repo.readSessionMessages(this.db, key, generation, ordinal, 1)[0])
       reader = { parser: newParser(target.mode, key, buffer), buffer, offset: 0, inode: stat.ino,
@@ -228,7 +234,7 @@ export class SessionIndex extends EventEmitter {
         await yieldToApp()
       }
     }
-    if (parser instanceof CursorSessionParser) {
+    if (isStoreParser(parser)) {
       await persist(parser.reload(target.logPath, target.sessionId).changedFromIndex, parser.messages)
       reader.offset = stat.size
     } else {
@@ -259,7 +265,7 @@ export class SessionIndex extends EventEmitter {
       } finally { closeSync(fd) }
     }
     if (this.stopped) return
-    const total = parser instanceof CursorSessionParser ? parser.messages.length : messageBuffer.length
+    const total = isStoreParser(parser) ? parser.messages.length : messageBuffer.length
     inTransaction(this.db, () => repo.finishSessionIndex(this.db, key, {
       generation, stamp, title: parser.title, total, evidenceVersion: REVIEW_EVIDENCE_VERSION
     }))

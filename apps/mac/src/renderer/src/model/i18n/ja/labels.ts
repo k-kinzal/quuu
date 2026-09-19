@@ -29,6 +29,8 @@ export const labels: typeof enLabels = {
     cursor: 'Cursor (~/.cursor/chats のセッションログ)',
     grok: 'Grok (~/.grok/sessions のセッションログ)',
     copilot: 'GitHub Copilot (~/.copilot のセッションログ)',
+    agy: 'Antigravity (~/.gemini/antigravity-cli の記録)',
+    opencode: 'opencode (~/.local/share/opencode のセッション)',
     stdout: '標準出力ログ'
   },
   groupStrategy: {

@@ -70,7 +70,36 @@ const VERB: Record<string, string> = {
   str_replace_editor: t('session.verb.edit'),
   run_in_terminal: t('session.verb.run'),
   codebase_search: t('session.verb.search'),
-  web_fetch: t('session.verb.fetch')
+  web_fetch: t('session.verb.fetch'),
+  // agy
+  run_command: t('session.verb.run'),
+  command_status: t('session.verb.output'),
+  send_command_input: t('session.verb.input'),
+  view_file: t('session.verb.read'),
+  write_to_file: t('session.verb.create'),
+  replace_file_content: t('session.verb.edit'),
+  multi_replace_file_content: t('session.verb.edit'),
+  sed_file: t('session.verb.edit'),
+  notebook_edit: t('session.verb.edit'),
+  grep_search: t('session.verb.search'),
+  find_by_name: t('session.verb.search'),
+  search_web: t('session.verb.search'),
+  read_url_content: t('session.verb.fetch'),
+  list_dir: t('session.verb.list'),
+  invoke_subagent: t('session.verb.delegate'),
+  manage_task: t('session.verb.plan'),
+  // opencode
+  bash: t('session.verb.run'),
+  read: t('session.verb.read'),
+  write: t('session.verb.create'),
+  edit: t('session.verb.edit'),
+  patch: t('session.verb.edit'),
+  grep: t('session.verb.search'),
+  glob: t('session.verb.search'),
+  list: t('session.verb.list'),
+  webfetch: t('session.verb.fetch'),
+  task: t('session.verb.delegate'),
+  todowrite: t('session.verb.plan')
 }
 
 /**

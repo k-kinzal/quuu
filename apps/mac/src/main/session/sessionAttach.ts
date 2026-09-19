@@ -32,6 +32,14 @@ import { sessionIdInStdout } from './stdoutSessionId.js'
  * re-bound. Whatever the template says, "you can see what you ran" comes first.
  */
 
+/**
+ * Adapters whose CLI announces, in its own output, the session it opened.
+ *
+ * Neither can be handed the ID Quuu minted, so this is the only way the record stops being a lie
+ * (`session/stdoutSessionId.ts` holds the two shapes).
+ */
+const ANNOUNCES_SESSION_ID = new Set<LogAdapter>(['codex', 'agy'])
+
 /** How many bytes of the log head to read for prompt matching. */
 const HEAD_BYTES = 64 * 1024
 
@@ -73,8 +81,10 @@ export function attachSessionLog(db: Db, run: Run): Run {
   /*
    * Codex cannot be handed an ID on the first run, but it announces the real one in its stdout header.
    * Align the ID with reality first and the rollout JSONL in the date tree can be looked up by it.
+   * The Antigravity CLI is the same story with a different spelling: its stream opens with the
+   * conversation it created, and only that ID reaches the transcript under `brain/`.
    */
-  const identified = adapter === 'codex' ? adoptFromStdout(db, run) : run
+  const identified = ANNOUNCES_SESSION_ID.has(adapter) ? adoptFromStdout(db, run, adapter) : run
   /*
    * The stdout adapter reads a log Quuu wrote itself, so **there is no file to re-bind to**.
    * The ID can still be re-bound: the CLI announces its own session ID in the header at launch,
@@ -158,15 +168,15 @@ export function structuredSessionTarget(db: Db, run: Run): SessionReadTarget | n
  * It is this ID a follow-up's resume points at, and this ID that lets import tell
  * "this one is ours".
  */
-function adoptFromStdout(db: Db, run: Run): Run {
-  let found = sessionIdInStdout(run.stdoutLogPath)
+function adoptFromStdout(db: Db, run: Run, adapter: LogAdapter = 'stdout'): Run {
+  let found = sessionIdInStdout(run.stdoutLogPath, adapter)
   if (!found && run.kind === 'followup') {
     // A resume with the wrong ID fails before the CLI prints its header.
     // Only the initial run with the same task, ID and CLI counts as evidence; never guess another conversation into place.
     const initial = repo.listRunsByTask(db, run.taskId).find(previous =>
       previous.kind === 'initial' && previous.source === 'user' &&
       previous.sessionId === run.sessionId && previous.command === run.command)
-    if (initial) found = sessionIdInStdout(initial.stdoutLogPath)
+    if (initial) found = sessionIdInStdout(initial.stdoutLogPath, adapter)
   }
   if (!found || found === run.sessionId) return run
   if (repo.claimedSessionIds(db, run.id).has(found)) return run

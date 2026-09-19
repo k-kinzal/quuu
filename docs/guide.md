@@ -33,7 +33,7 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 | Conditional acquisition | Project priority → task priority → registration order. The first task satisfying slots, cooldowns, and scheduled times is moved to `Running` in the same transaction that acquires it |
 | Limit fallback | Match the output against a regex → cooldown → follow the chain and automatically re-run with another agent (no human is asked). A running agent holds one slot on each agent it could still fall back to, so a Limit — which moves every run on that agent at once — always finds room. A run with no lane free waits instead of starting |
 | When a Limit lifts | The moment the CLI printed ("try again at Sep 19th, 2026 7:13 PM", "resets 3pm") is cooled for exactly that long. A limit on **one model** ("You've reached your Fable limit") names no moment because that share is a slice of the account's **weekly** allowance — so it waits for the week to turn, read off the last turn Quuu watched that agent make, plus seven days. Until it has watched one, the configured cooldown is what probes for it |
-| Supported agents | Claude Code / Codex / Cursor (`cursor-agent`) / Grok / GitHub Copilot. Definitions are only added where the command exists (disabled initially) |
+| Supported agents | Claude Code / Codex / Cursor (`cursor-agent`) / Grok / GitHub Copilot / Antigravity (`agy`) / opencode. Definitions are only added where the command exists (disabled initially). A CLI supported after your database was made is offered once, on the next launch |
 | Session log display | Opens the latest 80 messages from a durable index, pages in both directions, and retains at most 240 messages in the view. Log ingestion runs independently of windows; an uncached JSONL log opens from a bounded tail while history is indexed |
 | Continued runs | Carries over the same session-id and runs the equivalent of `claude --resume <uuid> -p "<follow-up>"` |
 | Unattended operation | The scheduler keeps running with the window closed (lives in the menu bar) |
@@ -46,7 +46,7 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 | GitHub identity | Beyond commit author / committer, `git push` and `gh` (PR creation etc.) are also aligned to the GitHub App's bot identity. The app-wide default can be turned off per project or pointed at a different App |
 | GitHub App setup | Available from "Set up GitHub App" in Settings (click → follow the browser flow to approve → the identity fills in). When the required permissions change, "Update GitHub App" replaces it through the same flow — no copying values by hand |
 | Automation | Definitions that queue a task when conditions line up: "when the queue is free", "past a cron time", "when nothing unfinished remains". Any number per project |
-| External session import | Detects directly launched Claude Code / Codex / Cursor / Grok / Copilot sessions and syncs them as projects and tasks. Running ones become Running; stopped ones become Done |
+| External session import | Detects directly launched Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode sessions and syncs them as projects and tasks. Running ones become Running; stopped ones become Done |
 | Continue in the terminal | Reopens a finished session in the terminal, **still interactive** (the equivalent of `claude --resume <id>`). Can also just open the working directory |
 | Open in an IDE / editor | Opens the working directory in JetBrains / Xcode / VS Code and so on. Which app to use is chosen per project (Xcode is handed the `.xcworkspace` / `.xcodeproj`) |
 | View and queue from iPhone | State is passed through a folder in iCloud Drive, and the actions taken over there are imported. Each action carries **the state visible when it was tapped**, so crossed updates return to the human instead of silently overwriting |
@@ -181,6 +181,8 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | `QUUU_CURSOR_CHATS_DIR` | Root of Cursor chats (default: `~/.cursor/chats`) |
 | `QUUU_GROK_SESSIONS_DIR` | Root of Grok sessions (default: `~/.grok/sessions`) |
 | `QUUU_COPILOT_SESSIONS_DIR` | Root of GitHub Copilot sessions (default: `~/.copilot/session-state`) |
+| `QUUU_AGY_DIR` | Everything the Antigravity CLI wrote (default: `~/.gemini/antigravity-cli`) |
+| `QUUU_OPENCODE_DB` | The one store opencode keeps every session in (default: `~/.local/share/opencode/opencode.db`) |
 | `QUUU_APPLICATION_DIRS` | Where to look for IDEs / editors (`:`-separated; default: `/Applications` and `~/Applications`, plus `JetBrains Toolbox` under them) |
 
 The variables that relocate session logs are read by both import and the conversation
@@ -296,7 +298,7 @@ what is running now and what has been done" holds.
 
 | Behavior | Detail |
 |------|------|
-| Detection source | The locations in the table below (Claude Code / Codex / Cursor / Grok / Copilot) |
+| Detection source | The locations in the table below (Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode) |
 | Project | Resolved from the session's working directory. Auto-created if absent |
 | Status | **Running** if there is a liveness marker; **Done** on an exit marker or sustained silence (CLIs without markers are judged by updates within the last 3 minutes) |
 | Sync | 1.2 s after launch + every 60 s thereafter. Running it any number of times never duplicates (matched via `external_key`) |
@@ -320,6 +322,15 @@ implementation is gathered in
 | Cursor | `~/.cursor/chats/<md5(cwd)>/<id>/store.db` (SQLite) | `--resume` (created even for an unused ID) | No marker → modification time |
 | Grok | `~/.grok/sessions/<percent-encoded cwd>/<id>/chat_history.jsonl` | `--session-id` | No marker → modification time |
 | GitHub Copilot | `~/.copilot/session-state/<id>/events.jsonl` | No | Ended once `session.shutdown` is written |
+| Antigravity | `~/.gemini/antigravity-cli/brain/<id>/.system_generated/logs/transcript.jsonl` | No (the CLI announces the conversation it opened on the first line of `--output-format stream-json`) | No marker → modification time |
+| opencode | `~/.local/share/opencode/opencode.db` (SQLite; **every session in one store**) | No | Ended once the session's `time_idle` is stamped |
+
+Two of them need more than a path. The Antigravity CLI ignores the directory it was started
+in unless `--add-dir` names it, and it records a working directory in exactly one place — a
+cache of the newest conversation per directory — so an older conversation in a directory
+cannot be imported at all. opencode keeps every session in one store, so a session is named by
+its id and never by a path: the conversation index carries the id in its key, and "when was it
+last written" is answered by the session's own row rather than by the file's timestamp.
 
 For CLIs that cannot take a session ID, the actual session is pinned down after launch
 from cwd and time, and the record is corrected

@@ -16,7 +16,7 @@ import { ReportOperations } from './report/operations.js'
 import { WorkspaceOperations } from './projects/workspace.js'
 import { ReviewOperations } from './review/operations.js'
 import { ReviewService } from './review/service.js'
-import { seedIfEmpty } from './seed.js'
+import { offerNewAgents, seedIfEmpty } from './seed.js'
 import { attachActiveRuns } from './session/sessionAttach.js'
 import { SessionView } from './session/view.js'
 import { SessionIndex } from './session/index.js'
@@ -126,6 +126,8 @@ export class QuuuApp extends EventEmitter {
   async bootstrap(): Promise<void> {
     await primeProcessPath()
     await seedIfEmpty(this.db)
+    // A CLI supported after this database was made would otherwise never appear in settings
+    await offerNewAgents(this.db)
     this.settings.load()
     this.scheduler.reconcile()
     // Right after startup, re-bind the logs of re-adopted Runs to their actual sessions

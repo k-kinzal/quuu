@@ -9,10 +9,23 @@ import {
 } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
-import { claudeProjectsDir, codexSessionsDir, copilotSessionsDir, cursorChatsDir, grokSessionsDir } from '../appPaths.js'
+import {
+  agyAnnotationsDir,
+  agyBrainDir,
+  agyConversationsCachePath,
+  claudeProjectsDir,
+  codexSessionsDir,
+  copilotSessionsDir,
+  cursorChatsDir,
+  grokSessionsDir,
+  opencodeDbPath
+} from '../appPaths.js'
+import { userText as agyUserText } from '../session/agyParser.js'
 import { readCopilotWorkspace } from '../session/copilotPaths.js'
 import { readCursorChat } from '../session/cursorStore.js'
 import { lastWrittenMs } from '../session/logAdapters.js'
+import { unquotePrompt } from '../session/opencodeParser.js'
+import { listOpencodeSessions, readOpencodeMessages, readOpencodeSession } from '../session/opencodeStore.js'
 import { collectText, extractUserQuery } from '../session/parserUtil.js'
 
 /**
@@ -424,6 +437,142 @@ function readGrokTitle(historyPath: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
+// Antigravity (agy)
+// ---------------------------------------------------------------------------
+
+/**
+ * `brain/<conversationId>/.system_generated/logs/transcript.jsonl`.
+ *
+ * The transcript names no working directory, and neither does the conversation store: the CLI
+ * writes a directory in exactly one place, a cache of **the newest conversation per directory**
+ * (measured). So a conversation is importable only while it is the newest one its directory saw;
+ * an older one in the same directory cannot be placed in a project, and guessing would file work
+ * under whichever project happened to be nearby.
+ */
+function readAgySession(transcriptPath: string): ExternalSession | null {
+  const conversationId = basename(dirname(dirname(dirname(transcriptPath))))
+  const cwd = agyCwdOf(conversationId)
+  if (!cwd) return null
+
+  const stat = statSync(transcriptPath)
+  const head = readAgyHead(transcriptPath)
+  return {
+    adapter: 'agy',
+    key: `agy:${conversationId}`,
+    sessionId: conversationId,
+    cwd,
+    title: agyTitle(conversationId) ?? head.title,
+    logPath: transcriptPath,
+    startedAt: head.startedAt || stat.birthtime.toISOString(),
+    updatedAt: stat.mtime.toISOString(),
+    command: 'agy',
+    // No origin marker is written (observed). Treat as typed by a human.
+    entrypoint: null
+  }
+}
+
+/** Which directory that conversation belongs to. null when it is no longer the newest one there. */
+function agyCwdOf(conversationId: string): string | null {
+  let text: string
+  try {
+    text = readFileSync(agyConversationsCachePath(), 'utf8')
+  } catch {
+    return null
+  }
+  try {
+    const json = JSON.parse(text) as Record<string, unknown>
+    for (const [cwd, id] of Object.entries(json)) {
+      if (id === conversationId && cwd.startsWith('/')) return cwd
+    }
+  } catch {
+    // An unreadable cache means no conversation can be placed. Better than placing it wrongly
+  }
+  return null
+}
+
+/** The title the CLI generated for that conversation (`annotations/<id>.pbtxt`). */
+function agyTitle(conversationId: string): string | null {
+  let text: string
+  try {
+    text = readFileSync(join(agyAnnotationsDir(), `${conversationId}.pbtxt`), 'utf8')
+  } catch {
+    return null
+  }
+  const match = /^title:\s*"((?:[^"\\]|\\.)*)"/m.exec(text)
+  if (!match) return null
+  const title = match[1].replace(/\\(["\\])/g, '$1').trim()
+  return title.length > 0 ? title : null
+}
+
+/** The first thing the human asked, and when. */
+function readAgyHead(transcriptPath: string): { title: string | null; startedAt: string } {
+  for (const line of readHead(transcriptPath, DEEP_BYTES).split('\n')) {
+    if (line.trim().length === 0) continue
+    let step: { source?: string; content?: unknown; created_at?: unknown }
+    try {
+      step = JSON.parse(line) as typeof step
+    } catch {
+      continue
+    }
+    if (step.source !== 'USER_EXPLICIT') continue
+    return {
+      title: firstLine(agyUserText(collectText(step.content))),
+      startedAt: typeof step.created_at === 'string' ? step.created_at : ''
+    }
+  }
+  return { title: null, startedAt: '' }
+}
+
+// ---------------------------------------------------------------------------
+// opencode
+// ---------------------------------------------------------------------------
+
+/**
+ * One session out of opencode's store.
+ *
+ * There is no file to read: the session is a row, and so is every message
+ * (`session/opencodeStore.ts`). The "log path" recorded here is the store itself, which is what
+ * the conversation view opens - it finds the session by id, not by path.
+ */
+function readOpencodeExternalSession(sessionId: string): ExternalSession | null {
+  const session = readOpencodeSession(sessionId)
+  if (!session) return null
+
+  return {
+    adapter: 'opencode',
+    key: `opencode:${session.id}`,
+    sessionId: session.id,
+    cwd: session.directory,
+    title: session.title ?? opencodeTitle(session.id),
+    logPath: opencodeDbPath(),
+    startedAt: new Date(session.createdMs).toISOString(),
+    updatedAt: new Date(session.updatedMs).toISOString(),
+    command: 'opencode',
+    /*
+     * There is no origin marker. A session with a parent is one an agent started for itself, and
+     * that is exactly what `startedByProgram` is asked to keep out of the task list, so it is
+     * spelled out here the same way Cursor's sub-agents are.
+     */
+    entrypoint: session.parentId ? 'opencode-subagent' : null
+  }
+}
+
+/** The first thing the human asked. Only the head is read: a session can hold thousands of rows. */
+function opencodeTitle(sessionId: string): string | null {
+  const messages = readOpencodeMessages(sessionId, { maxMessages: OPENCODE_HEAD_MESSAGES })
+  for (const message of messages ?? []) {
+    if (message.type !== 'user') continue
+    const text = unquotePrompt(collectText((message.data as { text?: unknown })?.text))
+    const line = firstLine(text)
+    if (line) return line
+  }
+  return null
+}
+
+/** Enough rows to reach the first human message past any preamble. */
+const OPENCODE_HEAD_MESSAGES = 8
+
+// ---------------------------------------------------------------------------
 // GitHub Copilot
 // ---------------------------------------------------------------------------
 
@@ -492,6 +641,8 @@ interface Discovered {
   path: string
   mtimeMs: number
   adapter: LogAdapter
+  /** Only for a store that holds every session in one file (opencode): which session this row is. */
+  sessionId?: string
 }
 
 /**
@@ -535,12 +686,29 @@ export function discoverSessions(options: {
 
   collectByWalk(claudeProjectsDir(), 'claude')
   collectByWalk(codexSessionsDir(), 'codex')
+  // <root>/<conversationId>/.system_generated/logs/transcript.jsonl
+  collectAtDepth(agyBrainDir(), 1, join('.system_generated', 'logs', 'transcript.jsonl'), 'agy')
   // <root>/<percent-encoded cwd>/<sessionId>/chat_history.jsonl
   collectAtDepth(grokSessionsDir(), 2, 'chat_history.jsonl', 'grok')
   // <root>/<sessionId>/events.jsonl
   collectAtDepth(copilotSessionsDir(), 1, 'events.jsonl', 'copilot')
   // <root>/<md5(cwd)>/<chatId>/store.db
   collectAtDepth(cursorChatsDir(), 2, 'store.db', 'cursor')
+  /*
+   * opencode has no tree to walk: every session is a row in one store, and its own
+   * `time_updated` is the only honest answer to "when did *this* session last change".
+   */
+  for (const session of listOpencodeSessions({
+    sinceMs: options.since?.getTime() ?? 0,
+    limit: options.limit
+  })) {
+    files.push({
+      path: opencodeDbPath(),
+      mtimeMs: session.updatedMs,
+      adapter: 'opencode',
+      sessionId: session.id
+    })
+  }
 
   files.sort((a, b) => b.mtimeMs - a.mtimeMs)
 
@@ -567,6 +735,10 @@ function readSession(file: Discovered): ExternalSession | null {
       return readGrokSession(file.path)
     case 'copilot':
       return readCopilotSession(file.path)
+    case 'agy':
+      return readAgySession(file.path)
+    case 'opencode':
+      return file.sessionId ? readOpencodeExternalSession(file.sessionId) : null
     default:
       return readClaudeSession(file.path)
   }

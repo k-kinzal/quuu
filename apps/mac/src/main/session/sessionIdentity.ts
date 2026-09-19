@@ -5,6 +5,7 @@ import { claudeSessionsDir, copilotSessionsDir } from '../appPaths.js'
 import { sessionLogDir } from './claudePaths.js'
 import { readCopilotWorkspace } from './copilotPaths.js'
 import { acceptsSessionId } from './logAdapters.js'
+import { listOpencodeSessions } from './opencodeStore.js'
 
 /**
  * Pin down the "real session ID" of an agent Quuu launched.
@@ -50,7 +51,12 @@ export function argsCarrySessionId(args: string[], sessionId: string): boolean {
  * from the start.
  */
 export function canRecoverSessionId(adapter: LogAdapter): boolean {
-  return adapter === 'claude' || adapter === 'copilot' || acceptsSessionId(adapter)
+  return (
+    adapter === 'claude' ||
+    adapter === 'copilot' ||
+    adapter === 'opencode' ||
+    acceptsSessionId(adapter)
+  )
 }
 
 /**
@@ -60,7 +66,30 @@ export function canRecoverSessionId(adapter: LogAdapter): boolean {
  */
 export function findSessionId(adapter: LogAdapter, lookup: SessionLookup): string | null {
   if (adapter === 'copilot') return findCopilotSessionId(lookup)
+  if (adapter === 'opencode') return findOpencodeSessionId(lookup)
   return findClaudeSessionId(lookup)
+}
+
+/**
+ * Find the session opencode opened.
+ *
+ * `--session` only continues a session that already exists ("Session not found" otherwise, as
+ * measured), so the ID is always one the CLI chose. Its store records each session's working
+ * directory, so a session is ours when it sits in this run's cwd and began after the launch.
+ *
+ * Sessions an agent started for itself (`parent_id`) are skipped: they belong to the session that
+ * started them, and adopting one would point the conversation at a sub-agent's side quest.
+ */
+function findOpencodeSessionId(lookup: SessionLookup): string | null {
+  const floor = lookup.startedAtMs - START_GRACE_MS
+  const candidates: Candidate[] = []
+  for (const session of listOpencodeSessions({ sinceMs: floor })) {
+    if (lookup.claimed.has(session.id) || session.parentId) continue
+    if (session.createdMs < floor) continue
+    if (!sameDir(session.directory, lookup.cwd)) continue
+    candidates.push({ sessionId: session.id, startedAtMs: session.createdMs })
+  }
+  return closestTo(candidates, lookup.startedAtMs)
 }
 
 /**

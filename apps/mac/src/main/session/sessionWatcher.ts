@@ -3,11 +3,14 @@ import type { FSWatcher } from 'node:fs'
 import { closeSync, existsSync, mkdirSync, openSync, readSync, statSync, watch } from 'node:fs'
 import { dirname } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
+import { AgySessionParser } from './agyParser.js'
 import { ClaudeSessionParser } from './claudeParser.js'
 import { CodexSessionParser } from './codexParser.js'
 import { CopilotSessionParser } from './copilotParser.js'
 import { CursorSessionParser } from './cursorParser.js'
 import { GrokSessionParser } from './grokParser.js'
+import { readsWholeStore } from './logAdapters.js'
+import { OpencodeSessionParser } from './opencodeParser.js'
 import { StdoutSessionParser } from './stdoutParser.js'
 import type { MessageBuffer } from './messageBuffer.js'
 import type { SessionMessage, SessionSnapshot } from './types.js'
@@ -53,12 +56,27 @@ interface OpenTarget {
 }
 
 type Parser =
+  | AgySessionParser
   | ClaudeSessionParser
   | CodexSessionParser
   | CopilotSessionParser
   | CursorSessionParser
   | GrokSessionParser
+  | OpencodeSessionParser
   | StdoutSessionParser
+
+/**
+ * Parsers that answer with the whole conversation instead of with what was appended.
+ *
+ * Their content lives in SQLite and is rewritten in place, so they are re-read rather than
+ * followed (`logAdapters.ts`). Everything that reads a session has to take this fork, so the
+ * question is asked in one place rather than by naming Cursor at four call sites.
+ */
+export type StoreParser = CursorSessionParser | OpencodeSessionParser
+
+export function isStoreParser(parser: Parser): parser is StoreParser {
+  return parser instanceof CursorSessionParser || parser instanceof OpencodeSessionParser
+}
 
 export function newParser(mode: LogAdapter, imageNamespace?: string, buffer?: MessageBuffer): Parser {
   switch (mode) {
@@ -72,6 +90,10 @@ export function newParser(mode: LogAdapter, imageNamespace?: string, buffer?: Me
       return new GrokSessionParser(buffer)
     case 'copilot':
       return new CopilotSessionParser(buffer)
+    case 'agy':
+      return new AgySessionParser(buffer)
+    case 'opencode':
+      return new OpencodeSessionParser()
     default:
       return new ClaudeSessionParser(imageNamespace, buffer)
   }
@@ -80,11 +102,12 @@ export function newParser(mode: LogAdapter, imageNamespace?: string, buffer?: Me
 /**
  * Is this a layout that gets replaced wholesale rather than appended to?
  *
- * Cursor keeps content in SQLite in a content-addressed form, so the contents are swapped out
- * every turn (cursorStore.ts). Following along by byte offset does not hold up.
+ * Cursor keeps content in SQLite in a content-addressed form and opencode keeps every session in
+ * one SQLite store, so in both the contents are swapped out every turn. Following along by byte
+ * offset does not hold up. Which layouts these are is owned by `logAdapters.ts`.
  */
 function isSnapshotMode(mode: LogAdapter): boolean {
-  return mode === 'cursor'
+  return readsWholeStore(mode)
 }
 
 /**
@@ -187,7 +210,7 @@ export class SessionWatcher extends EventEmitter {
    * on a long conversation.
    */
   private reloadSnapshot(logPath: string): number {
-    if (!(this.parser instanceof CursorSessionParser)) return -1
+    if (!isStoreParser(this.parser)) return -1
     const stamp = snapshotStamp(logPath)
     if (stamp === this.snapshotStamp) return -1
     this.snapshotStamp = stamp
@@ -360,7 +383,7 @@ export class SessionWatcher extends EventEmitter {
     }
 
     // A replacement-style parser never gets here (isSnapshotMode returned earlier)
-    if (this.parser instanceof CursorSessionParser) return -1
+    if (isStoreParser(this.parser)) return -1
 
     const text = this.partial + chunk
     const lines = text.split('\n')

@@ -161,6 +161,8 @@ export function isolateSessionDirs(root: string): {
   cursorAgentLogs: string
   grok: string
   copilot: string
+  agy: string
+  opencodeDb: string
 } {
   const dirs = {
     claude: join(root, 'claude'),
@@ -170,7 +172,10 @@ export function isolateSessionDirs(root: string): {
     cursor: join(root, 'cursor'),
     cursorAgentLogs: join(root, 'cursor-agent-logs'),
     grok: join(root, 'grok'),
-    copilot: join(root, 'copilot')
+    copilot: join(root, 'copilot'),
+    agy: join(root, 'agy'),
+    // opencode keeps every session in one store, so what is redirected is a file, not a directory
+    opencodeDb: join(root, 'opencode', 'opencode.db')
   }
   process.env.QUUU_CLAUDE_PROJECTS_DIR = dirs.claude
   process.env.QUUU_CLAUDE_SESSIONS_DIR = dirs.claudePids
@@ -180,6 +185,8 @@ export function isolateSessionDirs(root: string): {
   process.env.QUUU_CURSOR_AGENT_LOGS_DIR = dirs.cursorAgentLogs
   process.env.QUUU_GROK_SESSIONS_DIR = dirs.grok
   process.env.QUUU_COPILOT_SESSIONS_DIR = dirs.copilot
+  process.env.QUUU_AGY_DIR = dirs.agy
+  process.env.QUUU_OPENCODE_DB = dirs.opencodeDb
   return dirs
 }
 
@@ -193,4 +200,6 @@ export function releaseSessionDirs(): void {
   delete process.env.QUUU_CURSOR_AGENT_LOGS_DIR
   delete process.env.QUUU_GROK_SESSIONS_DIR
   delete process.env.QUUU_COPILOT_SESSIONS_DIR
+  delete process.env.QUUU_AGY_DIR
+  delete process.env.QUUU_OPENCODE_DB
 }

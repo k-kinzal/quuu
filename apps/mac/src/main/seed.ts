@@ -88,6 +88,59 @@ const OPTIONAL_AGENTS: Array<
       logAdapter: 'grok'
     },
     {
+      name: 'Antigravity',
+      descriptionKey: 'seed.agy',
+      command: 'agy',
+      /*
+       * `--add-dir` is what makes the project the workspace. Without it the CLI ignores the
+       * directory it was started in and works inside its own scratch space instead (measured: a
+       * file it was asked to write in the project landed in `~/.gemini/antigravity-cli/scratch`).
+       *
+       * `--output-format stream-json` is not for looks: the first line it prints is the
+       * conversation it opened, and that is the only way to know which transcript under `brain/`
+       * belongs to this run (`session/stdoutSessionId.ts`). The conversation view reads that
+       * transcript, so the JSON stream is only ever the fallback view.
+       */
+      argsTemplate: [
+        '--add-dir',
+        '{{projectPath}}',
+        '--dangerously-skip-permissions',
+        '--output-format',
+        'stream-json',
+        '--print={{prompt}}'
+      ],
+      resumeArgsTemplate: [
+        '--conversation',
+        '{{sessionId}}',
+        '--add-dir',
+        '{{projectPath}}',
+        '--dangerously-skip-permissions',
+        '--output-format',
+        'stream-json',
+        '--print={{prompt}}'
+      ],
+      concurrency: 1,
+      logAdapter: 'agy'
+    },
+    {
+      name: 'opencode',
+      descriptionKey: 'seed.opencode',
+      command: 'opencode',
+      /*
+       * `--auto` approves everything that is not explicitly denied, which is what makes the run
+       * unattended. The prompt is a bare positional: `--` is not usable here (`agents/cli.ts`
+       * says what it does instead), so a prompt opening with `-` is the one shape this CLI
+       * cannot be handed.
+       *
+       * There is no way to name a new session (`--session` only continues one that exists), so
+       * the ID opencode chose is recovered from its store afterwards (`sessionIdentity.ts`).
+       */
+      argsTemplate: ['run', '--auto', '{{prompt}}'],
+      resumeArgsTemplate: ['run', '--session', '{{sessionId}}', '--auto', '{{prompt}}'],
+      concurrency: 1,
+      logAdapter: 'opencode'
+    },
+    {
       name: 'GitHub Copilot',
       descriptionKey: 'seed.copilot',
       command: 'copilot',
@@ -198,27 +251,9 @@ export async function seedIfEmpty(db: Db): Promise<void> {
   let order = 2
   for (const def of OPTIONAL_AGENTS) {
     if (!commandExists(def.command, path)) continue
-    const { descriptionKey, ...agent } = def
-    repo.insertAgent(db, {
-      ...agent,
-      // Resolved here, not at module load: the language is not settled until initMainI18n
-      description: t(descriptionKey),
-      env: {},
-      fallbackAgentId: null,
-      limitPatterns: DEFAULT_LIMIT_PATTERNS,
-      cooldownSeconds: 900,
-      timeoutSeconds: 7200,
-      /*
-       * Seeded but not enabled.
-       *
-       * If several CLIs start running in parallel right on first launch, you
-       * get billed without knowing which did what. The user picks and enables
-       * the ones they use.
-       */
-      enabled: false,
-      sortOrder: order++
-    })
+    insertOptional(db, def, order++)
   }
+  rememberOffered(db, OPTIONAL_AGENTS.map((def) => def.name))
 
   repo.insertGroup(db, {
     name: 'Claude (Opus → Sonnet)',
@@ -231,3 +266,86 @@ export async function seedIfEmpty(db: Db): Promise<void> {
   })
 }
 
+
+/**
+ * Offer definitions for CLIs that arrived after this database was first seeded.
+ *
+ * `seedIfEmpty` only ever runs on an empty database, so support for another CLI would reach
+ * **nobody who already uses Quuu**: the settings screen would simply never mention it. So each
+ * definition is offered once more here, on a database that already has rows.
+ *
+ * Two things keep that from being pushy:
+ *
+ *   - it is offered **once**. Which ones have been offered is remembered, so a definition the
+ *     user deleted stays deleted
+ *   - it arrives disabled, like every seeded definition. Nothing runs, and nothing is billed,
+ *     until the user picks it
+ *
+ * A CLI that is not installed is left unoffered rather than marked, so installing it later still
+ * brings its definition along.
+ */
+export async function offerNewAgents(db: Db): Promise<void> {
+  const existing = repo.listAgents(db)
+  // An empty database belongs to seedIfEmpty, which records every name itself
+  if (existing.length === 0) return
+
+  const offered = new Set(offeredNames(db))
+  const missing = OPTIONAL_AGENTS.filter((def) => !offered.has(def.name))
+  if (missing.length === 0) return
+
+  const path = await resolveLoginPath()
+  let order = existing.reduce((max, agent) => Math.max(max, agent.sortOrder), 0) + 1
+  const added: string[] = []
+
+  for (const def of missing) {
+    if (!commandExists(def.command, path)) continue
+    // A definition for that CLI is already there (the user's own, or one from an older seed)
+    if (!existing.some((agent) => agent.command === def.command)) {
+      insertOptional(db, def, order++)
+    }
+    added.push(def.name)
+  }
+
+  if (added.length > 0) rememberOffered(db, [...offered, ...added])
+}
+
+/** Which optional definitions have been offered already. */
+function offeredNames(db: Db): string[] {
+  const stored = repo.getMetaValue(db, OFFERED_AGENTS_KEY)
+  if (stored === null) return []
+  try {
+    const names = JSON.parse(stored) as unknown
+    return Array.isArray(names) ? names.filter((name): name is string => typeof name === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+function rememberOffered(db: Db, names: string[]): void {
+  repo.setMetaValue(db, OFFERED_AGENTS_KEY, JSON.stringify([...new Set(names)]))
+}
+
+const OFFERED_AGENTS_KEY = 'offered_optional_agents'
+
+function insertOptional(db: Db, def: (typeof OPTIONAL_AGENTS)[number], sortOrder: number): void {
+  const { descriptionKey, ...agent } = def
+  repo.insertAgent(db, {
+    ...agent,
+    // Resolved here, not at module load: the language is not settled until initMainI18n
+    description: t(descriptionKey),
+    env: {},
+    fallbackAgentId: null,
+    limitPatterns: DEFAULT_LIMIT_PATTERNS,
+    cooldownSeconds: 900,
+    timeoutSeconds: 7200,
+    /*
+     * Seeded but not enabled.
+     *
+     * If several CLIs start running in parallel right on first launch, you
+     * get billed without knowing which did what. The user picks and enables
+     * the ones they use.
+     */
+    enabled: false,
+    sortOrder
+  })
+}

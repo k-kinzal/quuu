@@ -1,6 +1,22 @@
-export type LogAdapter = 'claude' | 'codex' | 'cursor' | 'grok' | 'copilot' | 'stdout'
+export type LogAdapter =
+  | 'claude'
+  | 'codex'
+  | 'cursor'
+  | 'grok'
+  | 'copilot'
+  | 'agy'
+  | 'opencode'
+  | 'stdout'
 
-export const IMPORTABLE_ADAPTERS: LogAdapter[] = ['claude', 'codex', 'cursor', 'grok', 'copilot']
+export const IMPORTABLE_ADAPTERS: LogAdapter[] = [
+  'claude',
+  'codex',
+  'cursor',
+  'grok',
+  'copilot',
+  'agy',
+  'opencode'
+]
 
 export function adapterOfExternalKey(externalKey: string | null): LogAdapter | null {
   if (!externalKey) return null

@@ -16,7 +16,7 @@ juggling terminals or losing track of sessions.
 
 ![Quuu in dark mode, with projects, queued tasks, an agent conversation, and run details side by side](docs/images/quuu-overview.png)
 
-- **Run multiple agents:** Claude Code, Codex, Cursor, Grok, and GitHub Copilot.
+- **Run multiple agents:** Claude Code, Codex, Cursor, Grok, GitHub Copilot, Antigravity, and opencode.
 - **Control the queue:** priorities, dependencies, concurrency limits, and automatic scheduling.
 - **Keep work moving:** automatic fallback on rate limits; agent runs survive app restarts.
 - **Review in context:** conversations, code changes, reports, and follow-ups. You decide when work is done.

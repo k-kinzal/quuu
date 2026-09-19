@@ -38,6 +38,15 @@ type PromptStyle =
   | { kind: 'attached'; flags: string[]; as: string }
   /** The option swallows the next argument whatever it looks like. There is nothing to respell. */
   | { kind: 'value' }
+  /**
+   * A positional with **no way to end the option grammar**.
+   *
+   * `opencode run -- <prompt>` does not hand the prompt over: with `--` the CLI repeats the
+   * message or waits forever (measured on v2.0.8), and it has no option that takes a prompt as a
+   * value. There is nothing to rewrite, so a prompt opening with `-` is read as an option and
+   * that run dies before the agent starts.
+   */
+  | { kind: 'bare' }
 
 interface Cli {
   /** The CLI's name as shown on screen. */
@@ -76,6 +85,23 @@ const CLIS: Record<string, Cli> = {
      */
     prompt: { kind: 'attached', flags: ['-p', '--single'], as: '--single' }
   },
+  agy: {
+    name: 'Antigravity',
+    // The CLI's own word for a session is a conversation
+    resume: (id) => ['--conversation', id],
+    /*
+     * `--print` **takes the prompt as its value**. Written separately it swallows whatever comes
+     * next and says so ("--print took \"--dangerously-skip-permissions\" as its prompt" - measured),
+     * and it tells you the same fix: attach it with `=`. Joined that way any text is read as text.
+     */
+    prompt: { kind: 'attached', flags: ['-p', '--print', '--prompt'], as: '--print' }
+  },
+  opencode: {
+    name: 'opencode',
+    resume: (id) => ['--session', id],
+    // The prompt is a bare positional. See the `bare` style above for why nothing can be respelled
+    prompt: { kind: 'bare' }
+  },
   copilot: {
     name: 'GitHub Copilot',
     /*
@@ -102,7 +128,7 @@ const PROMPT = '{{prompt}}'
 export function promptAsValue(command: string, template: readonly string[]): string[] {
   const args = [...template]
   const style = CLIS[basename(command.trim())]?.prompt
-  if (!style || style.kind === 'value') return args
+  if (!style || style.kind === 'value' || style.kind === 'bare') return args
   // Two prompts in one line is a shape we cannot rearrange without guessing which one is meant
   if (args.filter((arg) => arg === PROMPT).length !== 1) return args
   const index = args.indexOf(PROMPT)
@@ -132,6 +158,8 @@ const ADAPTER_COMMAND: Record<LogAdapter, string | null> = {
   cursor: 'cursor-agent',
   grok: 'grok',
   copilot: 'copilot',
+  agy: 'agy',
+  opencode: 'opencode',
   // A stdout log Quuu wrote itself. It names no CLI
   stdout: null
 }

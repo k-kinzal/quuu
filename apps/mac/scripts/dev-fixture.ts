@@ -78,7 +78,9 @@ for (const [i, def] of (
   [
     { name: 'Cursor', command: 'cursor-agent', logAdapter: 'cursor' as const },
     { name: 'Grok', command: 'grok', logAdapter: 'grok' as const },
-    { name: 'GitHub Copilot', command: 'copilot', logAdapter: 'copilot' as const }
+    { name: 'GitHub Copilot', command: 'copilot', logAdapter: 'copilot' as const },
+    { name: 'Antigravity', command: 'agy', logAdapter: 'agy' as const },
+    { name: 'opencode', command: 'opencode', logAdapter: 'opencode' as const }
   ]
 ).entries()) {
   repo.insertAgent(db, {

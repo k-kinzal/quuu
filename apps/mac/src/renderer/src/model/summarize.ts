@@ -30,10 +30,22 @@ const WRITE_TOOLS = new Set([
   'create_file',
   'edit_file',
   'str_replace_editor',
-  'write'
+  'write',
+  // agy / opencode
+  'write_to_file',
+  'replace_file_content',
+  'multi_replace_file_content',
+  'sed_file',
+  'notebook_edit',
+  'edit',
+  'patch'
 ])
-const READ_TOOLS = new Set(['Read', 'NotebookRead', 'read_file', 'view_image', 'view'])
-const SEARCH_TOOLS = new Set(['Grep', 'Glob', 'LS', 'Search', 'grep', 'glob', 'codebase_search'])
+const READ_TOOLS = new Set(['Read', 'NotebookRead', 'read_file', 'view_image', 'view', 'view_file', 'read'])
+const SEARCH_TOOLS = new Set([
+  'Grep', 'Glob', 'LS', 'Search', 'grep', 'glob', 'codebase_search',
+  // agy / opencode
+  'grep_search', 'find_by_name', 'list_dir', 'list'
+])
 const SHELL_TOOLS = new Set([
   'Bash',
   'BashOutput',
@@ -45,9 +57,18 @@ const SHELL_TOOLS = new Set([
   'shell_command',
   'run_in_terminal',
   'write_stdin',
-  'wait'
+  'wait',
+  // agy / opencode
+  'run_command',
+  'command_status',
+  'send_command_input',
+  'bash'
 ])
-const WEB_TOOLS = new Set(['web_search', 'web_fetch', 'browser_search'])
+const WEB_TOOLS = new Set([
+  'web_search', 'web_fetch', 'browser_search',
+  // agy / opencode
+  'search_web', 'read_url_content', 'webfetch'
+])
 
 export type ToolKind = 'write' | 'read' | 'search' | 'shell' | 'agent' | 'web' | 'plan' | 'other'
 
@@ -56,8 +77,10 @@ export function toolKind(name: string): ToolKind {
   if (READ_TOOLS.has(name)) return 'read'
   if (SEARCH_TOOLS.has(name)) return 'search'
   if (SHELL_TOOLS.has(name)) return 'shell'
-  if (name === 'Task' || name === 'Agent') return 'agent'
-  if (name === 'TodoWrite' || name === 'update_plan') return 'plan'
+  if (name === 'Task' || name === 'Agent' || name === 'task' || name === 'invoke_subagent') return 'agent'
+  if (name === 'TodoWrite' || name === 'update_plan' || name === 'todowrite' || name === 'manage_task') {
+    return 'plan'
+  }
   if (WEB_TOOLS.has(name) || name.startsWith('Web')) return 'web'
   return 'other'
 }
