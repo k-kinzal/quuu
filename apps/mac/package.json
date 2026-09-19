@@ -17,7 +17,7 @@
     "build:pty": "bash scripts/build-pty.sh",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.tests.json",
     "dist": "npm run build && npm run --prefix ../.. mobile:build && electron-builder --mac --dir --config.electronVersion=$(node -p \"require('electron/package.json').version\")",
-    "dist:dmg": "npm run build && npm run --prefix ../.. mobile:build && electron-builder --mac --config.electronVersion=$(node -p \"require('electron/package.json').version\")",
+    "dist:dmg": "npm run build && npm run --prefix ../.. mobile:build && electron-builder --mac --publish never --config.electronVersion=$(node -p \"require('electron/package.json').version\")",
     "app:restart": "bash scripts/restart-app.sh",
     "dev:fixture": "vite-node -c ../../vitest.config.ts scripts/dev-fixture.ts -- /tmp/taskd-shot",
     "dev:shot": "QUUU_USER_DATA=/tmp/taskd-shot QUUU_CODEX_SESSIONS_DIR=/tmp/taskd-shot/codex-sessions electron-vite dev --remoteDebuggingPort 9222",

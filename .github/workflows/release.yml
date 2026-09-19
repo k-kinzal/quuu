@@ -51,8 +51,10 @@ jobs:
           esac
           npm pkg set "version=${TAG#v}" -w quuu
 
+      # --publish never lives in the dist:dmg script. Passing it here as
+      # `npm run dist:dmg -- --publish never` lets npm eat --publish.
       - name: Build (arm64 / x64 dmg)
-        run: npm run dist:dmg -- --publish never
+        run: npm run dist:dmg
         env:
           # No certificate here, so stop the keychain search (afterPack's ad-hoc signing covers it).
           # With CSC_LINK / CSC_KEY_PASSWORD in Secrets, electron-builder signs properly
