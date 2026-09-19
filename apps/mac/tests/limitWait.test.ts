@@ -162,6 +162,11 @@ describe('the latest run of a task', () => {
   })
 })
 
+/** Word for word what Claude Code prints when one model's share of the week is spent. */
+const FABLE_LIMIT =
+  "You've reached your Fable limit. Switch to another model, or manage usage credits at" +
+  ' claude.ai/settings/usage, to continue.'
+
 /**
  * A limit on one model, announced without a moment.
  *
@@ -172,8 +177,7 @@ describe('the latest run of a task', () => {
 function modelLimitFixture(): { db: ReturnType<typeof memoryDb>; runner: Runner; scheduler: Scheduler; spent: string; fallback: string; project: string } {
   const db = memoryDb()
   const runner = new Runner(db)
-  const script =
-    `echo "You've reached your Fable limit. Switch to another model, or manage usage credits at claude.ai/settings/usage, to continue." >&2; exit 1`
+  const script = `echo "${FABLE_LIMIT}" >&2; exit 1`
   const fallback = makeAgent(db, {
     name: 'Opus',
     command: '/bin/echo',
@@ -237,6 +241,108 @@ describe('a Limit on one model, with no moment named', () => {
     expect(spent).toHaveLength(1)
     // Not one of them is left for a human to clear
     expect(tasks.map((id) => repo.getTask(f.db, id)?.status)).toEqual(['review', 'review', 'review'])
+  })
+})
+
+/** A run that has already happened, put into the history the way the store keeps it. */
+function pastRun(
+  f: ReturnType<typeof modelLimitFixture>,
+  agentId: string,
+  status: 'limited' | 'succeeded',
+  startedAt: Date,
+  errorMessage = ''
+): void {
+  const id = `run_${Math.random().toString(36).slice(2, 12)}`
+  repo.insertRun(f.db, {
+    id,
+    taskId: makeTask(f.db, f.project, '先週の作業', 2, 'draft'),
+    agentId,
+    resolvedFromGroupId: null,
+    sessionId: `sess-${id}`,
+    kind: 'initial',
+    status,
+    attempt: 1,
+    fallbackFromRunId: null,
+    pid: null,
+    cwd: workdir,
+    command: '/bin/sh',
+    args: [],
+    promptPreview: '',
+    exitCode: status === 'limited' ? 1 : 0,
+    errorKind: status === 'limited' ? 'limit' : null,
+    errorMessage,
+    sessionLogPath: null,
+    stdoutLogPath: '/tmp/x.log',
+    startedAt: startedAt.toISOString()
+  })
+}
+
+const DAY_MS = 86_400_000
+
+/**
+ * The one turn of the week Quuu watched: the model walled, then a run that went through.
+ *
+ * Twelve days ago it was out; ten days ago, twelve minutes past the hour, it answered again. The
+ * allowance turns on the hour, so the next one is that hour plus whole weeks - four days from now.
+ */
+function watchedTheWeekTurn(f: ReturnType<typeof modelLimitFixture>): string {
+  const back = Math.floor((Date.now() - 10 * DAY_MS) / 3_600_000) * 3_600_000 + 12 * 60_000
+  pastRun(f, f.spent, 'limited', new Date(back - 2 * DAY_MS), FABLE_LIMIT)
+  pastRun(f, f.spent, 'succeeded', new Date(back))
+  return new Date(back - 12 * 60_000 + 14 * DAY_MS).toISOString()
+}
+
+/**
+ * A Limit on one model, on an account whose week Quuu has already seen turn.
+ *
+ * Claude Code never prints when a model's own limit lifts, because that share is a slice of the
+ * **weekly** allowance and only the usage screen says when the week turns. Cooling the model for
+ * the configured fifteen minutes puts the conversation back in front of the same wall ninety-six
+ * times a day and spends its five attempts before dinner, on a wall that stands for days.
+ */
+describe('a Limit on one model, on a week that has been watched turn', () => {
+  it('cools the model until the week turns again, not for the configured guess', async () => {
+    const f = modelLimitFixture()
+    const turnsAt = watchedTheWeekTurn(f)
+    makeTask(f.db, f.project, 'sql-catalogパッケージの作成')
+
+    const done = finishes(f.runner, 2)
+    await f.scheduler.tick()
+    await done
+
+    expect(repo.cooldownEnd(f.db, f.spent)).toBe(turnsAt)
+  })
+
+  it('parks the conversation only that model can answer until then', async () => {
+    const f = modelLimitFixture()
+    const turnsAt = watchedTheWeekTurn(f)
+    // A follow-up belongs to the session the spent model opened, so no fallback may take it
+    const task = makeTask(f.db, f.project, 'Fuzzの再編')
+    sessioned(f.db, task, f.spent, 'queued', { pendingMessage: 'please continue' })
+
+    const done = finishes(f.runner, 1)
+    await f.scheduler.tick()
+    await done
+
+    const after = repo.getTask(f.db, task)!
+    expect(after.status).toBe('queued')
+    expect(after.scheduledAt).toBe(turnsAt)
+    expect(repo.readyTaskIds(f.db, new Date().toISOString()).map((r) => r.task_id)).not.toContain(task)
+  })
+
+  it('goes back to the configured guess while no turn has been watched', async () => {
+    const f = modelLimitFixture()
+    makeTask(f.db, f.project, 'sql-catalogパッケージの作成')
+
+    const before = Date.now()
+    const done = finishes(f.runner, 2)
+    await f.scheduler.tick()
+    await done
+
+    // Nothing to predict from yet, so the quarter-hour probe is what buys the first observation
+    const until = Date.parse(repo.cooldownEnd(f.db, f.spent) ?? '')
+    expect(until - before).toBeGreaterThan(14 * 60_000)
+    expect(until - before).toBeLessThan(16 * 60_000)
   })
 })
 

@@ -51,3 +51,15 @@ export interface Run {
 
   stdoutLogPath: string
 }
+
+/**
+ * What a run left behind, for reading an agent's history rather than a task's.
+ *
+ * Deciding when a limit lifts reads every run that agent ever made, so it takes the three columns
+ * that answer "did this one hit a wall, and when" instead of whole `Run` rows.
+ */
+export interface RunOutcome {
+  status: RunStatus
+  errorMessage: string
+  startedAt: string
+}

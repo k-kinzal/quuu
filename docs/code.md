@@ -82,6 +82,7 @@ packages/            the independent Design System
 | `apps/mac/src/main/execution/runner.ts` | agent launch, cancel, exit classification (restart resilience lives here) |
 | `apps/mac/src/main/platform/runProcess.ts` | process-group operations, reading log tails and exit codes |
 | `apps/mac/src/main/execution/errorClassifier.ts` | exit result → Limit / auth / spawn-failure classification |
+| `apps/mac/src/main/execution/limitWindow.ts` / `weeklyWindow.ts` | when a Limit lifts: read out of what the CLI printed, or — for a limit on one model, which never prints one — off the week that model's share belongs to |
 | `apps/mac/src/main/nativeMenu.ts` | lets the OS draw menus the screens request. **Never draw menus inside the window** |
 | `apps/mac/src/main/contextMenu.ts` | right-click for inputs, selection, links (a base with no app vocabulary) |
 | `apps/mac/src/main/db/repo.ts` | SQL is confined here. No raw SQL anywhere else |

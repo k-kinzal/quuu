@@ -7,10 +7,12 @@ import { holdsSlot } from '../tasks/status.js'
 import type { Task } from '../tasks/types.js'
 import { isFollowupPending } from '../tasks/types.js'
 import { canClaimTask, consecutiveFailures, cooldownUntil, resumeMessage, retryRequirement, runDisposition, shouldRetryRun, slotAvailability } from './conditions.js'
+import type { Classification } from './errorClassifier.js'
 import { ExecutionRecovery } from './recovery.js'
 import type { StartParams } from './runner.js'
 import type { AgentSlotStatus, SchedulerStatus, SlotHold } from './status.js'
 import type { Run, RunErrorKind } from './types.js'
+import { isModelLimit, weeklyLimitLiftsAt } from './weeklyWindow.js'
 
 import type { Db } from '../db/database.js'
 import { afterCommit, inTransaction } from '../db/database.js'
@@ -398,7 +400,8 @@ export class Scheduler extends EventEmitter {
       }
 
       const until = cooldownUntil(classification.kind,
-        repo.getAgent(this.db, run.agentId)?.cooldownSeconds, classification.retryAt, nowIso())
+        repo.getAgent(this.db, run.agentId)?.cooldownSeconds,
+        classification.retryAt ?? this.weekTurnsAt(run.agentId, classification), nowIso())
       if (until !== null) {
         repo.setCooldown(this.db, run.agentId, until,
           classification.kind === 'auth' ? t('runErrorKind.auth') : classification.message || 'Limit')
@@ -435,6 +438,19 @@ export class Scheduler extends EventEmitter {
       }
       this.afterTransition()
     })
+  }
+
+  /**
+   * When a limit that named no moment lifts, for the one kind of limit whose length is known.
+   *
+   * Only a limit on a single model. Those are a share of the account's **week** and never print
+   * their moment; the account's own windows do print theirs, and guessing a week at a five-hour
+   * wall would idle an account that is back after lunch. Details in
+   * [weeklyWindow.ts](weeklyWindow.ts).
+   */
+  private weekTurnsAt(agentId: string, classification: Classification): string | null {
+    if (classification.kind !== 'limit' || !isModelLimit(classification.message)) return null
+    return weeklyLimitLiftsAt(repo.listRunOutcomesByAgent(this.db, agentId))
   }
 
   /**
