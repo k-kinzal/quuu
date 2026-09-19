@@ -1,6 +1,8 @@
 import { randomBytes, randomInt } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
+import { join } from 'node:path'
 import { t } from '../i18n/index.js'
 import type { BotUserResult, CreateAppResult } from '../ipc/types.js'
 import { botLogin, GITHUB_APP_SETUP_VERSION, normalizeAppSlug } from '../settings/commitIdentity.js'
@@ -295,7 +297,7 @@ export async function createGitHubApp(
         return
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-      res.end(resultPage(t('githubApp.donePage')))
+      res.end(donePage(app.slug))
       finish(result)
     })
   })
@@ -453,4 +455,63 @@ function handoffPage(action: string, body: Record<string, unknown>): string {
 function resultPage(message: string): string {
   return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>Quuu</title></head>
 <body style="font-family:-apple-system,sans-serif;padding:2rem">${escapeHtml(message)}</body></html>`
+}
+
+/**
+ * The badge to hand over, as a data URI.
+ *
+ * Generated from the one icon master by `npm run icon` and shipped in the app's
+ * resources; an unpackaged run reads it out of the working tree. Carried inline
+ * rather than served, because this listener folds up the moment the page goes out
+ * — a second request for the image would arrive at a closed port.
+ */
+function logoDataUri(): string | null {
+  const resourcesPath =
+    'resourcesPath' in process && typeof process.resourcesPath === 'string'
+      ? process.resourcesPath
+      : null
+  const candidates = [
+    ...(resourcesPath ? [join(resourcesPath, 'build', 'github-app-logo.png')] : []),
+    join(process.cwd(), 'build', 'github-app-logo.png'),
+    join(process.cwd(), 'apps', 'mac', 'build', 'github-app-logo.png')
+  ]
+  for (const candidate of candidates) {
+    try {
+      return `data:image/png;base64,${readFileSync(candidate).toString('base64')}`
+    } catch {
+      // Try the next location
+    }
+  }
+  return null
+}
+
+/**
+ * The last page of the flow: the App is ready, and the icon is the one thing left.
+ *
+ * **GitHub accepts an App's logo through its own form and nowhere else** — the
+ * manifest has no field for it, and no API sets it. An App without one does not
+ * wear Quuu's face, so every pull request an agent opens carries a badge nobody
+ * chose, and the human finds out weeks later while reading a PR.
+ *
+ * So the only press we cannot absorb gets handed over here, while the human is
+ * still standing in the browser: the picture to drop, and the page that takes it.
+ * If the badge is missing (nothing to hand over), say the App is ready and stop —
+ * a finished setup must not read as failed over an icon.
+ */
+function donePage(slug: string): string {
+  const logo = logoDataUri()
+  if (!logo) return resultPage(t('githubApp.donePage'))
+  const settingsUrl = `https://github.com/settings/apps/${encodeURIComponent(normalizeAppSlug(slug))}`
+  return `<!doctype html><html lang="ja"><head><meta charset="utf-8"><title>Quuu</title></head>
+<body style="font-family:-apple-system,sans-serif;padding:2rem">
+<p>${escapeHtml(t('githubApp.donePage'))}</p>
+<hr>
+<p>${escapeHtml(t('githubApp.logoPending'))}</p>
+<p><img src="${logo}" width="100" height="100" alt=""></p>
+<p>
+  <a href="${logo}" download="Quuu.png">${escapeHtml(t('githubApp.logoDownload'))}</a>
+  &nbsp;
+  <a href="${escapeHtml(settingsUrl)}">${escapeHtml(t('githubApp.logoSettings'))}</a>
+</p>
+</body></html>`
 }

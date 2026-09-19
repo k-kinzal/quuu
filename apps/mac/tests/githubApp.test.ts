@@ -1,4 +1,6 @@
 import { generateKeyPairSync } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { CreateAppResult } from '../src/main/ipc/types.js'
 import { cancelGitHubApp, createGitHubApp } from '../src/main/platform/githubApp.js'
@@ -166,6 +168,33 @@ describe('creating a GitHub App', () => {
       }
     })
     expect(saved).toEqual([{ appId: '123', pem }])
+  })
+
+  it('hands the icon and the page that takes it to the human, since GitHub accepts a logo from nowhere else', async () => {
+    const pem = generateKeyPairSync('rsa', { modulusLength: 2048 })
+      .privateKey.export({ type: 'pkcs8', format: 'pem' })
+      .toString()
+    const { url, done } = await start({
+      fetchImpl: githubFetch(pem, 123),
+      savePrivateKey: () => Promise.resolve()
+    })
+    const { action } = await handoff(url)
+    const state = new URL(action).searchParams.get('state')!
+    const origin = new URL(url).origin
+
+    await fetch(`${origin}/callback?code=manifest-code&state=${state}`, { redirect: 'manual' })
+    const html = await (await fetch(`${origin}/installed?installation_id=456&state=${state}`)).text()
+
+    // The picture travels inline: this listener is gone before a second request could fetch it
+    const logo = readFileSync(
+      join(process.cwd(), 'apps', 'mac', 'build', 'github-app-logo.png')
+    ).toString('base64')
+    expect(html).toContain(`data:image/png;base64,${logo}`)
+    expect(html).toContain('download="Quuu.png"')
+    // The form that accepts it — not the App's public page, which has no uploader
+    expect(html).toContain('https://github.com/settings/apps/quuu-test')
+
+    await done
   })
 
   it('verifies the returned installation_id against the App itself and never saves it as the key of another App', async () => {

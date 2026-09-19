@@ -363,6 +363,10 @@ If you delete the whole folder, it can be recreated from Quuu's settings on the 
     installUnconfirmed: 'Could not confirm the GitHub App installation',
     installCheckingPage: 'Confirming the installation',
     donePage: 'All set. Return to Quuu',
+    logoPending:
+      'One thing is left, and GitHub takes it only by hand: the icon. Until it is set, every pull request the agents open wears a badge that is not Quuu.',
+    logoDownload: 'Download the icon',
+    logoSettings: 'Set it on GitHub',
     createdInstallUnconfirmed: 'Could not confirm the installation of the created GitHub App',
     keyUnreadable: 'Could not read the GitHub App private key',
     keySaveFailed: 'Could not save the GitHub App private key to the Keychain',

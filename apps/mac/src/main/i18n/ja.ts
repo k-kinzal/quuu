@@ -363,6 +363,10 @@ Mac の Quuu と iPhone の Quuu が、このフォルダごしにやりとり�
     installUnconfirmed: 'GitHub App のインストールを確認できませんでした',
     installCheckingPage: 'インストールを確認しています',
     donePage: '設定できました。Quuu に戻ってください',
+    logoPending:
+      'あと一つ、GitHub が人の手でしか受け取らないものが残っています。アイコンです。設定するまで、エージェントが開く Pull Request はすべて Quuu ではない顔で並びます。',
+    logoDownload: 'アイコンをダウンロード',
+    logoSettings: 'GitHub で設定する',
     createdInstallUnconfirmed: '作成した GitHub App のインストールを確認できませんでした',
     keyUnreadable: 'GitHub App の秘密鍵を読めませんでした',
     keySaveFailed: 'GitHub App の秘密鍵を Keychain に保存できませんでした',

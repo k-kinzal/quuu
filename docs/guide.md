@@ -140,6 +140,7 @@ shadow, and translucency are disabled so no effect stacks on the original colors
 | `apps/mac/build/Assets.car` | macOS 26+. The layered icon (Liquid Glass) resolved via `CFBundleIconName` |
 | `apps/mac/build/icon.icns` | macOS 25 and earlier, and the DMG. The old grid: 824 inside a 1024 canvas |
 | `apps/mac/build/icon.png` | Dock icon for development runs (`app.dock.setIcon`) |
+| `apps/mac/build/github-app-logo.png` | 200px badge for the GitHub App. GitHub takes an App's logo through its own web form and nowhere else — no manifest field, no API — so the creation flow hands this file to the human on its last page, alongside a link to the form |
 | `apps/mobile/ios/Quuu/Assets.car` | iOS 18+. Likewise resolved via `CFBundleIconName` |
 
 On iOS there are **no legacy PNG icons**. What `actool` emits is already cut with the

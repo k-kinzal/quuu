@@ -7,6 +7,7 @@
 #     ├─ macOS ─ actool ──> apps/mac/build/Assets.car    layered icon for macOS 26+
 #     │          ictool ──> apps/mac/build/icon.png      1024. Legacy grid (824 + 100 margin)
 #     │                     apps/mac/build/icon.icns     legacy format built from ↑ (pre-26 and DMG)
+#     │                     apps/mac/build/github-app-logo.png  badge a human uploads to GitHub
 #     │
 #     └─ iOS ─── actool ──> apps/mobile/ios/Quuu/Assets.car        layered icon for iOS 18+
 #
@@ -33,6 +34,9 @@ trap 'rm -rf "$WORK"' EXIT
 CANVAS=1024
 ART=824
 INSET=100
+# The size GitHub asks for an App's badge. It also travels inline in the page that
+# hands it over, so there is no reason to carry more pixels than GitHub will keep.
+BADGE=200
 
 DEV="$(xcode-select -p 2>/dev/null || true)"
 ICTOOL="${DEV%/Contents/Developer}/Contents/Applications/Icon Composer.app/Contents/Executables/ictool"
@@ -83,6 +87,24 @@ for spec in "16:16x16" "32:16x16@2x" "32:32x32" "64:32x32@2x" "128:128x128" "256
 done
 iconutil -c icns "$ICONSET" -o "$MAC/icon.icns"
 
+# --- GitHub App badge ---------------------------------------------------------
+# **GitHub takes an App's logo through its own web form and nowhere else** — the
+# App Manifest has no field for it and no API sets it. So the creation flow hands
+# this file to the human, and it has to be a file a human can drop as-is.
+#
+# Full bleed, no shadow, no margin: GitHub draws the badge inside its own circle,
+# so the macOS grid would only shrink it. The corners the mac mask cut away are
+# filled back in with the icon's own white ground, or they arrive as holes and the
+# badge goes dark on a dark page.
+{
+  printf '<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">' "$CANVAS" "$CANVAS" "$CANVAS" "$CANVAS"
+  printf '<image x="0" y="0" width="%d" height="%d" href="data:image/png;base64,' "$CANVAS" "$CANVAS"
+  base64 < "$WORK/flat.png" | tr -d '\n'
+  printf '"/></svg>'
+} > "$WORK/badge.svg"
+
+rsvg-convert -w "$BADGE" -h "$BADGE" -b white "$WORK/badge.svg" -o "$MAC/github-app-logo.png"
+
 # --- iOS ----------------------------------------------------------------------
 # **Do not bake PNGs ourselves.** The iOS image ictool returns is already
 # rounded-corner masked and unusable as the square an asset catalog expects
@@ -105,7 +127,7 @@ cp "$WORK/ios/Assets.car" "$IOS/Assets.car"
 # layered icon.
 
 echo "Rebuilt:"
-for f in Assets.car icon.png icon.icns; do
-  printf '  apps/mac/build/%-14s %s\n' "$f" "$(du -h "$MAC/$f" | cut -f1)"
+for f in Assets.car icon.png icon.icns github-app-logo.png; do
+  printf '  apps/mac/build/%-20s %s\n' "$f" "$(du -h "$MAC/$f" | cut -f1)"
 done
-printf '  apps/mobile/ios/Quuu/%-14s %s\n' 'Assets.car' "$(du -h "$IOS/Assets.car" | cut -f1)"
+printf '  apps/mobile/ios/Quuu/%-20s %s\n' 'Assets.car' "$(du -h "$IOS/Assets.car" | cut -f1)"

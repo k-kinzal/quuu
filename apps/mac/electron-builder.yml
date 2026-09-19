@@ -18,6 +18,9 @@ extraResources:
     to: build
     filter:
       - icon.png
+      # Badge for the GitHub App. GitHub only takes it from a human, so the
+      # creation flow has to be able to hand the file over.
+      - github-app-logo.png
   # Layered icon (Liquid Glass) for macOS 26+. CFBundleIconName resolves to this,
   # so it sits directly under Contents/Resources. Pre-26 falls back to icon.icns.
   - from: build/Assets.car
