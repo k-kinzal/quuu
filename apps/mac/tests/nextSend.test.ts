@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import type { Run } from '../src/preload/api/execution.js'
+import type { SessionMessage } from '../src/preload/api/session.js'
 import type { Task } from '../src/main/tasks/types.js'
-import { nextSend } from '../src/renderer/src/model/derive.js'
+import { deliveredInstructions, nextSend } from '../src/renderer/src/model/derive.js'
 
 /**
  * What the next run will send is shown at the end of the conversation as "pending".
@@ -79,5 +81,57 @@ describe('what the next run sends', () => {
   it('whitespace-only follow-up is not treated as a follow-up', () => {
     const t = task({ status: 'queued', sessionId: 's1', pendingMessage: '  \n ' })
     expect(nextSend(t, true)).toEqual({ field: 'prompt', value: '最初の指示' })
+  })
+
+  it('returns nothing for a follow-up the conversation above already carries (the same message twice)', () => {
+    const t = task({ status: 'queued', sessionId: 's1', pendingMessage: 'ここも直して' })
+    expect(nextSend(t, true, ['ここも直して'])).toBeNull()
+  })
+
+  it('returns only the part the agent has not been given yet', () => {
+    const t = task({ status: 'queued', sessionId: 's1', pendingMessage: 'ここも直して\n\nついでにこれも' })
+    expect(nextSend(t, true, ['ここも直して'])).toEqual({
+      field: 'pendingMessage',
+      value: 'ついでにこれも'
+    })
+  })
+})
+
+/**
+ * What of the pending instruction the agent already holds, read out of the conversation on screen.
+ * Only a run that ended without answering can have left one there.
+ */
+describe('what the agent already received', () => {
+  const said = (text: string, over: Partial<SessionMessage> = {}): SessionMessage => ({
+    id: `m${text}`,
+    role: 'user',
+    isSidechain: false,
+    timestamp: '2026-09-18T00:33:17.000Z',
+    blocks: [{ kind: 'text', text }],
+    model: null,
+    ...over
+  })
+  const run = (over: Partial<Run> = {}): Run =>
+    ({ id: 'r1', sessionId: 's1', status: 'limited', startedAt: '2026-09-18T00:33:13.877Z', ...over }) as Run
+
+  it('counts an instruction the failed run wrote into the session', () => {
+    expect(deliveredInstructions([said('ここも直して')], [run()], 's1')).toEqual(['ここも直して'])
+  })
+
+  it('counts nothing written before the run started', () => {
+    const earlier = said('前回の指示', { timestamp: '2026-09-17T10:00:00.000Z' })
+    expect(deliveredInstructions([earlier], [run()], 's1')).toEqual([])
+  })
+
+  it('counts nothing after a run that finished (what waits now was written afterwards)', () => {
+    expect(deliveredInstructions([said('ここも直して')], [run({ status: 'succeeded' })], 's1')).toEqual([])
+  })
+
+  it('counts nothing from a session the task no longer continues', () => {
+    expect(deliveredInstructions([said('ここも直して')], [run()], 's2')).toEqual([])
+  })
+
+  it('does not mistake a subagent prompt for an instruction to this conversation', () => {
+    expect(deliveredInstructions([said('調べて', { isSidechain: true })], [run()], 's1')).toEqual([])
   })
 })

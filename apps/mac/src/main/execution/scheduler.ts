@@ -6,7 +6,7 @@ import { consumeReservation, recordExecutionState } from '../tasks/execution.js'
 import { holdsSlot } from '../tasks/status.js'
 import type { Task } from '../tasks/types.js'
 import { isFollowupPending } from '../tasks/types.js'
-import { canClaimTask, consecutiveFailures, cooldownUntil, retryRequirement, runDisposition, shouldRetryRun, slotAvailability } from './conditions.js'
+import { canClaimTask, consecutiveFailures, cooldownUntil, resumeMessage, retryRequirement, runDisposition, shouldRetryRun, slotAvailability } from './conditions.js'
 import { ExecutionRecovery } from './recovery.js'
 import type { StartParams } from './runner.js'
 import type { AgentSlotStatus, SchedulerStatus, SlotHold } from './status.js'
@@ -16,6 +16,7 @@ import type { Db } from '../db/database.js'
 import { afterCommit, inTransaction } from '../db/database.js'
 
 import { runTaskRules } from '../automation/evaluate.js'
+import { deliveredInstructions } from '../session/delivery.js'
 import * as repo from '../db/repo.js'
 import { newId, nowIso, truncate } from '../util.js'
 import { t } from '../i18n/index.js'
@@ -193,7 +194,27 @@ export class Scheduler extends EventEmitter {
   }
 
   private messageFor(task: Task): string | undefined {
-    return this.kindFor(task) === 'followup' ? task.pendingMessage : undefined
+    if (this.kindFor(task) !== 'followup') return undefined
+    return resumeMessage(task.pendingMessage, this.alreadyDelivered(task))
+  }
+
+  /**
+   * How much of the waiting instruction the agent is already holding.
+   *
+   * A resume that died against a limit still handed its instruction over: the CLI wrote it into
+   * the session before it had anything to answer with. The whole stretch of attempts that never
+   * got an answer is read, not just the last one — a second attempt leaves its own line in the
+   * session, and looking only at that one would make the instruction underneath read as
+   * undelivered all over again. Nothing before a run that finished counts: whatever waits here
+   * was written after it.
+   */
+  private alreadyDelivered(task: Task): string[] {
+    let unanswered: Run | null = null
+    for (const run of repo.listRunsByTask(this.db, task.id)) {
+      if (run.status === 'succeeded' || run.sessionId !== task.sessionId) break
+      unanswered = run
+    }
+    return unanswered ? deliveredInstructions(this.db, unanswered) : []
   }
 
   /** An initial run always opens a new session. Only a resume inherits the existing one. */

@@ -1,10 +1,12 @@
 import type { Agent } from '../../../preload/api/agents.js'
 import type { Run } from '../../../preload/api/execution.js'
 import type { Project } from '../../../preload/api/projects.js'
+import type { SessionMessage } from '../../../preload/api/session.js'
 import type { AppSnapshot } from '../../../preload/api/snapshot.js'
 import type { Task } from '../../../preload/api/tasks.js'
 import { isManagedAgent } from './agentVisibility.js'
 import { t } from './i18n/index.js'
+import { RUN_ERROR_KIND_LABEL } from './labels.js'
 import type { StatusGroup } from './statusGroups.js'
 import { dependencyCleared, orderTasks, wouldCycle } from './taskOrdering.js'
 
@@ -383,10 +385,16 @@ export interface NextSend {
  * "waiting to run". Placed elsewhere as a read-only quote, editability stops
  * being readable from the form.
  */
-export function nextSend(task: Task, hasRuns: boolean): NextSend | null {
+export function nextSend(task: Task, hasRuns: boolean, delivered: string[] = []): NextSend | null {
   if (task.status === 'running') return null
   if (task.pendingMessage.trim().length > 0) {
-    return { field: 'pendingMessage', value: task.pendingMessage }
+    /*
+     * A resume that died before answering still handed its instruction over — the conversation
+     * above already shows it. Calling it "not yet sent" underneath puts the same message on
+     * screen twice, and the run that picks this up will not send it a second time either.
+     */
+    const rest = undelivered(task.pendingMessage, delivered)
+    return rest.length > 0 ? { field: 'pendingMessage', value: rest } : null
   }
   if (!hasRuns) {
     return task.prompt.trim().length > 0 ? { field: 'prompt', value: task.prompt } : null
@@ -395,6 +403,95 @@ export function nextSend(task: Task, hasRuns: boolean): NextSend | null {
     return { field: 'prompt', value: task.prompt }
   }
   return null
+}
+
+/**
+ * What the agent is already holding out of the instruction that waits to be sent.
+ *
+ * A CLI writes an instruction into its session the moment it accepts a resume, so a run that
+ * ended without answering still delivered it. Only such a run counts: after one that finished,
+ * anything waiting here was written afterwards.
+ *
+ * The same reading is made on the main side (`session/delivery.ts`) to decide what the next run
+ * actually sends. This one only decides what to draw, from the conversation already on screen.
+ */
+export function deliveredInstructions(
+  messages: SessionMessage[],
+  runs: Run[],
+  sessionId: string | null
+): string[] {
+  // The whole stretch of attempts that never got an answer, newest first in the list
+  let unanswered: Run | undefined
+  for (const run of runs) {
+    if (run.status === 'succeeded' || run.sessionId !== sessionId) break
+    unanswered = run
+  }
+  if (!unanswered) return []
+  const started = Date.parse(unanswered.startedAt)
+  if (Number.isNaN(started)) return []
+  // Some logs keep only whole seconds, so what was written in the starting second still counts
+  const from = Math.floor(started / 1000) * 1000
+  const said: string[] = []
+  for (const message of messages) {
+    if (message.role !== 'user' || message.isSidechain) continue
+    if (message.timestamp === null || Date.parse(message.timestamp) < from) continue
+    const text = messageText(message)
+    if (text.length > 0) said.push(text)
+  }
+  return said
+}
+
+function messageText(message: SessionMessage): string {
+  return message.blocks
+    .map((block) => (block.kind === 'text' ? block.text : ''))
+    .filter((part) => part.length > 0)
+    .join('\n\n')
+    .trim()
+}
+
+/** How many messages back a sentence still counts as "the conversation just said that". */
+const RECENT = 3
+
+/**
+ * What the failure box says under its heading.
+ *
+ * The reason is dropped once the conversation itself carries it: Claude Code writes
+ * "You've reached your limit" into the session as the agent's own turn, so printing the same
+ * sentence in a box right underneath is that sentence twice. What the box still adds there is
+ * the reading of it — that this ended the run, and how.
+ */
+export function failureReason(run: Run | undefined, messages: SessionMessage[]): string {
+  const kind = run?.errorKind ? RUN_ERROR_KIND_LABEL[run.errorKind] : ''
+  const message = run?.errorMessage.trim() ?? ''
+  if (message.length === 0) return kind || t('chat.noFailureReason')
+  return alreadySaid(messages, message) ? kind || t('chat.noFailureReason') : message
+}
+
+function alreadySaid(messages: SessionMessage[], text: string): boolean {
+  const needle = collapse(text)
+  if (needle.length === 0) return false
+  return messages
+    .slice(-RECENT)
+    .some((message) => !message.isSidechain && collapse(messageText(message)).includes(needle))
+}
+
+function collapse(text: string): string {
+  return text.replace(/\s+/g, ' ').trim()
+}
+
+/**
+ * What is left of an instruction once the parts already handed over are taken off the front.
+ *
+ * Follow-ups written one after another are joined in writing order, so what was delivered is
+ * always the front of what waits. Anything that does not match is left whole.
+ */
+export function undelivered(message: string, delivered: string[]): string {
+  let rest = message.trim()
+  for (const text of delivered) {
+    const sent = text.trim()
+    if (sent.length > 0 && rest.startsWith(sent)) rest = rest.slice(sent.length).trim()
+  }
+  return rest
 }
 
 /**

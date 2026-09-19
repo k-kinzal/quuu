@@ -26,6 +26,38 @@ export function runDisposition(
   return retry ? { kind: 'retry', status: 'queued' } : { kind: 'failed', status: 'failed' }
 }
 
+/**
+ * What a resume says when the agent already has everything that was waiting to be sent.
+ *
+ * Every CLI's resume takes a message, so "just carry on" has to be written out. It is addressed to
+ * the agent, not drawn on a screen, so it stays in English in code like the report writer's
+ * instructions - and it names what to continue, because the instruction it refers to is the one
+ * already sitting at the end of that conversation.
+ */
+export const CONTINUE_INSTRUCTION =
+  'Continue the instruction above. It reached you, but the run ended before it was answered.'
+
+/**
+ * What is left of an instruction once the parts the agent already has are taken off the front.
+ *
+ * Follow-ups written one after another are joined in writing order, so what was handed over is
+ * always the front of what is waiting. Anything that does not match is left alone: mistaking a new
+ * instruction for one already sent would drop it without a trace.
+ */
+export function undelivered(message: string, delivered: string[]): string {
+  let rest = message.trim()
+  for (const text of delivered) {
+    const sent = text.trim()
+    if (sent.length > 0 && rest.startsWith(sent)) rest = rest.slice(sent.length).trim()
+  }
+  return rest
+}
+
+/** What a resume sends: whatever the agent has not been given, or a nudge to answer what it has. */
+export function resumeMessage(pending: string, delivered: string[]): string {
+  return undelivered(pending, delivered) || CONTINUE_INSTRUCTION
+}
+
 export const MAX_AUTO_ATTEMPTS = 5
 
 export type RetryRequirement = 'never' | 'usable-agent' | 'other-agent'

@@ -5,7 +5,7 @@ import type { Task } from '../../../preload/api/tasks.js'
 
 import { useSessionPaging } from '../interaction/useSessionPaging.js'
 import { focusAny, pane } from '../interaction/focus.js'
-import { nextSend } from '../model/derive.js'
+import { deliveredInstructions, failureReason, nextSend } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
 import { buildSections, buildTurns } from '../model/summarize.js'
 import { useStore } from '../state/store.js'
@@ -84,7 +84,15 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
    * so placing the next send there makes it unreadable which run it follows.
    */
   const latest = runs.length === 0 || runs[0]?.id === selectedRunId
-  const next = latest ? nextSend(task, runs.length > 0) : null
+  /*
+   * What the agent already holds out of the instruction that waits to be sent. Only the end of
+   * the conversation can say it, so nothing is claimed while a newer page is still unread.
+   */
+  const delivered = useMemo(
+    () => (latest && !session?.hasNewer ? deliveredInstructions(messages, runs, task.sessionId) : []),
+    [latest, session?.hasNewer, messages, runs, task.sessionId]
+  )
+  const next = latest ? nextSend(task, runs.length > 0, delivered) : null
 
   useLayoutEffect(() => {
     if (!active) return
@@ -166,10 +174,14 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
   }
 
   const neverRan = runs.length === 0
-  const failure =
-    task.status === 'failed'
-      ? (runs.find((r) => r.errorMessage)?.errorMessage ?? t('chat.noFailureReason'))
-      : null
+  /*
+   * How the run ended goes **where it ended**: after the last thing the agent said. Carried at
+   * the head of the pane it read as the opening of a conversation it is the outcome of, and on a
+   * conversation of any length it sat a screen away from what it is about.
+   */
+  const failure = task.status === 'failed' && latest && !session?.hasNewer
+    ? failureReason(runs[0], messages)
+    : null
 
   // A written instruction appears at the end of the conversation as the "not yet sent"
   // utterance (`next`). Guidance here is only for when nothing is written at all
@@ -201,17 +213,6 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             <Text size="sm" tone="tertiary">
               {t('chat.loading')}
             </Text>
-          )}
-
-          {failure && (
-            <ContentInset space="section">
-              <Alert
-                title={t('chat.runFailed')}
-                icon={<CircleAlert size={ICON.md} {...iconProps} />}
-              >
-                {failure}
-              </Alert>
-            </ContentInset>
           )}
 
           {/*
@@ -269,6 +270,17 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
           ))}
 
           {session?.hasNewer && <ChatMore><Button size="xs" disabled={pageLoading} onClick={() => void page('newer')}>{t('chat.loadNewer')}</Button></ChatMore>}
+
+          {failure && (
+            <ContentInset space="section">
+              <Alert
+                title={t('chat.runFailed')}
+                icon={<CircleAlert size={ICON.md} {...iconProps} />}
+              >
+                {failure}
+              </Alert>
+            </ContentInset>
+          )}
 
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
           {!session?.hasNewer && next && <PendingTurn task={task} next={next} />}
