@@ -309,6 +309,17 @@ export async function offerNewAgents(db: Db): Promise<void> {
   if (added.length > 0) rememberOffered(db, [...offered, ...added])
 }
 
+/**
+ * Record every optional definition as already offered, without adding any.
+ *
+ * For a state that is built to be looked at (the fixture): what is installed on the machine
+ * must not decide what the screen shows, or a screenshot means something different on every
+ * machine it is taken on.
+ */
+export function markOptionalAgentsOffered(db: Db): void {
+  rememberOffered(db, OPTIONAL_AGENTS.map((def) => def.name))
+}
+
 /** Which optional definitions have been offered already. */
 function offeredNames(db: Db): string[] {
   const stored = repo.getMetaValue(db, OFFERED_AGENTS_KEY)

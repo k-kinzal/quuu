@@ -17,6 +17,7 @@ import { crc32, deflateSync } from 'node:zlib'
 import { openDatabase } from '../src/main/db/database.js'
 import { writeReportAssets } from '../src/main/report/assets.js'
 import * as repo from '../src/main/db/repo.js'
+import { markOptionalAgentsOffered } from '../src/main/seed.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import { OPEN_STATUSES } from '../src/main/tasks/status.js'
 import type { TaskStatus } from '../src/main/tasks/status.js'
@@ -74,6 +75,12 @@ const codex = repo.insertAgent(db, {
  * with more rows (name widths, the adapter column, how disabled looks) only
  * show once the set is complete.
  */
+/*
+ * The set below **is** the set. Whichever CLIs happen to be installed on this machine must not
+ * add rows of their own, or the same screenshot differs from machine to machine.
+ */
+markOptionalAgentsOffered(db)
+
 for (const [i, def] of (
   [
     { name: 'Cursor', command: 'cursor-agent', logAdapter: 'cursor' as const },
