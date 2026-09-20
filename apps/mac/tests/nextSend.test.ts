@@ -131,6 +131,16 @@ describe('what the agent already received', () => {
     expect(deliveredInstructions([said('ここも直して')], [run()], 's2')).toEqual([])
   })
 
+  it('reads it off the copy itself when the CLI wrote the conversation without timestamps', () => {
+    const untimed = said('ここも直して', { timestamp: null })
+    expect(deliveredInstructions([untimed], [run({ promptPreview: 'ここも直して' })], 's1')).toEqual(['ここも直して'])
+  })
+
+  it('counts nothing when a conversation without timestamps holds no copy of what was sent', () => {
+    const untimed = said('前回の指示', { timestamp: null })
+    expect(deliveredInstructions([untimed], [run({ promptPreview: 'ここも直して' })], 's1')).toEqual([])
+  })
+
   it('does not mistake a subagent prompt for an instruction to this conversation', () => {
     expect(deliveredInstructions([said('調べて', { isSidechain: true })], [run()], 's1')).toEqual([])
   })

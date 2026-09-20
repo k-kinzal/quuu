@@ -1,12 +1,12 @@
 import type { Run } from '../../../preload/api/execution.js'
 import type { SessionMessage } from '../../../preload/api/session.js'
+import { writtenBy } from './derive.js'
 import { t } from './i18n/index.js'
 
 /** Never mistake an older utterance from a resumed session for this run's response. */
 export function executionFeedback(run: Run, messages: SessionMessage[]) {
-  const started = Date.parse(run.startedAt)
-  // Some logs have only second precision. Match on the text as well, so the sent copy isn't cleared by a previous instruction.
-  const current = messages.filter((message) => message.timestamp !== null && Date.parse(message.timestamp) >= Math.floor(started / 1000) * 1000)
+  const current = writtenBy(messages, run)
+  // Match on the text as well, so the sent copy isn't cleared by a previous instruction.
   const promptLogged = current.some((message) => message.role === 'user' && message.blocks.some((block) => block.kind === 'text' && block.text.includes(run.promptPreview)))
   const hasResponse = current.some((message) => message.role === 'assistant')
   // An imported run's preview is a summary, not an instruction Quuu sent.

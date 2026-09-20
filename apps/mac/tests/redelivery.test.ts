@@ -34,16 +34,25 @@ beforeEach(() => {
   isolateSessionDirs(workdir)
   db = memoryDb()
   index = new SessionIndex(db)
+  logPath = join(workdir, 'session.jsonl')
+})
+
+/**
+ * The CLI this task's session belongs to.
+ *
+ * Its adapter decides how the conversation is read back - and whether what comes back carries a
+ * clock at all, which is the whole difference the second group of cases below is about.
+ */
+function cli(logAdapter: 'claude' | 'grok'): void {
   agentId = makeAgent(db, {
-    name: 'Codex',
+    name: logAdapter,
     command: '/bin/echo',
-    logAdapter: 'claude',
+    logAdapter,
     resumeArgsTemplate: ['--resume', '{{sessionId}}', '{{prompt}}']
   })
   const projectId = makeProject(db, { name: 'p', path: workdir, targetId: agentId })
   taskId = makeTask(db, projectId, 'Fuzzの再編')
-  logPath = join(workdir, 'session.jsonl')
-})
+}
 
 afterEach(async () => {
   index.stop()
@@ -54,8 +63,18 @@ afterEach(async () => {
   delete process.env.QUUU_USER_DATA
 })
 
-/** A resume that reached the agent and then died against a limit, with the follow-up still waiting. */
-function limitedResume(pending: string, startedAt: string, id = 'run_limited'): void {
+/**
+ * A resume that reached the agent and then died against a limit, with the follow-up still waiting.
+ *
+ * `sent` is what that resume actually handed over. It parts ways with what waits when a human
+ * writes more on top of an instruction already delivered.
+ */
+function limitedResume(
+  pending: string,
+  startedAt: string,
+  id = 'run_limited',
+  sent = pending
+): void {
   repo.insertRun(db, {
     id,
     taskId,
@@ -70,7 +89,7 @@ function limitedResume(pending: string, startedAt: string, id = 'run_limited'): 
     cwd: workdir,
     command: '/bin/echo',
     args: [],
-    promptPreview: pending.slice(0, 500),
+    promptPreview: sent.slice(0, 500),
     exitCode: 1,
     errorKind: 'limit',
     errorMessage: 'usage limit',
@@ -104,12 +123,32 @@ async function sessionHolding(written: Array<[string, string]>): Promise<void> {
   await index.settled()
 }
 
+/** The same conversation from a CLI that records no time: Grok's `chat_history.jsonl`. */
+async function untimedSessionHolding(written: string[]): Promise<void> {
+  writeFileSync(
+    logPath,
+    written
+      .map((text, i) =>
+        JSON.stringify({
+          type: 'user',
+          prompt_index: i,
+          content: [{ type: 'text', text: `<user_query>\n${text}\n</user_query>` }]
+        })
+      )
+      .join('\n') + '\n'
+  )
+  index.request(repo.getRun(db, 'run_limited')!)
+  await index.settled()
+}
+
 function claimed(): string | undefined {
   const scheduler = new Scheduler(db, new Runner(db))
   return scheduler.claimNext()?.params.messageOverride
 }
 
 describe('a retry of a resume that died before answering', () => {
+  beforeEach(() => cli('claude'))
+
   it('asks the agent to carry on instead of writing the instruction into the session a second time', async () => {
     limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
     await sessionHolding([[INSTRUCTION, '2026-09-18T00:33:17.366Z']])
@@ -145,6 +184,47 @@ describe('a retry of a resume that died before answering', () => {
       [INSTRUCTION, '2026-09-18T00:33:17.366Z'],
       [CONTINUE_INSTRUCTION, '2026-09-18T01:10:17.466Z']
     ])
+
+    expect(claimed()).toBe(CONTINUE_INSTRUCTION)
+  })
+})
+
+/**
+ * The same promise, for a CLI whose conversation carries no clock.
+ *
+ * Grok writes no timestamp at all, and Cursor's store keeps none either. Reading "what this run
+ * wrote" by time there hands back an empty conversation, so every retry read the instruction as
+ * undelivered: one real Cursor task was handed the same sentence on all three of its attempts.
+ * What the copy the CLI wrote is recognized by here is the instruction itself.
+ */
+describe('a retry of a resume whose CLI writes no timestamps', () => {
+  beforeEach(() => cli('grok'))
+
+  it('asks the agent to carry on once the conversation holds the instruction', async () => {
+    limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
+    await untimedSessionHolding([INSTRUCTION])
+
+    expect(claimed()).toBe(CONTINUE_INSTRUCTION)
+  })
+
+  it('sends the instruction when the conversation shows no sign of it', async () => {
+    limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
+    await untimedSessionHolding(['an older instruction'])
+
+    expect(claimed()).toBe(INSTRUCTION)
+  })
+
+  it('sends only what the agent never received when a follow-up was written on top', async () => {
+    limitedResume(`${INSTRUCTION}\n\nplease continue`, '2026-09-18T00:33:13.877Z', 'run_limited', INSTRUCTION)
+    await untimedSessionHolding([INSTRUCTION])
+
+    expect(claimed()).toBe('please continue')
+  })
+
+  it('does not go back to the instruction because the attempt before only left a nudge', async () => {
+    limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
+    limitedResume(INSTRUCTION, '2026-09-18T01:10:11.863Z', 'run_limited_again')
+    await untimedSessionHolding([INSTRUCTION, CONTINUE_INSTRUCTION])
 
     expect(claimed()).toBe(CONTINUE_INSTRUCTION)
   })

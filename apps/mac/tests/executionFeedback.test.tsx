@@ -19,7 +19,7 @@ import { makeAgent, makeTask, makeProject, memoryDb, occupy } from './helpers.js
 let db: ReturnType<typeof memoryDb>
 let run: Run
 const session: SessionSnapshot = { sessionId: 's', logPath: null, exists: false, title: null, messages: [], hasMore: false, totalMessages: 0 }
-const message = (role: 'user' | 'assistant', timestamp: string, text: string): SessionMessage => ({ id: text, role, timestamp, isSidechain: false, model: null, blocks: [{ kind: 'text', text }] })
+const message = (role: 'user' | 'assistant', timestamp: string | null, text: string): SessionMessage => ({ id: text, role, timestamp, isSidechain: false, model: null, blocks: [{ kind: 'text', text }] })
 beforeEach(() => {
   db = memoryDb()
   const agent = makeAgent(db, { name: '検証' })
@@ -77,6 +77,25 @@ it('shows only the activity label once the prompt reaches the log, without timin
   expect(screen.getByRole('status').textContent).toBe('Agent running')
   expect(container.textContent).toBe('Agent running')
   expect(screen.queryByRole('button')).toBeNull()
+})
+
+/**
+ * Cursor and Grok write no timestamp with a message, so "what this run wrote" cannot be cut out of
+ * the conversation by time. Read that way, the copy Quuu shows while the log catches up never gave
+ * way to the CLI's own record and the same message stood on screen twice.
+ */
+it('stops repeating the message it sent once a CLI that writes no timestamps records it', () => {
+  const messages = [message('assistant', null, '前回の結果'), message('user', null, run.promptPreview)]
+  const { container } = render(<ThemeProvider colorScheme="dark"><ExecutionActivity run={run} messages={messages} /></ThemeProvider>)
+  expect(screen.queryByText('Sent')).toBeNull()
+  expect(container.textContent).toBe('Agent running')
+})
+
+it('keeps the message it sent on screen while a CLI that writes no timestamps has not recorded it', () => {
+  const messages = [message('assistant', null, '前回の結果')]
+  render(<ThemeProvider colorScheme="dark"><ExecutionActivity run={run} messages={messages} /></ThemeProvider>)
+  expect(screen.getByText('Sent')).toBeTruthy()
+  expect(screen.getByText(run.promptPreview)).toBeTruthy()
 })
 
 it('keeps the running label through log silence and the arrival of a response', () => {
