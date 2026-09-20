@@ -5,6 +5,8 @@ export const workbench: typeof en = {
     agent: 'AI',
     agentTitle: 'AI: {{name}}',
     agentGroup: '{{name}}（グループ全体）',
+    agentProject: '{{name}}（プロジェクトの指定）',
+    agentOther: 'ほかのAI',
     label: 'タスクを追加',
     runNowFailed: 'いま実行できませんでした',
     afterRun: '実行後',

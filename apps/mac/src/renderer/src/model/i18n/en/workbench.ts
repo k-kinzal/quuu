@@ -4,6 +4,8 @@ export const workbench = {
     agent: 'AI',
     agentTitle: 'AI: {{name}}',
     agentGroup: '{{name}} (entire group)',
+    agentProject: '{{name}} (project setting)',
+    agentOther: 'Other AI',
     label: 'Add a task',
     runNowFailed: 'Could not run now',
     afterRun: 'After run',

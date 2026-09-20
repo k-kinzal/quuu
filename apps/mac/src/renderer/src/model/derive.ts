@@ -299,6 +299,18 @@ export function projectIssues(
 }
 
 /**
+ * The agents the project itself points at: the single agent it names, or its group's members.
+ *
+ * Only what the project chose. Fallback chains are reachable too, but nobody picked them for
+ * this project, so they belong with the rest rather than with the project's own.
+ */
+export function projectAgentIds(snapshot: AppSnapshot, project: Project | undefined): string[] {
+  if (!project?.targetId) return []
+  if (project.targetKind === 'agent') return [project.targetId]
+  return snapshot.groups.find((g) => g.id === project.targetId)?.memberIds ?? []
+}
+
+/**
  * Candidates for the composer's agent picker.
  * The project assignment (single agent / group members) goes first,
  * followed by the remaining enabled agents.
@@ -320,13 +332,7 @@ export function candidateAgentsFor(
     ordered.push(agent)
   }
 
-  if (project?.targetId) {
-    if (project.targetKind === 'agent') push(byId.get(project.targetId))
-    else {
-      const group = snapshot.groups.find((g) => g.id === project.targetId)
-      group?.memberIds.forEach((id) => push(byId.get(id)))
-    }
-  }
+  projectAgentIds(snapshot, project).forEach((id) => push(byId.get(id)))
   if (overrideId) push(byId.get(overrideId))
   snapshot.agents.filter((a) => a.enabled).forEach(push)
 

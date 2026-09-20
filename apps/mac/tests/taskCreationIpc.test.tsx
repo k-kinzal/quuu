@@ -136,10 +136,10 @@ function findAdded() { return app.tasks.listTasks().find(task => task.title === 
 function assignGroup() {
   const first = makeAgent(app.db, { name: 'AI One' })
   const second = makeAgent(app.db, { name: 'AI Two' })
-  makeAgent(app.db, { name: 'Unrelated AI' })
+  const unrelated = makeAgent(app.db, { name: 'Unrelated AI' })
   const group = app.agents.createGroup({ name: 'Project AI', strategy: 'priority', memberIds: [first, second], description: '', sortOrder: 0 })
   app.projects.updateProject(projectId, { targetKind: 'group', targetId: group.id })
-  return { first, second, group }
+  return { first, second, unrelated, group }
 }
 
 describe('choosing the AI before creating a task', () => {
@@ -158,11 +158,10 @@ describe('choosing the AI before creating a task', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(findAdded()?.agentOverrideId).toBe(second))
   })
-  it('offers only project group members and persists the individual choice or the whole group with creation', async () => {
+  it('persists the individual choice or the whole group with creation', async () => {
     const { second } = assignGroup()
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Project AI' }))
-    expect(screen.queryByText('Unrelated AI')).toBeNull()
     fireEvent.click(screen.getByText('AI Two'))
     fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: '一覧から追加する' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
@@ -174,16 +173,44 @@ describe('choosing the AI before creating a task', () => {
     await waitFor(() => expect(app.tasks.listTasks().find(task => task.title === 'Use group')?.agentOverrideId).toBeNull())
   })
 
-  it('does not carry an individual choice to another project or keep it when its group member is removed', () => {
+  it('does not carry an individual choice to another project, but keeps it when its group member is removed', () => {
     const { first, second, group } = assignGroup()
     useStore.getState().setNewTaskAgent(projectId, second)
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
     expect(screen.getByRole('button', { name: 'AI Two' })).toBeTruthy()
+    // Leaving the group does not undo a decision a human made: off the target is where a forced pick lives anyway
     act(() => { app.agents.updateGroup(group.id, { memberIds: [first] }) })
-    expect(screen.queryByTitle('AI: AI Two')).toBeNull()
+    expect(screen.getByTitle('AI: AI Two')).toBeTruthy()
     const other = app.projects.createProject({ name: 'Other project', path: '/tmp/other', targetKind: 'agent', targetId: first })
     act(() => useStore.getState().setTargetProject(other.id))
     expect(screen.queryByRole('button', { name: 'AI Two' })).toBeNull()
+  })
+
+  it('offers the AIs the project never named, so one can be forced while the project\'s own sits out a Limit', async () => {
+    const { unrelated } = assignGroup()
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Project AI' }))
+    // The group's own members come first; everything else defined follows as the deliberate pick
+    expect(screen.getAllByRole('option').map(option => option.textContent))
+      .toEqual(['Project AI (entire group)', 'AI One', 'AI Two', 'Unrelated AI'])
+    fireEvent.click(screen.getByText('Unrelated AI'))
+    fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: '一覧から追加する' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(findAdded()?.agentOverrideId).toBe(unrelated))
+  })
+
+  it('offers the same escape to a project that names a single AI, without listing that one twice', async () => {
+    const { first, unrelated } = assignGroup()
+    const other = app.projects.createProject({ name: 'Other project', path: '/tmp/other', targetKind: 'agent', targetId: first })
+    act(() => useStore.getState().setTargetProject(other.id))
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'AI One' }))
+    expect(screen.getAllByRole('option').map(option => option.textContent))
+      .toEqual(['AI One (project setting)', 'AI Two', 'Unrelated AI'])
+    fireEvent.click(screen.getByText('Unrelated AI'))
+    fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: 'Forced onto another AI' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(app.tasks.listTasks().find(task => task.title === 'Forced onto another AI')?.agentOverrideId).toBe(unrelated))
   })
 
   it('offers the same choice in quick add and keeps the decided AI visible without a picker in the detail composer', async () => {
@@ -362,9 +389,12 @@ describe('one prompt interface from creation to follow-up', () => {
     expect(findAdded()).toMatchObject({ title: title.value, projectId, agentOverrideId: second })
   })
 
-  it('shows a fixed AI value even when a project has only one choice', () => {
-    const { first, group } = assignGroup()
+  it('shows a fixed AI value when the one the project names is the only one defined', () => {
+    const { first, second, unrelated, group } = assignGroup()
     app.agents.updateGroup(group.id, { memberIds: [first] })
+    // With nothing else defined there is nothing to force it onto, so the value is a statement, not a picker
+    app.agents.deleteAgent(second)
+    app.agents.deleteAgent(unrelated)
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer fixedProjectId={projectId} /></ThemeProvider>)
     expect(screen.getByTitle('AI: Project AI').textContent).toBe('Project AI')
     expect(screen.queryByRole('button', { name: 'Project AI' })).toBeNull()
