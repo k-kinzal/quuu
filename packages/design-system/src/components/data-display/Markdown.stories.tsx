@@ -46,6 +46,31 @@ export const Document: StoryObj = {
   )
 }
 
+export const LocalPaths: StoryObj = {
+  render: () => (
+    <Column sx={{ maxWidth: 620 }}>
+      <Markdown onOpenLink={console.log} onOpenPath={console.log}>
+        {[
+          '## Output locations',
+          '出力先：/tmp/ochinpopo-training/combined_train。',
+          '',
+          '`/tmp/ochinpopo-training/combined_train`',
+          '',
+          '`~/Documents/日本語 data #1%20?`',
+          '',
+          '[Open output folder](/tmp/ochinpopo-training/combined_train)',
+          '',
+          '[Website](https://example.com) and `cat /tmp/output`.',
+          '',
+          '```sh',
+          'ls /tmp/ochinpopo-training/combined_train',
+          '```'
+        ].join('\n')}
+      </Markdown>
+    </Column>
+  )
+}
+
 /** Do the corners of the spec (reference links, footnotes, nesting, code inside tables) hold up? */
 export const Corners: StoryObj = {
   render: () => (

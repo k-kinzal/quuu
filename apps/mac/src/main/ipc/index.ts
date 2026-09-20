@@ -1,4 +1,5 @@
 import { savePromptFiles } from '../platform/promptFiles.js'
+import { openExternalLink } from '../platform/externalLinks.js'
 import { implement, ORPCError } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/message-port'
 import { BrowserWindow, clipboard, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
@@ -374,10 +375,7 @@ export function createAppRouter(app: QuuuApp) {
 
   })
   const openExternal = os.system.openExternal.handler(async ({ input }) => {
-    const url = input
-
-    await shell.openExternal(url)
-
+    await openExternalLink(input)
   })
   const copyText = os.system.copy.handler(({ input }) => {
     const text = input

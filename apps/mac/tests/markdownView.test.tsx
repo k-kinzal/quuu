@@ -4,6 +4,7 @@ import '@testing-library/jest-dom/vitest'
 import { cleanup, render, screen } from '@testing-library/react'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import { Markdown } from '../../../packages/design-system/src/components/data-display/Markdown.js'
+import { MessageBody } from '../src/renderer/src/components/MessageBody.js'
 
 /**
  * Whether a message comes out in **the shape of the screen**.
@@ -13,7 +14,7 @@ import { Markdown } from '../../../packages/design-system/src/components/data-di
  * whether a destination that cannot be opened is left unlinked, whether a fence becomes a code surface.
  */
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 
 // jsdom has no color-scheme query. Fall back to the default (dark)
 beforeAll(() => {
@@ -143,6 +144,56 @@ describe('code', () => {
 })
 
 describe('destinations', () => {
+  it('opens a path from the Mac conversation through the system operation', () => {
+    const openExternal = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('quuu', { system: { openExternal } })
+    render(<ThemeProvider colorScheme="dark"><MessageBody text="`/tmp/ochinpopo-training/combined_train`" /></ThemeProvider>)
+    screen.getByRole('link').click()
+    expect(openExternal).toHaveBeenCalledWith('/tmp/ochinpopo-training/combined_train')
+  })
+
+  it('links bare and inline paths without changing their displayed text', () => {
+    const onOpenPath = vi.fn()
+    const path = '/tmp/ochinpopo-training/combined_train'
+    const container = show(`出力先：${path}。\n\n\`${path}\`\n\n\`~/Documents/日本語 data #1%20?\``, { onOpenPath })
+    const links = screen.getAllByRole('link')
+    expect(links).toHaveLength(3)
+    links[0].click()
+    expect(onOpenPath).toHaveBeenLastCalledWith(path)
+    links[1].click()
+    expect(onOpenPath).toHaveBeenLastCalledWith(path)
+    expect(links[1].querySelector('code')).toHaveTextContent(path)
+    links[2].click()
+    expect(decodeURIComponent(onOpenPath.mock.lastCall?.[0] as string)).toBe('~/Documents/日本語 data #1%20?')
+    expect(container).toHaveTextContent(`出力先：${path}。`)
+  })
+
+  it('routes explicit and reference path links to the local opener and web links to the web opener', () => {
+    const onOpenPath = vi.fn()
+    const onOpenLink = vi.fn()
+    show('[folder](/tmp/output) [home](~/Documents) [file](file:///tmp/output) [reference][out] [web](https://example.com)\n\n[out]: </tmp/space here>', { onOpenPath, onOpenLink })
+    for (const link of screen.getAllByRole('link')) link.click()
+    expect(onOpenPath.mock.calls).toEqual([['/tmp/output'], ['~/Documents'], ['file:///tmp/output'], ['/tmp/space%20here']])
+    expect(onOpenLink).toHaveBeenCalledTimes(1)
+    expect(onOpenLink).toHaveBeenCalledWith('https://example.com')
+  })
+
+  it('keeps local paths unlinked unless the host provides a local opener', () => {
+    show('/tmp/output `~/Documents` [folder](/tmp/output)', { onOpenLink: vi.fn() })
+    expect(screen.queryAllByRole('link')).toHaveLength(0)
+  })
+
+  it('does not link commands, fenced code, relative paths or paths inside existing links', () => {
+    const container = show('`cat /tmp/output` `./relative/file`\n\n```sh\ncat /tmp/output\n```\n\n[/tmp/label](https://example.com) [`/tmp/code`](https://example.com/code)\n\n[relative](./file) [network](//server/share) [script](javascript:alert(1))', { onOpenPath: vi.fn(), onOpenLink: vi.fn() })
+    expect(screen.getAllByRole('link')).toHaveLength(2)
+    expect(container.querySelector('a a')).toBeNull()
+  })
+
+  it('keeps prose punctuation outside bare paths in lists and tables', () => {
+    show('- (/tmp/first), then /tmp/second.\n\n| Output |\n| --- |\n| /tmp/third |', { onOpenPath: vi.fn() })
+    expect(screen.getAllByRole('link').map(link => link.textContent)).toEqual(['/tmp/first', '/tmp/second', '/tmp/third'])
+  })
+
   it('links only destinations that can be opened', () => {
     const onOpenLink = vi.fn()
     show('[説明](https://example.com) と [危険](javascript:alert(1))', { onOpenLink })

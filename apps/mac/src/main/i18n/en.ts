@@ -1,5 +1,9 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  externalLinks: {
+    cannotOpen: 'This link could not be opened.',
+    pathUnavailable: 'This path does not exist or cannot be accessed: {{path}}'
+  },
   taskStatus: {
     draft: 'Draft',
     held: 'Held',

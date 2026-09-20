@@ -11,7 +11,7 @@ import { Copy, ICON, iconProps } from '../ui/icons.js'
  * Render it as structure here (fenced code gets highlighting, `mermaid` becomes a diagram).
  *
  * The look belongs to the design system's `Markdown`. What this hands over is
- * **the 2 things only Quuu can do** — opening external links and copying code.
+ * **the things only Quuu can do** — opening links and local paths, and copying code.
  */
 
 // A reference that changes every render rebuilds `Markdown` wholesale, so hoist and pin it
@@ -34,7 +34,7 @@ const codeActions = (code: string): JSX.Element => (
  */
 export const MessageBody = memo(function MessageBody({ text, subdued }: { text: string; subdued?: boolean }): JSX.Element {
   return (
-    <Markdown onOpenLink={openLink} codeActions={codeActions} subdued={subdued}>
+    <Markdown onOpenLink={openLink} onOpenPath={openLink} codeActions={codeActions} subdued={subdued}>
       {text}
     </Markdown>
   )

@@ -1,6 +1,10 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  externalLinks: {
+    cannotOpen: 'このリンクを開けませんでした。',
+    pathUnavailable: 'このパスが存在しないか、アクセスできません: {{path}}'
+  },
   taskStatus: {
     draft: '下書き',
     held: '保留',

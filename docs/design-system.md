@@ -130,6 +130,9 @@ Decisions:
 - **Never render raw HTML.** Keep react-markdown's default (no `rehype-raw`).
   Strings arriving in a conversation are treated as written by someone else
 - **Only link destinations that can be opened** (`markdown/url.ts`). `javascript:` and relative paths stay as text
+- **Local paths are opt-in.** `Markdown.onOpenPath` links absolute and `~/` paths
+  in prose, inline code, and Markdown links. The callback receives an encoded
+  destination; filesystem access and native opening belong to the host.
 - **Never fetch images.** Show only what they point at
 - **Add no colors.** Code uses `palette.syntax`; diagrams pass Theme tokens into
   mermaid's theme variables (a stock theme would make that one spot look like another app)

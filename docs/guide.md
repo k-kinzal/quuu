@@ -341,6 +341,11 @@ and silently.
 
 ## Conversation and review projections
 
+In Mac conversations, click an absolute path such as `/tmp/output` or a home path
+such as `~/Documents/output` to open the folder in Finder. File paths select the
+file in Finder. Paths in inline code and Markdown links work too; use either form
+for names containing spaces. A missing or inaccessible path shows an error.
+
 Session ingestion is owned by `main/session/index.ts` for the app's lifetime.
 It parses appended JSONL in bounded read/write batches, yields between batches,
 and stores messages and images in SQLite. Completed message bodies and image

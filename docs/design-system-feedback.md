@@ -1,5 +1,17 @@
 # Call-site feedback and decisions
 
+## 2026-09-20 Local paths in Markdown
+
+- Request: a folder named in a response needs to open from the conversation.
+- Accepted: `Markdown.onOpenPath` opts into links for absolute and home-relative
+  paths in prose, inline code, and Markdown destinations. Existing link appearance
+  applies; the remark tree preserves code fences, commands, and existing links.
+- Excluded: resolving the home directory, checking the filesystem, choosing Finder,
+  and reporting unavailable paths belong to the Mac main process. The iPhone does
+  not opt into local path detection.
+- Verification: Markdown rendering and opener regression tests, the Local Paths
+  story, and the Mac fixture conversation with a temporary output directory.
+
 ## 2026-09-15 Ambient light back on the compositor, window glass without an in-page blur
 
 - Request: since the ambient lights were sampled on a 200ms clock the Mac window

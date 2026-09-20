@@ -6,6 +6,7 @@ import remarkGfm from 'remark-gfm'
 import { letterSpacing, lineHeight } from '../../theme/tokens.js'
 import { isDiagramLanguage } from '../../markdown/language.js'
 import { safeUrl } from '../../markdown/url.js'
+import { localPathUrl, remarkLocalPaths } from '../../markdown/localPaths.js'
 import { Diagram } from './Diagram.js'
 import { SourceBlock } from './SourceBlock.js'
 
@@ -38,6 +39,8 @@ export interface MarkdownProps {
    * (the design system has no means of "opening something external")
    */
   onOpenLink?: (href: string) => void
+  /** Opt in to linking absolute and home-relative paths; the host owns opening them. */
+  onOpenPath?: (href: string) => void
   /** What to place to the right of a code block's heading (copy, etc.) */
   codeActions?: (code: string, language: string) => ReactNode
   /** Render `mermaid` fences as diagrams. Defaults to rendering */
@@ -50,14 +53,15 @@ export interface MarkdownProps {
 export function Markdown({
   children,
   onOpenLink,
+  onOpenPath,
   codeActions,
   diagrams = true,
   sx,
   subdued
 }: MarkdownProps): JSX.Element {
   const components = useMemo<Components>(
-    () => build({ onOpenLink, codeActions, diagrams }),
-    [onOpenLink, codeActions, diagrams]
+    () => build({ onOpenLink, onOpenPath, codeActions, diagrams }),
+    [onOpenLink, onOpenPath, codeActions, diagrams]
   )
 
   return (
@@ -69,8 +73,8 @@ export function Markdown({
          * utterances are often written as runs of lines, and joining them
          * erases the breaks in meaning
          */
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-        urlTransform={(url) => safeUrl(url) ?? ''}
+        remarkPlugins={onOpenPath ? [remarkGfm, remarkBreaks, remarkLocalPaths] : [remarkGfm, remarkBreaks]}
+        urlTransform={(url) => (onOpenPath ? localPathUrl(url) : null) ?? safeUrl(url) ?? ''}
         components={components}
       >
         {children}
@@ -239,11 +243,12 @@ const TableScroll = styled('div')({ overflowX: 'auto', maxWidth: '100%' })
 
 interface Config {
   onOpenLink?: (href: string) => void
+  onOpenPath?: (href: string) => void
   codeActions?: (code: string, language: string) => ReactNode
   diagrams: boolean
 }
 
-function build({ onOpenLink, codeActions, diagrams }: Config): Components {
+function build({ onOpenLink, onOpenPath, codeActions, diagrams }: Config): Components {
   return {
     /*
      * Fenced code arrives as `pre > code`. Intercept on the `pre` side and replace
@@ -270,16 +275,18 @@ function build({ onOpenLink, codeActions, diagrams }: Config): Components {
     },
 
     a({ href, children, title }) {
-      const url = href === undefined ? null : safeUrl(href)
-      // Destinations we can't open (`javascript:`, relative paths) come out as plain text
-      if (!onOpenLink || url === null) return <>{children}</>
+      const path = href === undefined || !onOpenPath ? null : localPathUrl(href)
+      const url = path ?? (href === undefined ? null : safeUrl(href))
+      const open = path === null ? onOpenLink : onOpenPath
+      // Destinations without a host-provided opener stay as text.
+      if (!open || url === null) return <>{children}</>
       return (
         <a
           href={url}
           title={title}
           onClick={(event) => {
             event.preventDefault()
-            onOpenLink(url)
+            open(url)
           }}
         >
           {children}
