@@ -60,20 +60,58 @@ export function resumeMessage(pending: string, delivered: string[]): string {
 
 export const MAX_AUTO_ATTEMPTS = 5
 
+/**
+ * What has to change before a run that ended this way can end differently.
+ *
+ *   time          the clock, on its own. The account is away until a moment and comes back
+ *   same-agent    another go at it. Nothing about the failure says the next one goes the same way
+ *   another-agent this one is what gave out - its credentials, its binary, the CLI itself
+ *   hands         a human. Nothing automatic changes the outcome
+ *
+ * One reading per kind, because everything that follows from a failure - whether it spends one of
+ * the task's attempts, who may take the next one, whether it lands on a desk - has to agree about
+ * what went wrong. Told apart anywhere else, a wall the clock takes down starts reading as a task
+ * that cannot be done.
+ */
+export type FailureRemedy = 'time' | 'same-agent' | 'another-agent' | 'hands'
+
+export function failureRemedy(error: RunErrorKind): FailureRemedy {
+  switch (error) {
+    case 'limit':
+      return 'time'
+    case 'timeout':
+      return 'same-agent'
+    case 'auth':
+    case 'spawn':
+    case 'nonzero-exit':
+      return 'another-agent'
+    default:
+      // A cancel is a human's own doing, and an orphan says the process is gone, not what it did
+      return 'hands'
+  }
+}
+
 export type RetryRequirement = 'never' | 'usable-agent' | 'other-agent'
 
 /** The run side takes this condition and looks only for the candidates it needs. */
 export function retryRequirement(error: RunErrorKind, failures: number): RetryRequirement {
-  if (failures >= MAX_AUTO_ATTEMPTS) return 'never'
-  switch (error) {
-    case 'limit':
-    case 'timeout':
+  const remedy = failureRemedy(error)
+  /*
+   * The attempt budget is there to stop a task that keeps failing from being handed the queue
+   * forever. A wall the clock takes down is not that task: nothing was attempted, so there is
+   * nothing to give up on, and counting it out hands a human the one thing they can do nothing
+   * about - a moment that has not come round yet. What keeps this from spinning is the wait
+   * itself: a limit always parks the task until the agent is back (`cooldownSeconds`), so an
+   * unlimited number of goes is still at most one a minute, with the agent visibly cooling.
+   */
+  if (remedy !== 'time' && failures >= MAX_AUTO_ATTEMPTS) return 'never'
+  switch (remedy) {
+    case 'time':
+    case 'same-agent':
       return 'usable-agent'
-    case 'auth':
-    case 'spawn':
-    case 'nonzero-exit':
+    case 'another-agent':
       return 'other-agent'
-    default:
+    case 'hands':
       return 'never'
   }
 }
@@ -89,12 +127,18 @@ export function shouldRetryRun(
     (requirement === 'usable-agent' || hasOtherCandidate)
 }
 
-/** Takes the run history newest first. A success or a cancel closes off the retry count. */
+/**
+ * Takes the run history newest first. A success or a cancel closes off the retry count.
+ *
+ * What is counted is attempts at the work. A limited run is not one of them - the CLI turned the
+ * instruction away before reading it - so it neither adds to the count nor clears it: the failures
+ * underneath are still there once the account comes back.
+ */
 export function consecutiveFailures(runs: ReadonlyArray<Pick<Run, 'status'>>): number {
   let count = 0
   for (const run of runs) {
     if (run.status === 'succeeded' || run.status === 'canceled') break
-    if (run.status === 'limited' || run.status === 'failed' || run.status === 'timeout') count++
+    if (run.status === 'failed' || run.status === 'timeout') count++
   }
   return count
 }
@@ -112,18 +156,25 @@ export function slotAvailability(
   return active + (ownsReservation ? 0 : reserved) >= limit ? 'reserved' : 'available'
 }
 
-/** The cooldown is a decision. Reading the clock and saving it are left to the run side. */
-export function cooldownSeconds(error: RunErrorKind | null, configured: number | undefined): number | null {
-  if (error === 'limit') return configured ?? 900
-  if (error === 'auth') return 300
-  return null
-}
-
 /** A misread date must not park an agent for a year. Anything beyond this is not believed. */
 export const MAX_LIMIT_COOLDOWN_SECONDS = 7 * 24 * 60 * 60
 
-/** Never come straight back, even when the stated moment has all but arrived. */
+/**
+ * Never come straight back, even when the stated moment has all but arrived - or when the
+ * configuration says not to wait at all.
+ *
+ * This floor is what makes waiting out a limit a wait. Waiting is the whole remedy for one
+ * (`failureRemedy`), so with a zero here the same task would be handed to the same wall as fast as
+ * a process can start, for as long as the wall stood.
+ */
 const MIN_LIMIT_COOLDOWN_SECONDS = 60
+
+/** The cooldown is a decision. Reading the clock and saving it are left to the run side. */
+export function cooldownSeconds(error: RunErrorKind | null, configured: number | undefined): number | null {
+  if (error === 'limit') return Math.max(configured ?? 900, MIN_LIMIT_COOLDOWN_SECONDS)
+  if (error === 'auth') return 300
+  return null
+}
 
 /**
  * The moment the agent may be tried again, as an absolute time. null when nothing is owed.

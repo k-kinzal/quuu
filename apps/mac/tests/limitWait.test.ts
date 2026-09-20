@@ -125,6 +125,33 @@ function followupOn(f: Fixture, title: string): string {
   return task
 }
 
+/** A resume of that conversation that the same wall already turned away, put into its history. */
+function walled(f: Fixture, taskId: string, at: Date): void {
+  const id = `run_${Math.random().toString(36).slice(2, 12)}`
+  repo.insertRun(f.db, {
+    id,
+    taskId,
+    agentId: f.limited,
+    resolvedFromGroupId: null,
+    sessionId: repo.getTask(f.db, taskId)?.sessionId ?? '',
+    kind: 'followup',
+    status: 'limited',
+    attempt: 1,
+    fallbackFromRunId: null,
+    pid: null,
+    cwd: workdir,
+    command: '/bin/sh',
+    args: [],
+    promptPreview: '',
+    exitCode: 1,
+    errorKind: 'limit',
+    errorMessage: "ERROR: You've hit your usage limit.",
+    sessionLogPath: null,
+    stdoutLogPath: '/tmp/x.log',
+    startedAt: at.toISOString()
+  })
+}
+
 describe('the latest run of a task', () => {
   it('is the later insert when two runs share a start time', () => {
     const db = memoryDb()
@@ -417,6 +444,23 @@ describe('a Limit that says when it lifts', () => {
     expect(runs.map((r) => r.agentId)).toEqual([f.healthy, f.limited])
     expect(runs[1].status).toBe('limited')
     expect(repo.getTask(f.db, task)?.scheduledAt).toBeNull()
+  })
+
+  it('is still waited out after the attempts run out, not handed to a human who can only wait too', async () => {
+    const f = fixture()
+    const task = followupOn(f, 'Fuzzの再編')
+    // Five earlier resumes, every one of them turned away by the same wall. That used to spend the
+    // task's five attempts and put it on a human's desk at the worst possible moment: the wall was
+    // still standing, so the only thing to do with it was wait for the moment Quuu already knew.
+    for (let ago = 5; ago > 0; ago--) walled(f, task, new Date(Date.now() + (6 - ago) * 1000))
+
+    const done = finishes(f.runner, 1)
+    await f.scheduler.tick()
+    await done
+
+    const after = repo.getTask(f.db, task)!
+    expect(after.status).toBe('queued')
+    expect(after.scheduledAt).toBe(f.liftsAt.toISOString())
   })
 
   it('never pulls a schedule a human set any earlier', async () => {

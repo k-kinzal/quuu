@@ -347,6 +347,20 @@ describe('P0 keeps its execution slot', () => {
 })
 
 describe('fallback resolution', () => {
+  it('names the moment the cooldown ends, so a wait does not read as a stall', async () => {
+    const db = memoryDb()
+    const agent = makeAgent(db, { name: 'opus' })
+    const p = makeProject(db, { name: 'p', targetId: agent })
+    const task = makeTask(db, p, 'Limitに当たったタスク')
+    repo.setCooldown(db, agent, isoPlusSeconds(3600), 'limit')
+
+    // "In cooldown" with no end is what makes a human run it by hand into the same wall
+    const result = await scheduler(db).runNow(task)
+    expect(result.ok).toBe(false)
+    expect(result.reason).toContain('back at')
+    expect(repo.getTask(db, task)?.status).toBe('queued')
+  })
+
   it('picks up on the fallback while a Limit cooldown is in effect', () => {
     const db = memoryDb()
     const sonnet = makeAgent(db, { name: 'sonnet' })

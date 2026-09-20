@@ -22,7 +22,7 @@ import { deliveredInstructions } from '../session/delivery.js'
 import * as repo from '../db/repo.js'
 import { newId, nowIso, truncate } from '../util.js'
 import { t } from '../i18n/index.js'
-import type { ResolveFailure, SessionOwner } from './agentResolver.js'
+import type { ResolveFailure, ResolveOptions, SessionOwner } from './agentResolver.js'
 import { candidateAgents, cooldownClearsAt, fallbackHolds, hasAnyUsableCandidate, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel } from './agentResolver.js'
 import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
@@ -318,14 +318,14 @@ export class Scheduler extends EventEmitter {
         if (!task) continue
 
         // Condition 6: resolve the agent (a per-task override wins)
-        const continuation = this.continuationFor(task)
-        const resolved = resolveAgentForProject(this.db, project, {
+        const options: ResolveOptions = {
           preferredAgentId: task.agentOverrideId,
           reserved: reservedByAgent(others),
-          continuation
-        })
+          continuation: this.continuationFor(task)
+        }
+        const resolved = resolveAgentForProject(this.db, project, options)
         if (!resolved.ok) {
-          const label = `${project.name}: ${this.resolveFailureLabel(project, resolved.reason, others, continuation)}`
+          const label = `${project.name}: ${this.resolveFailureLabel(project, resolved.reason, others, options)}`
           // "Cannot continue" is a fact about the task, not the project. Keying it by project would
           // overwrite the reason for another task in the same project, so it is kept per task
           if (resolved.reason === 'no-continuable-agent') {
@@ -365,19 +365,31 @@ export class Scheduler extends EventEmitter {
    *
    * When a reservation is what blocks it, name **who is holding it**.
    * Stalling silently is the worst failure mode, so anything nameable gets named.
+   *
+   * Takes the same options the resolve was given, so the reason is about the candidates that were
+   * actually in the running rather than a second, wider reading of who could have taken it.
    */
   private resolveFailureLabel(
     project: Project,
     reason: ResolveFailure,
     others: repo.SlotReservation[],
-    continuation?: SessionOwner | null
+    options: ResolveOptions
   ): string {
+    const continuation = options.continuation
     // The party we are waiting on can be named. "Session" alone says nothing about what to fix
     if (reason === 'no-continuable-agent') {
       const owner = continuation ? sessionOwnerLabel(this.db, continuation) : ''
       return owner.length > 0
         ? t('tasks.sessionOwnerUnavailable', { owner })
         : resolveFailureMessage(reason)
+    }
+    // A cooldown is the one blocker with a stated end. Left unsaid it reads as a state with no way
+    // out, and the way out of that is a human running it by hand into the same wall
+    if (reason === 'all-cooling') {
+      const until = cooldownClearsAt(this.db, project, options)
+      return until === null
+        ? resolveFailureMessage(reason)
+        : t('scheduler.coolingUntil', { time: formatTime(until) })
     }
     if (reason !== 'all-reserved') return resolveFailureMessage(reason)
     const ids = new Set(candidateAgents(this.db, project).map((a) => a.id))
@@ -531,16 +543,16 @@ export class Scheduler extends EventEmitter {
       // Even a manual run does not break another task's reservation (a human decided that too).
       // The reserving side is not blocked by it (same rule as claimNext).
       const others = holdsSlot(task.priority) ? [] : repo.listSlotReservations(this.db)
-      const continuation = this.continuationFor(task)
-      const resolved = resolveAgentForProject(this.db, project, {
+      const options: ResolveOptions = {
         preferredAgentId: task.agentOverrideId,
         reserved: reservedByAgent(others),
-        continuation
-      })
+        continuation: this.continuationFor(task)
+      }
+      const resolved = resolveAgentForProject(this.db, project, options)
       if (!resolved.ok) {
         return {
           ok: false,
-          reason: this.resolveFailureLabel(project, resolved.reason, others, continuation)
+          reason: this.resolveFailureLabel(project, resolved.reason, others, options)
         }
       }
 

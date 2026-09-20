@@ -212,6 +212,7 @@ export const en = {
     alreadyRunning: 'Already running',
     projectDisabled: 'The project is disabled',
     cooldownUntil: '{{agent}} is in Limit cooldown (back at {{time}})',
+    coolingUntil: 'The agents are in Limit cooldown (back at {{time}})',
     paused: 'The scheduler is paused',
     moreStuck_one: '{{count}} more is stuck for the same reason',
     moreStuck_other: '{{count}} more are stuck for the same reason',

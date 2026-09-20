@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PRIORITIES, TASK_STATUSES, canHoldTask, holdsSlot } from '../src/main/tasks/status.js'
-import { canClaimTask, cooldownUntil, runDisposition, shouldRetryRun, consecutiveFailures, slotAvailability, cooldownSeconds, MAX_LIMIT_COOLDOWN_SECONDS } from '../src/main/execution/conditions.js'
+import { canClaimTask, cooldownUntil, failureRemedy, runDisposition, shouldRetryRun, consecutiveFailures, slotAvailability, cooldownSeconds, MAX_LIMIT_COOLDOWN_SECONDS } from '../src/main/execution/conditions.js'
 import { dependencyCleared, wouldCycle } from '../src/main/tasks/ordering.js'
 import { mayContinueSession } from '../src/main/agents/types.js'
 import type { RunErrorKind } from '../src/main/execution/types.js'
@@ -49,22 +49,45 @@ describe('automatic retry', () => {
       expect(shouldRetryRun(error, 1, true, true)).toBe(true)
     }
   })
-  it('after 5 failures, or with no candidate, no failure kind auto-retries', () => {
+  it('after 5 failures every kind but a Limit gives up, and none of them retries with no candidate', () => {
     for (const error of errors) {
-      expect(shouldRetryRun(error, 5, true, true)).toBe(false)
+      // A Limit is waited out however many times it has stood: the clock is the whole remedy,
+      // and a human handed one can do nothing but wait for the same moment
+      expect(shouldRetryRun(error, 5, true, true)).toBe(error === 'limit')
       expect(shouldRetryRun(error, 0, false, true)).toBe(false)
+    }
+  })
+  it('what makes each kind of failure go away is read from the kind alone', () => {
+    expect(failureRemedy('limit')).toBe('time')
+    expect(failureRemedy('timeout')).toBe('same-agent')
+    for (const error of ['auth', 'spawn', 'nonzero-exit'] as const) {
+      expect(failureRemedy(error)).toBe('another-agent')
+    }
+    for (const error of ['canceled', 'orphaned', 'no-agent'] as const) {
+      expect(failureRemedy(error)).toBe('hands')
     }
   })
   it('failures before a success or cancellation do not carry over, and running is not counted as failure', () => {
     const runs = (statuses: RunStatus[]) => statuses.map((status) => ({ status }))
-    expect(consecutiveFailures(runs(['failed', 'running', 'limited', 'succeeded', 'failed']))).toBe(2)
+    expect(consecutiveFailures(runs(['failed', 'running', 'succeeded', 'failed']))).toBe(1)
     expect(consecutiveFailures(runs(['canceled', 'failed']))).toBe(0)
+  })
+  it('a run the account turned away spends none of the attempts, and clears none of them either', () => {
+    const runs = (statuses: RunStatus[]) => statuses.map((status) => ({ status }))
+    expect(consecutiveFailures(runs(['limited', 'limited', 'limited', 'limited', 'limited']))).toBe(0)
+    expect(consecutiveFailures(runs(['limited', 'failed', 'limited', 'failed']))).toBe(2)
   })
   it('Limit uses the configured cooldown; auth failures use a short one', () => {
     expect(cooldownSeconds('limit', 60)).toBe(60)
     expect(cooldownSeconds('limit', undefined)).toBe(900)
     expect(cooldownSeconds('auth', 900)).toBe(300)
     expect(cooldownSeconds(null, 900)).toBeNull()
+  })
+  it('a Limit always waits at least a minute, whatever the configuration says', () => {
+    // Waiting is the whole remedy for a Limit, so a zero here would hand the task straight back
+    // to the same wall, as fast as a process can start, for as long as the wall stood
+    expect(cooldownSeconds('limit', 0)).toBe(60)
+    expect(cooldownSeconds('limit', 30)).toBe(60)
   })
 })
 
