@@ -26,6 +26,13 @@ function writesAPage(signature: string): string[] {
   ]
 }
 const WRITES_A_PAGE = writesAPage('report')
+/** Writes the instructions themselves to the page, so what the writer was told can be read back. */
+const WRITES_THE_PROMPT = [
+  '-c',
+  `printf '%s' "$1" > "$(printf '%s' "$1" | sed -n 's/^Write the page to: //p')"`,
+  'quuu',
+  '{{prompt}}'
+]
 /**
  * These launch a real process, and the first one also resolves the login PATH (a login shell,
  * which is allowed five seconds of its own).
@@ -280,6 +287,35 @@ describe('writing one', () => {
 
     const row = repo.getTaskReport(db, taskId)!
     if (row.pid !== null) process.kill(-row.pid, 'SIGKILL')
+  }, LAUNCHES)
+
+  /**
+   * What the writer is told the work produced has to hold in the repository it is standing in.
+   *
+   * A receipt is a string a CLI printed: a commit made in another checkout, and the odd
+   * `[Run 31947246760]` that looks like one, both survive as far as the prompt. Named there they
+   * are either a line the writer cannot look up or a short id that resolves to a different
+   * commit - and the page comes back describing somebody else's work.
+   */
+  it('names only the commits the repository the report is written in actually has', async () => {
+    initGit()
+    const git = (...args: string[]): string => execFileSync('/usr/bin/git', args, { cwd: work, encoding: 'utf8' })
+    writeFileSync(join(work, 'queue.ts'), 'export const queue = 2\n')
+    git('commit', '-qam', 'Rename the queue')
+    const mine = git('rev-parse', 'HEAD').trim()
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    repo.recordReviewEvidence(db, taskId, 'commit', mine)
+    repo.recordReviewEvidence(db, taskId, 'commit', 'f'.repeat(40))
+    repo.recordReviewEvidence(db, taskId, 'commit', '31947246760')
+    const writer = makeAgent(db, { name: 'Prompt', command: '/bin/sh', argsTemplate: WRITES_THE_PROMPT })
+    settings = { ...settings, reportTargetId: writer }
+    expect((await ops.generate(taskId)).ok).toBe(true)
+
+    const report = await settled(taskId)
+    const prompt = readFileSync(report!.path, 'utf8')
+    expect(prompt).toContain(`${mine.slice(0, 7)} Rename the queue`)
+    expect(prompt).not.toContain('f'.repeat(40))
+    expect(prompt).not.toContain('31947246760')
   }, LAUNCHES)
 
   it('throws away the page it replaced, so a task keeps one report', async () => {

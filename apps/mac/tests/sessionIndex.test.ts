@@ -141,6 +141,40 @@ it.each([false, true])('rebuilds outdated PR evidence from bounded cached pages,
   expect(receive).not.toHaveBeenCalled()
 })
 
+/**
+ * A corrected rule has to be able to take something away.
+ *
+ * What is filed against a task was recorded by the rule of the day, and re-reading that only ever
+ * adds leaves the Pull Requests a later rule rejects sitting on the task forever. The task is the
+ * unit, not the session: a task that ran twice must not have its second reading wipe what the
+ * first one just re-derived.
+ */
+it('drops a Pull Request the run only read, and keeps what its other session produced', async () => {
+  const foreign = 'https://github.com/other/project/pull/7'
+  const own = 'https://github.com/upstream/repo/pull/42'
+  const followUp = 'https://github.com/upstream/repo/pull/43'
+  const receipt = (id: string, command: string, url: string): string =>
+    line({ type: 'assistant', uuid: id, message: { content: [{ type: 'tool_use', id, name: 'Bash', input: { command } }] } }) +
+    line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: id, content: url }] } })
+  writeFileSync(logPath, receipt('read', `gh pr view ${foreign}`, foreign) + receipt('made', 'gh pr create', own))
+  const second = join(dir, 'follow-up.jsonl')
+  const agentId = repo.getRun(db, runId)!.agentId
+  const laterId = occupy(db, taskId, agentId, { stdoutLogPath: join(dir, 'follow-up.log'), kind: 'followup' })
+  repo.updateRun(db, laterId, { sessionLogPath: second })
+  writeFileSync(second, receipt('again', 'gh pr create', followUp))
+  const runs = [repo.getRun(db, runId)!, repo.getRun(db, laterId)!]
+  for (const run of runs) index.request(run, sessionReadTarget(db, run))
+  await index.settled()
+  expect(repo.reviewEvidence(db, taskId).pullRequests.sort()).toEqual([own, followUp].sort())
+
+  // What the old rule left behind: the Pull Request the run only went to look at
+  repo.recordReviewEvidence(db, taskId, 'pull-request', foreign)
+  for (const run of runs) repo.finishSessionEvidence(db, sessionKey(sessionReadTarget(db, run)), 0)
+  for (const run of runs) index.request(run, sessionReadTarget(db, run))
+  await index.settled()
+  expect(repo.reviewEvidence(db, taskId).pullRequests.sort()).toEqual([own, followUp].sort())
+})
+
 it('joins a late tool result across hundreds of messages and records its commit at ingestion', async () => {
   const call = line({ type: 'assistant', uuid: 'commit', message: { content: [{ type: 'tool_use', id: 'call', name: 'Bash', input: { command: 'git commit -m finished' } }] } })
   writeFileSync(logPath, call + history(800))

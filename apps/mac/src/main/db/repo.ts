@@ -66,6 +66,15 @@ export function recordReviewEvidence(db: Db, taskId: string, kind: 'commit' | 'p
   db.prepare('INSERT OR IGNORE INTO task_review_evidence (task_id, kind, value) VALUES (?, ?, ?)').run(taskId, kind, value)
 }
 
+/**
+ * Forget what was recorded of that kind, so re-reading a conversation under a corrected rule
+ * **replaces** the answer instead of adding to it. A receipt that no longer counts as this
+ * task's work has to be able to leave the task.
+ */
+export function clearReviewEvidence(db: Db, taskId: string, kind: 'commit' | 'pull-request'): void {
+  db.prepare('DELETE FROM task_review_evidence WHERE task_id = ? AND kind = ?').run(taskId, kind)
+}
+
 export function reviewEvidence(db: Db, taskId: string): { commits: string[]; pullRequests: string[] } {
   const rows = db.prepare('SELECT kind, value FROM task_review_evidence WHERE task_id = ?').all(taskId) as Row[]
   return { commits: rows.filter(row => row.kind === 'commit').map(row => s(row.value)), pullRequests: rows.filter(row => row.kind === 'pull-request').map(row => s(row.value)) }

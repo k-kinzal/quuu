@@ -9,7 +9,7 @@ import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import type { Project } from '../projects/types.js'
-import { snapshotWorktree } from '../review/git.js'
+import { readCommits, snapshotWorktree } from '../review/git.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ToastPayload } from '../snapshot.js'
 import { newId, newSessionId, nowIso, truncate } from '../util.js'
@@ -151,7 +151,7 @@ export class ReportOperations extends EventEmitter {
       const worktree = await snapshotWorktree(place.dir)
       const previous = repo.getTaskReport(this.db, taskId)
       if (trigger === 'automatic' && alreadyReported(previous, worktree?.tree)) return
-      const path = await resolveLoginPath()
+      const [path, material] = await Promise.all([resolveLoginPath(), this.material(taskId, place.dir)])
       if (this.stopped || !repo.getTask(this.db, taskId)) return
 
       const id = newId('rpt')
@@ -167,7 +167,7 @@ export class ReportOperations extends EventEmitter {
       const exitPath = join(dir, `${id}.exit`)
       const prompt = reportPrompt({
         cwd: place.dir,
-        ...this.material(taskId),
+        ...material,
         page,
         instructions: settings.reportInstructions
       })
@@ -239,12 +239,12 @@ export class ReportOperations extends EventEmitter {
    * conversation — so a generation costs no fresh Git or GitHub work. Whatever is missing comes
    * back empty rather than wrong; the writer is standing in the repository and can look.
    */
-  private material(taskId: string): {
+  private async material(taskId: string, cwd: string): Promise<{
     changes: ReportChange[]
     commits: string[]
     pullRequests: string[]
     sessionLog: string
-  } {
+  }> {
     const snapshot = repo.getReviewSnapshot(this.db, taskId)?.snapshot ?? null
     const evidence = repo.reviewEvidence(this.db, taskId)
     const runs = repo.listRunsByTask(this.db, taskId)
@@ -252,8 +252,18 @@ export class ReportOperations extends EventEmitter {
       (commit) => `${commit.shortSha} ${commit.subject}`
     )
     const seen = new Set((snapshot?.commits ?? []).map((commit) => commit.sha))
-    for (const sha of evidence.commits) {
-      if (![...seen].some((known) => known.startsWith(sha) || sha.startsWith(known))) commits.push(sha)
+    const unseen = evidence.commits.filter(
+      (sha) => ![...seen].some((known) => known.startsWith(sha) || sha.startsWith(known))
+    )
+    /*
+     * Read through the repository the report is being written in, rather than handed over as
+     * written down. A receipt is a string a CLI printed: a commit made in another checkout, and
+     * the odd `[Run 31947246760]` that looks like one, both survive as far as here. Named to a
+     * writer standing in this repository they are a line it cannot look up - or, worse, a short
+     * id that resolves to a different commit - and the page ends up describing other work.
+     */
+    for (const commit of await readCommits(cwd, unseen)) {
+      commits.push(`${commit.shortSha} ${commit.subject}`)
     }
     const pullRequests = [
       ...new Set([...(snapshot?.pullRequests ?? []).map((pr) => pr.url), ...evidence.pullRequests])

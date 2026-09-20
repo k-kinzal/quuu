@@ -59,6 +59,35 @@ it('keeps plain, nested JSON and API creation receipts without counting PR bodie
   ]).pullRequests).toEqual([url])
 })
 
+/**
+ * Reading a Pull Request is not producing one.
+ *
+ * `gh pr view <url>` is how an agent goes and looks at somebody else's Pull Request - the
+ * upstream issue behind a dependency, another project of the same person - and it prints the URL
+ * straight back, which is the same shape as the receipt `gh pr create` leaves. Taken as a
+ * receipt, that Pull Request becomes the task's own work: it opens as a tab on the task and the
+ * change report is told this is what the work produced.
+ */
+it('does not take a Pull Request the command went to look at as the work of this task', () => {
+  const foreign = 'https://github.com/other/project/pull/7'
+  const own = 'https://github.com/owner/repo/pull/42'
+  expect(extractReviewEvidence([
+    tool(foreign, 'Bash', { command: `gh pr view ${foreign}` }),
+    tool(JSON.stringify({ value: { exit_code: 0, output: foreign } }), 'exec_command',
+      `text(await tools.exec_command({cmd: "gh pr view ${foreign}/files --json url"}))`),
+    tool(foreign, 'Bash', { command: 'gh pr view 7 --repo other/project' }),
+    // The branch the run is standing on names nothing, and acting on one is doing it
+    tool(own, 'Bash', { command: 'gh pr view --json url' })
+  ]).pullRequests).toEqual([own])
+})
+
+it('keeps a Pull Request the run acted on even when the command named it', () => {
+  const url = 'https://github.com/owner/repo/pull/39'
+  expect(extractReviewEvidence([
+    tool(`Merging pull request\n${url}\n`, 'Bash', { command: `gh pr merge ${url} --squash` })
+  ]).pullRequests).toEqual([url])
+})
+
 let db: ReturnType<typeof memoryDb>
 let service: ReviewService
 let operations: ReviewOperations

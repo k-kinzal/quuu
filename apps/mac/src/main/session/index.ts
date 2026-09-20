@@ -49,6 +49,15 @@ export class SessionIndex extends EventEmitter {
   private work: Promise<void> | null = null
   private stopped = false
   private activeKey: string | null = null
+  /**
+   * Tasks whose recorded Pull Requests have already been dropped for re-reading.
+   *
+   * A task can hold more than one session (a follow-up that could not resume, a fallback to
+   * another agent), and each is re-read on its own. Clearing per session would have the second
+   * one wipe what the first just re-derived - the tab and the report line would disappear from
+   * a task that really did produce them.
+   */
+  private reclassified = new Set<string>()
 
   constructor(private db: Db, private onMessages: (run: Run, messages: SessionMessage[]) => void = () => {}) { super() }
 
@@ -177,6 +186,16 @@ export class SessionIndex extends EventEmitter {
     const stamp = snapshotStamp(target.logPath)
     const saved = repo.getSessionIndex(this.db, key)
     if (saved && saved.evidenceVersion !== REVIEW_EVIDENCE_VERSION) {
+      /*
+       * Re-reading is how a corrected rule reaches what is already recorded, so it has to be
+       * able to take something away: a Pull Request the old rule filed as this task's work
+       * stays on the task forever if re-reading can only add. Only when there is something to
+       * re-derive from - clearing against no durable messages would leave the task with nothing.
+       */
+      if (saved.total > 0 && !this.reclassified.has(run.taskId)) {
+        this.reclassified.add(run.taskId)
+        repo.clearReviewEvidence(this.db, run.taskId, 'pull-request')
+      }
       // Reclassify durable messages in bounded batches, even if the original log
       // is gone. Updating extraction must not require parsing all history again.
       for (let start = 0; start < saved.total; start += SESSION_PAGE) {
