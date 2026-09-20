@@ -185,7 +185,13 @@ function writeCopilot(
 function writeCursor(
   chatId: string,
   prompt: string,
-  options: { ageMs?: number; cwd?: string; subagent?: boolean; entrypoint?: string } = {}
+  options: {
+    ageMs?: number
+    cwd?: string
+    subagent?: boolean
+    entrypoint?: string
+    notification?: boolean
+  } = {}
 ): string {
   const cwd = options.cwd ?? work
   const dir = join(cursorDir, createHash('md5').update(cwd).digest('hex'), chatId)
@@ -215,6 +221,14 @@ function writeCursor(
     role: 'user',
     content: [{ type: 'text', text: `<timestamp>now</timestamp>\n<user_query>\n${prompt}\n</user_query>` }]
   })
+  if (options.notification) {
+    // Observed: when a background shell task ends, Cursor's own prompt arrives in `<user_query>`
+    messages.push({
+      role: 'user',
+      content:
+        '<timestamp>now</timestamp>\n<system_notification>\nThe following task has finished.\n\n<task>\nkind: shell\nstatus: success\n</task>\n</system_notification>\n<user_query>Briefly inform the user about the task result and perform any follow-up actions (if needed).</user_query>'
+    })
+  }
   messages.push({
     role: 'assistant',
     content: [
@@ -344,6 +358,16 @@ describe('session log parsing', () => {
     const tool = assistant?.blocks.find((b) => b.kind === 'tool')
     // Fold the result, which arrives on a separate row (role: tool), into the call row
     expect(tool?.kind === 'tool' && tool.tool.result).toBe('a.ts')
+  })
+
+  it('Cursor: does not list the prompt Cursor writes to itself as the human\u2019s words', () => {
+    const chatId = '33333333-3333-3333-3333-33333333aaaa'
+    const store = writeCursor(chatId, '\u8a2d\u8a08\u3092\u898b\u3066', { notification: true })
+    const parser = new CursorSessionParser()
+    parser.reload(store, chatId)
+
+    const spoken = parser.messages.filter((m) => m.role === 'user')
+    expect(spoken.map((m) => m.blocks)).toEqual([[{ kind: 'text', text: '\u8a2d\u8a08\u3092\u898b\u3066' }]])
   })
 
   it('Cursor: returns -1 when re-reading finds no change', () => {

@@ -53,3 +53,22 @@ function isOnlyInjectedBlocks(text: string): boolean {
   }
   return ate
 }
+
+/**
+ * A prompt the CLI wrote to itself under the user's name.
+ *
+ * Cursor wraps what the human typed in `<user_query>`, so the parsers take that wrapper as
+ * proof of a human. It is not. When a background shell task finishes, Cursor writes **its own
+ * instruction in the very same wrapper** — "Briefly inform the user about the task result and
+ * perform any follow-up actions (if needed)." — underneath a `<system_notification>`. Trusted,
+ * it reaches the conversation as words the human never said.
+ *
+ * The notification block is what tells the two apart: across the Cursor chats on this machine
+ * every message carrying one was the CLI's (measured: 103 of them), and not one of the 429
+ * human utterances came with a notification attached.
+ */
+const SYSTEM_NOTIFICATION = /<system_notification>[\s\S]*?<\/system_notification>/
+
+export function isMachineNotification(text: string): boolean {
+  return SYSTEM_NOTIFICATION.test(text)
+}

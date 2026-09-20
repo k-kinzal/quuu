@@ -23,6 +23,7 @@ import {
 import { userText as agyUserText } from '../session/agyParser.js'
 import { readCopilotWorkspace } from '../session/copilotPaths.js'
 import { readCursorChat } from '../session/cursorStore.js'
+import { isMachineNotification } from '../session/injectedText.js'
 import { lastWrittenMs } from '../session/logAdapters.js'
 import { unquotePrompt } from '../session/opencodeParser.js'
 import { listOpencodeSessions, readOpencodeMessages, readOpencodeSession } from '../session/opencodeStore.js'
@@ -324,6 +325,8 @@ function cursorTitle(messages: Array<{ role: string; content: unknown }>): strin
   for (const message of messages) {
     if (message.role !== 'user') continue
     const text = collectText(message.content)
+    // Cursor's own prompt to itself wears the same wrapper (injectedText.ts)
+    if (isMachineNotification(text)) continue
     const body = extractUserQuery(text)
     // Messages without `<user_query>` are preamble such as environment info
     if (body === text.trim()) continue

@@ -1,6 +1,6 @@
 import type { CursorMessage } from './cursorStore.js'
 import { readCursorChat } from './cursorStore.js'
-import { isInjectedUserText } from './injectedText.js'
+import { isInjectedUserText, isMachineNotification } from './injectedText.js'
 import type { PushResult } from './parserUtil.js'
 import { collectText, extractUserQuery, firstLine } from './parserUtil.js'
 import type { SessionMessage } from './types.js'
@@ -94,9 +94,11 @@ export class CursorSessionParser {
       if (body.length === 0) return null
       /*
        * Environment info and subagent instructions are written with the user
-       * role. Anything wrapped in `<user_query>` is known to be what the
-       * human typed, so detect by shape only when the wrapper is absent.
+       * role. `<user_query>` marks what the human typed — except around a
+       * notification, where Cursor puts its own prompt in that same wrapper.
+       * Where there is no wrapper at all, detect by shape.
        */
+      if (isMachineNotification(text)) return null
       if (body === text.trim() && isInjectedUserText(text)) return null
       return {
         id: `cursor_${index}`,
