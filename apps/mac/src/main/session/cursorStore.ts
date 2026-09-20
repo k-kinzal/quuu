@@ -20,6 +20,8 @@ const { DatabaseSync } = nodeRequire('node:sqlite') as typeof import('node:sqlit
  * hex-encoded JSON whose `latestRootBlobId` points at the current
  * conversation root. The root blob is protobuf; its field number 1 lists the
  * utterance blob IDs (32 bytes) in order. Utterance blobs themselves are JSON.
+ * Field 4 holds inline JSON for assistant tool calls that are still running;
+ * they do not move into field 1 until the tool returns.
  *
  * So this is **not an append-only log**. The root is swapped every turn, so
  * the "read on from a byte position" follow that other adapters use is
@@ -33,6 +35,7 @@ const { DatabaseSync } = nodeRequire('node:sqlite') as typeof import('node:sqlit
 
 /** Field numbers of the root blob (observed). */
 const FIELD_MESSAGE_IDS = 1
+const FIELD_PENDING_TOOL_CALLS = 4
 const FIELD_WORKSPACE_URI = 9
 const FIELD_ENTRYPOINT = 22
 const FIELD_UPDATED_MS = 26
@@ -84,11 +87,14 @@ export function readCursorChat(
   }
 
   try {
+    // Read the root and its referenced blobs from one committed SQLite snapshot.
+    db.exec('BEGIN')
     const meta = readMeta(db)
     if (!meta) return null
 
     const root = meta.latestRootBlobId ? readBlob(db, meta.latestRootBlobId) : null
     if (!root) {
+      if (meta.latestRootBlobId) return null
       // No root yet (just created). Return identity only, with an empty conversation.
       return {
         chatId,
@@ -109,7 +115,17 @@ export function readCursorChat(
       if (field.bytes.length !== BLOB_ID_BYTES) continue
       const blob = readBlob(db, Buffer.from(field.bytes).toString('hex'))
       const message = blob === null ? null : parseMessage(blob)
-      if (message) messages.push(message)
+      // An incomplete read must not be cached as a shorter, successfully read conversation.
+      if (!message) return null
+      messages.push(message)
+    }
+
+    for (const field of fields) {
+      if (messages.length >= limit) break
+      if (field.number !== FIELD_PENDING_TOOL_CALLS || field.bytes === null) continue
+      const message = parseMessage(field.bytes)
+      if (!message) return null
+      messages.push(message)
     }
 
     return {

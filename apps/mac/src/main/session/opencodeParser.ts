@@ -1,7 +1,7 @@
 import { firstDifference } from './cursorParser.js'
 import type { OpencodeMessage } from './opencodeStore.js'
 import { readOpencodeMessages } from './opencodeStore.js'
-import type { PushResult } from './parserUtil.js'
+import type { StoreReloadResult } from './parserUtil.js'
 import { collectText, firstLine } from './parserUtil.js'
 import type { SessionBlock, SessionMessage } from './types.js'
 
@@ -47,9 +47,9 @@ export class OpencodeSessionParser {
    * Also -1 when unreadable. A read can land mid-write, and emptying the conversation there makes
    * the screen flash blank, so the previous content is kept.
    */
-  reload(storePath: string, sessionId: string): PushResult {
+  reload(storePath: string, sessionId: string): StoreReloadResult {
     const rows = readOpencodeMessages(sessionId, { storePath })
-    if (rows === null) return { changedFromIndex: -1 }
+    if (rows === null) return { changedFromIndex: -1, readSucceeded: false }
 
     const next: SessionMessage[] = []
     let title: string | null = null
@@ -67,7 +67,7 @@ export class OpencodeSessionParser {
     const changed = firstDifference(this.messages, next)
     this.messages = next
     this.title = title
-    return { changedFromIndex: changed }
+    return { changedFromIndex: changed, readSucceeded: true }
   }
 }
 

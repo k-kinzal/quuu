@@ -1,7 +1,8 @@
+import { isDeepStrictEqual } from 'node:util'
 import type { CursorMessage } from './cursorStore.js'
 import { readCursorChat } from './cursorStore.js'
 import { isInjectedUserText, isMachineNotification } from './injectedText.js'
-import type { PushResult } from './parserUtil.js'
+import type { StoreReloadResult } from './parserUtil.js'
 import { collectText, extractUserQuery, firstLine } from './parserUtil.js'
 import type { SessionMessage } from './types.js'
 
@@ -40,9 +41,9 @@ export class CursorSessionParser {
    * conversation there makes the screen flash blank, so keep the previous
    * content.
    */
-  reload(storePath: string, chatId: string): PushResult {
+  reload(storePath: string, chatId: string): StoreReloadResult {
     const chat = readCursorChat(storePath, chatId)
-    if (!chat) return { changedFromIndex: -1 }
+    if (!chat) return { changedFromIndex: -1, readSucceeded: false }
 
     const next: SessionMessage[] = []
     const toolIndex = new Map<string, { m: number; b: number }>()
@@ -76,7 +77,7 @@ export class CursorSessionParser {
     const changed = firstDifference(this.messages, next)
     this.messages = next
     this.title = title ?? chat.name
-    return { changedFromIndex: changed }
+    return { changedFromIndex: changed, readSucceeded: true }
   }
 
   private convert(
@@ -176,19 +177,6 @@ export function firstDifference(before: SessionMessage[], after: SessionMessage[
 }
 
 function sameMessage(a: SessionMessage, b: SessionMessage): boolean {
-  if (a.role !== b.role || a.blocks.length !== b.blocks.length) return false
-  return a.blocks.every((block, i) => {
-    const other = b.blocks[i]
-    if (block.kind !== other.kind) return false
-    if (block.kind === 'tool' && other.kind === 'tool') {
-      return (
-        block.tool.id === other.tool.id &&
-        block.tool.name === other.tool.name &&
-        block.tool.result === other.tool.result
-      )
-    }
-    if (block.kind === 'text' && other.kind === 'text') return block.text === other.text
-    if (block.kind === 'thinking' && other.kind === 'thinking') return block.text === other.text
-    return true
-  })
+  // A running call can change its arguments or error state before its result text changes.
+  return isDeepStrictEqual(a, b)
 }

@@ -33,7 +33,8 @@ interface Reader {
 
 export function sessionKey(target: SessionReadTarget): string {
   // Bump when a parser change requires rebuilding previously materialized messages.
-  const key = `v1:${target.mode}:${target.logPath}`
+  const version = target.mode === 'cursor' ? 'v2' : 'v1'
+  const key = `${version}:${target.mode}:${target.logPath}`
   /*
    * Where one store holds every session (opencode) the path names no session at all, so the id
    * has to join the key. Two conversations sharing one key would materialize into each other's
@@ -254,7 +255,12 @@ export class SessionIndex extends EventEmitter {
       }
     }
     if (isStoreParser(parser)) {
-      await persist(parser.reload(target.logPath, target.sessionId).changedFromIndex, parser.messages)
+      const result = parser.reload(target.logPath, target.sessionId)
+      if (!result.readSucceeded) {
+        this.emit('failed', key, new Error('Session store is temporarily unreadable'))
+        return
+      }
+      await persist(result.changedFromIndex, parser.messages)
       reader.offset = stat.size
     } else {
       const fd = openSync(target.logPath, 'r')

@@ -213,8 +213,9 @@ export class SessionWatcher extends EventEmitter {
     if (!isStoreParser(this.parser)) return -1
     const stamp = snapshotStamp(logPath)
     if (stamp === this.snapshotStamp) return -1
-    this.snapshotStamp = stamp
-    return this.parser.reload(logPath, this.target?.sessionId ?? '').changedFromIndex
+    const result = this.parser.reload(logPath, this.target?.sessionId ?? '')
+    if (result.readSucceeded) this.snapshotStamp = stamp
+    return result.changedFromIndex
   }
 
   private snapshot(exists: boolean): SessionSnapshot {

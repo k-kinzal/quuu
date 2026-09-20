@@ -13,6 +13,11 @@ export interface PushResult {
   changedFromIndex: number
 }
 
+/** A failed store read must be retried even if its file stamp stays unchanged. */
+export interface StoreReloadResult extends PushResult {
+  readSucceeded: boolean
+}
+
 /** Fold a nested body into a single text. */
 export function collectText(value: unknown): string {
   if (value === null || value === undefined) return ''
