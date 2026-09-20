@@ -116,6 +116,8 @@ export const en = {
     archive: 'Archive',
     delete: 'Delete…',
     go: 'Go',
+    back: 'Back',
+    forward: 'Forward',
     goAnywhere: 'Go Anywhere…',
     allTasks: 'All Tasks',
     needsReview: 'Needs Review',

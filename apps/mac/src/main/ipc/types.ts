@@ -105,6 +105,9 @@ export type AppCommand =
   | 'view.palette'
   | 'view.project'
   | 'view.search'
+  /** Back / forward through the screens already seen. */
+  | 'view.back'
+  | 'view.forward'
   | 'panel.rail'
   | 'panel.list'
   | 'panel.inspector'

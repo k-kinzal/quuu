@@ -502,6 +502,7 @@ are shown.
 | `⌘⇧B` | Send back (into the conversation input) | Task |
 | `⌘⌃0`–`⌘⌃3` | Set priority P0–P3 (P0 keeps its slot) | Task › Priority |
 | `⌘⌫` | Archive | Task |
+| `⌘[` `⌘]` | Back / forward through the screens already seen | Go |
 | `⌘T` | Go anywhere (command palette) | Go |
 | `⌘1` `⌘2` | All tasks / Needs review | Go |
 | `⌘3`–`⌘9` | Go to project (up to 7; beyond that, `⌘T`) | Go › Projects |
@@ -512,6 +513,15 @@ are shown.
 | `⌘F` | Go to search | Edit |
 | `⌘⌥↵` | Context menu (for the row, column, or pane the hand is on) | Edit |
 | `⌘⌥←` `⌘⌥→` | Move the hand to the previous / next pane | View › Focus |
+
+`⌘[` / `⌘]`, not `⌘←` / `⌘→`: a menu shortcut is taken before the screen sees it, and
+those two are move-to-start / end-of-line inside every input in the app.
+
+**A sideways swipe on the trackpad does the same thing.** Back and forward go through the
+screens you actually stood on — a section, a task opened, a settings category, a project's
+configuration — and not through every row the arrow keys passed over on the way. A
+destination that has since been deleted is stepped over rather than landed on, and the
+trail is per sitting: relaunching does not bring back yesterday's.
 
 Only keys that would be meaningless in a menu are handled by the screens.
 

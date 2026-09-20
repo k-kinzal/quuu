@@ -197,6 +197,17 @@ function buildMenu(): void {
        */
       label: t('menu.go'),
       submenu: [
+        /*
+         * Retracing steps, above the list of destinations — the shape every
+         * other Go menu on the machine has.
+         *
+         * ⌘[ / ⌘], not ⌘← / ⌘→. Accelerators are taken before the renderer sees
+         * them, and those two are **move to start / end of line** inside every
+         * input in the app
+         */
+        { label: t('menu.back'), accelerator: 'Cmd+[', click: () => send('view.back') },
+        { label: t('menu.forward'), accelerator: 'Cmd+]', click: () => send('view.forward') },
+        { type: 'separator' },
         {
           label: t('menu.goAnywhere'),
           accelerator: 'Cmd+T',

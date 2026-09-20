@@ -18,6 +18,7 @@ import { RendererBoundary } from './components/RendererBoundary.js'
 import { TaskOverview } from './components/TaskOverview.js'
 import { TaskWorkspace } from './components/TaskWorkspace.js'
 import { Toasts } from './components/Toasts.js'
+import { stepHistory, useSwipeBackForward } from './interaction/backForward.js'
 import { confirmDestructive } from './interaction/contextMenu.js'
 import type { PaneId } from './interaction/focus.js'
 import { focusAny, focusPane, isTyping, movePaneFocus, openContextMenuAtFocus } from './interaction/focus.js'
@@ -97,6 +98,8 @@ function Shell(): JSX.Element {
     void init()
   }, [init])
 
+  useSwipeBackForward()
+
   /**
    * Commands from the native menu / tray / notifications.
    * Shortcuts are defined in one place — the menu — so the renderer
@@ -143,6 +146,15 @@ function Shell(): JSX.Element {
           // The palette is the one place to search (no search field at the top of the window).
           // ⌘F stays as macOS convention and lands in the same place
           s.setPalette(true)
+          return
+        /*
+         * Retrace steps. Which screens count as somewhere you have been is the
+         * store's to say (`state/navigation.ts`); the same path serves the swipe,
+         * so a key and a gesture can never land differently
+         */
+        case 'view.back':
+        case 'view.forward':
+          await stepHistory(command === 'view.back' ? -1 : 1)
           return
         case 'focus.next':
           movePaneFocus(1)

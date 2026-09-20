@@ -48,7 +48,10 @@ describe('every action is reachable from the menu', () => {
       'focus.prev',
       'menu.context',
       'task.open',
-      'panel.list'
+      'panel.list',
+      // Retracing steps through a menu defeats the point of retracing steps
+      'view.back',
+      'view.forward'
     ]
     for (const command of needsKey) {
       const line = mainMenu

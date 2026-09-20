@@ -17,22 +17,11 @@ import { mergeMessages } from '../model/mergeMessages.js'
 import type { NewTaskLink } from '../model/taskLinkModel.js'
 import type { DraftStorage, Drafts } from './drafts.js'
 import { loadDrafts, pruneDrafts, saveDrafts, setDraftIn } from './drafts.js'
+import type { Place, Section, SettingsCategory, Trail } from './navigation.js'
+import { INITIAL_PLACE, INITIAL_TRAIL, placeOf, record, sameSection, stepTo } from './navigation.js'
 import { reconcileSnapshot, sameValue } from './reconcile.js'
 
-/**
- * Navigation (rule A: hierarchy of disclosure).
- *
- *   L0 section    … picked on the rail. Picking one never opens L2
- *   L1 collection … the whole picture of that section
- *   L2 entity     … opens only after picking in L1
- */
-export type Section =
-  | { kind: 'all' }
-  | { kind: 'review' }
-  | { kind: 'project'; id: string }
-  | { kind: 'settings' }
-
-export type SettingsCategory = 'general' | 'agents' | 'report' | 'notifications' | 'mobile' | 'appearance'
+export type { Place, Section, SettingsCategory } from './navigation.js'
 
 /**
  * How far L1 collapses while the detail is open (rule C).
@@ -190,6 +179,8 @@ interface State {
   editingGroupId: string | null
   /** Whether the project's configuration is open inside that project's screen (rule F). */
   projectSettingsOpen: boolean
+  /** Everywhere this window has been, and how far back through it we have stepped (`navigation.ts`). */
+  trail: Trail
 
   runs: Run[]
   selectedRunId: string | null
@@ -232,6 +223,13 @@ interface State {
 
   init(): Promise<void>
   setSection(section: Section): void
+  /**
+   * Step back / forward through the screens already seen. Returns where it
+   * landed so the caller can hand that pane the keyboard, or null when the
+   * trail has no reachable step left in that direction.
+   */
+  goBack(): Promise<Place | null>
+  goForward(): Promise<Place | null>
   /** Bring done tasks into / out of scope. Backed by the filters (`filters.includeDone`). */
   toggleShowDone(): void
 
@@ -301,6 +299,67 @@ function sectionShows(snapshot: AppSnapshot, section: Section, taskId: string): 
   return scope !== null && scopeTasks(snapshot, scope).some((task) => task.id === taskId)
 }
 
+/** Set while a move is being written down, so moves made inside a move do not become steps of their own. */
+let recording = false
+
+/**
+ * Make a move, and write where it went into the trail.
+ *
+ * One press is one step back. Several of these actions call each other —
+ * opening a project's configuration closes the detail first, a notification
+ * changes section and then opens the task — and without this the person would
+ * have to press back twice to undo what they pressed once.
+ */
+function navigate<T>(set: (patch: Partial<State>) => void, get: () => State, move: () => T): T {
+  if (recording) return move()
+  recording = true
+  try {
+    const from = placeOf(get())
+    const result = move()
+    set({ trail: record(get().trail, from, placeOf(get())) })
+    return result
+  } finally {
+    recording = false
+  }
+}
+
+/**
+ * Step through the trail.
+ *
+ * Where we are standing is written back before leaving, so a row highlighted
+ * since arriving is still highlighted on the way forward again. The conversation
+ * is let go and re-read: the entry holds which task is open, never how far down
+ * its conversation had been read.
+ */
+async function travel(
+  set: (patch: Partial<State>) => void,
+  get: () => State,
+  step: -1 | 1
+): Promise<Place | null> {
+  const trail = get().trail
+  const index = stepTo(trail, step, get().snapshot)
+  if (index === null) return null
+
+  const from = placeOf(get())
+  const places = trail.places.slice()
+  places[trail.index] = from
+  const place = places[index]
+
+  if (get().selectedRunId) void window.quuu.session.close()
+  set({
+    ...place,
+    trail: { places, index },
+    paletteOpen: false,
+    runs: [],
+    selectedRunId: null,
+    session: null,
+    // Filters belong to the section (the same rule as `setSection`). Arriving in another one carries none over
+    filters: sameSection(from.section, place.section) ? get().filters : NO_FILTERS
+  })
+  if (place.detailOpen && place.cursorTaskId) await get().refreshRuns(place.cursorTaskId)
+  return place
+}
+
 export const useStore = create<State>((set, get) => ({
   ready: false,
   initializationError: null,
@@ -308,16 +367,9 @@ export const useStore = create<State>((set, get) => ({
   windowLayout: { leftInset: 0, collapsedRailWidth: 0, overhang: 0 },
   settings: null,
   editors: [],
-  section: { kind: 'all' },
-
-  cursorTaskId: null,
-  detailOpen: false,
+  ...INITIAL_PLACE,
   landedTaskId: null,
-
-  settingsCategory: 'general',
-  editingAgentId: null,
-  editingGroupId: null,
-  projectSettingsOpen: false,
+  trail: INITIAL_TRAIL,
 
   runs: [],
   selectedRunId: null,
@@ -390,22 +442,32 @@ export const useStore = create<State>((set, get) => ({
 
   // Rule A-1: picking a section never opens the detail. Show the whole picture first.
   setSection(section) {
-    if (get().selectedRunId) void window.quuu.session.close()
-    set({
-      section,
-      detailOpen: false,
-      paletteOpen: false,
-      cursorTaskId: null,
-      runs: [],
-      selectedRunId: null,
-      session: null,
-      editingAgentId: null,
-      editingGroupId: null,
-      projectSettingsOpen: false,
-      // Filters belong to the section. Carried over, the destination becomes an
-      // inexplicably short list (a project filter carried into another project shows 0 rows)
-      filters: NO_FILTERS
+    navigate(set, get, () => {
+      if (get().selectedRunId) void window.quuu.session.close()
+      set({
+        section,
+        detailOpen: false,
+        paletteOpen: false,
+        cursorTaskId: null,
+        runs: [],
+        selectedRunId: null,
+        session: null,
+        editingAgentId: null,
+        editingGroupId: null,
+        projectSettingsOpen: false,
+        // Filters belong to the section. Carried over, the destination becomes an
+        // inexplicably short list (a project filter carried into another project shows 0 rows)
+        filters: NO_FILTERS
+      })
     })
+  },
+
+  async goBack() {
+    return travel(set, get, -1)
+  },
+
+  async goForward() {
+    return travel(set, get, 1)
   },
 
   toggleShowDone() {
@@ -433,7 +495,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async openTask(taskId) {
-    set({ cursorTaskId: taskId, detailOpen: true, projectSettingsOpen: false })
+    navigate(set, get, () => set({ cursorTaskId: taskId, detailOpen: true, projectSettingsOpen: false }))
     await get().refreshRuns(taskId)
   },
 
@@ -452,31 +514,41 @@ export const useStore = create<State>((set, get) => ({
   async revealTask(taskId) {
     const { section, snapshot } = get()
     const shows = (candidate: Section): boolean => snapshot !== null && sectionShows(snapshot, candidate, taskId)
-    if (!shows(section)) {
-      const review: Section = { kind: 'review' }
-      get().setSection(shows(review) ? review : { kind: 'all' })
-    }
-    await get().openTask(taskId)
+    const review: Section = { kind: 'review' }
+    const destination: Section = shows(section) ? section : shows(review) ? review : { kind: 'all' }
+    /*
+     * Moving section and opening the task are one step, not two. Back from a task a
+     * notification opened returns to where the notification arrived — not to a list
+     * that was never on screen.
+     */
+    await navigate(set, get, () => {
+      if (!sameSection(destination, section)) get().setSection(destination)
+      return get().openTask(taskId)
+    })
   },
 
   closeDetail() {
-    if (get().selectedRunId) void window.quuu.session.close()
-    set({ detailOpen: false, session: null, selectedRunId: null, runs: [] })
+    navigate(set, get, () => {
+      if (get().selectedRunId) void window.quuu.session.close()
+      set({ detailOpen: false, session: null, selectedRunId: null, runs: [] })
+    })
   },
 
   setSettingsCategory(category) {
-    set({ settingsCategory: category, editingAgentId: null, editingGroupId: null })
+    navigate(set, get, () => set({ settingsCategory: category, editingAgentId: null, editingGroupId: null }))
   },
 
   editAgent(id) {
-    set({ editingAgentId: id, editingGroupId: null })
+    navigate(set, get, () => set({ editingAgentId: id, editingGroupId: null }))
   },
   editGroup(id) {
-    set({ editingGroupId: id, editingAgentId: null })
+    navigate(set, get, () => set({ editingGroupId: id, editingAgentId: null }))
   },
   openProjectSettings(open) {
-    if (open) get().closeDetail()
-    set({ projectSettingsOpen: open, detailOpen: false })
+    navigate(set, get, () => {
+      if (open) get().closeDetail()
+      set({ projectSettingsOpen: open, detailOpen: false })
+    })
   },
 
   async refreshRuns(taskId) {

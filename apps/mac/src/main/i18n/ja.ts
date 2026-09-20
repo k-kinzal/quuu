@@ -117,6 +117,8 @@ export const ja: typeof en = {
     archive: 'アーカイブ',
     delete: '削除…',
     go: '移動',
+    back: '戻る',
+    forward: '進む',
     goAnywhere: 'どこへでも移動…',
     allTasks: '全タスク',
     needsReview: '要レビュー',

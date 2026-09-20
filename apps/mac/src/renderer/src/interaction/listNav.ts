@@ -76,9 +76,14 @@ export function runTaskListKey(event: KeyLike, ordered: Task[]): boolean {
 
   event.preventDefault()
   const id = ordered[next].id
-  // Moving with the detail open reopens whatever we move to (the point of the side-by-side list)
-  if (state.detailOpen) void state.openTask(id)
-  else void state.moveCursor(id)
+  /*
+   * Moving with the detail open reopens whatever we move to (the point of the
+   * side-by-side list) — `moveCursor` already re-reads the conversation when the
+   * detail is open, so this stays one action. It has to: walking a list is
+   * **moving the cursor**, not going somewhere, and routing it through
+   * `openTask` would file every row passed on the way as a place to go back to
+   */
+  void state.moveCursor(id)
   return true
 }
 
