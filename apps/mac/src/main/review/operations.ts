@@ -18,21 +18,35 @@ export class ReviewOperations {
   private activeTask: string | null = null
   private refreshedAt = new Map<string, number>()
 
-  /** Reads only materialized data. Git and GitHub belong to the refresh queue. */
+  /**
+   * Reads only materialized data. Git and GitHub belong to the refresh queue.
+   *
+   * The saved projection is the task's, wherever it was computed. `materialize` computes it in the
+   * place the agent worked - the worktree it moved into - while a run only records where it was
+   * launched. Holding one against the other discarded every projection of a task whose agent had
+   * entered a worktree, and the pane read zero changes, commits and PRs while refreshing forever.
+   * Measured: one task in seven that had run three times or more. A place that moves is caught
+   * up by the next refresh.
+   */
   reviewSnapshot(taskId: string): ReviewSnapshot {
     const task = repo.getTask(this.db, taskId)
     if (!task) throw new Error(t('tasks.notFound'))
-    const cwd = repo.listRunsByTask(this.db, taskId)[0]?.cwd || repo.getProject(this.db, task.projectId)?.path || ''
-    const saved = repo.getReviewSnapshot(this.db, taskId)
-    if (saved?.snapshot.cwd === cwd) {
-      if (Array.isArray(saved.snapshot.localChanges) && Array.isArray(saved.snapshot.stagedChanges)) return saved.snapshot
+    const saved = repo.getReviewSnapshot(this.db, taskId)?.snapshot
+    if (saved) {
+      if (Array.isArray(saved.localChanges) && Array.isArray(saved.stagedChanges)) return saved
       // Older projections combine index and working changes. Refresh instead of relabeling that data.
       if (this.activeTask !== taskId) this.requestRefresh(taskId)
-      return { ...this.empty(cwd), ...saved.snapshot, localChanges: [], localRevision: null,
-        stagedChanges: [], stagedRevision: null, preparing: !saved.snapshot.error }
+      return { ...this.empty(saved.cwd), ...saved, localChanges: [], localRevision: null,
+        stagedChanges: [], stagedRevision: null, preparing: !saved.error }
     }
     if (this.activeTask !== taskId) this.requestRefresh(taskId)
-    return this.empty(cwd, true)
+    return this.empty(this.launchDir(taskId), true)
+  }
+
+  /** Only a placeholder's label until the first projection names the place the work is in. */
+  private launchDir(taskId: string): string {
+    const task = repo.getTask(this.db, taskId)
+    return repo.listRunsByTask(this.db, taskId)[0]?.cwd || (task && repo.getProject(this.db, task.projectId)?.path) || ''
   }
 
   requestRefresh(taskId: string): void {
@@ -88,10 +102,9 @@ export class ReviewOperations {
       try { await this.materialize(taskId) }
       catch (error) {
         if (this.stopped || !repo.getTask(this.db, taskId)) continue
-        const task = repo.getTask(this.db, taskId)!
-        const cwd = repo.listRunsByTask(this.db, taskId)[0]?.cwd || repo.getProject(this.db, task.projectId)?.path || ''
+        // A failed look keeps what was last seen; the error is shown beside it, not instead of it.
         const saved = repo.getReviewSnapshot(this.db, taskId)?.snapshot
-        repo.saveReviewSnapshot(this.db, taskId, { ...this.empty(cwd), ...(saved?.cwd === cwd ? saved : {}), preparing: false,
+        repo.saveReviewSnapshot(this.db, taskId, { ...this.empty(this.launchDir(taskId)), ...saved, preparing: false,
           error: error instanceof Error ? error.message : String(error) })
         console.warn('Review materialization failed', error)
       } finally { this.activeTask = null }

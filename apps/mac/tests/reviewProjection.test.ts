@@ -163,6 +163,34 @@ it('retains recorded commits and PRs when HEAD changes and GitHub is temporarily
   expect(saved.pullRequestNotice).toBe('offline')
 })
 
+/**
+ * The run is launched in the project, but the agent may move into a worktree and work there.
+ * The review is computed where the work is; reading it back against the launch directory threw
+ * it away, and the pane showed zero changes, commits and Pull Requests on every poll.
+ */
+it('shows the review computed in the worktree the agent moved into, not an empty one for where it launched', async () => {
+  const worktree = '/tmp/.claude/worktrees/feature'
+  const moved = new ReviewOperations(db, () => DEFAULT_SETTINGS, service, () => ({ dir: worktree, project: repo.getProject(db, projectId)! }))
+  const work = { ...snapshot(), cwd: worktree, changes: [{ path: 'result.ts', change: 'added' as const }] }
+  work.commits = [{ sha: 'a'.repeat(40), shortSha: 'aaaaaaa', subject: 'Worked in the worktree', author: 'Fixture', committedAt: '2026-09-09T00:00:00Z', files: [] }]
+  vi.spyOn(service, 'inferBaseline').mockResolvedValue({ startedAt: '', baseHead: 'a'.repeat(40), baseTree: 'b'.repeat(40) })
+  vi.spyOn(service, 'snapshot').mockResolvedValue(work)
+  try {
+    expect(await moved.refresh(taskId)).toMatchObject({ cwd: worktree, changes: work.changes, commits: work.commits })
+    expect(moved.reviewSnapshot(taskId).preparing).not.toBe(true)
+  } finally { moved.stop() }
+})
+
+it('keeps the last review beside the error when a refresh fails', async () => {
+  const worktree = '/tmp/.claude/worktrees/feature'
+  const saved = { ...snapshot(), cwd: worktree, changes: [{ path: 'result.ts', change: 'modified' as const }] }
+  repo.saveReviewSnapshot(db, taskId, saved)
+  vi.spyOn(service, 'snapshot').mockRejectedValue(new Error('git is unavailable'))
+  const failed = await operations.refresh(taskId)
+  expect(failed.changes).toEqual(saved.changes)
+  expect(failed.error).toBe('git is unavailable')
+})
+
 it('does not resurrect a task deleted while its review is being computed', async () => {
   let finish!: (value: ReviewSnapshot) => void
   vi.spyOn(service, 'snapshot').mockImplementation(() => new Promise(resolve => { finish = resolve }))
