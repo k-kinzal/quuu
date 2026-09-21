@@ -233,9 +233,18 @@ export const MenuNav = styled('nav')(({ theme }) => ({
   overflowY: 'auto'
 }))
 
-export const MenuNavTitle = styled('h1')(({ theme }) => ({
+/**
+ * The column's heading. It shares the window's top band with the OS window controls,
+ * so it takes the same `startInset` as `PanelHeader` (this column is the leading
+ * surface when the navigation beside it is collapsed).
+ */
+export const MenuNavTitle = styled('h1', { shouldForwardProp: blockProps('startInset') })<{
+  /** Width (px) reserved outside the normal padding when the OS window controls overhang this column. */
+  startInset?: number
+}>(({ theme, startInset }) => ({
   margin: `0 0 ${theme.spacing(2)}`,
   padding: `0 ${theme.spacing(2)}`,
+  ...(startInset !== undefined ? { paddingLeft: `calc(${startInset}px + ${theme.spacing(2)})` } : {}),
   ...theme.typography.caption,
   fontWeight: 600,
   color: theme.palette.text.tertiary

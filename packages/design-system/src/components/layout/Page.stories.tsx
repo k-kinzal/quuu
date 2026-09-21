@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { ArrowLeft } from 'lucide-react'
 import { iconDefaults, iconSize } from '../../theme/tokens.js'
@@ -10,6 +11,28 @@ import { Panel } from './Panel.js'
 
 const meta: Meta = { title: 'Layout/Page', parameters: { layout: 'fullscreen' } }
 export default meta
+
+/**
+ * Stands in for a window with no title bar: the OS controls at the top-left, and a
+ * collapsed navigation column too narrow to hold them, so they overhang the surface
+ * beside it. `RAIL` / `OVERHANG` are that window's measurements, not design values.
+ */
+const RAIL = 42
+const OVERHANG = 42
+
+function WindowFrame({ children }: { children: ReactNode }): JSX.Element {
+  return (
+    <div style={{ position: 'relative', display: 'flex', height: '100vh' }}>
+      <div style={{ width: RAIL, flex: `0 0 ${RAIL}px`, background: '#2b2f36' }} />
+      {children}
+      <div style={{ position: 'absolute', left: 14, top: 14, display: 'flex', gap: 9, zIndex: 2 }}>
+        {['#ff5f57', '#febc2e', '#28c840'].map((fill) => (
+          <span key={fill} style={{ width: 14, height: 14, borderRadius: '50%', background: fill }} />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export const Default: StoryObj = {
   render: () => (
@@ -79,5 +102,39 @@ export const Detail: StoryObj = {
         <FieldHint>Used when you want the row heights aligned without drawing a rule.</FieldHint>
       </Page>
     </Panel>
+  )
+}
+
+/**
+ * On a window with no title bar the surface reaches the top-left corner, where the OS
+ * window controls sit. `startInset` is the width the head leaves clear for them, and the
+ * head stays put while the body scrolls, so nothing ever passes underneath them.
+ */
+export const WindowControlsInset: StoryObj = {
+  render: () => (
+    <WindowFrame>
+      <Panel surface="canvas" grow sx={{ overflowY: 'auto' }}>
+        <Page
+          title="Alpha"
+          startInset={OVERHANG}
+          lead={
+            <IconButton
+              title="Back to the list (Esc)"
+              icon={<ArrowLeft size={iconSize.md} {...iconDefaults} />}
+            />
+          }
+          actions={<Button color="primary">Save</Button>}
+        >
+          {Array.from({ length: 8 }, (_, index) => (
+            <Section key={index} title={`Group ${index + 1}`}>
+              <Field label="Name">
+                <TextInput defaultValue="Alpha" />
+              </Field>
+              <Checkbox label="Enabled" checked onChange={() => undefined} />
+            </Section>
+          ))}
+        </Page>
+      </Panel>
+    </WindowFrame>
   )
 }

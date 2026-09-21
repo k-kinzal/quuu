@@ -12,6 +12,30 @@
 - Verification: Markdown rendering and opener regression tests, the Local Paths
   story, and the Mac fixture conversation with a temporary output directory.
 
+## 2026-09-20 A settings surface that reaches the window's top-left corner
+
+- Request: on the real screen, with the rail collapsed, the project settings head and the
+  settings category title sat under the OS window controls, and the project surface would
+  not scroll at all — everything past the report section was unreachable.
+- Finding: `PanelHeader.startInset` already covers this, but the two surfaces that use
+  `Page` and `MenuNav` had no way to say it. They are the only surfaces whose leading edge
+  is the collapsed rail, so they are the only ones the controls overhang.
+- Accepted: `Page.startInset` and `MenuNavTitle.startInset` reserve the OS region and then
+  add the normal padding, the same shape as `PanelHeader`. The width is the region the
+  window reported, never a correction value written on a screen.
+- Accepted: `Page`'s head holds the top of the surface and does not scroll away. Making the
+  surface scroll without this only moved the problem — the body passed under the controls
+  instead of the head, and the way back left with it.
+- Accepted: the surface's content box does not shrink as a flex item. Left to, it stopped at
+  the pane's height while the content ran past it, and since the head sticks inside that box
+  the head was carried off the top once a surface ran more than one pane longer. It showed
+  only on a window short enough for that, which is the window settings are read in — it was
+  invisible at the size the screens were first checked at.
+- Verification: `settingsWindowButtons` covers both surfaces collapsed and open, the head
+  staying put, and the surface scrolling. `Layout/Page` and `Navigation/NavList` carry a
+  story each with the controls drawn in. Checked on the Mac fixture window, collapsed and
+  open, scrolled to the bottom.
+
 ## 2026-09-15 Ambient light back on the compositor, window glass without an in-page blur
 
 - Request: since the ambient lights were sampled on a 200ms clock the Mac window

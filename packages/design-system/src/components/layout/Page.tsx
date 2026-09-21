@@ -3,13 +3,38 @@ import { styled } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
 import { Spacer } from './Stack.js'
 
-const PageRoot = styled('div')({ display: 'flex', flexDirection: 'column', minHeight: '100%' })
+/*
+ * Fills the pane when there is little to show, and grows past it when there is a lot.
+ *
+ * As a flex item this would otherwise be **shrunk back to the pane's height** while its
+ * content overflowed it, and the head — which sticks inside this box — would be carried
+ * off the top once the surface ran more than a pane taller. It only showed on a window
+ * short enough for that to happen, which is the window the settings are read in.
+ */
+const PageRoot = styled('div')({ display: 'flex', flexDirection: 'column', minHeight: '100%', flexShrink: 0 })
 
-const PageHead = styled('header')(({ theme }) => ({
+/*
+ * The head holds the top of the surface and does not scroll away.
+ *
+ * A settings surface is as long as it has settings, so the body has to scroll. Letting
+ * the head go with it sends the title and the way back off the screen, and on a window
+ * with no title bar it sends the body **under the OS window controls** — the one place
+ * on the surface where a click belongs to the window, not to the page. Staying put keeps
+ * that corner the head's, and `startInset` is what the head leaves clear there.
+ */
+const PageHead = styled('header', { shouldForwardProp: blockProps('startInset') })<{
+  startInset?: number
+}>(({ theme, startInset }) => ({
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  // The body passes beneath, so the head carries the reading surface's own ground
+  background: theme.palette.surface.canvas,
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(2),
   padding: `${theme.spacing(4)} ${theme.spacing(6)} ${theme.spacing(3)}`,
+  ...(startInset !== undefined ? { paddingLeft: `calc(${startInset}px + ${theme.spacing(6)})` } : {}),
   borderBottom: `1px solid ${theme.palette.border.subtle}`
 }))
 
@@ -41,6 +66,8 @@ export interface PageProps {
   lead?: ReactNode
   /** The actions that sit to the right of the title */
   actions?: ReactNode
+  /** Width (px) reserved outside the normal padding when the OS window controls overhang this surface. */
+  startInset?: number
   maxWidth?: number
   children: ReactNode
 }
@@ -55,12 +82,13 @@ export function Page({
   description,
   lead,
   actions,
+  startInset,
   maxWidth,
   children
 }: PageProps): JSX.Element {
   return (
     <PageRoot>
-      <PageHead>
+      <PageHead startInset={startInset}>
         {lead}
         <div>
           <Title>{title}</Title>

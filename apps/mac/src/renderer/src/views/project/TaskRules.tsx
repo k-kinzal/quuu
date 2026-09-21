@@ -38,6 +38,7 @@ import { DEFAULT_BLOCK_STATUSES } from '../../model/ruleDraft.js'
 import { OPEN_STATUSES } from '../../model/taskStatus.js'
 
 import { usePreview } from '../../interaction/usePreview.js'
+import { useWindowLayout } from '../../interaction/useWindowLayout.js'
 import { PRIORITY_LABEL, TASK_STATUS_LABEL } from '../../model/labels.js'
 
 import { confirmDestructive } from '../../interaction/contextMenu.js'
@@ -190,6 +191,8 @@ export function TaskRuleList({
 
 export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): void }): JSX.Element {
   const snapshot = useStore((s) => s.snapshot)
+  const layout = useStore((s) => s.layout)
+  const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
   const agents = userAgents(snapshot?.agents ?? [])
   const [draft, setDraft] = useState<TaskRule>(rule)
   const [dirty, setDirty] = useState(false)
@@ -235,6 +238,8 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
     <Panel
       surface="canvas"
       grow
+      /* It stands in for the project surface, so it scrolls the same way */
+      scroll
       {...pane('settings', { tab: true })}
       aria-label={t('taskRules.paneLabel')}
       /*
@@ -251,6 +256,8 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
     >
       <Page
         title={rule.name}
+        /* Same top-left as the project surface it replaces: keep clear of the traffic lights */
+        startInset={layout.railCollapsed ? WINDOW_BUTTONS_OVERHANG : undefined}
         lead={
           <IconButton
             title={t('taskRules.backToProject')}

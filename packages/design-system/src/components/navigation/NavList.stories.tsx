@@ -122,43 +122,63 @@ export const Side: StoryObj = {
 }
 
 /** The list of categories. It is already at its smallest, so it does not shrink when contents open. */
-export const Menu: StoryObj = {
-  render: function Render() {
-    const [active, setActive] = useState('general')
-    return (
-      <div style={{ display: 'flex', height: 320 }}>
-        <MenuNav>
-          <MenuNavTitle>Settings</MenuNavTitle>
-          <MenuNavItem
-            icon={<SlidersHorizontal size={iconSize.md} {...iconDefaults} />}
-            label="General"
-            hint="How it behaves"
-            active={active === 'general'}
-            onClick={() => setActive('general')}
-          />
-          <MenuNavItem
-            icon={<Bot size={iconSize.md} {...iconDefaults} />}
-            label="Run targets"
-            hint="Defining the launch conditions"
-            active={active === 'agents'}
-            onClick={() => setActive('agents')}
-          />
-          <MenuNavItem
-            icon={<Bell size={iconSize.md} {...iconDefaults} />}
-            label="Notifications"
-            hint="How you are told"
-            active={active === 'notify'}
-            onClick={() => setActive('notify')}
-          />
-          <MenuNavItem
-            icon={<Palette size={iconSize.md} {...iconDefaults} />}
-            label="Appearance"
-            hint="How it looks"
-            active={active === 'look'}
-            onClick={() => setActive('look')}
-          />
-        </MenuNav>
+export const Menu: StoryObj = { render: () => <MenuExample /> }
+
+/**
+ * When the navigation beside it is collapsed, this column takes the window's top-left
+ * corner, where the OS window controls sit. `startInset` on the title is the width it
+ * leaves clear for them; the rows below keep the column's own padding.
+ */
+export const MenuWindowControls: StoryObj = {
+  render: () => (
+    <div style={{ position: 'relative', display: 'flex', height: 320 }}>
+      {/* The collapsed navigation: one symbol column wide, too narrow to hold the controls */}
+      <div style={{ width: 42, flex: '0 0 42px', background: '#2b2f36' }} />
+      <MenuExample startInset={42} />
+      <div style={{ position: 'absolute', left: 14, top: 14, display: 'flex', gap: 9, zIndex: 2 }}>
+        {['#ff5f57', '#febc2e', '#28c840'].map((fill) => (
+          <span key={fill} style={{ width: 14, height: 14, borderRadius: '50%', background: fill }} />
+        ))}
       </div>
-    )
-  }
+    </div>
+  )
+}
+
+function MenuExample({ startInset }: { startInset?: number }): JSX.Element {
+  const [active, setActive] = useState('general')
+  return (
+    <div style={{ display: 'flex', height: 320 }}>
+      <MenuNav>
+        <MenuNavTitle startInset={startInset}>Settings</MenuNavTitle>
+        <MenuNavItem
+          icon={<SlidersHorizontal size={iconSize.md} {...iconDefaults} />}
+          label="General"
+          hint="How it behaves"
+          active={active === 'general'}
+          onClick={() => setActive('general')}
+        />
+        <MenuNavItem
+          icon={<Bot size={iconSize.md} {...iconDefaults} />}
+          label="Run targets"
+          hint="Defining the launch conditions"
+          active={active === 'agents'}
+          onClick={() => setActive('agents')}
+        />
+        <MenuNavItem
+          icon={<Bell size={iconSize.md} {...iconDefaults} />}
+          label="Notifications"
+          hint="How you are told"
+          active={active === 'notify'}
+          onClick={() => setActive('notify')}
+        />
+        <MenuNavItem
+          icon={<Palette size={iconSize.md} {...iconDefaults} />}
+          label="Appearance"
+          hint="How it looks"
+          active={active === 'look'}
+          onClick={() => setActive('look')}
+        />
+      </MenuNav>
+    </div>
+  )
 }
