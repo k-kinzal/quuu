@@ -227,7 +227,7 @@ export const MenuNav = styled('nav')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: 2,
-  padding: `${theme.spacing(3)} ${theme.spacing(2)}`,
+  padding: `0 ${theme.spacing(2)} ${theme.spacing(3)}`,
   borderRight: `1px solid ${theme.palette.border.subtle}`,
   background: theme.palette.surface.default,
   overflowY: 'auto'
@@ -242,6 +242,10 @@ export const MenuNavTitle = styled('h1', { shouldForwardProp: blockProps('startI
   /** Width (px) reserved outside the normal padding when the OS window controls overhang this column. */
   startInset?: number
 }>(({ theme, startInset }) => ({
+  flex: '0 0 auto',
+  display: 'flex',
+  alignItems: 'center',
+  height: headerBandHeight(theme),
   margin: `0 0 ${theme.spacing(2)}`,
   padding: `0 ${theme.spacing(2)}`,
   ...(startInset !== undefined ? { paddingLeft: `calc(${startInset}px + ${theme.spacing(2)})` } : {}),

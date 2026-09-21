@@ -1,5 +1,18 @@
 # Call-site feedback and decisions
 
+## 2026-09-21 Settings headers share the window band
+
+- Request: project settings and app settings had oversized, uneven headers.
+- Finding: `Page` sized its head from vertical padding and content, so a back button
+  made it taller than a title-only head. `MenuNavTitle` used a separate vertical inset.
+- Accepted: `Page` composes `PanelHeader` and `PanelHeading`, sharing the window's
+  density-aware band, title alignment, and inset divider. Optional descriptions sit
+  in the body so they cannot enlarge the band. The category column removes its top
+  padding and gives its title the same band height.
+- Preserved: the sticky page head and the OS window-controls inset.
+- Verification: `Layout/Page/HeaderAlignment`, existing window-controls stories,
+  and the Mac fixture settings screens with the navigation expanded and collapsed.
+
 ## 2026-09-20 Local paths in Markdown
 
 - Request: a folder named in a response needs to open from the conversation.

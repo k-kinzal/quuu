@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
+import { PanelHeader, PanelHeading } from './Panel.js'
 import { Spacer } from './Stack.js'
 
 /*
@@ -22,20 +23,12 @@ const PageRoot = styled('div')({ display: 'flex', flexDirection: 'column', minHe
  * on the surface where a click belongs to the window, not to the page. Staying put keeps
  * that corner the head's, and `startInset` is what the head leaves clear there.
  */
-const PageHead = styled('header', { shouldForwardProp: blockProps('startInset') })<{
-  startInset?: number
-}>(({ theme, startInset }) => ({
+const PageHead = styled(PanelHeader)(({ theme }) => ({
   position: 'sticky',
   top: 0,
   zIndex: 1,
   // The body passes beneath, so the head carries the reading surface's own ground
-  background: theme.palette.surface.canvas,
-  display: 'flex',
-  alignItems: 'center',
-  gap: theme.spacing(2),
-  padding: `${theme.spacing(4)} ${theme.spacing(6)} ${theme.spacing(3)}`,
-  ...(startInset !== undefined ? { paddingLeft: `calc(${startInset}px + ${theme.spacing(6)})` } : {}),
-  borderBottom: `1px solid ${theme.palette.border.subtle}`
+  background: theme.palette.surface.canvas
 }))
 
 const PageBody = styled('div', { shouldForwardProp: blockProps('maxWidth') })<{
@@ -46,13 +39,8 @@ const PageBody = styled('div', { shouldForwardProp: blockProps('maxWidth') })<{
   maxWidth
 }))
 
-const Title = styled('h2')(({ theme }) => ({
-  margin: 0,
-  ...theme.typography.subtitle2
-}))
-
 const Description = styled('p')(({ theme }) => ({
-  margin: '4px 0 0',
+  margin: `0 0 ${theme.spacing(4)}`,
   ...theme.typography.caption,
   color: theme.palette.text.tertiary,
   // A description is a surface where prose is the main thing, so cap the line length
@@ -90,14 +78,14 @@ export function Page({
     <PageRoot>
       <PageHead startInset={startInset}>
         {lead}
-        <div>
-          <Title>{title}</Title>
-          {description && <Description>{description}</Description>}
-        </div>
+        <PanelHeading>{title}</PanelHeading>
         <Spacer />
         {actions}
       </PageHead>
-      <PageBody maxWidth={maxWidth}>{children}</PageBody>
+      <PageBody maxWidth={maxWidth}>
+        {description && <Description>{description}</Description>}
+        {children}
+      </PageBody>
     </PageRoot>
   )
 }

@@ -7,10 +7,39 @@ import { Checkbox } from '../inputs/Toggle.js'
 import { Field, FieldHint } from '../inputs/Field.js'
 import { TextInput } from '../inputs/TextInput.js'
 import { GroupTitle, OrderedNotes, Page, Section } from './Page.js'
-import { Panel } from './Panel.js'
+import { MenuNav, MenuNavTitle } from '../navigation/NavList.js'
+import { Panel, PanelHeader, PanelHeading } from './Panel.js'
 
 const meta: Meta = { title: 'Layout/Page', parameters: { layout: 'fullscreen' } }
 export default meta
+
+/** Titles and controls share one window band, including the category column. */
+export const HeaderAlignment: StoryObj = {
+  render: () => (
+    <div style={{ display: 'flex', height: 300 }}>
+      <MenuNav>
+        <MenuNavTitle>Categories</MenuNavTitle>
+      </MenuNav>
+      <Panel surface="canvas" grow bordered="right">
+        <Page title="General" description="Supporting text belongs below the shared header band.">
+          <Section title="Behavior"><Checkbox label="Enabled" checked onChange={() => undefined} /></Section>
+        </Page>
+      </Panel>
+      <Panel surface="canvas" grow bordered="right">
+        <Page
+          title="Detail"
+          lead={<IconButton title="Back" icon={<ArrowLeft size={iconSize.md} {...iconDefaults} />} />}
+          actions={<Button>Save</Button>}
+        >
+          <Section title="Basics"><TextInput aria-label="Name" defaultValue="Alpha" /></Section>
+        </Page>
+      </Panel>
+      <Panel grow>
+        <PanelHeader><PanelHeading>Collection</PanelHeading></PanelHeader>
+      </Panel>
+    </div>
+  )
+}
 
 /**
  * Stands in for a window with no title bar: the OS controls at the top-left, and a
