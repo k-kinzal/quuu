@@ -56,12 +56,12 @@ describe('automatic tasks - what gets queued', () => {
       blockStatuses: [...OPEN_STATUSES]
     })
 
-    const { created } = runTaskRules(db)
+    const { created } = runTaskRules(db, new Date(2026, 0, 5, 6, 7, 8))
     expect(created).toHaveLength(1)
 
     const task = repo.getTask(db, created[0].id)!
     expect(task.status).toBe('queued')
-    expect(task.title).toBe('Issue を消化する')
+    expect(task.title).toBe('Issue を消化する 2026/01/05 06:07:08')
     expect(task.prompt).toBe('gh issue list から 1 つ選んで直す')
     expect(task.priority).toBe(1)
     expect(task.agentOverrideId).toBe(agent)
@@ -92,6 +92,72 @@ describe('automatic tasks - what gets queued', () => {
     const result = runTaskRules(db)
     expect(result.created).toHaveLength(0)
     expect(result.warnings).toHaveLength(1)
+  })
+})
+
+describe('automatic tasks - dated titles', () => {
+  it.each<{ label: string; frequency: TaskRule['frequency']; cron: string; suffix: string }>([
+    { label: 'daily', frequency: 'daily', cron: '', suffix: '2026/01/05 06:07:08' },
+    { label: 'weekdays', frequency: 'weekdays', cron: '', suffix: '2026/01/05 06:07:08' },
+    { label: 'weekly', frequency: 'weekly', cron: '', suffix: '2026/01/05' },
+    { label: 'idle only', frequency: 'none', cron: '', suffix: '2026/01/05 06:07:08' },
+    { label: 'hourly cron', frequency: 'none', cron: '@hourly', suffix: '2026/01/05 06:07:08' },
+    { label: 'daily cron', frequency: 'none', cron: '@daily', suffix: '2026/01/05 06:07:08' },
+    { label: 'midnight cron', frequency: 'none', cron: '@midnight', suffix: '2026/01/05 06:07:08' },
+    { label: 'minute steps', frequency: 'none', cron: '*/15 * * * *', suffix: '2026/01/05 06:07:08' },
+    { label: 'hour lists', frequency: 'none', cron: '0 9,18 * * mon', suffix: '2026/01/05 06:07:08' },
+    { label: 'weekday cron', frequency: 'none', cron: '0 9 * * mon-fri', suffix: '2026/01/05 06:07:08' },
+    { label: 'week boundary', frequency: 'none', cron: '0 9 * * sun,mon', suffix: '2026/01/05 06:07:08' },
+    { label: 'weekly cron', frequency: 'none', cron: '@weekly', suffix: '2026/01/05' },
+    { label: 'spaced weekdays', frequency: 'none', cron: '0 9 * * mon,wed,fri', suffix: '2026/01/05' },
+    { label: 'monthly cron', frequency: 'none', cron: '@monthly', suffix: '2026/01/05' },
+    { label: 'yearly cron', frequency: 'none', cron: '@yearly', suffix: '2026/01/05' },
+    { label: 'consecutive dates', frequency: 'none', cron: '0 9 1,2 * *', suffix: '2026/01/05 06:07:08' },
+    { label: 'spaced dates', frequency: 'none', cron: '0 9 1,15 * *', suffix: '2026/01/05' },
+    { label: 'month boundary', frequency: 'none', cron: '0 9 1,31 * *', suffix: '2026/01/05 06:07:08' },
+    { label: 'year boundary', frequency: 'none', cron: '0 9 1,31 dec,jan *', suffix: '2026/01/05 06:07:08' },
+    { label: 'February boundary', frequency: 'none', cron: '0 9 1,28 feb,mar *', suffix: '2026/01/05 06:07:08' },
+    { label: 'leap dates', frequency: 'none', cron: '0 9 28,29 feb *', suffix: '2026/01/05 06:07:08' },
+    { label: 'invalid month dates', frequency: 'none', cron: '0 9 1,30,31 feb *', suffix: '2026/01/05' },
+    { label: 'day or weekday', frequency: 'none', cron: '0 9 1 * mon', suffix: '2026/01/05 06:07:08' }
+  ])('appends the local enqueue date with the precision needed for $label', ({ frequency, cron, suffix }) => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, {
+      name: '定期確認', frequency, cron, whenIdle: true,
+      dueAt: new Date(2026, 0, 1).toISOString()
+    })
+    const [task] = runTaskRules(db, new Date(2026, 0, 5, 6, 7, 8, 987)).created
+    expect(repo.getTask(db, task.id)?.title).toBe(`定期確認 ${suffix}`)
+    expect(repo.getTaskRule(db, rule.id)?.name).toBe('定期確認')
+    expect(task.prompt).toBe(rule.prompt)
+  })
+
+  it('timestamps manual queueing without accumulating suffixes or changing an empty-prompt fallback', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily', name: '定期確認', prompt: '' })
+    const first = enqueueRuleNow(db, rule.id, new Date(2026, 0, 5, 6, 7, 8))
+    const second = enqueueRuleNow(db, rule.id, new Date(2026, 0, 6, 9, 10, 11))
+    expect(first.title).toBe('定期確認 2026/01/05 06:07:08')
+    expect(second.title).toBe('定期確認 2026/01/06 09:10:11')
+    expect(repo.getTask(db, first.id)?.title).toBe(first.title)
+    expect(second.prompt).toBe('定期確認')
+    expect(repo.getTaskRule(db, rule.id)?.name).toBe('定期確認')
+  })
+
+  it('keeps seconds for weekday cron when the next occurrence is after the weekend', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { name: '定期確認', cron: '0 9 * * mon-fri' })
+    expect(enqueueRuleNow(db, rule.id, new Date(2026, 8, 25, 18, 4, 3)).title)
+      .toBe('定期確認 2026/09/25 18:04:03')
+  })
+
+  it('dates overdue work when it is actually queued', () => {
+    const { db, project } = setup()
+    makeRule(db, project, {
+      name: '定期確認', cron: '@daily', dueAt: new Date(2026, 0, 1).toISOString()
+    })
+    expect(runTaskRules(db, new Date(2026, 0, 5, 0, 0, 9)).created[0].title)
+      .toBe('定期確認 2026/01/05 00:00:09')
   })
 })
 
@@ -132,16 +198,16 @@ describe('automatic tasks - when the queue is empty', () => {
 
   it('does not queue two definitions in one project at once, but takes turns', () => {
     const { db, project } = setup()
-    makeRule(db, project, { name: 'Issue 消化', whenIdle: true, sortOrder: 0 })
-    makeRule(db, project, { name: 'PR 消化', whenIdle: true, sortOrder: 1 })
+    const issue = makeRule(db, project, { name: 'Issue 消化', whenIdle: true, sortOrder: 0 })
+    const pr = makeRule(db, project, { name: 'PR 消化', whenIdle: true, sortOrder: 1 })
 
     const first = runTaskRules(db).created
-    expect(first.map((t) => t.title)).toEqual(['Issue 消化'])
+    expect(first.map((t) => t.ruleId)).toEqual([issue.id])
 
     // The second one waits until the first is cleared (the queue is not empty)
     expect(runTaskRules(db).created).toHaveLength(0)
     repo.setTaskStatus(db, first[0].id, 'review')
-    expect(runTaskRules(db).created.map((t) => t.title)).toEqual(['PR 消化'])
+    expect(runTaskRules(db).created.map((t) => t.ruleId)).toEqual([pr.id])
   })
 })
 
@@ -267,7 +333,7 @@ describe('automatic tasks - manual runs and cleaning up definitions', () => {
 
     repo.deleteTaskRule(db, rule.id)
     const after = repo.getTask(db, task.id)
-    expect(after?.title).toBe('Issue を消化する')
+    expect(after?.title).toBe(task.title)
     expect(after?.ruleId).toBeNull()
   })
 

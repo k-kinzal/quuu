@@ -407,6 +407,12 @@ What gets queued is an ordinary task: acquisition, execution, and review all wor
 before. The rule that **only a human writes `done`** also stands (automation can create
 nothing beyond `Queued`).
 
+Generated task titles automatically append the Mac's local enqueue date as ` YYYY/MM/DD`.
+Daily, weekday, and cron schedules that can repeat within a day append
+` YYYY/MM/DD HH:mm:ss` instead, as do definitions without a time condition.
+This also applies to **Queue now**. The definition's name and prompt stay as entered;
+the timestamp stays with the generated task while it waits or is retried.
+
 Frequency (or a custom cron expression), an empty queue, and duplicate prevention
 work as **gates that all AND together**. Each may be
 omitted, but a definition with none of them would queue every tick, so it cannot be

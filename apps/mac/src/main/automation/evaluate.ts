@@ -10,6 +10,7 @@ import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { truncate } from '../util.js'
 import { frequencyDueAt, frequencyReady, isCalendarFrequency } from './frequency.js'
+import { taskRuleTitle } from './title.js'
 
 /**
  * Evaluating automated tasks (`TaskRule`). For each rule whose conditions line up, create one queued task.
@@ -110,7 +111,7 @@ function enqueueFromRule(db: Db, rule: TaskRule, now: Date): Task {
   return inTransaction(db, () => {
     const task = repo.insertTask(db, {
       projectId: rule.projectId,
-      title: rule.name,
+      title: taskRuleTitle(rule, now),
       prompt: rule.prompt.trim().length > 0 ? rule.prompt : rule.name,
       priority: rule.priority,
       status: 'queued',

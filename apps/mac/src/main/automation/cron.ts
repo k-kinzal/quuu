@@ -181,3 +181,30 @@ export function nextCronIso(expression: string, after: Date = new Date()): strin
 export function isValidCron(expression: string): boolean {
   return parseCron(expression) !== null
 }
+
+/** Whether the schedule can repeat within one local calendar day, regardless of today's date. */
+export function cronCanRepeatWithinDay(spec: CronSpec): boolean {
+  if (spec.minutes.size > 1 || spec.hours.size > 1) return true
+  if (!spec.daysRestricted && !spec.weekdaysRestricted) return true
+  if (spec.weekdaysRestricted) {
+    for (const day of spec.weekdays) {
+      if (spec.weekdays.has((day + 1) % 7)) return true
+    }
+  }
+  if (!spec.daysRestricted) return false
+
+  // Consider both February lengths so precision does not change with leap years.
+  const monthLengths = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+  for (const month of spec.months) {
+    const length = monthLengths[month - 1]
+    for (const day of spec.days) {
+      if (day > length) continue
+      // Day-of-month and weekday are ORed; a matching weekday can border this date.
+      if (spec.weekdaysRestricted) return true
+      if (day < length && spec.days.has(day + 1)) return true
+    }
+    if (spec.months.has(month % 12 + 1) && spec.days.has(1) &&
+      (spec.days.has(length) || (month === 2 && spec.days.has(28)))) return true
+  }
+  return false
+}

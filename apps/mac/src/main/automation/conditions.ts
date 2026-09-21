@@ -20,7 +20,7 @@ import type { Frequency } from './frequency.js'
 export interface TaskRule {
   id: string
   projectId: string
-  /** The rule's name. It becomes the title of the task it creates. */
+  /** The rule's name. Generated task titles append their local enqueue date or date/time. */
   name: string
   prompt: string
   priority: Priority
