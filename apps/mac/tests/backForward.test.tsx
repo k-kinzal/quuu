@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { createRouterClient, implement } from '@orpc/server'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { cleanup, render, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { Project } from '../src/main/projects/types.js'
 import type { AppSnapshot } from '../src/main/snapshot.js'
 import type { Task } from '../src/main/tasks/types.js'
 import { contract } from '../src/preload/contract.js'
-import { createSwipeReader } from '../src/renderer/src/interaction/backForward.js'
+import { createSwipeReader, useSwipeBackForward } from '../src/renderer/src/interaction/backForward.js'
 import { runTaskListKey } from '../src/renderer/src/interaction/listNav.js'
 import { NO_FILTERS } from '../src/renderer/src/model/table.js'
 import { INITIAL_TRAIL } from '../src/renderer/src/state/navigation.js'
@@ -281,5 +282,58 @@ describe('reading a swipe out of the trackpad', () => {
     swipe(read, -200, 0, 1000)
     swipe(read, -200, 0, 4000)
     expect(steps).toEqual([-1, -1])
+  })
+})
+
+/**
+ * Which swipe counts is the Mac's to say, not Quuu's.
+ *
+ * Set to swipe between pages with three fingers, a two-finger sideways scroll is
+ * just a scroll there — in every other app on that Mac, and so here too.
+ */
+describe('following how this Mac is set to swipe between pages', () => {
+  afterEach(cleanup)
+
+  function Swipes(): null {
+    useSwipeBackForward()
+    return null
+  }
+
+  /** Mount the swipe reader on a Mac set one way or the other, standing one step in from the start. */
+  async function mount(twoFingerSwipes: boolean): Promise<void> {
+    let asked = false
+    const os = implement(contract)
+    Object.defineProperty(window, 'quuu', {
+      configurable: true,
+      writable: true,
+      value: createRouterClient({
+        runs: { byTask: os.runs.byTask.handler(() => []) },
+        session: { close: os.session.close.handler(() => undefined) },
+        system: { scrollSwipes: os.system.scrollSwipes.handler(() => { asked = true; return twoFingerSwipes }) }
+      })
+    })
+    useStore.getState().setSection({ kind: 'project', id: 'p1' })
+    render(<Swipes />)
+    await waitFor(() => expect(asked).toBe(true))
+    // Let the answer land before the fingers move
+    await new Promise((resolve) => setTimeout(resolve, 0))
+  }
+
+  function flick(deltaX: number): void {
+    for (let i = 0; i < 10; i++) window.dispatchEvent(new WheelEvent('wheel', { deltaX: deltaX / 10 }))
+  }
+
+  it('goes back on a two-finger swipe when the Mac swipes between pages with two fingers', async () => {
+    await mount(true)
+    flick(-200)
+    await waitFor(() => expect(useStore.getState().section).toEqual({ kind: 'all' }))
+  })
+
+  it('leaves a two-finger sideways scroll as a scroll when the Mac swipes with three fingers', async () => {
+    await mount(false)
+    flick(-200)
+    await new Promise((resolve) => setTimeout(resolve, 50))
+    expect(useStore.getState().section).toEqual({ kind: 'project', id: 'p1' })
+    expect(useStore.getState().trail.index).toBe(1)
   })
 })

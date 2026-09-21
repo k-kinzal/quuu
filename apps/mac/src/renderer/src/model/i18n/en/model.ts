@@ -129,6 +129,7 @@ export const model = {
       },
       system: {
         windowLayout: 'load the screen',
+        scrollSwipes: 'read the trackpad settings',
         pickDirectory: 'choose a folder',
         pickApplication: 'choose an app',
         confirm: 'show the confirmation',

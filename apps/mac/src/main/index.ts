@@ -11,6 +11,7 @@ import { refreshMenuIfProjectsChanged, send } from './menus.js'
 import { mobileWebRoot } from './mobile-sync/folder.js'
 import type { AppSettings } from './settings/types.js'
 import type { AppSnapshot, ToastPayload } from './snapshot.js'
+import { swipeCommand } from './swipe.js'
 import { TaskApiServer } from './taskApi.js'
 import { beginQuit, configureWindows, mainWindow, showWindow } from './windows.js'
 
@@ -120,6 +121,18 @@ if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
   app.on('second-instance', () => showWindow())
+
+  /*
+   * A three-finger page swipe reaches the window as a gesture, never as scrolling the
+   * page could read (`swipe.ts`). Registered before any window exists, so the one
+   * created at launch and any recreated later all answer it.
+   */
+  app.on('browser-window-created', (_created, win) => {
+    win.on('swipe', (_swipe, direction) => {
+      const command = swipeCommand(direction)
+      if (command) send(command)
+    })
+  })
 
   void app.whenReady().then(async () => {
     // Before anything user-visible (menus, notifications, IPC reasons) is built.

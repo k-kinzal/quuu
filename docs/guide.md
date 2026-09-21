@@ -522,7 +522,10 @@ are shown.
 `⌘[` / `⌘]`, not `⌘←` / `⌘→`: a menu shortcut is taken before the screen sees it, and
 those two are move-to-start / end-of-line inside every input in the app.
 
-**A sideways swipe on the trackpad does the same thing.** Back and forward go through the
+**The trackpad's page swipe does the same thing**, in whichever form the Mac is set to
+(System Settings › Trackpad › More Gestures › Swipe between pages): three fingers arrives
+as a window gesture, two fingers as sideways scrolling. With two-finger page swipes turned
+off, a two-finger sideways scroll stays a scroll. Back and forward go through the
 screens you actually stood on — a section, a task opened, a settings category, a project's
 configuration — and not through every row the arrow keys passed over on the way. A
 destination that has since been deleted is stepped over rather than landed on, and the

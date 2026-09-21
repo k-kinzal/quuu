@@ -130,6 +130,7 @@ export const model: typeof en = {
       },
       system: {
         windowLayout: '画面の読み込み',
+        scrollSwipes: 'トラックパッド設定の読み込み',
         pickDirectory: 'フォルダの選択',
         pickApplication: 'アプリの選択',
         confirm: '確認画面の表示',

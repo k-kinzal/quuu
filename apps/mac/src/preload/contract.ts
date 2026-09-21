@@ -194,6 +194,8 @@ export const contract = {
       collapsedRailWidth: z.number(),
       overhang: z.number()
     })),
+    /** Whether a two-finger sideways scroll is this Mac's back / forward (System Settings › Trackpad). */
+    scrollSwipes: procedure.output(z.boolean()),
     pickDirectory: procedure.output(z.union([z.string(), z.null()])),
     pickApplication: procedure.output(z.union([z.string(), z.null()])),
     confirm: procedure.input(ConfirmRequestSchema.strict()).output(z.boolean()),

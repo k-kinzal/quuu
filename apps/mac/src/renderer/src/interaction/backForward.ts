@@ -58,11 +58,13 @@ export interface SwipeSample {
 /**
  * Read swipes out of a stream of wheel events.
  *
- * macOS hands a two-finger swipe to the page as plain horizontal scrolling —
- * there is no gesture event to listen for — so the gesture has to be read back
- * out of the deltas. Which way a given flick counts follows the deltas, so
- * whichever way the trackpad is set to scroll, the swipe that means "back" here
- * is the one that means "back" everywhere else on the machine.
+ * A Mac set to swipe between pages with two fingers hands that swipe to the page
+ * as plain horizontal scrolling, so the gesture has to be read back out of the
+ * deltas. (Set to three fingers, the swipe is a window gesture instead, and main
+ * turns it into the same command — `main/swipe.ts`.) Which way a given flick
+ * counts follows the deltas, so whichever way the trackpad is set to scroll, the
+ * swipe that means "back" here is the one that means "back" everywhere else on
+ * the machine.
  *
  * Kept free of the DOM so the thresholds can be exercised directly.
  */
@@ -99,12 +101,28 @@ export function createSwipeReader(go: (step: -1 | 1) => void): (sample: SwipeSam
   }
 }
 
-/** Swiping sideways goes back and forward, the way it does in every other window on the machine. */
+/**
+ * Swiping sideways with two fingers goes back and forward — **when this Mac is set
+ * that way**, as it is in every other window on the machine.
+ *
+ * Set to three fingers (or to no page swipe), a two-finger sideways scroll is only
+ * a scroll, and reading it as a swipe would navigate against the person's own
+ * setting. The setting is asked again whenever the window comes back to the front:
+ * it is changed in System Settings, and returning here is when it may have changed.
+ */
 export function useSwipeBackForward(): void {
   useEffect(() => {
     const read = createSwipeReader((step) => void stepHistory(step))
+    let enabled = false
+    const check = (): void => {
+      void window.quuu.system.scrollSwipes()
+        .then((navigates) => { enabled = navigates })
+        .catch((error: unknown) => useStore.getState().reportFailure(error, ['system', 'scrollSwipes'], false))
+    }
+    check()
 
     const onWheel = (event: WheelEvent): void => {
+      if (!enabled) return
       // A mouse reports in lines or pages; only a trackpad reports pixels, and only it can swipe
       if (event.deltaMode !== 0) return
       // While the palette is open the screen behind it is not being driven (the same rule the keys follow)
@@ -116,7 +134,11 @@ export function useSwipeBackForward(): void {
     }
 
     window.addEventListener('wheel', onWheel, { passive: true })
-    return () => window.removeEventListener('wheel', onWheel)
+    window.addEventListener('focus', check)
+    return () => {
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('focus', check)
+    }
   }, [])
 }
 

@@ -2,10 +2,11 @@ import { savePromptFiles } from '../platform/promptFiles.js'
 import { openExternalLink } from '../platform/externalLinks.js'
 import { implement, ORPCError } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/message-port'
-import { BrowserWindow, clipboard, dialog, ipcMain, shell, type OpenDialogOptions } from 'electron'
+import { BrowserWindow, clipboard, dialog, ipcMain, shell, systemPreferences, type OpenDialogOptions } from 'electron'
 import type { SessionAppendedPayload } from '../../preload/api.js'
 import { contract } from '../../preload/contract.js'
 import type { SessionView } from '../session/view.js'
+import { SCROLL_SWIPE_DEFAULT, scrollSwipeNavigates } from '../swipe.js'
 import { COLLAPSED_RAIL_WIDTH, WINDOW_BUTTONS_INSET, WINDOW_BUTTONS_OVERHANG } from '../windowGeometry.js'
 import { applicationWindows, ownsWindow, windowUrl } from '../windows.js'
 import { sendEvent } from './events.js'
@@ -88,6 +89,10 @@ export function createAppRouter(app: QuuuApp) {
   })
   const windowLayout = os.system.windowLayout.handler(() => {
     return ({ leftInset: WINDOW_BUTTONS_INSET, collapsedRailWidth: COLLAPSED_RAIL_WIDTH, overhang: WINDOW_BUTTONS_OVERHANG })
+  })
+  // Read on every ask, not cached: the person changes it in System Settings while Quuu keeps running
+  const scrollSwipes = os.system.scrollSwipes.handler(() => {
+    return scrollSwipeNavigates(systemPreferences.getUserDefault(SCROLL_SWIPE_DEFAULT, 'string'))
   })
   const rulePreview = os.rules.preview.handler(({ input }) => {
     return app.automation.preview(input)
@@ -506,6 +511,7 @@ export function createAppRouter(app: QuuuApp) {
     system: {
       savePromptFiles: os.system.savePromptFiles.handler(({ input }) => savePromptFiles(input.map(file => ({ name: file.name, data: Buffer.from(file.data, 'base64') })))),
       windowLayout: windowLayout,
+      scrollSwipes: scrollSwipes,
       pickDirectory: pickDirectory,
       pickApplication: pickApplication,
       confirm: confirm,
