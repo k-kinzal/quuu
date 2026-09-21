@@ -29,12 +29,14 @@ import {
   type MenuItemSpec
 } from '@design-system/react'
 import { useEffect, useState } from 'react'
+import { useMutation } from '@tanstack/react-query'
 import type { TaskRule } from '../../../../preload/api/automation.js'
 import type { Project } from '../../../../preload/api/projects.js'
 import type { TaskStatus } from '../../../../preload/api/tasks.js'
 import { userAgents } from '../../model/agents.js'
 import { t } from '../../model/i18n/index.js'
 import { DEFAULT_BLOCK_STATUSES } from '../../model/ruleDraft.js'
+import { ruleScheduleLabel, scheduleOptions, type ScheduleChoice } from '../../model/ruleSchedule.js'
 import { OPEN_STATUSES } from '../../model/taskStatus.js'
 
 import { usePreview } from '../../interaction/usePreview.js'
@@ -46,6 +48,8 @@ import { isTyping, pane, rowActivation } from '../../interaction/focus.js'
 import { contextMenu } from '../../interaction/menu.js'
 import { absoluteTime, relativeTime } from '../../model/format.js'
 import { useStore } from '../../state/store.js'
+import { queryClient } from '../../state/queryClient.js'
+import { failureReason } from '../../model/operationFailure.js'
 import { ArrowLeft, ICON, Plus, iconProps } from '../../ui/icons.js'
 
 /**
@@ -89,6 +93,7 @@ export function TaskRuleList({
       agentOverrideId: null,
       whenIdle: true,
       cron: '',
+      frequency: 'daily',
       blockStatuses: DEFAULT_BLOCK_STATUSES,
       enabled: false,
       sortOrder: rules.length
@@ -134,7 +139,7 @@ export function TaskRuleList({
               <HeadCell width={tableMetrics.cell.marker} edge="start" />
               <HeadCell>{t('taskRules.name')}</HeadCell>
               <HeadCell>{t('taskRules.conditions')}</HeadCell>
-              <HeadCell width={tableMetrics.cell.expression}>Cron</HeadCell>
+              <HeadCell width={tableMetrics.cell.expression}>{t('taskRules.frequency')}</HeadCell>
               <HeadCell width={tableMetrics.cell.time}>{t('taskRules.next')}</HeadCell>
               <HeadCell width={tableMetrics.cell.time}>{t('taskRules.last')}</HeadCell>
             </DataTableHeadRow>
@@ -170,12 +175,12 @@ export function TaskRuleList({
                 </DataCell>
                 <DataCell>{ruleConditionLabel(rule)}</DataCell>
                 <DataCell width={tableMetrics.cell.expression}>
-                  <Text mono truncate>
-                    {rule.cron || '—'}
+                  <Text truncate>
+                    {ruleScheduleLabel(rule)}
                   </Text>
                 </DataCell>
                 <DataCell width={tableMetrics.cell.time}>
-                  {rule.dueAt ? absoluteTime(rule.dueAt) : '—'}
+                  {rule.frequency !== 'none' ? t('taskRules.withinPeriod') : rule.dueAt ? absoluteTime(rule.dueAt) : '—'}
                 </DataCell>
                 <DataCell width={tableMetrics.cell.time}>
                   {relativeTime(rule.lastEnqueuedAt)}
@@ -196,15 +201,24 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
   const agents = userAgents(snapshot?.agents ?? [])
   const [draft, setDraft] = useState<TaskRule>(rule)
   const [dirty, setDirty] = useState(false)
-  const [error, setError] = useState('')
+  const [schedule, setSchedule] = useState<ScheduleChoice>(rule.frequency !== 'none' ? rule.frequency : rule.cron ? 'cron' : 'none')
+  const saving = useMutation({
+    mutationKey: ['rules', 'update'],
+    meta: { feedback: 'inline' },
+    mutationFn: async (value: TaskRule) => {
+      const { id, createdAt: _c, updatedAt: _u, dueAt: _d, lastEnqueuedAt: _l, ...input } = value
+      return window.quuu.rules.update({ id, patch: input }, { context: { feedback: 'inline' } })
+    },
+    onSuccess: (_saved, submitted) => { if (draft === submitted) setDirty(false) }
+  }, queryClient)
 
   useEffect(() => {
     setDraft(rule)
     setDirty(false)
-    setError('')
+    setSchedule(rule.frequency !== 'none' ? rule.frequency : rule.cron ? 'cron' : 'none')
     // A snapshot arriving mid-edit must not clobber the draft (same treatment as AgentEditor).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rule.id, rule.updatedAt])
+  }, [rule.id])
 
   const patch = <K extends keyof TaskRule>(key: K, value: TaskRule[K]): void => {
     setDraft((d) => ({ ...d, [key]: value }))
@@ -216,23 +230,12 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
     patch('blockStatuses', next)
   }
 
-  const previewInput = { cron: draft.cron, whenIdle: draft.whenIdle, blockStatuses: draft.blockStatuses }
+  const previewInput = { cron: draft.cron, frequency: draft.frequency, whenIdle: draft.whenIdle, blockStatuses: draft.blockStatuses }
   const preview = usePreview(JSON.stringify(previewInput), () => window.quuu.rules.preview(previewInput))
   const cronPreview = preview.value?.nextAt ?? null
   const cronBroken = preview.value ? !preview.value.valid : false
   const noCondition = preview.value ? !preview.value.hasCondition : false
-  const canSave = preview.value !== null && dirty && !cronBroken && !noCondition && draft.name.trim().length > 0
-
-  const save = async (): Promise<void> => {
-    const { id: _id, createdAt: _c, updatedAt: _u, dueAt: _d, lastEnqueuedAt: _l, ...input } = draft
-    try {
-      await window.quuu.rules.update({ id: rule.id, patch: input })
-      setDirty(false)
-      setError('')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
-    }
-  }
+  const canSave = !saving.isPending && preview.value !== null && dirty && !cronBroken && !noCondition && (schedule !== 'cron' || draft.cron.trim().length > 0) && draft.name.trim().length > 0
 
   return (
     <Panel
@@ -276,7 +279,8 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
             <Button
               color={canSave ? 'primary' : 'neutral'}
               disabled={!canSave}
-              onClick={() => void save()}
+              loading={saving.isPending}
+              onClick={() => saving.mutate(draft)}
             >
               {dirty ? t('taskRules.save') : t('taskRules.saved')}
             </Button>
@@ -303,7 +307,7 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
           <Field label={t('taskRules.taskName')} width="md">
             <TextInput
               key={rule.id}
-              defaultValue={draft.name}
+              value={draft.name}
               onChange={(e) => patch('name', e.target.value)}
             />
           </Field>
@@ -313,7 +317,7 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
               key={rule.id}
               rows={6}
               placeholder={draft.name}
-              defaultValue={draft.prompt}
+              value={draft.prompt}
               onChange={(e) => patch('prompt', e.target.value)}
             />
           </Field>
@@ -344,13 +348,27 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
         </Section>
 
         <Section title={t('taskRules.whenSection')}>
+          <Field label={t('taskRules.frequency')} width="md"
+            hint={draft.frequency !== 'none' ? t(draft.frequency === 'weekly' ? 'taskRules.weeklyHint' : draft.frequency === 'weekdays' ? 'taskRules.weekdaysHint' : 'taskRules.dailyHint') : undefined}>
+            <Select
+              aria-label={t('taskRules.frequency')}
+              value={schedule}
+              options={scheduleOptions()}
+              onChange={(e) => {
+                const choice = e.target.value
+                setSchedule(choice)
+                setDraft((d) => ({ ...d, frequency: choice === 'cron' ? 'none' : choice, cron: choice === 'cron' ? d.cron : '' }))
+                setDirty(true)
+              }}
+            />
+          </Field>
           <Checkbox
             label={t('taskRules.onlyWhenIdle')}
             checked={draft.whenIdle}
             onChange={(v: boolean) => patch('whenIdle', v)}
           />
 
-          <Field
+          {schedule === 'cron' && <Field
             label={t('taskRules.cron')}
             error={cronBroken ? t('taskRules.cronError') : undefined}
             hint={cronPreview ? t('taskRules.cronNext', { time: absoluteTime(cronPreview) }) : undefined}
@@ -358,12 +376,13 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
           >
             <TextInput
               key={rule.id}
+              aria-label={t('taskRules.cron')}
               mono
               placeholder="0 3 * * *"
-              defaultValue={draft.cron}
+              value={draft.cron}
               onChange={(e) => patch('cron', e.target.value)}
             />
-          </Field>
+          </Field>}
 
           <Field label={t('taskRules.blockStatuses')} width="full">
             <Row wrap gap="lg">
@@ -385,7 +404,7 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
             checked={draft.enabled}
             onChange={(v: boolean) => patch('enabled', v)}
           />
-          {error && <FieldHint tone="danger">{error}</FieldHint>}
+          {saving.error && <FieldHint tone="danger">{failureReason(saving.error)}</FieldHint>}
         </Section>
       </Page>
     </Panel>

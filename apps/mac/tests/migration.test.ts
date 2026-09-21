@@ -198,7 +198,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('25')
+    expect(version.value).toBe('26')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -266,7 +266,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('25')
+    expect(version.value).toBe('26')
     db.close()
   })
 
@@ -598,5 +598,27 @@ describe('schema migration', () => {
     expect(indexes).toContain('idx_runs_external')
     expect(indexes).toContain('idx_task_deps_blocker')
     db.close()
+  })
+})
+
+describe('calendar frequency migration', () => {
+  it('preserves existing cron rules and their deadlines, and persists a new frequency across reopening', () => {
+    makeV2Database()
+    const old = openDatabase(path)
+    const projectId = repo.listProjects(old)[0].id
+    const rule = repo.insertTaskRule(old, {
+      projectId, name: 'Daily cron', prompt: '', priority: 2, agentOverrideId: null,
+      whenIdle: true, cron: '0 3 * * *', blockStatuses: ['review'], enabled: true,
+      sortOrder: 0, dueAt: '2026-09-22T03:00:00.000Z'
+    })
+    old.exec("ALTER TABLE task_rules DROP COLUMN frequency; UPDATE meta SET value = '25' WHERE key = 'schema_version'")
+    old.close()
+    const migrated = openDatabase(path)
+    expect(repo.getTaskRule(migrated, rule.id)).toEqual({ ...rule, frequency: 'none' })
+    repo.updateTaskRule(migrated, rule.id, { frequency: 'weekly', cron: '' })
+    migrated.close()
+    const reopened = openDatabase(path)
+    expect(repo.getTaskRule(reopened, rule.id)?.frequency).toBe('weekly')
+    reopened.close()
   })
 })

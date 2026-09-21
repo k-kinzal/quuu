@@ -20,7 +20,7 @@ describe('automatic task gates', () => {
   it('one rule in a project does not keep enqueueing while others starve', () => {
     const rule = (id: string, lastEnqueuedAt: string | null, sortOrder: number): TaskRule => ({
       id, projectId: 'p', name: id, prompt: '', priority: 2, agentOverrideId: null,
-      whenIdle: true, cron: '', blockStatuses: [], enabled: true, dueAt: null,
+      whenIdle: true, cron: '', frequency: 'none', blockStatuses: [], enabled: true, dueAt: null,
       lastEnqueuedAt, sortOrder, createdAt: '', updatedAt: ''
     })
     expect(orderTaskRules([rule('a', '2026-09-06', 0), rule('b', null, 1)]).map((r) => r.id)).toEqual(['b', 'a'])

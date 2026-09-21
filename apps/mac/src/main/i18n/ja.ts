@@ -283,6 +283,7 @@ export const ja: typeof en = {
     outsideReports: '生成されたレポートだけを表示できます'
   },
   automation: {
+    frequencyUnreadable: '毎日・毎週・平日の頻度と Cron 式は同時に指定できません',
     noConditions: '自動タスク「{{name}}」に条件がありません',
     cronUnreadableFor: '自動タスク「{{name}}」の Cron 式が読めません',
     nameRequired: '名前を入力してください',

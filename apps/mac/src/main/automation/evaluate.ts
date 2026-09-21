@@ -9,6 +9,7 @@ import { nextCronDate, parseCron } from './cron.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { truncate } from '../util.js'
+import { frequencyDueAt, frequencyReady, isCalendarFrequency } from './frequency.js'
 
 /**
  * Evaluating automated tasks (`TaskRule`). For each rule whose conditions line up, create one queued task.
@@ -57,7 +58,14 @@ export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
       continue
     }
 
-    const due = ruleDueState(rule, now.toISOString(), parseCron(rule.cron) !== null)
+    if (rule.frequency !== 'none' && (!isCalendarFrequency(rule.frequency) || rule.cron.trim())) {
+      warnings.push(t('automation.frequencyUnreadable'))
+      continue
+    }
+
+    const due = rule.frequency === 'none'
+      ? ruleDueState(rule, now.toISOString(), parseCron(rule.cron) !== null)
+      : frequencyReady(rule, now) ? 'ready' : 'waiting'
     if (due === 'invalid') {
       warnings.push(t('automation.cronUnreadableFor', { name: truncate(rule.name, 24) }))
       continue
@@ -111,7 +119,7 @@ function enqueueFromRule(db: Db, rule: TaskRule, now: Date): Task {
     })
     repo.updateTaskRule(db, rule.id, {
       lastEnqueuedAt: now.toISOString(),
-      dueAt: nextDueAt(rule.cron, now)
+      dueAt: rule.frequency === 'none' ? nextDueAt(rule.cron, now) : frequencyDueAt(rule.frequency, now.toISOString(), now)
     })
     return task
   })

@@ -75,6 +75,7 @@ const RULE: TaskRule = {
   agentOverrideId: null,
   whenIdle: true,
   cron: '0 3 * * *',
+  frequency: 'none',
   blockStatuses: ['queued', 'running'],
   enabled: true,
   dueAt: null,

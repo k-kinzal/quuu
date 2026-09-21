@@ -257,6 +257,7 @@ const projects = projectSpecs.map((p, i) =>
       agentOverrideId: null,
       whenIdle: r.whenIdle,
       cron: r.cron,
+      frequency: i === 1 ? 'weekdays' : i === 2 ? 'weekly' : 'none',
       blockStatuses: r.blockStatuses,
       enabled: r.enabled,
       sortOrder: i,

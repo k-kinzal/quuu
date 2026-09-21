@@ -18,6 +18,9 @@ import type { QuuuEvents } from '../src/preload/api.js'
 import { App } from '../src/renderer/src/App.js'
 import { TaskComposer } from '../src/renderer/src/components/TaskComposer.js'
 import { TaskSidebar } from '../src/renderer/src/components/TaskSidebar.js'
+import { TaskOverview } from '../src/renderer/src/components/TaskOverview.js'
+import { TaskRuleEditor } from '../src/renderer/src/views/project/TaskRules.js'
+import { INITIAL_TRAIL } from '../src/renderer/src/state/navigation.js'
 import { LeftMenu } from '../src/renderer/src/components/LeftMenu.js'
 import { TaskFilterBar } from '../src/renderer/src/components/TaskFilterBar.js'
 import { NO_FILTERS } from '../src/renderer/src/model/table.js'
@@ -74,7 +77,8 @@ beforeEach(() => {
   useStore.setState({
     snapshot: app.snapshot(), settings: app.settings.getSettings(), section: { kind: 'all' },
     drafts: {}, newTaskAgentIds: {}, targetProjectId: projectId, newTaskLink: null, addAction: null,
-    detailOpen: false, cursorTaskId: null, selectedRunId: null, session: null, runs: [], toasts: [], filters: NO_FILTERS
+    detailOpen: false, cursorTaskId: null, selectedRunId: null, session: null, runs: [], toasts: [], filters: NO_FILTERS,
+    projectSettingsOpen: false, editingRuleId: null, trail: INITIAL_TRAIL
   })
   useStore.setState({ layout: { ...useStore.getState().layout, rail: paneProfiles.navigation.initial, list: paneProfiles.collection.initial, railCollapsed: false, listMode: 'compact' } })
   app.on('changed', () => useStore.getState().applySnapshot(app.snapshot()))
@@ -579,4 +583,65 @@ describe('typing in the list -> contract-based IPC -> save -> the list updates',
     expect(screen.queryByText("Couldn't load the screen")).toBeNull()
   })
 
+})
+
+describe('recurring tasks in the collection and frequency editor', () => {
+  const createRule = (over = {}) => app.automation.createTaskRule({
+    projectId, name: 'Daily maintenance', prompt: 'Check the project', priority: 2,
+    agentOverrideId: null, whenIdle: true, cron: '', frequency: 'daily',
+    blockStatuses: ['queued', 'running'], enabled: false, sortOrder: 0, ...over
+  })
+
+  it.each([{ name: 'overview', View: TaskOverview }, { name: 'sidebar', View: TaskSidebar }])('keeps definitions below tasks, opens the selected settings, and returns with Back ($name)', async ({ View }) => {
+    const rule = createRule()
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><View /></ThemeProvider>)
+    const tasks = screen.getByRole('listbox')
+    const recurring = screen.getByRole('region', { name: 'Recurring tasks' })
+    expect(tasks.compareDocumentPosition(recurring) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(within(recurring).getByText('Once a day · When the queue is empty', { exact: false })).toBeTruthy()
+    expect(within(recurring).getByText('Disabled')).toBeTruthy()
+    const button = within(recurring).getByRole('button')
+    button.focus()
+    fireEvent.keyDown(button, { key: 'Enter' })
+    expect(useStore.getState().detailOpen).toBe(false)
+    fireEvent.click(button)
+    expect(useStore.getState()).toMatchObject({ editingRuleId: rule.id, projectSettingsOpen: true, section: { kind: 'project', id: projectId } })
+    await act(async () => { await useStore.getState().goBack() })
+    expect(useStore.getState()).toMatchObject({ editingRuleId: null, projectSettingsOpen: false, section: { kind: 'all' } })
+  })
+
+  it('shows definitions even without ordinary tasks, scopes them by project, and leaves Needs review clear', () => {
+    createRule()
+    const other = app.projects.createProject({ name: 'Other', path: '/tmp/other' })
+    createRule({ projectId: other.id, name: 'Other weekly task', frequency: 'weekly' })
+    useStore.setState({ section: { kind: 'project', id: other.id } })
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskOverview /></ThemeProvider>)
+    expect(screen.queryByText('Daily maintenance')).toBeNull()
+    expect(screen.getByText('Other weekly task')).toBeTruthy()
+    act(() => useStore.getState().setSection({ kind: 'review' }))
+    expect(screen.queryByRole('region', { name: 'Recurring tasks' })).toBeNull()
+  })
+
+  it('switches an existing cron rule to a frequency, persists it through IPC, and retains edits on rejection', async () => {
+    const rule = createRule({ frequency: 'none', cron: '0 3 * * *' })
+    const { rerender } = render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskRuleEditor rule={rule} onBack={() => { }} /></ThemeProvider>)
+    expect(screen.getByRole('textbox', { name: 'Cron expression' })).toHaveProperty('value', '0 3 * * *')
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: 'Frequency' }))
+    fireEvent.click(screen.getByRole('option', { name: 'Once a week' }))
+    expect(screen.queryByRole('textbox', { name: 'Cron expression' })).toBeNull()
+    rerender(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskRuleEditor rule={{ ...rule, updatedAt: '2026-09-22T00:00:00Z' }} onBack={() => { }} /></ThemeProvider>)
+    expect(screen.getByRole('combobox', { name: 'Frequency' }).textContent).toContain('Once a week')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Save' })).toHaveProperty('disabled', false))
+    vi.spyOn(app.automation, 'updateTaskRule').mockImplementationOnce(() => { throw new Error('Save failed') })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByText('Save failed')
+    expect(screen.getByRole('combobox', { name: 'Frequency' }).textContent).toContain('Once a week')
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await screen.findByRole('button', { name: 'Saved' })
+    expect(app.snapshot().rules.find((r) => r.id === rule.id)).toMatchObject({ frequency: 'weekly', cron: '' })
+    await act(async () => { await window.quuu.rules.update({ id: rule.id, patch: { name: 'Renamed', frequency: undefined } }) })
+    expect(app.snapshot().rules.find((r) => r.id === rule.id)?.frequency).toBe('weekly')
+    await expect(window.quuu.rules.update({ id: rule.id, patch: { cron: '0 3 * * *' } })).rejects.toThrow()
+    expect(app.snapshot().rules.find((r) => r.id === rule.id)?.frequency).toBe('weekly')
+  })
 })

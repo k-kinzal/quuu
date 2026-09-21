@@ -40,6 +40,7 @@ export interface Place {
   editingAgentId: string | null
   editingGroupId: string | null
   projectSettingsOpen: boolean
+  editingRuleId: string | null
 }
 
 /** Where the window opens. The store's initial state is built from this, so the trail starts where the screen does. */
@@ -50,7 +51,8 @@ export const INITIAL_PLACE: Place = {
   settingsCategory: 'general',
   editingAgentId: null,
   editingGroupId: null,
-  projectSettingsOpen: false
+  projectSettingsOpen: false,
+  editingRuleId: null
 }
 
 /**
@@ -85,7 +87,8 @@ export function placeOf(state: Place): Place {
     settingsCategory: state.settingsCategory,
     editingAgentId: state.editingAgentId,
     editingGroupId: state.editingGroupId,
-    projectSettingsOpen: state.projectSettingsOpen
+    projectSettingsOpen: state.projectSettingsOpen,
+    editingRuleId: state.editingRuleId
   }
 }
 
@@ -97,7 +100,8 @@ export function samePlace(a: Place, b: Place): boolean {
     a.settingsCategory === b.settingsCategory &&
     a.editingAgentId === b.editingAgentId &&
     a.editingGroupId === b.editingGroupId &&
-    a.projectSettingsOpen === b.projectSettingsOpen
+    a.projectSettingsOpen === b.projectSettingsOpen &&
+    a.editingRuleId === b.editingRuleId
   )
 }
 
@@ -138,6 +142,7 @@ function reachable(place: Place, snapshot: AppSnapshot | null): boolean {
   if (!snapshot) return true
   const section = place.section
   if (section.kind === 'project' && !snapshot.projects.some((p) => p.id === section.id)) return false
+  if (place.editingRuleId && !snapshot.rules.some((r) => r.id === place.editingRuleId)) return false
   // Only an open detail names an entity. A highlight on a vanished row just starts the list at the top
   const taskId = place.cursorTaskId
   if (place.detailOpen && taskId !== null && !snapshot.tasks.some((t) => t.id === taskId)) return false

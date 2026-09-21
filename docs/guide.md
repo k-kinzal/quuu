@@ -398,18 +398,23 @@ parallel".
 "Burn down one Issue when the queue is free", "clear PR review comments every morning" —
 a project can hold **definitions that queue a task when conditions line up**. Configured
 at **rail → project → gear → Auto-queue**. Any number can sit on one project.
+The **Recurring tasks** section at the bottom of the task list also opens these
+definitions directly. It stays below ordinary tasks when sorting, includes disabled
+definitions, and appears in both the full list and the compact list beside a task.
 
 What gets queued is an ordinary task: acquisition, execution, and review all work as
 before. The rule that **only a human writes `done`** also stands (automation can create
 nothing beyond `Queued`).
 
-There are three conditions, working as **gates that all AND together**. Each may be
+Frequency (or a custom cron expression), an empty queue, and duplicate prevention
+work as **gates that all AND together**. Each may be
 omitted, but a definition with none of them would queue every tick, so it cannot be
 saved.
 
 | Condition | Meaning |
 |------|------|
 | **Only queue when the queue is empty** | When the project has nothing `Queued` and nothing `Running`. If something else is in progress, nothing is queued until it clears. Review, Failed, and Held don't count (so things keep moving while a human's attention is awaited) |
+| **Frequency** | Choose once a day, once a week, or once each weekday without choosing a time. Periods follow the Mac’s local calendar (weeks start on Monday). A new definition can enqueue in the current period as soon as its other conditions allow; at most one task is enqueued per period. Weekdays skip Saturday and Sunday even when a previous day was blocked. Missed periods never accumulate. |
 | **Cron expression** | Treated **not as firing at that time, but as a signal that queueing is allowed once it has passed** (a deadline). As a point event, a day that was busy at 3:00 would be skipped entirely; as a deadline it becomes "queue when free". Queueing advances to the next deadline, so the days the app was off never pile up |
 | **States that count as duplicates** | Nothing is queued while **a task created by this definition** remains in one of the chosen states. Which states count is selectable (default: everything except Done). Archived tasks don't count, so one stuck task can be cleared that way |
 
@@ -422,7 +427,7 @@ rapid fire: each time one clears, the next is queued.
 - Deleting a definition keeps the tasks it queued (only the origin mark is removed)
 - A queued task shows which definition it came from under **Origin** in the info panel
 - **Queue now** creates one without waiting for the conditions (an entry point for
-  verifying the setup)
+  verifying the setup). It counts toward the current frequency period too
 - Nothing is queued while the scheduler is paused
 
 ## P0 keeps its slot

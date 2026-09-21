@@ -60,7 +60,7 @@ export const contract = {
     clearReserved: procedure.input(z.string()).output(TaskSchema),
   },
   rules: {
-    preview: procedure.input(TaskRuleSchema.pick({ whenIdle: true, cron: true, blockStatuses: true })).output(z.object({
+    preview: procedure.input(TaskRuleInputSchema.pick({ whenIdle: true, cron: true, frequency: true, blockStatuses: true })).output(z.object({
       nextAt: z.union([z.string(), z.null()]),
       valid: z.boolean(),
       hasCondition: z.boolean()

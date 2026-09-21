@@ -163,6 +163,17 @@ export const views: typeof en = {
     identityMode: '決め方'
   },
   taskRules: {
+    recurringSection: '定期タスク',
+    frequency: '頻度',
+    daily: '1日1回',
+    weekly: '1週間に1回',
+    weekdays: '平日に1回（月〜金）',
+    noFrequency: '条件が整うたび',
+    customCron: '細かく指定（Cron）',
+    withinPeriod: '条件が整ったら',
+    dailyHint: 'Mac の日付で1日1回、下の条件が整ったときに積みます。実行できなかった日数分は積みません。',
+    weeklyHint: 'Mac の日付で月曜〜日曜の間に1回、下の条件が整ったときに積みます。実行できなかった週の分は積みません。',
+    weekdaysHint: '月曜〜金曜に1日1回、下の条件が整ったときに積みます。土日は積まず、実行できなかった日数分も積みません。',
     whenIdle: 'キューが空のとき',
     noDuplicates: '二重に積まない',
     always: 'いつでも',

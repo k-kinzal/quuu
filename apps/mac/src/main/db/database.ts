@@ -137,6 +137,7 @@ CREATE TABLE IF NOT EXISTS task_rules (
   agent_override_id TEXT,
   when_idle         INTEGER NOT NULL DEFAULT 0,
   cron              TEXT NOT NULL DEFAULT '',
+  frequency         TEXT NOT NULL DEFAULT 'none',
   block_statuses    TEXT NOT NULL DEFAULT '[]',
   enabled           INTEGER NOT NULL DEFAULT 1,
   due_at            TEXT,
@@ -326,7 +327,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 25
+  const target = 26
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -583,6 +584,9 @@ function migrate(db: Db): void {
                     COALESCE(ended_at, strftime('%Y-%m-%dT%H:%M:%S.000Z', started_at, '+20 minutes'))
              FROM task_reports WHERE cwd <> ''`)
   }
+
+  // Existing cron deadlines retain their meaning; frequency is opt-in.
+  if (current < 26) addColumnIfMissing(db, 'task_rules', 'frequency', "TEXT NOT NULL DEFAULT 'none'")
 
   setSchemaVersion(db, target)
 }

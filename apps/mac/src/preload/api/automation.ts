@@ -37,13 +37,14 @@ export const TaskRuleSchema = z.object({
    */
   whenIdle: z.boolean(),
   /**
-   * Cron expression. Empty means no time condition.
+   * Cron expression. Empty means no custom time condition.
    *
    * Treated **not as firing at that time, but as "allowed to enqueue from that
    * time on"** (a due time). Made a point event, a day that happened to be busy
    * at 3:00 would be skipped entirely.
    */
   cron: z.string(),
+  frequency: z.enum(['none', 'daily', 'weekly', 'weekdays']),
   /**
    * Task states that count as duplicates.
    *
@@ -55,7 +56,7 @@ export const TaskRuleSchema = z.object({
    */
   blockStatuses: TaskStatusSchema.array(),
   enabled: z.boolean(),
-  /** "Next time enqueueing is allowed", computed from cron. Null when there is no expression. */
+  /** The next eligible period or cron deadline. Null when there is no schedule. */
   dueAt: z.union([z.string(), z.null()]),
   lastEnqueuedAt: z.union([z.string(), z.null()]),
   sortOrder: z.number(),
@@ -65,6 +66,7 @@ export const TaskRuleSchema = z.object({
 export type TaskRule = z.infer<typeof TaskRuleSchema>
 
 export const TaskRuleInputSchema = TaskRuleSchema.omit({ id: true, createdAt: true, updatedAt: true, dueAt: true, lastEnqueuedAt: true })
+  .extend({ frequency: TaskRuleSchema.shape.frequency.optional() })
 export type TaskRuleInput = z.infer<typeof TaskRuleInputSchema>
 
 export const RuleDueStateSchema = z.union([z.literal('ready'), z.literal('waiting'), z.literal('arm'), z.literal('invalid')])

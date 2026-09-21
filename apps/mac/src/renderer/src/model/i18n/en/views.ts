@@ -162,6 +162,17 @@ export const views = {
     identityMode: 'Mode'
   },
   taskRules: {
+    recurringSection: 'Recurring tasks',
+    frequency: 'Frequency',
+    daily: 'Once a day',
+    weekly: 'Once a week',
+    weekdays: 'Once each weekday',
+    noFrequency: 'Whenever conditions match',
+    customCron: 'Custom (cron)',
+    withinPeriod: 'When conditions match',
+    dailyHint: 'Once per local calendar day, whenever the conditions below allow. Missed days do not accumulate.',
+    weeklyHint: 'Once per local calendar week (Monday–Sunday), whenever the conditions below allow. Missed weeks do not accumulate.',
+    weekdaysHint: 'Once per day, Monday–Friday, whenever the conditions below allow. Weekends are skipped; missed days do not accumulate.',
     whenIdle: 'When the queue is empty',
     noDuplicates: 'No duplicates',
     always: 'Always',

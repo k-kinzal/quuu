@@ -30,6 +30,7 @@ function makeRule(
     agentOverrideId: over.agentOverrideId ?? null,
     whenIdle: over.whenIdle ?? false,
     cron: over.cron ?? '',
+    frequency: over.frequency ?? 'none',
     blockStatuses: over.blockStatuses ?? [],
     enabled: over.enabled ?? true,
     sortOrder: over.sortOrder ?? 0,
@@ -279,5 +280,65 @@ describe('automatic tasks - manual runs and cleaning up definitions', () => {
     await scheduler.tick()
 
     expect(repo.listTasks(db)).toHaveLength(0)
+  })
+})
+
+describe('automatic tasks - calendar frequency without a time', () => {
+  const at = (day: number, hour = 12) => new Date(2026, 8, day, hour)
+
+  it('can start today and queues only once per local day, even after reading the rule again', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily' })
+    expect(runTaskRules(db, at(21, 15)).created).toHaveLength(1)
+    expect(repo.getTaskRule(db, rule.id)?.frequency).toBe('daily')
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(22, 0).toISOString())
+    expect(runTaskRules(db, at(21, 23)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(22, 0)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(22, 9)).created).toHaveLength(0)
+  })
+
+  it('queues once in a Monday to Sunday week and starts another period on Monday', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { frequency: 'weekly' })
+    expect(runTaskRules(db, at(23)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(27, 23)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(28, 0)).created).toHaveLength(1)
+  })
+
+  it('does not catch up a blocked Friday on the weekend, and only queues once on Monday', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { frequency: 'weekdays', whenIdle: true })
+    const busy = makeTask(db, project, 'Busy')
+    expect(runTaskRules(db, at(25)).created).toHaveLength(0)
+    repo.setTaskStatus(db, busy, 'review')
+    expect(runTaskRules(db, at(26)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(27)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(28)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(28, 23)).created).toHaveLength(0)
+  })
+
+  it('waits for idle and duplicate gates and never piles up missed periods', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { frequency: 'daily', whenIdle: true, blockStatuses: [...OPEN_STATUSES] })
+    const busy = makeTask(db, project, 'Busy')
+    expect(runTaskRules(db, at(21)).created).toHaveLength(0)
+    repo.setTaskStatus(db, busy, 'done')
+    const first = runTaskRules(db, at(24)).created
+    expect(first).toHaveLength(1)
+    repo.setTaskStatus(db, first[0].id, 'review')
+    expect(runTaskRules(db, at(25)).created).toHaveLength(0)
+    repo.setTaskStatus(db, first[0].id, 'done')
+    expect(runTaskRules(db, at(28)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(28, 23)).created).toHaveLength(0)
+  })
+
+  it('counts an explicit enqueue against the current period, even across disabling and re-enabling', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily', enabled: false })
+    expect(runTaskRules(db, at(21)).created).toHaveLength(0)
+    enqueueRuleNow(db, rule.id, at(21))
+    repo.updateTaskRule(db, rule.id, { enabled: true })
+    expect(runTaskRules(db, at(21, 23)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(22)).created).toHaveLength(1)
   })
 })

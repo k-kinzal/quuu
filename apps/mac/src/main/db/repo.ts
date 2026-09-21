@@ -1040,6 +1040,7 @@ function toTaskRule(r: Row): TaskRule {
     agentOverrideId: sn(r.agent_override_id),
     whenIdle: i2b(r.when_idle),
     cron: s(r.cron),
+    frequency: s(r.frequency) as TaskRule['frequency'],
     blockStatuses: parseJson<TaskStatus[]>(r.block_statuses, []),
     enabled: i2b(r.enabled),
     dueAt: sn(r.due_at),
@@ -1052,7 +1053,7 @@ function toTaskRule(r: Row): TaskRule {
 
 /**
  * When the rule may next enqueue, and when it last did.
- * Cron math lives in `shared/cron.ts`, so the repo only keeps the result.
+ * Scheduling math belongs to automation; the repo only keeps the result.
  */
 export type TaskRulePatch = Partial<TaskRuleInput> & {
   dueAt?: string | null
@@ -1086,9 +1087,9 @@ export function insertTaskRule(
   const ts = nowIso()
   db.prepare(
     `INSERT INTO task_rules (id, project_id, name, prompt, priority, agent_override_id,
-       when_idle, cron, block_statuses, enabled, due_at, last_enqueued_at, sort_order,
+       when_idle, cron, frequency, block_statuses, enabled, due_at, last_enqueued_at, sort_order,
        created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,NULL,?,?,?)`
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,NULL,?,?,?)`
   ).run(
     id,
     input.projectId,
@@ -1098,6 +1099,7 @@ export function insertTaskRule(
     input.agentOverrideId ?? null,
     b2i(input.whenIdle ?? false),
     input.cron ?? '',
+    input.frequency ?? 'none',
     JSON.stringify(input.blockStatuses ?? []),
     b2i(input.enabled ?? true),
     input.dueAt ?? null,
@@ -1114,7 +1116,7 @@ export function updateTaskRule(db: Db, id: string, patch: TaskRulePatch): TaskRu
   const next = { ...cur, ...Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)) }
   db.prepare(
     `UPDATE task_rules SET project_id=?, name=?, prompt=?, priority=?, agent_override_id=?,
-       when_idle=?, cron=?, block_statuses=?, enabled=?, due_at=?, last_enqueued_at=?,
+       when_idle=?, cron=?, frequency=?, block_statuses=?, enabled=?, due_at=?, last_enqueued_at=?,
        sort_order=?, updated_at=? WHERE id=?`
   ).run(
     next.projectId,
@@ -1124,6 +1126,7 @@ export function updateTaskRule(db: Db, id: string, patch: TaskRulePatch): TaskRu
     next.agentOverrideId ?? null,
     b2i(next.whenIdle),
     next.cron,
+    next.frequency,
     JSON.stringify(next.blockStatuses),
     b2i(next.enabled),
     next.dueAt ?? null,

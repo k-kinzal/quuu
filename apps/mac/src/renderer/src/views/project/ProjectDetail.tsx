@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { Project } from '../../../../preload/api/projects.js'
 import { userAgents } from '../../model/agents.js'
 import { COMMIT_IDENTITY_MODES } from '../../model/identityOptions.js'
@@ -52,12 +51,9 @@ export function ProjectDetail({
   // projectActions owns the cleanup after a delete (where to move the visible surface), so no setSection here
   const agents = userAgents(snapshot?.agents ?? [])
   const groups = snapshot?.groups ?? []
-  /*
-   * Editing an automation opens inside this surface (list → detail, same as Settings › Agents).
-   * Which one is open affects no other screen, so it is held here rather than in the store.
-   */
-  const [editingRuleId, setEditingRuleId] = useState<string | null>(null)
-  const editingRule = (snapshot?.rules ?? []).find((r) => r.id === editingRuleId) ?? null
+  const editingRuleId = useStore((s) => s.editingRuleId)
+  const editRule = useStore((s) => s.editRule)
+  const editingRule = (snapshot?.rules ?? []).find((r) => r.id === editingRuleId && r.projectId === project.id) ?? null
 
   const update = (patch: Partial<Project>): void => {
     void window.quuu.projects.update({ id: project.id, patch: patch })
@@ -66,7 +62,7 @@ export function ProjectDetail({
   const targetValue = project.targetId ? `${project.targetKind}:${project.targetId}` : ''
 
   if (editingRule) {
-    return <TaskRuleEditor rule={editingRule} onBack={() => setEditingRuleId(null)} />
+    return <TaskRuleEditor key={editingRule.id} rule={editingRule} onBack={() => editRule(null)} />
   }
 
   // The surface is as long as the project has settings, so it is the one scrolling region here
@@ -285,7 +281,7 @@ export function ProjectDetail({
           )}
         </Section>
 
-        <TaskRuleList project={project} onEdit={setEditingRuleId} />
+        <TaskRuleList project={project} onEdit={editRule} />
       </Page>
     </Panel>
   )

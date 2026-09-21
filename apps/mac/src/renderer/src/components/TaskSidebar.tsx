@@ -40,6 +40,7 @@ import { StatusDot } from '../ui/StatusDot.js'
 import { sectionMenuItems } from './SectionMenu.js'
 import { taskMenuItems } from './TaskMenu.js'
 import { TaskQuickAdd } from './TaskQuickAdd.js'
+import { RecurringTasks } from './RecurringTasks.js'
 
 /**
  * L1 while a detail is open (rule C).
@@ -194,111 +195,115 @@ export function TaskSidebar(): JSX.Element {
       <ItemList
         inset
         ref={listRef}
-        {...pane('list', { tab: true })}
-        role="listbox"
-        aria-label={t('sidebar.listLabel', { section: sectionTitle })}
-        aria-activedescendant={cursorTaskId ? taskRowId(cursorTaskId) : undefined}
-        onKeyDown={(e) => runTaskListKey(e, tasks)}
       >
-        {groups.map((group) => (
-          <div key={group.status ?? 'sorted'}>
-            {/* Sorting means there are no groups. Leaving the headers behind would be a lie */}
-            {group.status && (
-              <ItemGroupHeader surface="glass">
-                <span {...motionAnchor(`group-${group.status}`)}>{TASK_STATUS_LABEL[group.status]}</span>
-                <SupportingText tabular>{group.tasks.length}</SupportingText>
-              </ItemGroupHeader>
-            )}
+        <div
+          {...pane('list', { tab: true })}
+          role="listbox"
+          aria-label={t('sidebar.listLabel', { section: sectionTitle })}
+          aria-activedescendant={cursorTaskId ? taskRowId(cursorTaskId) : undefined}
+          onKeyDown={(e) => runTaskListKey(e, tasks)}
+        >
+          {groups.map((group) => (
+            <div key={group.status ?? 'sorted'}>
+              {/* Sorting means there are no groups. Leaving the headers behind would be a lie */}
+              {group.status && (
+                <ItemGroupHeader surface="glass">
+                  <span {...motionAnchor(`group-${group.status}`)}>{TASK_STATUS_LABEL[group.status]}</span>
+                  <SupportingText tabular>{group.tasks.length}</SupportingText>
+                </ItemGroupHeader>
+              )}
 
-            {group.tasks.map((task) => {
-              const project = projects.get(task.projectId)
-              const run = runs.get(task.id)
-              const current = task.id === cursorTaskId
-              const elapsed =
-                task.status === 'running' && run
-                  ? duration(run.startedAt, null, now)
-                  : task.status === 'queued'
-                    ? `#${positions.get(task.id) ?? '-'}`
-                    : task.status === 'review' || task.status === 'failed'
-                      ? relativeTime(run?.endedAt ?? task.updatedAt, now)
-                      : ''
+              {group.tasks.map((task) => {
+                const project = projects.get(task.projectId)
+                const run = runs.get(task.id)
+                const current = task.id === cursorTaskId
+                const elapsed =
+                  task.status === 'running' && run
+                    ? duration(run.startedAt, null, now)
+                    : task.status === 'queued'
+                      ? `#${positions.get(task.id) ?? '-'}`
+                      : task.status === 'review' || task.status === 'failed'
+                        ? relativeTime(run?.endedAt ?? task.updatedAt, now)
+                        : ''
 
-              const lock = holdsSlot(task) ? (
-                <InlineMarker title={t('sidebar.holdMarker')}>
-                  <Lock size={ICON.sm} {...iconProps} />
-                </InlineMarker>
-              ) : null
-              const time = elapsed ? (
-                <Text size="xs" tone="tertiary" tabular>
-                  {elapsed}
-                </Text>
-              ) : null
+                const lock = holdsSlot(task) ? (
+                  <InlineMarker title={t('sidebar.holdMarker')}>
+                    <Lock size={ICON.sm} {...iconProps} />
+                  </InlineMarker>
+                ) : null
+                const time = elapsed ? (
+                  <Text size="xs" tone="tertiary" tabular>
+                    {elapsed}
+                  </Text>
+                ) : null
 
-              return (
-                <ItemRow
-                  key={task.id}
-                  id={taskRowId(task.id)}
-                  type="button"
-                  role="option"
-                  aria-selected={current}
-                  /* The list points at rows (they aren't in the ⇥ order). Same reason as the full-width table */
-                  tabIndex={-1}
-                  lines={showProject ? 2 : 1}
-                  data-cursor={current || undefined}
-                  data-landed={task.id === landedTaskId || undefined}
-                  selected={current}
-                  flashing={task.id === landedTaskId}
-                  title={t('sidebar.rowTitle', { title: task.title })}
-                  onClick={() => void openTask(task.id)}
-                  /* Keep the full-width table's entry point even in the shrunk form (rules C-7 / J-2) */
-                  onContextMenu={(e) => {
-                    if (!claimContextMenu(e)) return
-                    void contextMenu(
-                      taskMenuItems(task.id, { origin: 'list', ordered: tasks.map((t) => t.id) })
-                    )
-                  }}
-                >
-                  {showProject ? (
-                    <>
-                      <ItemMarker>
+                return (
+                  <ItemRow
+                    key={task.id}
+                    id={taskRowId(task.id)}
+                    type="button"
+                    role="option"
+                    aria-selected={current}
+                    /* The list points at rows (they aren't in the ⇥ order). Same reason as the full-width table */
+                    tabIndex={-1}
+                    lines={showProject ? 2 : 1}
+                    data-cursor={current || undefined}
+                    data-landed={task.id === landedTaskId || undefined}
+                    selected={current}
+                    flashing={task.id === landedTaskId}
+                    title={t('sidebar.rowTitle', { title: task.title })}
+                    onClick={() => void openTask(task.id)}
+                    /* Keep the full-width table's entry point even in the shrunk form (rules C-7 / J-2) */
+                    onContextMenu={(e) => {
+                      if (!claimContextMenu(e)) return
+                      void contextMenu(
+                        taskMenuItems(task.id, { origin: 'list', ordered: tasks.map((t) => t.id) })
+                      )
+                    }}
+                  >
+                    {showProject ? (
+                      <>
+                        <ItemMarker>
+                          <StatusDot status={task.status} />
+                        </ItemMarker>
+                        <ItemBody>
+                          {/* The identifier survives to the last (rules C-2 / I). Line 1 gets the whole width */}
+                          <Text size="sm" truncate {...motionAnchor(task.id)}>
+                            {task.title}
+                          </Text>
+                          {/* Line 2 is "where it belongs". It should be read before the time, so it goes left and gets one step more contrast */}
+                          <ItemSubline>
+                            <Dot color={project?.color} muted={!project} />
+                            <Text tone="secondary" truncate title={project?.name}>
+                              {project?.name ?? '—'}
+                            </Text>
+                            <Spacer />
+                            {lock}
+                            {time}
+                          </ItemSubline>
+                        </ItemBody>
+                      </>
+                    ) : (
+                      <>
                         <StatusDot status={task.status} />
-                      </ItemMarker>
-                      <ItemBody>
-                        {/* The identifier survives to the last (rules C-2 / I). Line 1 gets the whole width */}
-                        <Text size="sm" truncate {...motionAnchor(task.id)}>
+                        {/* The identifier survives to the last (rules C-2 / I) */}
+                        <Text size="sm" truncate grow {...motionAnchor(task.id)}>
                           {task.title}
                         </Text>
-                        {/* Line 2 is "where it belongs". It should be read before the time, so it goes left and gets one step more contrast */}
-                        <ItemSubline>
-                          <Dot color={project?.color} muted={!project} />
-                          <Text tone="secondary" truncate title={project?.name}>
-                            {project?.name ?? '—'}
-                          </Text>
-                          <Spacer />
+                        <ItemMeta>
                           {lock}
+                          <Dot color={project?.color} title={project?.name} />
                           {time}
-                        </ItemSubline>
-                      </ItemBody>
-                    </>
-                  ) : (
-                    <>
-                      <StatusDot status={task.status} />
-                      {/* The identifier survives to the last (rules C-2 / I) */}
-                      <Text size="sm" truncate grow {...motionAnchor(task.id)}>
-                        {task.title}
-                      </Text>
-                      <ItemMeta>
-                        {lock}
-                        <Dot color={project?.color} title={project?.name} />
-                        {time}
-                      </ItemMeta>
-                    </>
-                  )}
-                </ItemRow>
-              )
-            })}
-          </div>
-        ))}
+                        </ItemMeta>
+                      </>
+                    )}
+                  </ItemRow>
+                )
+              })}
+            </div>
+          ))}
+        </div>
+        <RecurringTasks />
       </ItemList>
     </Panel>
   )

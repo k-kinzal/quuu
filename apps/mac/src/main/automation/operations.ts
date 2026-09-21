@@ -6,10 +6,11 @@ import type { TaskRule, TaskRuleInput } from './conditions.js'
 import { hasRuleCondition } from './conditions.js'
 import { isValidCron, nextCronIso } from './cron.js'
 import { enqueueRuleNow, nextDueAt } from './evaluate.js'
+import { frequencyDueAt, isCalendarFrequency } from './frequency.js'
 
 export class AutomationOperations {
-  preview(input: Pick<TaskRule, 'whenIdle' | 'cron' | 'blockStatuses'>) {
-    return { nextAt: input.cron.trim() ? nextCronIso(input.cron) : null, valid: !input.cron.trim() || isValidCron(input.cron), hasCondition: hasRuleCondition(input) }
+  preview(input: Pick<TaskRuleInput, 'whenIdle' | 'cron' | 'frequency' | 'blockStatuses'>) {
+    return { nextAt: input.cron.trim() ? nextCronIso(input.cron) : null, valid: this.validSchedule(input), hasCondition: hasRuleCondition(input) }
   }
   constructor(private db: Db, private changed: () => void, private wake: () => void) { }
 
@@ -31,9 +32,10 @@ export class AutomationOperations {
     const rule = repo.insertTaskRule(this.db, {
       ...input,
       sortOrder: input.sortOrder || rules.length,
-      dueAt: nextDueAt(input.cron)
+      dueAt: this.dueAt(input, null)
     })
     this.changed()
+    this.wake()
     return rule
   }
 
@@ -41,12 +43,13 @@ export class AutomationOperations {
   updateTaskRule(id: string, patch: Partial<TaskRuleInput>): TaskRule {
     const current = repo.getTaskRule(this.db, id)
     if (!current) throw new Error(`task rule not found: ${id}`)
-    const next = { ...current, ...patch }
+    const next = { ...current, ...Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)) }
     this.assertRuleValid(next)
 
-    // Recompute the deadline only when the expression changed, so renaming a rule does not push
+    // Recompute the deadline only when the schedule changed, so renaming a rule does not push
     // back the next scheduled time of a rule nobody touched
-    const dueAt = next.cron !== current.cron ? nextDueAt(next.cron) : current.dueAt
+    const dueAt = next.cron !== current.cron || next.frequency !== current.frequency
+      ? this.dueAt(next, current.lastEnqueuedAt) : current.dueAt
     const rule = repo.updateTaskRule(this.db, id, { ...patch, dueAt })
     this.changed()
     this.wake()
@@ -74,8 +77,20 @@ export class AutomationOperations {
     if (!hasRuleCondition(rule)) {
       throw new Error(t('automation.conditionRequired'))
     }
-    if (rule.cron.trim().length > 0 && !isValidCron(rule.cron)) {
-      throw new Error(t('automation.cronUnreadable'))
+    if (!this.validSchedule(rule)) {
+      throw new Error(t(rule.frequency && rule.frequency !== 'none' ? 'automation.frequencyUnreadable' : 'automation.cronUnreadable'))
     }
+  }
+
+  private validSchedule(rule: Pick<TaskRuleInput, 'frequency' | 'cron'>): boolean {
+    if (rule.frequency && rule.frequency !== 'none') {
+      return isCalendarFrequency(rule.frequency) && !rule.cron.trim()
+    }
+    return !rule.cron.trim() || isValidCron(rule.cron)
+  }
+
+  private dueAt(rule: Pick<TaskRuleInput, 'frequency' | 'cron'>, lastEnqueuedAt: string | null): string | null {
+    return rule.frequency && rule.frequency !== 'none'
+      ? frequencyDueAt(rule.frequency, lastEnqueuedAt, new Date()) : nextDueAt(rule.cron)
   }
 }

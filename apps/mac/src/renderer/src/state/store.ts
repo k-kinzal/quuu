@@ -179,6 +179,7 @@ interface State {
   editingGroupId: string | null
   /** Whether the project's configuration is open inside that project's screen (rule F). */
   projectSettingsOpen: boolean
+  editingRuleId: string | null
   /** Everywhere this window has been, and how far back through it we have stepped (`navigation.ts`). */
   trail: Trail
 
@@ -243,6 +244,7 @@ interface State {
   editAgent(id: string | null): void
   editGroup(id: string | null): void
   openProjectSettings(open: boolean): void
+  editRule(id: string | null): void
 
   selectRun(runId: string): Promise<void>
   refreshRuns(taskId: string): Promise<void>
@@ -455,6 +457,7 @@ export const useStore = create<State>((set, get) => ({
         editingAgentId: null,
         editingGroupId: null,
         projectSettingsOpen: false,
+        editingRuleId: null,
         // Filters belong to the section. Carried over, the destination becomes an
         // inexplicably short list (a project filter carried into another project shows 0 rows)
         filters: NO_FILTERS
@@ -547,7 +550,19 @@ export const useStore = create<State>((set, get) => ({
   openProjectSettings(open) {
     navigate(set, get, () => {
       if (open) get().closeDetail()
-      set({ projectSettingsOpen: open, detailOpen: false })
+      set({ projectSettingsOpen: open, detailOpen: false, editingRuleId: null })
+    })
+  },
+  editRule(id) {
+    const rule = get().snapshot?.rules.find((r) => r.id === id)
+    // A newly created rule can arrive in the snapshot just after its create reply.
+    navigate(set, get, () => {
+      if (rule) {
+        const section = get().section
+        if (section.kind !== 'project' || section.id !== rule.projectId) get().setSection({ kind: 'project', id: rule.projectId })
+        if (!get().projectSettingsOpen) get().openProjectSettings(true)
+      }
+      set({ editingRuleId: id })
     })
   },
 
