@@ -595,16 +595,21 @@ describe('recurring tasks in the collection and frequency editor', () => {
   it.each([{ name: 'overview', View: TaskOverview }, { name: 'sidebar', View: TaskSidebar }])('keeps definitions as the last rows in the same list even when sorted, opens settings, and returns with Back ($name)', async ({ View }) => {
     const rule = createRule()
     createRule({ name: 'Weekly maintenance', frequency: 'weekly', enabled: true })
+    createRule({ name: 'Idle maintenance', frequency: 'none', enabled: true })
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><View /></ThemeProvider>)
     const tasks = screen.getByRole('listbox')
     const checkRows = (): HTMLElement => {
       const rows = within(tasks).getAllByRole('option')
-      expect(rows).toHaveLength(3)
+      expect(rows).toHaveLength(4)
       expect(rows[0].textContent).toContain('読んでいるタスク')
       expect(rows[1].textContent).toContain('Daily maintenance')
       expect(rows[2].textContent).toContain('Weekly maintenance')
       expect(within(rows[1]).getByText('Disabled')).toBeTruthy()
-      expect(within(rows[2]).getByText('Once a week')).toBeTruthy()
+      expect(within(rows[2]).getByText('Once a week · Queue empty · No duplicates')).toBeTruthy()
+      expect(rows[3].textContent).toContain('Idle maintenance')
+      expect(within(rows[3]).getByText('Queue empty · No duplicates')).toBeTruthy()
+      expect(rows[3].title).toContain('No queued or running tasks in this project')
+      expect(rows[3].title).toContain('No tasks from this automation in: Queued / Running')
       if (View === TaskOverview) {
         expect(rows[1].closest('tbody')).toBe(rows[0].closest('tbody'))
         expect(rows[1].children).toHaveLength(rows[0].children.length)
@@ -624,6 +629,20 @@ describe('recurring tasks in the collection and frequency editor', () => {
     expect(useStore.getState()).toMatchObject({ editingRuleId: rule.id, projectSettingsOpen: true, section: { kind: 'project', id: projectId } })
     await act(async () => { await useStore.getState().goBack() })
     expect(useStore.getState()).toMatchObject({ editingRuleId: null, projectSettingsOpen: false, section: { kind: 'all' } })
+  })
+
+  it.each([{ name: 'overview', View: TaskOverview }, { name: 'sidebar', View: TaskSidebar }])('lists only enabled conditions, including duplicate-only and cron rules ($name)', ({ View }) => {
+    createRule({ name: 'Only idle', frequency: 'none', blockStatuses: [], enabled: true })
+    createRule({ name: 'Only duplicates', frequency: 'none', whenIdle: false, blockStatuses: ['review'], enabled: true })
+    createRule({ name: 'Only cron', frequency: 'none', whenIdle: false, blockStatuses: [], cron: '0 3 * * *', enabled: true })
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><View /></ThemeProvider>)
+    const rows = within(screen.getByRole('listbox')).getAllByRole('option')
+    expect(within(rows[1]).getByText('Queue empty')).toBeTruthy()
+    expect(rows[1].title).not.toContain('No tasks from this automation')
+    expect(within(rows[2]).getByText('No duplicates')).toBeTruthy()
+    expect(rows[2].title).toContain('No tasks from this automation in: Review')
+    expect(rows[2].title).not.toContain('No queued or running tasks')
+    expect(within(rows[3]).getByText('0 3 * * *')).toBeTruthy()
   })
 
   it('shows definitions even without ordinary tasks, scopes them by project, and leaves Needs review clear', () => {

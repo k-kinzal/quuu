@@ -1,6 +1,6 @@
 import {
   CellButton, DataCell, DataRow, Dot, FillerCell, ItemBody,
-  ItemMarker, ItemMeta, ItemRow, ItemSubline, Row, Spacer, StatusIndicator, Text, tableMetrics
+  ItemMarker, ItemRow, ItemSubline, Row, Spacer, StatusIndicator, Text, tableMetrics
 } from '@design-system/react'
 import type { KeyboardEvent } from 'react'
 import type { TaskRule } from '../../../preload/api/automation.js'
@@ -9,7 +9,7 @@ import { focusPane } from '../interaction/focus.js'
 import { targetLabel } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
 import { PRIORITY_LABEL } from '../model/labels.js'
-import { ruleScheduleLabel } from '../model/ruleSchedule.js'
+import { ruleSummaryDetail, ruleSummaryLabel } from '../model/ruleSchedule.js'
 import type { TaskColumnId } from '../model/table.js'
 import { useStore } from '../state/store.js'
 import { Priority } from '../ui/panes.js'
@@ -36,11 +36,6 @@ function RuleMarker(): JSX.Element {
   )
 }
 
-function ruleDetail(rule: TaskRule): string {
-  return [ruleScheduleLabel(rule), rule.whenIdle ? t('taskRules.whenIdle') : null,
-    !rule.enabled ? t('taskRules.disabledBadge') : null].filter(Boolean).join(' · ')
-}
-
 /** A definition uses the task table's columns and row height, at its very end. */
 export function RecurringTaskTableRow({ rule, project, showProject, widths }: RuleRowProps & {
   widths: Record<TaskColumnId, number>
@@ -51,7 +46,7 @@ export function RecurringTaskTableRow({ rule, project, showProject, widths }: Ru
     : targetLabel(snapshot, project)) : '—'
   return (
     <DataRow role="option" aria-selected={false}
-      onClick={() => openRule(rule.id)} onKeyDown={ruleKey} title={ruleDetail(rule)}>
+      onClick={() => openRule(rule.id)} onKeyDown={ruleKey} title={ruleSummaryDetail(rule)}>
       <DataCell width={widths.mark} edge="start" clip><RuleMarker /></DataCell>
       <DataCell clip>
         <CellButton type="button" title={rule.name} onClick={(e) => {
@@ -66,7 +61,7 @@ export function RecurringTaskTableRow({ rule, project, showProject, widths }: Ru
       )}
       <DataCell width={widths.priority}><Priority level={rule.priority}>{rule.priority === 2 ? '' : PRIORITY_LABEL[rule.priority]}</Priority></DataCell>
       <DataCell width={widths.agent} tone="muted">{agent}</DataCell>
-      <DataCell width={widths.state} tone="muted">{rule.enabled ? ruleScheduleLabel(rule) : t('taskRules.disabledBadge')}</DataCell>
+      <DataCell width={widths.state} tone="muted" title={ruleSummaryDetail(rule)}>{rule.enabled ? ruleSummaryLabel(rule) : t('taskRules.disabledBadge')}</DataCell>
       <DataCell width={widths.lastRun} tone="muted">—</DataCell>
       <FillerCell />
       <DataCell width={tableMetrics.actionsWidth} edge="end" />
@@ -76,10 +71,10 @@ export function RecurringTaskTableRow({ rule, project, showProject, widths }: Ru
 
 /** The compact list keeps the same one/two-line shape as its ordinary tasks. */
 export function RecurringTaskListRow({ rule, project, showProject }: RuleRowProps): JSX.Element {
-  const schedule = <Text size="xs" tone="tertiary" truncate>{rule.enabled ? ruleScheduleLabel(rule) : t('taskRules.disabledBadge')}</Text>
+  const schedule = <Text size="xs" tone="tertiary" truncate title={ruleSummaryDetail(rule)}>{rule.enabled ? ruleSummaryLabel(rule) : t('taskRules.disabledBadge')}</Text>
   return (
     <ItemRow role="option" aria-selected={false} type="button" lines={showProject ? 2 : 1}
-      title={`${rule.name} · ${ruleDetail(rule)}`} onClick={() => openRule(rule.id)} onKeyDown={ruleKey}>
+      title={`${rule.name} · ${ruleSummaryDetail(rule)}`} onClick={() => openRule(rule.id)} onKeyDown={ruleKey}>
       {showProject ? (
         <>
           <ItemMarker><RuleMarker /></ItemMarker>
@@ -89,7 +84,7 @@ export function RecurringTaskListRow({ rule, project, showProject }: RuleRowProp
               <Dot color={project?.color} muted={!project} />
               <Text tone="secondary" truncate>{project?.name ?? '—'}</Text>
               <Spacer />
-              <ItemMeta>{schedule}</ItemMeta>
+              {schedule}
             </ItemSubline>
           </ItemBody>
         </>
@@ -97,7 +92,7 @@ export function RecurringTaskListRow({ rule, project, showProject }: RuleRowProp
         <>
           <RuleMarker />
           <Text size="sm" truncate grow tone="secondary">{rule.name}</Text>
-          <ItemMeta>{schedule}</ItemMeta>
+          {schedule}
         </>
       )}
     </ItemRow>

@@ -36,7 +36,7 @@ import type { TaskStatus } from '../../../../preload/api/tasks.js'
 import { userAgents } from '../../model/agents.js'
 import { t } from '../../model/i18n/index.js'
 import { DEFAULT_BLOCK_STATUSES } from '../../model/ruleDraft.js'
-import { ruleScheduleLabel, scheduleOptions, type ScheduleChoice } from '../../model/ruleSchedule.js'
+import { ruleConditionLabel, ruleScheduleLabel, ruleSummaryDetail, scheduleOptions, type ScheduleChoice } from '../../model/ruleSchedule.js'
 import { OPEN_STATUSES } from '../../model/taskStatus.js'
 
 import { usePreview } from '../../interaction/usePreview.js'
@@ -60,13 +60,6 @@ import { ArrowLeft, ICON, Plus, iconProps } from '../../ui/icons.js'
  * none at all would queue on every tick, so it can't be saved (the check is unified in
  * `hasRuleCondition`).
  */
-
-export function ruleConditionLabel(rule: TaskRule): string {
-  const parts: string[] = []
-  if (rule.whenIdle) parts.push(t('taskRules.whenIdle'))
-  if (rule.blockStatuses.length > 0) parts.push(t('taskRules.noDuplicates'))
-  return parts.length > 0 ? parts.join(' / ') : t('taskRules.always')
-}
 
 export function TaskRuleList({
   project,
@@ -173,7 +166,7 @@ export function TaskRuleList({
                     {!rule.enabled && <Badge>{t('taskRules.disabledBadge')}</Badge>}
                   </Row>
                 </DataCell>
-                <DataCell>{ruleConditionLabel(rule)}</DataCell>
+                <DataCell title={ruleSummaryDetail(rule)}>{ruleConditionLabel(rule)}</DataCell>
                 <DataCell width={tableMetrics.cell.expression}>
                   <Text truncate>
                     {ruleScheduleLabel(rule)}
