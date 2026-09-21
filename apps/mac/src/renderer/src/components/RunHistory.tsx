@@ -18,6 +18,7 @@ import { openWithItems } from '../interaction/openWith.js'
 import { clockTime, duration, formatArgs, shortSession } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
 import { RUN_ERROR_KIND_LABEL, RUN_STATUS_LABEL } from '../model/labels.js'
+import { fallbackAgentChain } from '../model/runHistory.js'
 import { RunChain, RunDuration, RunResult, RunRow, RunTable, RunTarget, RunTime } from '../ui/runs.js'
 import { runStatusColor } from '../ui/StatusDot.js'
 
@@ -45,6 +46,7 @@ export function RunHistory({
 }: Props): JSX.Element {
   const [expanded, setExpanded] = useState<string | null>(null)
   const theme = useTheme()
+  const runsById = new Map(runs.map((run) => [run.id, run]))
 
   /**
    * What can be taken away from a single run.
@@ -77,11 +79,9 @@ export function RunHistory({
   return (
     /* Vertically stacked rows are walked with ↑↓ (same hand movement as the list and rail) */
     <RunTable onKeyDown={(e) => moveWithinList(e, '[role="button"]')}>
-      {runs.map((run, index) => {
+      {runs.map((run) => {
         const isOpen = expanded === run.id
-        const previous = runs[index + 1]
-        const chainFrom =
-          run.fallbackFromRunId && previous ? (agentNames.get(previous.agentId) ?? null) : null
+        const chain = fallbackAgentChain(run, runsById)
 
         return (
           <div key={run.id}>
@@ -111,7 +111,10 @@ export function RunHistory({
               <RunDuration>{duration(run.startedAt, run.endedAt, now)}</RunDuration>
             </RunRow>
 
-            {chainFrom && <RunChain>{t('runHistory.chainFrom', { agent: chainFrom })}</RunChain>}
+            {chain.length > 1 && <RunChain>{t('runHistory.chain', {
+              agents: chain.map((id) => agentNames.get(id) ?? id).join(' → '),
+              status: RUN_STATUS_LABEL[run.status]
+            })}</RunChain>}
 
             <Reveal open={isOpen}>
               {() => (

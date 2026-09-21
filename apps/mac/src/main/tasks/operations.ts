@@ -3,7 +3,7 @@ import type { Db } from '../db/database.js'
 import { afterCommit, inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { SessionOwner } from '../execution/agentResolver.js'
-import { canContinueSession, canReadSession, candidateAgents, sessionOwner, sessionOwnerLabel } from '../execution/agentResolver.js'
+import { eligibleAgents, sessionOwner, sessionOwnerLabel } from '../execution/agentResolver.js'
 import type { Run } from '../execution/types.js'
 import { t } from '../i18n/index.js'
 import type { RunNowResult } from '../ipc/types.js'
@@ -344,17 +344,16 @@ export class TaskOperations {
    * The agent that can write this task's continuation. null if there is none.
    *
    * The judgment goes through the same rules as `resolveAgentForProject`'s
-   * continuation filter (return to whoever opened it / a human-designated agent
-   * passes if it can read the session). A different rule only here means
+   * continuation filter, including compatible configured fallbacks during cooldown.
+   * A different rule only here means
    * "it sent but never runs" (or the reverse).
    */
   private continuableAgent(task: Task, project: Project, owner: SessionOwner): Agent | null {
-    const preferred = task.agentOverrideId ? repo.getAgent(this.db, task.agentOverrideId) : null
-    if (preferred?.enabled && canReadSession(preferred, owner)) return preferred
-    for (const agent of candidateAgents(this.db, project)) {
-      if (agent.enabled && canContinueSession(agent, owner)) return agent
-    }
-    return null
+    const eligible = eligibleAgents(this.db, project, {
+      preferredAgentId: task.agentOverrideId,
+      continuation: owner
+    })
+    return eligible.ok ? eligible.value[0] ?? null : null
   }
 
 

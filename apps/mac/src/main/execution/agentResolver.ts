@@ -84,15 +84,8 @@ export function canReadSession(agent: Agent, owner: SessionOwner): boolean {
 }
 
 /**
- * May that agent be **trusted with** continuing this session?
- *
- * Only whoever opened it. Even on the same CLI, drifting to another definition on a different
- * model (Opus -> Sonnet) **changes the quality mid-conversation**. This is not about readability
- * but about not causing a switch nobody chose, so it goes to neither another group member nor a
- * fallback. If the opener is busy, wait for it to free up.
- *
- * The one exception is the agent a human named on that task (`agentOverrideId`), which passes as
- * long as `canReadSession` holds - that one is not "drifting".
+ * May this agent continue without a switch? A free slot never changes the model by itself.
+ * Explicit task choices and compatible fallbacks during cooldown are resolved by `eligibleAgents`.
  */
 export function canContinueSession(agent: Agent, owner: SessionOwner): boolean {
   return mayContinueSession(agent.id, owner.agentId, canReadSession(agent, owner))
@@ -174,8 +167,8 @@ export interface ResolveOptions {
   /**
    * On a follow-up, the owner of the session being continued.
    *
-   * **Given, it narrows to the opener alone.** Not given on an initial run
-   * (a new session is minted, so there is nobody to continue with).
+   * Narrows to the opener or explicit task choice, plus their compatible fallbacks during
+   * cooldown. Not given on an initial run (a new session is minted).
    */
   continuation?: SessionOwner | null
 }
@@ -185,7 +178,7 @@ export interface ResolveOptions {
  * looked at. Shared by "who takes it now" and "when could anyone take it", so the two can never
  * disagree about who was in the running.
  */
-function eligibleAgents(
+export function eligibleAgents(
   db: Db,
   project: Project,
   options: ResolveOptions
@@ -204,20 +197,28 @@ function eligibleAgents(
   }
 
   const base = candidateAgents(db, project).filter((a) => a.enabled)
-  const usable =
-    preferred && preferred.enabled
-      ? [preferred, ...base.filter((a) => a.id !== preferred.id)]
-      : base
+  const preferredChain = preferred
+    ? [preferred, ...fallbackChain(db, preferred.id)].filter((a) => a.enabled)
+    : []
+  const preferredIds = new Set(preferredChain.map((a) => a.id))
+  const usable = [...preferredChain, ...base.filter((a) => !preferredIds.has(a.id))]
   if (usable.length === 0) return { ok: false, reason: 'no-usable-agent' }
 
-  // A continuation goes back to its opener. Only the agent a human chose for that task passes, if it can read it
-  const candidates = continuation
+  // A configured fallback is an explicit choice too. Expand only during cooldown: a busy
+  // opener still waits for its slot, and unrelated group members never inherit its session.
+  const roots = continuation
     ? usable.filter((a) =>
       a.id === preferred?.id
         ? canReadSession(a, continuation)
         : canContinueSession(a, continuation)
     )
     : usable
+  const candidates = continuation
+    ? [...new Map(roots.flatMap((agent) => [
+      agent,
+      ...(repo.isCoolingDown(db, agent.id) ? fallbackLane(db, agent.id, continuation) : [])
+    ]).map((agent) => [agent.id, agent])).values()]
+    : roots
   if (candidates.length === 0) return { ok: false, reason: 'no-continuable-agent' }
   return { ok: true, value: candidates }
 }
@@ -232,7 +233,7 @@ function eligibleAgents(
  * reserved its slot is not dragged into the queue.
  *
  * When `continuation` is given, **the candidates are narrowed before slots are even looked at**.
- * A free slot is never reason enough to hand the session to anyone but the one who opened it.
+ * A free slot alone never changes models; a cooldown can use a configured compatible fallback.
  *
  * A candidate that could still fall back needs a free slot **on every agent in its lane** as well
  * as one of its own (`fallbackHolds`).
@@ -275,9 +276,9 @@ export function resolveAgentForProject(
     /*
      * Starting here promises the same slot on the way out. A run launched without one is a run
      * whose fallback exists on paper only, and a cooldown that cannot be escaped is exactly what
-     * the fallback was configured to avoid. A continuation stays with its opener, so it needs no lane.
+     * the fallback was configured to avoid. A continuation reserves only compatible fallbacks.
      */
-    if (!continuation && fallbackLane(db, agent.id).some((next) => availabilityOf(next) !== 'available')) {
+    if (fallbackLane(db, agent.id, continuation).some((next) => availabilityOf(next) !== 'available')) {
       sawFallbackFull = true
       continue
     }
@@ -325,8 +326,8 @@ export function cooldownClearsAt(
  * Disabled definitions drop out: a fallback that can never be chosen is not a lane worth keeping
  * open, and the chain continues past it to the one that can.
  */
-export function fallbackLane(db: Db, agentId: string): Agent[] {
-  return fallbackChain(db, agentId).filter((a) => a.enabled)
+export function fallbackLane(db: Db, agentId: string, continuation?: SessionOwner | null): Agent[] {
+  return fallbackChain(db, agentId).filter((a) => a.enabled && (!continuation || canReadSession(a, continuation)))
 }
 
 /**
@@ -341,14 +342,14 @@ export function fallbackLane(db: Db, agentId: string): Agent[] {
  * configured. Neither is worth the extra parallelism, so a run holds its way out for as long as it
  * runs.
  *
- * Follow-ups are not counted. A continuation never leaves the agent that opened the session
- * (`canContinueSession`), so it has no fallback to keep open and must not pin one.
+ * Follow-ups hold only the configured fallbacks that can read their existing session.
  */
 export function fallbackHolds(db: Db): Map<string, number> {
   const holds = new Map<string, number>()
-  for (const [agentId, count] of repo.activeRunCountsByAgent(db, 'initial')) {
-    for (const target of fallbackLane(db, agentId)) {
-      holds.set(target.id, (holds.get(target.id) ?? 0) + count)
+  for (const run of repo.listActiveRuns(db)) {
+    const continuation = run.kind === 'followup' ? { agentId: run.agentId, command: run.command } : null
+    for (const target of fallbackLane(db, run.agentId, continuation)) {
+      holds.set(target.id, (holds.get(target.id) ?? 0) + 1)
     }
   }
   return holds

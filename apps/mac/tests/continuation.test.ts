@@ -17,7 +17,8 @@ import { makeAgent, makeProject, makeTask, memoryDb, occupy, sessioned } from '.
  *
  * Crossing CLIs makes `claude --resume <a Codex session id>` a valid command line, and it
  * dies with "No conversation found with session ID" (it actually did).
- * Handing it to another definition of the same CLI (Opus -> Sonnet) is refused too: the quality would change mid-conversation.
+ * A free slot alone never changes models. A cooldown may use the configured fallback chain,
+ * provided the next definition can resume the same CLI's session.
  */
 
 let workdir: string
@@ -138,7 +139,7 @@ describe('who a continuation goes to', () => {
     expect(scheduler(db).claimNext()).toBeNull()
   })
 
-  it('does not hand it to another definition of the same CLI either (Opus -> Sonnet changes the quality mid-way)', () => {
+  it('waits for a busy opener instead of changing models just for a free slot', () => {
     const db = memoryDb()
     const { opus, project } = opusSonnet(db)
 
@@ -162,16 +163,62 @@ describe('who a continuation goes to', () => {
     expect(claim?.agentId).toBe(sonnet)
   })
 
-  it('does not fall over to another definition after a Limit stop, but waits out the cooldown', () => {
+  it('continues on the configured compatible fallback after a Limit stop', () => {
     const db = memoryDb()
-    const { opus, project } = opusSonnet(db)
+    const { opus, sonnet, project } = opusSonnet(db)
+    // The fallback need not also be a member of the project's group.
+    repo.updateProject(db, project, { targetKind: 'agent', targetId: opus })
     const task = makeTask(db, project, 't')
     sessioned(db, task, opus, 'queued', { pendingMessage: '続き' })
     repo.setCooldown(db, opus, isoPlusSeconds(600), 'Limit')
 
-    const s = scheduler(db)
-    expect(s.claimNext()).toBeNull()
-    expect(s.status().warnings.join('\n')).toContain('cooldown')
+    const sessionId = repo.getTask(db, task)!.sessionId
+    const claim = scheduler(db).claimNext()
+    expect(claim?.agentId).toBe(sonnet)
+    expect(claim?.run.kind).toBe('followup')
+    expect(claim?.run.sessionId).toBe(sessionId)
+    expect(claim?.run.args).toContain(sessionId)
+  })
+
+  it('uses the configured fallback order instead of the group order', () => {
+    const db = memoryDb()
+    const { opus, sonnet, project } = opusSonnet(db)
+    const last = makeAgent(db, { name: 'last', command: 'claude', resumeArgsTemplate: ['--resume', '{{sessionId}}'] })
+    repo.updateAgent(db, sonnet, { fallbackAgentId: last })
+    repo.updateGroup(db, repo.getProject(db, project)!.targetId!, { memberIds: [last, opus, sonnet] })
+    const task = makeTask(db, project, 't')
+    sessioned(db, task, opus, 'queued', { pendingMessage: 'continue' })
+    repo.setCooldown(db, opus, isoPlusSeconds(600), 'Limit')
+
+    expect(scheduler(db).claimNext()?.agentId).toBe(sonnet)
+  })
+
+  it.each(['incompatible CLI', 'missing resume arguments', 'unconfigured fallback'])(
+    'waits out a Limit when the other agent has an %s', (reason) => {
+      const db = memoryDb()
+      const { opus, sonnet, project } = opusSonnet(db)
+      if (reason === 'incompatible CLI') repo.updateAgent(db, sonnet, { command: 'codex' })
+      if (reason === 'missing resume arguments') repo.updateAgent(db, sonnet, { resumeArgsTemplate: [] })
+      if (reason === 'unconfigured fallback') repo.updateAgent(db, opus, { fallbackAgentId: null })
+      const task = makeTask(db, project, 't')
+      sessioned(db, task, opus, 'queued', { pendingMessage: 'continue' })
+      repo.setCooldown(db, opus, isoPlusSeconds(600), 'Limit')
+
+      expect(scheduler(db).claimNext()).toBeNull()
+    }
+  )
+
+  it.each([false, true])('includes the task override fallback outside the project (continuation: %s)', (continuation) => {
+    const db = memoryDb()
+    const { opus, sonnet, project } = opusSonnet(db)
+    const other = makeAgent(db, { name: 'other', command: 'codex' })
+    repo.updateProject(db, project, { targetKind: 'agent', targetId: other })
+    const task = makeTask(db, project, 't')
+    if (continuation) sessioned(db, task, opus, 'queued', { pendingMessage: 'continue' })
+    repo.patchTask(db, task, { agentOverrideId: opus })
+    repo.setCooldown(db, opus, isoPlusSeconds(600), 'Limit')
+
+    expect(scheduler(db).claimNext()?.agentId).toBe(sonnet)
   })
 
   it('hands it to the target a human chose for that task (as long as it is the same CLI)', () => {

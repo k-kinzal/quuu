@@ -488,7 +488,7 @@ describe('fallback slots', () => {
     expect(s.status().warnings.some((w) => w.includes('fallback agent has no slot'))).toBe(true)
   })
 
-  it('does not keep a lane for a follow-up, which never leaves the agent that opened the session', () => {
+  it('does not keep a lane for a follow-up whose fallback cannot resume it', () => {
     const db = memoryDb()
     const sonnet = makeAgent(db, { name: 'sonnet', concurrency: 1 })
     const opus = makeAgent(db, { name: 'opus', concurrency: 1, fallbackAgentId: sonnet })
@@ -499,6 +499,20 @@ describe('fallback slots', () => {
     makeTask(db, p2, 'wants sonnet')
 
     expect(scheduler(db).claimNext()?.agentId).toBe(sonnet)
+  })
+
+  it('keeps a compatible fallback slot for a running follow-up', () => {
+    const db = memoryDb()
+    const opus = makeAgent(db, { name: 'Opus', command: 'claude', concurrency: 1, resumeArgsTemplate: ['--resume', '{{sessionId}}'] })
+    const fable = makeAgent(db, { name: 'Fable', command: 'claude', concurrency: 1, fallbackAgentId: opus })
+    const p1 = makeProject(db, { name: 'p1', targetId: fable, maxConcurrent: 5 })
+    const p2 = makeProject(db, { name: 'p2', targetId: opus, maxConcurrent: 5 })
+    occupy(db, makeTask(db, p1, 'continuing on Fable'), fable, { kind: 'followup' })
+    makeTask(db, p2, 'wants Opus')
+
+    const s = scheduler(db)
+    expect(s.claimNext()).toBeNull()
+    expect(s.status().agents.find((a) => a.agentId === opus)?.reserved).toBe(1)
   })
 
   it('shows the lane as a reserved slot, so the fallback never looks idle', () => {

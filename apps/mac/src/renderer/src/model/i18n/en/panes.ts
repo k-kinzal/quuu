@@ -91,7 +91,7 @@ export const panes = {
     cancel: 'Cancel',
     empty: 'No runs yet',
     followup: ' · follow-up',
-    chainFrom: '↳ Switched from {{agent}}',
+    chain: '{{agents}} → {{status}}',
     command: 'Command',
     cwd: 'Working directory',
     session: 'Session',

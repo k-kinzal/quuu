@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -201,21 +201,31 @@ const FABLE_LIMIT =
  * fine, that one model is spent, and no clock is given. Switching models is exactly what the
  * fallback chain is for, so this is the case it has to cover.
  */
-function modelLimitFixture(): { db: ReturnType<typeof memoryDb>; runner: Runner; scheduler: Scheduler; spent: string; fallback: string; project: string } {
+function modelLimitFixture(fallbackLimited = false): { db: ReturnType<typeof memoryDb>; runner: Runner; scheduler: Scheduler; spent: string; fallback: string; project: string } {
   const db = memoryDb()
   const runner = new Runner(db)
-  const script = `echo "${FABLE_LIMIT}" >&2; exit 1`
+  // Exercise two model definitions of the same CLI, including its real resume argument shape.
+  // This executable never contacts an agent service.
+  const command = join(workdir, 'claude')
+  writeFileSync(command, `#!/bin/sh
+if [ "$2" = fable ]; then
+  echo "${FABLE_LIMIT}" >&2
+  exit 1
+fi
+${fallbackLimited ? 'echo "You have hit your usage limit." >&2; exit 1' : 'echo ok'}
+`, { mode: 0o755 })
   const fallback = makeAgent(db, {
     name: 'Opus',
-    command: '/bin/echo',
-    argsTemplate: ['ok'],
+    command,
+    argsTemplate: ['--model', 'opus', '-p', '{{prompt}}'],
+    resumeArgsTemplate: ['--model', 'opus', '--resume', '{{sessionId}}', '-p', '{{prompt}}'],
     sortOrder: 1
   })
   const spent = makeAgent(db, {
     name: 'Fable',
-    command: '/bin/sh',
-    argsTemplate: ['-c', script],
-    resumeArgsTemplate: ['-c', script],
+    command,
+    argsTemplate: ['--model', 'fable', '-p', '{{prompt}}'],
+    resumeArgsTemplate: ['--model', 'fable', '--resume', '{{sessionId}}', '-p', '{{prompt}}'],
     fallbackAgentId: fallback,
     cooldownSeconds: 900,
     sortOrder: 0
@@ -238,6 +248,44 @@ function modelLimitFixture(): { db: ReturnType<typeof memoryDb>; runner: Runner;
 }
 
 describe('a Limit on one model, with no moment named', () => {
+  it('resumes the same session on Opus after Fable hits its limit', async () => {
+    const f = modelLimitFixture()
+    const task = makeTask(f.db, f.project, 'continue the work')
+    sessioned(f.db, task, f.spent, 'queued', { pendingMessage: 'please continue' })
+    const sessionId = repo.getTask(f.db, task)!.sessionId
+
+    const done = finishes(f.runner, 2)
+    await f.scheduler.tick()
+    await done
+
+    const [opus, fable] = repo.listRunsByTask(f.db, task)
+    expect(fable).toMatchObject({ agentId: f.spent, kind: 'followup', sessionId, status: 'limited' })
+    expect(opus).toMatchObject({ agentId: f.fallback, kind: 'followup', sessionId, status: 'succeeded', fallbackFromRunId: fable.id })
+    expect(opus.args).toEqual(['--model', 'opus', '--resume', sessionId, '-p', 'please continue'])
+    expect(repo.getTask(f.db, task)).toMatchObject({ status: 'review', sessionId, pendingMessage: '', scheduledAt: null })
+    f.scheduler.stop()
+  })
+
+  it('records Fable then Opus then Limit before parking when both models are limited', async () => {
+    const f = modelLimitFixture(true)
+    const task = makeTask(f.db, f.project, 'continue the work')
+    sessioned(f.db, task, f.spent, 'queued', { pendingMessage: 'please continue' })
+    const sessionId = repo.getTask(f.db, task)!.sessionId
+
+    const done = finishes(f.runner, 2)
+    await f.scheduler.tick()
+    await done
+
+    const [opus, fable] = repo.listRunsByTask(f.db, task)
+    expect(fable).toMatchObject({ agentId: f.spent, sessionId, status: 'limited' })
+    expect(opus).toMatchObject({ agentId: f.fallback, sessionId, status: 'limited', fallbackFromRunId: fable.id })
+    const until = [repo.cooldownEnd(f.db, f.spent)!, repo.cooldownEnd(f.db, f.fallback)!].sort()[0]
+    expect(repo.getTask(f.db, task)).toMatchObject({ status: 'queued', sessionId, pendingMessage: 'please continue', scheduledAt: until })
+    expect(f.scheduler.claimNext()).toBeNull()
+    expect(repo.listRunsByTask(f.db, task)).toHaveLength(3)
+    f.scheduler.stop()
+  })
+
   it('moves the task to the fallback agent instead of handing it to a human', async () => {
     const f = modelLimitFixture()
     const task = makeTask(f.db, f.project, 'sql-catalogパッケージの作成')
@@ -340,10 +388,11 @@ describe('a Limit on one model, on a week that has been watched turn', () => {
     expect(repo.cooldownEnd(f.db, f.spent)).toBe(turnsAt)
   })
 
-  it('parks the conversation only that model can answer until then', async () => {
+  it('parks a conversation with no compatible fallback until then', async () => {
     const f = modelLimitFixture()
+    repo.updateAgent(f.db, f.fallback, { resumeArgsTemplate: [] })
     const turnsAt = watchedTheWeekTurn(f)
-    // A follow-up belongs to the session the spent model opened, so no fallback may take it
+    // The remaining definition cannot resume this session.
     const task = makeTask(f.db, f.project, 'Fuzzの再編')
     sessioned(f.db, task, f.spent, 'queued', { pendingMessage: 'please continue' })
 

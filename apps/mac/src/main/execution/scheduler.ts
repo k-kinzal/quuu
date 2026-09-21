@@ -23,7 +23,7 @@ import * as repo from '../db/repo.js'
 import { newId, nowIso, truncate } from '../util.js'
 import { t } from '../i18n/index.js'
 import type { ResolveFailure, ResolveOptions, SessionOwner } from './agentResolver.js'
-import { candidateAgents, cooldownClearsAt, fallbackHolds, hasAnyUsableCandidate, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel } from './agentResolver.js'
+import { candidateAgents, cooldownClearsAt, eligibleAgents, fallbackHolds, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel } from './agentResolver.js'
 import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
 
@@ -496,16 +496,19 @@ export class Scheduler extends EventEmitter {
     // Do not resolve candidates once the limit is hit: resolving also advances the round-robin position.
     const requirement = retryRequirement(kind, failures)
     if (requirement === 'never') return false
-    const usable = hasAnyUsableCandidate(this.db, project)
+    const usable = eligibleAgents(this.db, project, {
+      preferredAgentId: task.agentOverrideId,
+      continuation: this.continuationFor(task)
+    }).ok
     // Look for another candidate only for failures that cannot be retried on the same one.
     return shouldRetryRun(kind, failures, usable,
       requirement === 'other-agent' && usable && this.hasOtherCandidate(task, project, run.agentId))
   }
 
   private hasOtherCandidate(task: Task, project: Project, currentAgentId: string): boolean {
-    // A retried resume goes back to whoever opened it. A bare resolve here would decide "another
-    // candidate exists" and hand it to someone who does not hold that session
+    // Retries use the same task choices and session compatibility as the eventual claim.
     const resolved = resolveAgentForProject(this.db, project, {
+      preferredAgentId: task.agentOverrideId,
       continuation: this.continuationFor(task)
     })
     if (resolved.ok) return resolved.value.agent.id !== currentAgentId

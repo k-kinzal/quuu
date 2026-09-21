@@ -92,7 +92,7 @@ export const panes: typeof en = {
     cancel: '中断',
     empty: 'まだ実行が無い',
     followup: ' · 追記',
-    chainFrom: '↳ {{agent}} から切り替わって実行',
+    chain: '{{agents}} → {{status}}',
     command: 'コマンド',
     cwd: '作業場所',
     session: 'セッション',
