@@ -11,6 +11,9 @@ import type { StoredReport } from '../src/main/report/types.js'
 import type { Project } from '../src/main/projects/types.js'
 import { REPORT_ASSETS, REPORT_STYLE_FILE } from '../src/main/report/assets.js'
 import { reportPrompt } from '../src/main/report/prompt.js'
+import { captureReviewBaseline, snapshotWorktree } from '../src/main/review/git.js'
+import type { ReviewSnapshot } from '../src/main/review/types.js'
+import type { Run } from '../src/main/execution/types.js'
 import type { AppSettings } from '../src/main/settings/types.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import { isoPlusSeconds } from '../src/main/util.js'
@@ -41,6 +44,26 @@ const LAUNCHES = 30_000
 
 /** One that ends cleanly and writes nothing. */
 const WRITES_NOTHING = ['-c', 'exit 0', 'quuu', '{{prompt}}']
+
+function addRun(taskId: string, over: Partial<Run> = {}): Run {
+  const attempt = repo.listRunsByTask(db, taskId).length + 1
+  return repo.insertRun(db, {
+    id: `${taskId}-${attempt}`, taskId, agentId: settings.reportTargetId,
+    resolvedFromGroupId: null, sessionId: `session-${attempt}`, kind: attempt === 1 ? 'initial' : 'followup',
+    status: 'succeeded', attempt, fallbackFromRunId: null, pid: null, cwd: work,
+    command: '/bin/sh', args: [], promptPreview: '', exitCode: 0, errorKind: null,
+    errorMessage: '', sessionLogPath: join(data, `session-${attempt}.jsonl`),
+    stdoutLogPath: join(data, `run-${attempt}.log`), ...over
+  })
+}
+
+function cachedReview(over: Partial<ReviewSnapshot> = {}): ReviewSnapshot {
+  return {
+    cwd: work, branch: 'main', repository: null, tree: [], changes: [], localChanges: [],
+    stagedChanges: [], revision: null, localRevision: null, stagedRevision: null,
+    commits: [], pullRequests: [], coverage: null, projectTasks: [], ...over
+  }
+}
 
 let db: Db
 let data: string
@@ -247,6 +270,116 @@ describe('how a generation ends', () => {
 })
 
 describe('writing one', () => {
+  async function generatedPrompt(taskId: string): Promise<string> {
+    repo.updateAgent(db, settings.reportTargetId, { argsTemplate: WRITES_THE_PROMPT })
+    expect((await ops.generate(taskId)).ok).toBe(true)
+    const report = await settled(taskId)
+    expect(report?.status).toBe('ready')
+    return readFileSync(report!.path, 'utf8')
+  }
+
+  it('includes the original request and every run across follow-ups and agent fallbacks', async () => {
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    repo.patchTask(db, taskId, { prompt: 'Rename the queue and preserve existing entries.' })
+    const first = addRun(taskId, { status: 'limited', promptPreview: 'Original attempt' })
+    const second = addRun(taskId, { kind: 'initial', fallbackFromRunId: first.id, promptPreview: 'Fallback attempt' })
+    const third = addRun(taskId, { sessionLogPath: second.sessionLogPath, sessionId: second.sessionId, promptPreview: 'Also update the help' })
+    const last = addRun(taskId, { sessionLogPath: null, promptPreview: 'Verify the migration' })
+    const prompt = await generatedPrompt(taskId)
+    expect(prompt).toContain('Task title: Rename the queue')
+    expect(prompt).toContain('Rename the queue and preserve existing entries.')
+    for (const run of [first, second, third, last]) {
+      expect(prompt).toContain(run.promptPreview)
+      expect(prompt).toContain(run.stdoutLogPath)
+      if (run.sessionLogPath) expect(prompt).toContain(run.sessionLogPath)
+    }
+    expect(prompt.indexOf(first.promptPreview)).toBeLessThan(prompt.indexOf(second.promptPreview))
+    expect(prompt.indexOf(second.promptPreview)).toBeLessThan(prompt.indexOf(third.promptPreview))
+    expect(prompt.indexOf(third.promptPreview)).toBeLessThan(prompt.indexOf(last.promptPreview))
+  }, LAUNCHES)
+
+  it('regenerates from the task start through the latest work even when the review cache is stale', async () => {
+    initGit()
+    const git = (...args: string[]): string => execFileSync('/usr/bin/git', args, { cwd: work, encoding: 'utf8' }).trim()
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    const first = addRun(taskId)
+    writeFileSync(join(work, 'preexisting.txt'), 'Unrelated work already present\n')
+    const baseline = await captureReviewBaseline(work, taskId, first.startedAt)
+    repo.insertTaskReviewBase(db, { taskId, cwd: work, ...baseline })
+    writeFileSync(join(work, 'queue.ts'), 'export const queue = 2\n')
+    git('commit', '-qam', 'Rename the queue')
+    const firstCommit = git('rev-parse', 'HEAD')
+    const initialPrompt = await generatedPrompt(taskId)
+    expect(initialPrompt).toContain('+-queue.ts')
+    const previous = ops.report(taskId)!
+    repo.saveReviewSnapshot(db, taskId, cachedReview({
+      revision: { base: baseline.baseTree!, head: previous.revision },
+      changes: [{ path: 'stale-only.ts', change: 'added' }]
+    }))
+
+    addRun(taskId)
+    writeFileSync(join(work, 'help.ts'), 'export const help = "queue"\n')
+    git('add', 'help.ts')
+    git('commit', '-qm', 'Explain the renamed queue')
+    const finalCommit = git('rev-parse', 'HEAD')
+    writeFileSync(join(work, 'uncommitted.ts'), 'export const verified = true\n')
+    const finalTree = (await snapshotWorktree(work))!.tree
+    const prompt = await generatedPrompt(taskId)
+    expect(prompt).toContain(`Task start tree: ${baseline.baseTree}`)
+    expect(prompt).toContain(`Report end tree: ${finalTree}`)
+    expect(prompt).toContain('+-queue.ts')
+    expect(prompt).toContain('+help.ts')
+    expect(prompt).toContain('+uncommitted.ts')
+    expect(prompt).toContain(`${firstCommit.slice(0, 7)} Rename the queue`)
+    expect(prompt).toContain(`${finalCommit.slice(0, 7)} Explain the renamed queue`)
+    expect(prompt).not.toContain('preexisting.txt')
+    expect(prompt).not.toContain('stale-only.ts')
+    expect(prompt).not.toContain(`Task start tree: ${previous.revision}`)
+    expect(ops.report(taskId)?.revision).toBe(finalTree)
+  }, LAUNCHES)
+
+  it('does not pass review material from a different working directory as this task result', async () => {
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    repo.saveReviewSnapshot(db, taskId, cachedReview({
+      cwd: '/another/checkout', changes: [{ path: 'foreign.ts', change: 'added' }],
+      commits: [{ sha: 'f'.repeat(40), shortSha: 'fffffff', subject: 'Foreign work', author: '', committedAt: '', files: [] }]
+    }))
+    const prompt = await generatedPrompt(taskId)
+    expect(prompt).not.toContain('foreign.ts')
+    expect(prompt).not.toContain('Foreign work')
+    expect(prompt).toContain('Task-wide Git comparison: unavailable')
+  }, LAUNCHES)
+
+  it('infers older tasks from the first run instead of the latest follow-up and identifies the estimate', async () => {
+    initGit()
+    const git = (...args: string[]): string => execFileSync('/usr/bin/git', args, {
+      cwd: work, encoding: 'utf8',
+      env: { ...process.env, GIT_AUTHOR_DATE: '2030-01-02T00:00:00Z', GIT_COMMITTER_DATE: '2030-01-02T00:00:00Z' }
+    }).trim()
+    const baseTree = git('rev-parse', 'HEAD^{tree}')
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    addRun(taskId, { startedAt: '2030-01-01T00:00:00Z' })
+    writeFileSync(join(work, 'queue.ts'), 'export const queue = 2\n')
+    git('commit', '-qam', 'First attempt')
+    addRun(taskId, { startedAt: '2030-01-03T00:00:00Z' })
+    writeFileSync(join(work, 'help.ts'), 'export const help = "queue"\n')
+    const prompt = await generatedPrompt(taskId)
+    expect(prompt).toContain(`Task start tree: ${baseTree}`)
+    expect(prompt).toContain('starting tree is inferred')
+    expect(prompt).toContain('+-queue.ts')
+    expect(prompt).toContain('+help.ts')
+    expect(prompt).toContain('First attempt')
+  }, LAUNCHES)
+
+  it('does not treat the whole repository history as task work when its start cannot be inferred', async () => {
+    initGit()
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    addRun(taskId, { startedAt: '2000-01-01T00:00:00Z' })
+    const prompt = await generatedPrompt(taskId)
+    expect(prompt).toContain('Task-wide Git comparison: unavailable')
+    expect(prompt).toContain('Commit log:\n- (none)')
+  }, LAUNCHES)
+
   it('hands the generator a page path it can write to, and shows what it wrote', async () => {
     const taskId = makeTask(db, projectId, 'Rename the queue')
     expect((await ops.generate(taskId)).ok).toBe(true)
@@ -470,10 +603,18 @@ describe('what the generator is told', () => {
   function prompt(over: Partial<Parameters<typeof reportPrompt>[0]> = {}): string {
     return reportPrompt({
       cwd: '/Users/me/Projects/taskd',
+      title: 'Rename the queue',
+      prompt: 'Rename the queue and preserve existing entries.',
+      revision: { base: 'a'.repeat(40), head: 'b'.repeat(40), inferred: false },
       changes: [{ path: 'src/queue.ts', mark: '+-' }, { path: 'src/inbox.ts', mark: '+' }],
       commits: ['1f4c9ab Rename the queue'],
       pullRequests: ['https://github.com/me/taskd/pull/12'],
-      sessionLog: '/Users/me/.claude/projects/taskd/abc.jsonl',
+      runs: [{
+        id: 'run-1', kind: 'initial', status: 'succeeded', cwd: '/Users/me/Projects/taskd',
+        startedAt: '2026-09-21T00:00:00.000Z', endedAt: '2026-09-21T01:00:00.000Z',
+        promptPreview: 'Rename the queue', sessionId: 'abc',
+        sessionLogPath: '/Users/me/.claude/projects/taskd/abc.jsonl', stdoutLogPath: '/tmp/run-1.log'
+      }],
       page: '/tmp/report.html',
       instructions: '',
       ...over
@@ -495,14 +636,24 @@ describe('what the generator is told', () => {
     expect(text).toContain('- +src/inbox.ts')
     expect(text).toContain('- 1f4c9ab Rename the queue')
     expect(text).toContain('- https://github.com/me/taskd/pull/12')
-    expect(text).toContain('Session file: /Users/me/.claude/projects/taskd/abc.jsonl')
+    expect(text).toContain('"sessionLogPath": "/Users/me/.claude/projects/taskd/abc.jsonl"')
     expect(text).toContain('Write the page to: /tmp/report.html')
   })
 
   it('says so rather than leaving a heading with nothing under it', () => {
-    const text = prompt({ changes: [], commits: [], pullRequests: [], sessionLog: '' })
-    expect(text).toContain('Session file: (none)')
+    const text = prompt({ changes: [], commits: [], pullRequests: [], runs: [], revision: null })
+    expect(text).toContain('Run history (oldest first; JSON):\n[]')
+    expect(text).toContain('Task-wide Git comparison: unavailable')
     expect(text).toMatch(/Commit log:\n- \(none\)/)
+  })
+
+  it('defines the whole task as the scope and uses its start and end trees for comparison', () => {
+    const text = prompt()
+    expect(text).toContain('Scope: the entire task')
+    expect(text).toContain('Never limit it to changes since the previous report')
+    expect(text).toContain('Read every distinct session listed below from the beginning')
+    expect(text).toContain('only excerpts, not complete instructions')
+    expect(text).toContain(`git diff ${'a'.repeat(40)} ${'b'.repeat(40)} --`)
   })
 
   /*

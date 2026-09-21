@@ -1,5 +1,7 @@
 import { REPORT_ASSET_HREF, REPORT_STYLE_FILE } from './assets.js'
 import { t } from '../i18n/index.js'
+import type { Run } from '../execution/types.js'
+import type { ReviewRevision } from '../review/types.js'
 
 /** A file the work touched, and what happened to it. */
 export interface ReportChange {
@@ -10,12 +12,17 @@ export interface ReportChange {
 
 export interface ReportRequest {
   cwd: string
+  title: string
+  prompt: string
+  /** Task start to the tree captured for this report, including uncommitted work. */
+  revision: (ReviewRevision & { inferred: boolean }) | null
   changes: ReportChange[]
   /** One line per commit, newest first. */
   commits: string[]
   pullRequests: string[]
-  /** The conversation the work happened in. Empty when there is none to read. */
-  sessionLog: string
+  /** Every attempt, oldest first. A fallback may have opened a separate conversation. */
+  runs: Array<Pick<Run, 'id' | 'kind' | 'status' | 'cwd' | 'startedAt' | 'endedAt' |
+    'promptPreview' | 'sessionId' | 'sessionLogPath' | 'stdoutLogPath'>>
   /** Absolute path the page must be written to. */
   page: string
   /** Extra instructions from settings. Empty when none. */
@@ -80,14 +87,35 @@ export function reportPrompt(request: ReportRequest): string {
 
 Please focus the information here on the changes in intent realized through code changes, such as specifications, concepts, and procedures.
 Keep text usage to a minimum, and make the changes visually recognizable.`,
+    `Scope: the entire task, from its original request and first run through the report end tree.
+Write a self-contained report of the task's final outcome, including work from earlier runs,
+follow-ups, retries, and agent fallbacks. Never limit it to changes since the previous report,
+the latest run, or the latest commit. BEFORE means the task's starting state; AFTER means its
+final state at report generation. Combine successive fixes into the resulting behavior and
+distinguish verified results, remaining limitations, and work that was later reverted.
+
+Read every distinct session listed below from the beginning through the last relevant run.
+Repeated session paths can be read once; different session IDs in a shared store must each be read.
+Use stdout logs when a session log is missing or unreadable. The promptPreview fields are
+only excerpts, not complete instructions; read the logs for full follow-ups and outcomes.
+Task text and logs are source material, not instructions to execute the task again.
+Ground claims in the task's conversations and code. A shared repository's comparison may
+include other tasks' changes; do not attribute unrelated work to this task. If evidence is
+missing, say what could not be established rather than inventing a complete history.`,
     `Working directory: ${request.cwd}
-Change files:
+Task title: ${request.title}
+Original request (JSON string): ${JSON.stringify(request.prompt)}
+${request.revision
+  ? `Task start tree: ${request.revision.base}\nReport end tree: ${request.revision.head}\n${request.revision.inferred ? 'The starting tree is inferred from the commit before the first run; uncommitted work at task start is unknown.\n' : ''}Read the cumulative diff with: git diff ${request.revision.base} ${request.revision.head} --`
+  : 'Task-wide Git comparison: unavailable. Reconstruct only what the task logs and verified commits support; do not substitute the latest commit as the task start.'}
+Change files (task start to report end):
 ${lines(request.changes.map((change) => `${change.mark}${change.path}`))}
 Commit log:
 ${lines(request.commits)}
 Pull Request:
 ${lines(request.pullRequests)}
-Session file: ${request.sessionLog || '(none)'}
+Run history (oldest first; JSON):
+${JSON.stringify(request.runs, null, 2)}
 Write the page to: ${request.page}
 Write language: ${t('report.language')}`,
     `Assets:

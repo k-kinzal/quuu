@@ -66,7 +66,8 @@ describe('the report stylesheet wears the app’s colors', () => {
       [...reportCss().matchAll(/\.([a-z][a-z0-9-]*)/g)].map((match) => match[1])
     )
     const prompt = reportPrompt({
-      cwd: '/tmp', changes: [], commits: [], pullRequests: [], sessionLog: '',
+      cwd: '/tmp', title: 'Task', prompt: 'Task', revision: null,
+      changes: [], commits: [], pullRequests: [], runs: [],
       page: '/tmp/r.html', instructions: ''
     })
     const named = new Set(

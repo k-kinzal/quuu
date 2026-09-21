@@ -9,13 +9,14 @@ import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import type { Project } from '../projects/types.js'
-import { readCommits, snapshotWorktree } from '../review/git.js'
+import { changesBetween, commitsSince, inferReviewBaseline, readCommits, snapshotWorktree } from '../review/git.js'
+import type { ReviewChange, ReviewCommit } from '../review/types.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ToastPayload } from '../snapshot.js'
 import { newId, newSessionId, nowIso, truncate } from '../util.js'
 import { settleReport, spawnReport } from './generator.js'
 import { REPORT_ASSETS, writeReportAssets } from './assets.js'
-import type { ReportChange } from './prompt.js'
+import type { ReportRequest } from './prompt.js'
 import { reportPrompt } from './prompt.js'
 import type { StoredReport, TaskReport } from './types.js'
 import type { ReportWriter } from './writer.js'
@@ -151,7 +152,7 @@ export class ReportOperations extends EventEmitter {
       const worktree = await snapshotWorktree(place.dir)
       const previous = repo.getTaskReport(this.db, taskId)
       if (trigger === 'automatic' && alreadyReported(previous, worktree?.tree)) return
-      const [path, material] = await Promise.all([resolveLoginPath(), this.material(taskId, place.dir)])
+      const [path, material] = await Promise.all([resolveLoginPath(), this.material(taskId, place.dir, worktree)])
       if (this.stopped || !repo.getTask(this.db, taskId)) return
 
       const id = newId('rpt')
@@ -167,6 +168,8 @@ export class ReportOperations extends EventEmitter {
       const exitPath = join(dir, `${id}.exit`)
       const prompt = reportPrompt({
         cwd: place.dir,
+        title: task.title,
+        prompt: task.prompt || task.title,
         ...material,
         page,
         instructions: settings.reportInstructions
@@ -235,25 +238,32 @@ export class ReportOperations extends EventEmitter {
   /**
    * What the work left behind, as facts rather than instructions to go and find them.
    *
-   * Read from what Quuu already observed — the review projection and the receipts it saw in the
-   * conversation — so a generation costs no fresh Git or GitHub work. Whatever is missing comes
-   * back empty rather than wrong; the writer is standing in the repository and can look.
+   * Review refreshes asynchronously and can still describe the previous run. Recompute the
+   * cumulative Git material against the very tree used for this report's revision, keeping the
+   * first run's baseline. Recorded commits and PRs supplement it across branch changes.
    */
-  private async material(taskId: string, cwd: string): Promise<{
-    changes: ReportChange[]
-    commits: string[]
-    pullRequests: string[]
-    sessionLog: string
-  }> {
-    const snapshot = repo.getReviewSnapshot(this.db, taskId)?.snapshot ?? null
+  private async material(
+    taskId: string,
+    cwd: string,
+    worktree: Awaited<ReturnType<typeof snapshotWorktree>>
+  ): Promise<Pick<ReportRequest, 'changes' | 'commits' | 'pullRequests' | 'runs' | 'revision'>> {
+    const saved = repo.getReviewSnapshot(this.db, taskId)?.snapshot
+    const snapshot = saved?.cwd === cwd ? saved : null
     const evidence = repo.reviewEvidence(this.db, taskId)
-    const runs = repo.listRunsByTask(this.db, taskId)
-    const commits = (snapshot?.commits ?? []).map(
-      (commit) => `${commit.shortSha} ${commit.subject}`
-    )
-    const seen = new Set((snapshot?.commits ?? []).map((commit) => commit.sha))
-    const unseen = evidence.commits.filter(
-      (sha) => ![...seen].some((known) => known.startsWith(sha) || sha.startsWith(known))
+    const runs = repo.listRunsByTask(this.db, taskId).reverse()
+    const savedBase = repo.getTaskReviewBase(this.db, taskId)
+    const baseline = savedBase?.cwd === cwd && savedBase.baseTree
+      ? savedBase
+      : worktree && runs[0] ? await inferReviewBaseline(cwd, runs[0].startedAt) : null
+    const revision = baseline?.baseTree && worktree
+      ? { base: baseline.baseTree, head: worktree.tree, inferred: baseline !== savedBase }
+      : null
+    const [changes, commits]: [ReviewChange[], ReviewCommit[]] = await Promise.all([
+      revision ? changesBetween(cwd, revision.base, revision.head) : [],
+      baseline?.baseTree && worktree?.head ? commitsSince(cwd, baseline.baseHead, worktree.head) : []
+    ])
+    const unseen = [...(snapshot?.commits ?? []).map(commit => commit.sha), ...evidence.commits].filter(
+      sha => !commits.some(known => known.sha.startsWith(sha) || sha.startsWith(known.sha))
     )
     /*
      * Read through the repository the report is being written in, rather than handed over as
@@ -263,13 +273,14 @@ export class ReportOperations extends EventEmitter {
      * id that resolves to a different commit - and the page ends up describing other work.
      */
     for (const commit of await readCommits(cwd, unseen)) {
-      commits.push(`${commit.shortSha} ${commit.subject}`)
+      commits.push(commit)
     }
     const pullRequests = [
       ...new Set([...(snapshot?.pullRequests ?? []).map((pr) => pr.url), ...evidence.pullRequests])
     ]
     return {
-      changes: (snapshot?.changes ?? []).map((file) => ({
+      revision,
+      changes: changes.map((file) => ({
         path: file.previousPath ? `${file.previousPath} -> ${file.path}` : file.path,
         mark: file.change === 'added' || file.change === 'untracked'
           ? '+'
@@ -277,9 +288,11 @@ export class ReportOperations extends EventEmitter {
             ? '-'
             : '+-'
       })),
-      commits,
+      commits: commits.sort((a, b) => b.committedAt.localeCompare(a.committedAt))
+        .map(commit => `${commit.shortSha} ${commit.subject}`),
       pullRequests,
-      sessionLog: runs.find((run) => run.sessionLogPath)?.sessionLogPath ?? ''
+      runs: runs.map(({ id, kind, status, cwd, startedAt, endedAt, promptPreview, sessionId, sessionLogPath, stdoutLogPath }) =>
+        ({ id, kind, status, cwd, startedAt, endedAt, promptPreview, sessionId, sessionLogPath, stdoutLogPath }))
     }
   }
 
