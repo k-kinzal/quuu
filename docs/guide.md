@@ -398,9 +398,10 @@ parallel".
 "Burn down one Issue when the queue is free", "clear PR review comments every morning" —
 a project can hold **definitions that queue a task when conditions line up**. Configured
 at **rail → project → gear → Auto-queue**. Any number can sit on one project.
-The **Recurring tasks** section at the bottom of the task list also opens these
-definitions directly. It stays below ordinary tasks when sorting, includes disabled
-definitions, and appears in both the full list and the compact list beside a task.
+Recurring task definitions appear as rows at the very bottom of the same task list,
+with the same columns as ordinary tasks. They stay last when sorting, include disabled
+definitions, and also appear in the compact list beside a task. Clicking a definition
+opens its settings.
 
 What gets queued is an ordinary task: acquisition, execution, and review all work as
 before. The rule that **only a human writes `done`** also stands (automation can create

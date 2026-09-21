@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type { TaskRule } from '../../../preload/api/automation.js'
 import type { Task } from '../../../preload/api/tasks.js'
 import type { ScopeFilter, TaskGroup } from '../model/derive.js'
 import { latestRunMap, projectMap, scopeTasks, sortTasks, taskAgentKey, taskAgentLabel } from '../model/derive.js'
@@ -15,6 +16,8 @@ export interface TaskView {
    * an order different from what is on screen. Movement order must always match display order.
    */
   ordered: Task[]
+  /** Definitions follow all task rows, independent of the task sort and status filter. */
+  rules: TaskRule[]
   /**
    * The status groups. **`null` while sorting by a column.**
    *
@@ -105,6 +108,11 @@ export function useTaskView(): TaskView {
 
     return {
       ordered,
+      rules: (snapshot?.rules ?? []).filter((rule) =>
+        scope.kind !== 'review' && projects.has(rule.projectId) &&
+        (scope.kind === 'project' ? rule.projectId === scope.projectId :
+          filters.projectIds.length === 0 || filters.projectIds.includes(rule.projectId))
+      ),
       groups,
       total: inScope.length,
       doneHidden,
@@ -112,7 +120,7 @@ export function useTaskView(): TaskView {
       context,
       candidates: inScope
     }
-  }, [context, doneHidden, filters, inScope, sort])
+  }, [context, doneHidden, filters, inScope, projects, scope, snapshot?.rules, sort])
 }
 
 /** The entry point for places that need only the display order (keyboard movement, advancing to the next task). */

@@ -46,6 +46,7 @@ import {
   type RefObject
 } from 'react'
 import type { Run } from '../../../preload/api/execution.js'
+import type { TaskRule } from '../../../preload/api/automation.js'
 import type { Project } from '../../../preload/api/projects.js'
 import type { Priority, Task, TaskStatus } from '../../../preload/api/tasks.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
@@ -72,13 +73,13 @@ import { sectionMenuItems } from './SectionMenu.js'
 import { TaskComposer } from './TaskComposer.js'
 import { TaskFilterBar } from './TaskFilterBar.js'
 import { taskMenuItems } from './TaskMenu.js'
-import { RecurringTasks } from './RecurringTasks.js'
+import { RecurringTaskTableRow } from './RecurringTaskRow.js'
 
 /** Actions at the row's right edge. Not a column but margin, so the table owns the fixed width. */
 const ACTIONS_WIDTH = tableMetrics.actionsWidth
 
 /** What the table lists. Group headers are also one line in the same column (for windowing). */
-type Line = { kind: 'group'; status: TaskStatus; count: number } | { kind: 'task'; task: Task }
+type Line = { kind: 'group'; status: TaskStatus | 'recurring'; count: number } | { kind: 'task'; task: Task } | { kind: 'rule'; rule: TaskRule }
 
 /**
  * The range to draw right now. Derived from scroll position and pane height.
@@ -215,12 +216,15 @@ export function TaskOverview(): JSX.Element {
    * from the index counted from the top.
    */
   const lines = useMemo<Line[]>(() => {
-    if (!view.groups) return tasks.map((task) => ({ kind: 'task', task }))
-    return view.groups.flatMap((group): Line[] => [
+    const taskLines: Line[] = !view.groups ? tasks.map((task) => ({ kind: 'task', task })) : view.groups.flatMap((group): Line[] => [
       { kind: 'group', status: group.status, count: group.tasks.length },
       ...group.tasks.map((task): Line => ({ kind: 'task', task }))
     ])
-  }, [tasks, view.groups])
+    if (view.groups && view.rules.length > 0) {
+      taskLines.push({ kind: 'group', status: 'recurring', count: view.rules.length })
+    }
+    return [...taskLines, ...view.rules.map((rule): Line => ({ kind: 'rule', rule }))]
+  }, [tasks, view.groups, view.rules])
 
   const rowHeight = theme.density.row.xl
   const headHeight = theme.density.row.xs
@@ -414,114 +418,113 @@ export function TaskOverview(): JSX.Element {
       */}
       <PanelBody
         ref={bodyRef}
+        {...pane('list', { tab: true })}
+        role="listbox"
+        aria-label={t('taskOverview.listLabel', { title })}
+        aria-activedescendant={cursorTaskId ? taskRowId(cursorTaskId) : undefined}
+        onKeyDown={(e) => runTaskListKey(e, tasks)}
       >
-        <div
-          {...pane('list', { tab: true })}
-          role="listbox"
-          aria-label={t('taskOverview.listLabel', { title })}
-          aria-activedescendant={cursorTaskId ? taskRowId(cursorTaskId) : undefined}
-          onKeyDown={(e) => runTaskListKey(e, tasks)}
-        >
-          {tasks.length === 0 ? (
-            /*
-              Don't write "do this to fill it" on an empty pane (rule Q).
-              If you can go back, offer the way back; if you can add, offer the add. An empty
-              with no handle (needs review) stays empty — that pane doesn't fill because a
-              human did something
-            */
-            view.narrowed ? (
-              <EmptyState
-                title={t('taskOverview.emptyFiltered')}
-                action={{ label: t('taskOverview.resetView'), onClick: resetTableView }}
-              />
-            ) : (
-              <EmptyState
-                title={section.kind === 'review' ? t('taskOverview.emptyReview') : t('taskOverview.emptyTasks')}
-                action={
-                  section.kind === 'review'
-                    ? undefined
-                    : { label: t('taskOverview.addTask'), onClick: () => focusAny('composer') }
-                }
-              />
-            )
+        {lines.length === 0 ? (
+          /*
+            Don't write "do this to fill it" on an empty pane (rule Q).
+            If you can go back, offer the way back; if you can add, offer the add. An empty
+            with no handle (needs review) stays empty — that pane doesn't fill because a
+            human did something
+          */
+          view.narrowed ? (
+            <EmptyState
+              title={t('taskOverview.emptyFiltered')}
+              action={{ label: t('taskOverview.resetView'), onClick: resetTableView }}
+            />
           ) : (
-            <DataTable minWidth={minWidth}>
-              <DataTableHead>
-                <DataTableHeadRow>
-                  {/*
-                    Keep attribute columns next to the identifier; FillerCell absorbs whatever
-                    widening the window adds. That's also why the task name gets a width. Without
-                    one this column soaks up all the slack, an empty band opens between name and
-                    attributes, and reading one row means sweeping your eyes across it
-                  */}
-                  {columns.map((column, i) => {
-                    const key = column.sortKey
-                    return (
-                      <HeadCell
-                        key={column.id}
-                        width={widths[column.id]}
-                        edge={i === 0 ? 'start' : undefined}
-                        /* The header band is the column's surface. Right-click answers about that column (rule N-2) */
-                        onContextMenu={(e) => {
-                          if (claimContextMenu(e)) onColumnMenu(column)
-                        }}
-                      >
-                        {key ? (
-                          <SortLabel
-                            direction={sort?.key === key ? sort.direction : null}
-                            title={t('taskOverview.sortBy', { column: column.label })}
-                            onToggle={() => toggleSort(key)}
-                          >
-                            {column.label}
-                          </SortLabel>
-                        ) : (
-                          column.label
-                        )}
-                        {column.resizable && (
-                          <ColumnResizer
-                            value={widths[column.id]}
-                            min={column.min}
-                            max={COLUMN_MAX_WIDTH}
-                            onChange={(w) => setColumnWidth(column.id, w)}
-                            onReset={() => resetColumnWidth(column.id)}
-                          />
-                        )}
-                      </HeadCell>
-                    )
-                  })}
-                  <HeadCell />
-                  <HeadCell width={ACTIONS_WIDTH} edge="end" />
-                </DataTableHeadRow>
-              </DataTableHead>
+            <EmptyState
+              title={section.kind === 'review' ? t('taskOverview.emptyReview') : t('taskOverview.emptyTasks')}
+              action={
+                section.kind === 'review'
+                  ? undefined
+                  : { label: t('taskOverview.addTask'), onClick: () => focusAny('composer') }
+              }
+            />
+          )
+        ) : (
+          <DataTable minWidth={minWidth}>
+            <DataTableHead>
+              <DataTableHeadRow>
+                {/*
+                  Keep attribute columns next to the identifier; FillerCell absorbs whatever
+                  widening the window adds. That's also why the task name gets a width. Without
+                  one this column soaks up all the slack, an empty band opens between name and
+                  attributes, and reading one row means sweeping your eyes across it
+                */}
+                {columns.map((column, i) => {
+                  const key = column.sortKey
+                  return (
+                    <HeadCell
+                      key={column.id}
+                      width={widths[column.id]}
+                      edge={i === 0 ? 'start' : undefined}
+                      /* The header band is the column's surface. Right-click answers about that column (rule N-2) */
+                      onContextMenu={(e) => {
+                        if (claimContextMenu(e)) onColumnMenu(column)
+                      }}
+                    >
+                      {key ? (
+                        <SortLabel
+                          direction={sort?.key === key ? sort.direction : null}
+                          title={t('taskOverview.sortBy', { column: column.label })}
+                          onToggle={() => toggleSort(key)}
+                        >
+                          {column.label}
+                        </SortLabel>
+                      ) : (
+                        column.label
+                      )}
+                      {column.resizable && (
+                        <ColumnResizer
+                          value={widths[column.id]}
+                          min={column.min}
+                          max={COLUMN_MAX_WIDTH}
+                          onChange={(w) => setColumnWidth(column.id, w)}
+                          onReset={() => resetColumnWidth(column.id)}
+                        />
+                      )}
+                    </HeadCell>
+                  )
+                })}
+                <HeadCell />
+                <HeadCell width={ACTIONS_WIDTH} edge="end" />
+              </DataTableHeadRow>
+            </DataTableHead>
 
-              {/*
-                Draw only what fits on screen. SpacerRow holds the height of undrawn rows,
-                so the scroll thumb still behaves as if all rows were there.
-                Group headers line up as rows in the same column (absent while sorting,
-                since there are no groups then)
-              */}
-              <DataTableBody>
-                {range.padTop > 0 && <SpacerRow height={range.padTop} colSpan={colSpan} />}
-                {lines
-                  .slice(range.start, range.end)
-                  .map((line) =>
-                    line.kind === 'group' ? (
-                      <TableGroupRow
-                        key={`group-${line.status}`}
-                        label={<span {...motionAnchor(`group-${line.status}`)}>{TASK_STATUS_LABEL[line.status]}</span>}
-                        count={line.count}
-                        colSpan={colSpan}
-                      />
-                    ) : (
-                      renderRow(line.task)
-                    )
-                  )}
-                {range.padBottom > 0 && <SpacerRow height={range.padBottom} colSpan={colSpan} />}
-              </DataTableBody>
-            </DataTable>
-          )}
-        </div>
-        <RecurringTasks />
+            {/*
+              Draw only what fits on screen. SpacerRow holds the height of undrawn rows,
+              so the scroll thumb still behaves as if all rows were there.
+              Group headers line up as rows in the same column (absent while sorting,
+              since there are no groups then)
+            */}
+            <DataTableBody>
+              {range.padTop > 0 && <SpacerRow height={range.padTop} colSpan={colSpan} />}
+              {lines
+                .slice(range.start, range.end)
+                .map((line) =>
+                  line.kind === 'group' ? (
+                    <TableGroupRow
+                      key={`group-${line.status}`}
+                      label={<span {...motionAnchor(`group-${line.status}`)}>{line.status === 'recurring' ? t('taskRules.recurringSection') : TASK_STATUS_LABEL[line.status]}</span>}
+                      count={line.count}
+                      colSpan={colSpan}
+                    />
+                  ) : line.kind === 'rule' ? (
+                    <RecurringTaskTableRow key={line.rule.id} rule={line.rule}
+                      project={projects.get(line.rule.projectId)} showProject={crossProject} widths={widths} />
+                  ) : (
+                    renderRow(line.task)
+                  )
+                )}
+              {range.padBottom > 0 && <SpacerRow height={range.padBottom} colSpan={colSpan} />}
+            </DataTableBody>
+          </DataTable>
+        )}
       </PanelBody>
 
       {section.kind !== 'review' && (

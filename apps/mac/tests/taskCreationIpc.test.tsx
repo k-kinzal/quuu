@@ -592,15 +592,31 @@ describe('recurring tasks in the collection and frequency editor', () => {
     blockStatuses: ['queued', 'running'], enabled: false, sortOrder: 0, ...over
   })
 
-  it.each([{ name: 'overview', View: TaskOverview }, { name: 'sidebar', View: TaskSidebar }])('keeps definitions below tasks, opens the selected settings, and returns with Back ($name)', async ({ View }) => {
+  it.each([{ name: 'overview', View: TaskOverview }, { name: 'sidebar', View: TaskSidebar }])('keeps definitions as the last rows in the same list even when sorted, opens settings, and returns with Back ($name)', async ({ View }) => {
     const rule = createRule()
+    createRule({ name: 'Weekly maintenance', frequency: 'weekly', enabled: true })
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><View /></ThemeProvider>)
     const tasks = screen.getByRole('listbox')
-    const recurring = screen.getByRole('region', { name: 'Recurring tasks' })
-    expect(tasks.compareDocumentPosition(recurring) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(within(recurring).getByText('Once a day · When the queue is empty', { exact: false })).toBeTruthy()
-    expect(within(recurring).getByText('Disabled')).toBeTruthy()
-    const button = within(recurring).getByRole('button')
+    const checkRows = (): HTMLElement => {
+      const rows = within(tasks).getAllByRole('option')
+      expect(rows).toHaveLength(3)
+      expect(rows[0].textContent).toContain('読んでいるタスク')
+      expect(rows[1].textContent).toContain('Daily maintenance')
+      expect(rows[2].textContent).toContain('Weekly maintenance')
+      expect(within(rows[1]).getByText('Disabled')).toBeTruthy()
+      expect(within(rows[2]).getByText('Once a week')).toBeTruthy()
+      if (View === TaskOverview) {
+        expect(rows[1].closest('tbody')).toBe(rows[0].closest('tbody'))
+        expect(rows[1].children).toHaveLength(rows[0].children.length)
+      }
+      return rows[1]
+    }
+    checkRows()
+    act(() => useStore.getState().setSort({ key: 'title', direction: 'asc' }))
+    checkRows()
+    act(() => useStore.getState().setSort({ key: 'title', direction: 'desc' }))
+    const recurring = checkRows()
+    const button = View === TaskOverview ? within(recurring).getByRole('button') : recurring
     button.focus()
     fireEvent.keyDown(button, { key: 'Enter' })
     expect(useStore.getState().detailOpen).toBe(false)
@@ -617,9 +633,10 @@ describe('recurring tasks in the collection and frequency editor', () => {
     useStore.setState({ section: { kind: 'project', id: other.id } })
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskOverview /></ThemeProvider>)
     expect(screen.queryByText('Daily maintenance')).toBeNull()
-    expect(screen.getByText('Other weekly task')).toBeTruthy()
+    expect(within(screen.getByRole('listbox')).getAllByRole('option')).toHaveLength(1)
+    expect(within(screen.getByRole('table')).getByText('Other weekly task')).toBeTruthy()
     act(() => useStore.getState().setSection({ kind: 'review' }))
-    expect(screen.queryByRole('region', { name: 'Recurring tasks' })).toBeNull()
+    expect(screen.queryByText('Other weekly task')).toBeNull()
   })
 
   it('switches an existing cron rule to a frequency, persists it through IPC, and retains edits on rejection', async () => {
