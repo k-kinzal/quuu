@@ -3,7 +3,7 @@ import type { Db } from '../db/database.js'
 import { afterCommit, inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { SessionOwner } from '../execution/agentResolver.js'
-import { eligibleAgents, sessionOwner, sessionOwnerLabel } from '../execution/agentResolver.js'
+import { eligibleAgents, sessionOwner, sessionOwnerLabel, taskLineage } from '../execution/agentResolver.js'
 import type { Run } from '../execution/types.js'
 import { t } from '../i18n/index.js'
 import type { RunNowResult } from '../ipc/types.js'
@@ -351,9 +351,21 @@ export class TaskOperations {
   private continuableAgent(task: Task, project: Project, owner: SessionOwner): Agent | null {
     const eligible = eligibleAgents(this.db, project, {
       preferredAgentId: task.agentOverrideId,
-      continuation: owner
+      continuation: owner,
+      lineage: taskLineage(this.db, task)
     })
     return eligible.ok ? eligible.value[0] ?? null : null
+  }
+
+  /**
+   * Could a new session of this task be opened at all? Only on the task's own CLI: a fold is a
+   * fresh start, not a change of CLI.
+   */
+  private canOpenFresh(task: Task, project: Project): boolean {
+    return eligibleAgents(this.db, project, {
+      preferredAgentId: task.agentOverrideId,
+      lineage: taskLineage(this.db, task)
+    }).ok
   }
 
 
@@ -379,6 +391,13 @@ export class TaskOperations {
     const task = repo.getTask(this.db, current.id) ?? current
     if (!task.sessionId) return false
     if (this.continuableAgent(task, project, owner)) return false
+    /*
+     * Folding opens a new session, and that session is still this task's CLI. With no agent of
+     * that CLI to open one, the conversation is kept and the task waits for its owner to come
+     * back: a wait has a way out (enable the agent), a conversation discarded for another CLI
+     * has none. The scheduler names the wait.
+     */
+    if (!this.canOpenFresh(task, project)) return false
 
     repo.patchTask(this.db, task.id, {
       prompt: joinMessages(task.prompt, task.pendingMessage, extra)

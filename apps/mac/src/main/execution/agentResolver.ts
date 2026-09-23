@@ -3,6 +3,7 @@ import { mayContinueSession, orderAgents } from '../agents/types.js'
 import type { Project } from '../projects/types.js'
 import type { Task } from '../tasks/types.js'
 import type { SlotAvailability } from './conditions.js'
+import type { Run } from './types.js'
 import { slotAvailability } from './conditions.js'
 
 import { cliLabel, sameCli } from '../agents/cli.js'
@@ -14,6 +15,7 @@ export type ResolveFailure =
   | 'no-target'
   | 'target-missing'
   | 'no-usable-agent'
+  | 'other-cli'
   | 'no-continuable-agent'
   | 'all-busy'
   | 'all-cooling'
@@ -67,6 +69,70 @@ export function sessionOwner(db: Db, task: Task): SessionOwner {
 export function sessionOwnerLabel(db: Db, owner: SessionOwner): string {
   const agent = owner.agentId ? repo.getAgent(db, owner.agentId) : null
   return agent?.name ?? cliLabel(owner.command)
+}
+
+/**
+ * Is there a conversation under this task's session?
+ *
+ * A session ID alone proves nothing: every launch mints one before the CLI has said a word, and a
+ * run that died at spawn leaves the ID behind with nothing under it. Resuming that ID fails the
+ * same way as resuming another CLI's. The proof is a run on that ID that **finished normally**
+ * (the CLI ran to its end and wrote the exchange down) or whose **log was found** (the CLI wrote
+ * one, however the run ended).
+ */
+export function hasConversation(db: Db, task: Task): boolean {
+  const sessionId = task.sessionId?.trim() ?? ''
+  if (sessionId.length === 0) return false
+  return repo.listRunsByTask(db, task.id)
+    .some((r) => r.sessionId === sessionId && (r.status === 'succeeded' || r.sessionLogPath !== null))
+}
+
+/**
+ * Can the next run pick the conversation up where it was left: is there one, and can the agent
+ * that opened it still read it (same CLI, resume arguments configured)?
+ *
+ * This, not the presence of a follow-up, decides whether the next run resumes. A task whose
+ * follow-up was discarded still holds its conversation; treating it as a first run because the
+ * text box is empty is how a Codex task got handed to Claude as a fresh session (it happened).
+ * Only what cannot be resumed at all opens a new session, and that stays on the task's CLI.
+ */
+export function canResumeConversation(db: Db, task: Task): boolean {
+  if (!hasConversation(db, task)) return false
+  const owner = sessionOwner(db, task)
+  const agent = owner.agentId ? repo.getAgent(db, owner.agentId) : null
+  return agent !== null && canReadSession(agent, owner)
+}
+
+/**
+ * A run the CLI turned away at a limit, or that never became a process, has read nothing of the
+ * task and settles nothing about it. Every other run reached the CLI, whatever came of it.
+ */
+function reachedTheCli(run: Pick<Run, 'status' | 'errorKind'>): boolean {
+  return run.status !== 'limited' && run.errorKind !== 'spawn'
+}
+
+/**
+ * The CLI this task belongs to: the one that opened the session it holds, or failing that the
+ * one that last actually ran it.
+ *
+ * **A task never changes CLI.** A Codex conversation cannot be read by `claude`, and even a
+ * fresh session on another CLI throws away everything the first one learned. The session owner
+ * is the authority while the session is held and a run reached the CLI under it; once the session
+ * has been let go of (a fold into a new one), the run history still says which CLI the work
+ * happened on. Both empty means no CLI has read this task yet - it has never run, or every attempt
+ * was turned away unread - and any CLI may take it.
+ */
+export function taskLineage(db: Db, task: Task): SessionOwner {
+  const reached = repo.listRunsByTask(db, task.id).filter(reachedTheCli)
+  const owner = sessionOwner(db, task)
+  if (owner.command.length > 0 && reached.some((r) => r.sessionId === task.sessionId)) return owner
+  const last = reached.find((r) => r.command.trim().length > 0)
+  return last ? { agentId: last.agentId, command: last.command.trim() } : { agentId: '', command: '' }
+}
+
+/** May this agent take a run of a task with that lineage at all? Unknown lineage binds nobody. */
+export function sameLineage(agent: Agent, lineage: SessionOwner | null | undefined): boolean {
+  return !lineage || lineage.command.length === 0 || sameCli(agent.command, lineage.command)
 }
 
 /**
@@ -171,6 +237,15 @@ export interface ResolveOptions {
    * cooldown. Not given on an initial run (a new session is minted).
    */
   continuation?: SessionOwner | null
+  /**
+   * The CLI the task belongs to (`taskLineage`), on every run of a task that has run before.
+   *
+   * Narrows every candidate - the target, the explicit task choice, every fallback - to that
+   * CLI, before continuation is even considered. A fresh session on another CLI is still a
+   * switch, and a switch is never automatic: not for a free slot, not for a cooldown, not for a
+   * failure that asks for another agent.
+   */
+  lineage?: SessionOwner | null
 }
 
 /**
@@ -183,7 +258,7 @@ export function eligibleAgents(
   project: Project,
   options: ResolveOptions
 ): { ok: true; value: Agent[] } | { ok: false; reason: ResolveFailure } {
-  const { preferredAgentId, continuation } = options
+  const { preferredAgentId, continuation, lineage } = options
   const preferred = preferredAgentId ? repo.getAgent(db, preferredAgentId) : null
 
   if (!project.targetId && !preferred) return { ok: false, reason: 'no-target' }
@@ -201,8 +276,12 @@ export function eligibleAgents(
     ? [preferred, ...fallbackChain(db, preferred.id)].filter((a) => a.enabled)
     : []
   const preferredIds = new Set(preferredChain.map((a) => a.id))
-  const usable = [...preferredChain, ...base.filter((a) => !preferredIds.has(a.id))]
-  if (usable.length === 0) return { ok: false, reason: 'no-usable-agent' }
+  const enabledAgents = [...preferredChain, ...base.filter((a) => !preferredIds.has(a.id))]
+  if (enabledAgents.length === 0) return { ok: false, reason: 'no-usable-agent' }
+  // The CLI is settled by the task's history, and nothing chosen afterwards - a group member
+  // with a free slot, an explicit pick of another CLI - gets to unsettle it
+  const usable = enabledAgents.filter((a) => sameLineage(a, lineage))
+  if (usable.length === 0) return { ok: false, reason: 'other-cli' }
 
   // A configured fallback is an explicit choice too. Expand only during cooldown: a busy
   // opener still waits for its slot, and unrelated group members never inherit its session.
@@ -243,7 +322,7 @@ export function resolveAgentForProject(
   project: Project,
   options: ResolveOptions = {}
 ): ResolveResult {
-  const { preferredAgentId, reserved, continuation } = options
+  const { preferredAgentId, reserved, continuation, lineage } = options
   const preferred = preferredAgentId ? repo.getAgent(db, preferredAgentId) : null
 
   const eligible = eligibleAgents(db, project, options)
@@ -278,7 +357,7 @@ export function resolveAgentForProject(
      * whose fallback exists on paper only, and a cooldown that cannot be escaped is exactly what
      * the fallback was configured to avoid. A continuation reserves only compatible fallbacks.
      */
-    if (fallbackLane(db, agent.id, continuation).some((next) => availabilityOf(next) !== 'available')) {
+    if (fallbackLane(db, agent.id, continuation, lineage).some((next) => availabilityOf(next) !== 'available')) {
       sawFallbackFull = true
       continue
     }
@@ -324,10 +403,17 @@ export function cooldownClearsAt(
  * The agents a run could still be handed to if this one gives out.
  *
  * Disabled definitions drop out: a fallback that can never be chosen is not a lane worth keeping
- * open, and the chain continues past it to the one that can.
+ * open, and the chain continues past it to the one that can. A fallback on another CLI drops out
+ * the same way: the task can never move there, so its slot is not one this run is waiting on.
  */
-export function fallbackLane(db: Db, agentId: string, continuation?: SessionOwner | null): Agent[] {
-  return fallbackChain(db, agentId).filter((a) => a.enabled && (!continuation || canReadSession(a, continuation)))
+export function fallbackLane(
+  db: Db,
+  agentId: string,
+  continuation?: SessionOwner | null,
+  lineage?: SessionOwner | null
+): Agent[] {
+  return fallbackChain(db, agentId).filter((a) =>
+    a.enabled && sameLineage(a, lineage) && (!continuation || canReadSession(a, continuation)))
 }
 
 /**
@@ -347,8 +433,10 @@ export function fallbackLane(db: Db, agentId: string, continuation?: SessionOwne
 export function fallbackHolds(db: Db): Map<string, number> {
   const holds = new Map<string, number>()
   for (const run of repo.listActiveRuns(db)) {
-    const continuation = run.kind === 'followup' ? { agentId: run.agentId, command: run.command } : null
-    for (const target of fallbackLane(db, run.agentId, continuation)) {
+    const owner = { agentId: run.agentId, command: run.command }
+    const continuation = run.kind === 'followup' ? owner : null
+    // Whatever kind it is, the run has settled the task's CLI: only lanes on that CLI are held
+    for (const target of fallbackLane(db, run.agentId, continuation, owner)) {
       holds.set(target.id, (holds.get(target.id) ?? 0) + 1)
     }
   }

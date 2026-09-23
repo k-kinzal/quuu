@@ -23,7 +23,8 @@ import * as repo from '../db/repo.js'
 import { newId, nowIso, truncate } from '../util.js'
 import { t } from '../i18n/index.js'
 import type { ResolveFailure, ResolveOptions, SessionOwner } from './agentResolver.js'
-import { candidateAgents, cooldownClearsAt, eligibleAgents, fallbackHolds, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel } from './agentResolver.js'
+import { candidateAgents, canResumeConversation, cooldownClearsAt, eligibleAgents, fallbackHolds, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel, taskLineage } from './agentResolver.js'
+import { cliLabel } from '../agents/cli.js'
 import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
 
@@ -191,13 +192,22 @@ export class Scheduler extends EventEmitter {
     }
   }
 
+  /**
+   * Resume, or open anew? A task whose conversation can be resumed resumes it, whatever the text
+   * box holds: a follow-up if one is waiting, otherwise the prompt goes into the same
+   * conversation. Only a task with nothing to resume (never ran, its runs left no conversation,
+   * or its opener cannot read one back) opens a new session - on the same CLI. The follow-up
+   * alone used to decide this, and a task whose follow-up had been discarded went out as a first
+   * run on whichever agent was free, another CLI included.
+   */
   private kindFor(task: Task): 'initial' | 'followup' {
-    return isFollowupPending(task) ? 'followup' : 'initial'
+    return isFollowupPending(task) || canResumeConversation(this.db, task) ? 'followup' : 'initial'
   }
 
   private messageFor(task: Task): string | undefined {
     if (this.kindFor(task) !== 'followup') return undefined
-    return resumeMessage(task.pendingMessage, this.alreadyDelivered(task))
+    const waiting = task.pendingMessage.trim() || task.prompt.trim() || task.title
+    return resumeMessage(waiting, this.alreadyDelivered(task))
   }
 
   /**
@@ -232,6 +242,22 @@ export class Scheduler extends EventEmitter {
    */
   private continuationFor(task: Task): SessionOwner | null {
     return this.kindFor(task) === 'followup' ? sessionOwner(this.db, task) : null
+  }
+
+  /**
+   * Everything that narrows who may take this task, in one place.
+   *
+   * Claiming, "run now", whether a retry has anywhere to go, when a cooldown clears: every one of
+   * them reads the same options, so none can widen the field another narrowed. The lineage is
+   * always in: a task that has run on one CLI is never handed to another, whatever else is free.
+   */
+  private resolveOptionsFor(task: Task, reservations: repo.SlotReservation[] = []): ResolveOptions {
+    return {
+      preferredAgentId: task.agentOverrideId,
+      reserved: reservedByAgent(reservations),
+      continuation: this.continuationFor(task),
+      lineage: taskLineage(this.db, task)
+    }
   }
 
   private previousFailedRunId(taskId: string): string | null {
@@ -317,18 +343,15 @@ export class Scheduler extends EventEmitter {
         const task = repo.getTask(this.db, row.task_id)
         if (!task) continue
 
-        // Condition 6: resolve the agent (a per-task override wins)
-        const options: ResolveOptions = {
-          preferredAgentId: task.agentOverrideId,
-          reserved: reservedByAgent(others),
-          continuation: this.continuationFor(task)
-        }
+        // Condition 6: resolve the agent (a per-task override wins, within the task's CLI)
+        const options = this.resolveOptionsFor(task, others)
         const resolved = resolveAgentForProject(this.db, project, options)
         if (!resolved.ok) {
           const label = `${project.name}: ${this.resolveFailureLabel(project, resolved.reason, others, options)}`
-          // "Cannot continue" is a fact about the task, not the project. Keying it by project would
-          // overwrite the reason for another task in the same project, so it is kept per task
-          if (resolved.reason === 'no-continuable-agent') {
+          // "Cannot continue" and "nobody of its CLI" are facts about the task, not the project.
+          // Keying them by project would overwrite the reason for another task in the same
+          // project, so they are kept per task
+          if (resolved.reason === 'no-continuable-agent' || resolved.reason === 'other-cli') {
             stuck.set(task.id, `${truncate(task.title, 24)} — ${label}`)
           } else {
             reasons.set(project.id, label)
@@ -342,7 +365,15 @@ export class Scheduler extends EventEmitter {
           kind: this.kindFor(task), messageOverride: this.messageFor(task),
           sessionId: this.sessionIdFor(task), fallbackFromRunId: this.previousFailedRunId(task.id)
         }
-        const run = this.runner.prepare(params)
+        let run: Run
+        try {
+          run = this.runner.prepare(params)
+        } catch (error) {
+          // The runner's own gate against a CLI switch. Unreachable once resolution is right,
+          // but a task it stops must not take the whole tick down with it - it is named and skipped
+          stuck.set(task.id, `${truncate(task.title, 24)} — ${error instanceof Error ? error.message : String(error)}`)
+          continue
+        }
         this.blockReasons = reasons
         this.stuckReasons = stuck
         return {
@@ -376,6 +407,13 @@ export class Scheduler extends EventEmitter {
     options: ResolveOptions
   ): string {
     const continuation = options.continuation
+    // The CLI the task belongs to can be named. Which CLI to enable is the whole fix
+    if (reason === 'other-cli') {
+      const lineage = options.lineage
+      return lineage && lineage.command.length > 0
+        ? t('tasks.cliUnavailable', { cli: cliLabel(lineage.command) })
+        : resolveFailureMessage(reason)
+    }
     // The party we are waiting on can be named. "Session" alone says nothing about what to fix
     if (reason === 'no-continuable-agent') {
       const owner = continuation ? sessionOwnerLabel(this.db, continuation) : ''
@@ -482,10 +520,7 @@ export class Scheduler extends EventEmitter {
     const task = repo.getTask(this.db, taskId)
     const project = task ? repo.getProject(this.db, task.projectId) : null
     if (!task || !project) return
-    const until = cooldownClearsAt(this.db, project, {
-      preferredAgentId: task.agentOverrideId,
-      continuation: this.continuationFor(task)
-    })
+    const until = cooldownClearsAt(this.db, project, this.resolveOptionsFor(task))
     if (until === null) return
     repo.setTaskSchedule(this.db, task.id,
       task.scheduledAt !== null && task.scheduledAt > until ? task.scheduledAt : until)
@@ -496,21 +531,15 @@ export class Scheduler extends EventEmitter {
     // Do not resolve candidates once the limit is hit: resolving also advances the round-robin position.
     const requirement = retryRequirement(kind, failures)
     if (requirement === 'never') return false
-    const usable = eligibleAgents(this.db, project, {
-      preferredAgentId: task.agentOverrideId,
-      continuation: this.continuationFor(task)
-    }).ok
+    const usable = eligibleAgents(this.db, project, this.resolveOptionsFor(task)).ok
     // Look for another candidate only for failures that cannot be retried on the same one.
     return shouldRetryRun(kind, failures, usable,
       requirement === 'other-agent' && usable && this.hasOtherCandidate(task, project, run.agentId))
   }
 
   private hasOtherCandidate(task: Task, project: Project, currentAgentId: string): boolean {
-    // Retries use the same task choices and session compatibility as the eventual claim.
-    const resolved = resolveAgentForProject(this.db, project, {
-      preferredAgentId: task.agentOverrideId,
-      continuation: this.continuationFor(task)
-    })
+    // Retries use the same task choices, CLI and session compatibility as the eventual claim.
+    const resolved = resolveAgentForProject(this.db, project, this.resolveOptionsFor(task))
     if (resolved.ok) return resolved.value.agent.id !== currentAgentId
     // Only full right now; another candidate may become usable once its cooldown ends or its lane frees
     return resolved.reason === 'all-cooling' || resolved.reason === 'all-busy' ||
@@ -546,11 +575,7 @@ export class Scheduler extends EventEmitter {
       // Even a manual run does not break another task's reservation (a human decided that too).
       // The reserving side is not blocked by it (same rule as claimNext).
       const others = holdsSlot(task.priority) ? [] : repo.listSlotReservations(this.db)
-      const options: ResolveOptions = {
-        preferredAgentId: task.agentOverrideId,
-        reserved: reservedByAgent(others),
-        continuation: this.continuationFor(task)
-      }
+      const options = this.resolveOptionsFor(task, others)
       const resolved = resolveAgentForProject(this.db, project, options)
       if (!resolved.ok) {
         return {

@@ -21,6 +21,7 @@ import { argsCarrySessionId, canRecoverSessionId, findSessionId } from '../sessi
 import { commitIdentityEnv, resolveCommitIdentity } from '../settings/commitIdentity.js'
 import type { Task } from '../tasks/types.js'
 import { newId, newSessionId, nowIso } from '../util.js'
+import { sameLineage, taskLineage } from './agentResolver.js'
 import type { Classification } from './errorClassifier.js'
 import { classifyRunResult, runStatusForKind } from './errorClassifier.js'
 import type { TemplateVars } from './templating.js'
@@ -121,6 +122,16 @@ export class Runner extends EventEmitter {
     if (this.stopped) throw new Error('the run manager has shut down')
     return inTransaction(this.db, () => {
       const { task, project, agent, groupId, kind, fallbackFromRunId } = params
+      /*
+       * The last gate before a process exists. Resolution never hands a task to another CLI, but
+       * a conversation is not something to lose to a future oversight upstream: a launch that
+       * would switch CLIs is refused here, whoever asked for it. `claude --resume` cannot read a
+       * Codex conversation, and a fresh session on another CLI has read nothing at all.
+       */
+      const lineage = taskLineage(this.db, task)
+      if (!sameLineage(agent, lineage)) {
+        throw new Error(`refusing to launch ${agent.command} for a task that belongs to ${lineage.command}`)
+      }
       const runId = newId('run')
       const sessionId = params.sessionId ?? newSessionId()
       const message = params.messageOverride ?? (task.prompt.trim() || task.title)

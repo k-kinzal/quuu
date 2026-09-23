@@ -374,7 +374,7 @@ export function taskMap(tasks: Task[]): Map<string, Task> {
 
 /** What goes to the agent on the next run. Returned with where to edit it (which field). */
 export interface NextSend {
-  /** The field to edit: the follow-up, or the prompt re-sent as a first run */
+  /** The field to edit: the follow-up, or the prompt (re-sent into the conversation if there is one) */
   field: 'pendingMessage' | 'prompt'
   value: string
 }
@@ -383,7 +383,7 @@ export interface NextSend {
  * What will be sent on the next run.
  *
  * A follow-up (send-back / continuation from chat) if there is one, otherwise
- * the prompt re-sent as a first run. **Returns nothing while running** — it has
+ * the prompt re-sent. **Returns nothing while running** — it has
  * already been handed over, and showing it here would blur it with "not yet sent".
  *
  * Instructions of a task that never ran are also returned here, to keep them in

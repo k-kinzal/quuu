@@ -59,10 +59,9 @@ export function PendingTurn({ task, next }: { task: Task; next: NextSend }): JSX
   /**
    * Discard the follow-up.
    *
-   * Once the follow-up is gone, `isFollowupPending` turns false, so deleting it while
-   * still queued would make the next run treat itself as a **first run** and send the
-   * original prompt to a new session. What was discarded was a send-back, so return
-   * to review and put it back in the human's hands.
+   * Without it the next run would send the prompt into the conversation instead (main keeps
+   * the conversation and its CLI whatever this box holds). What was discarded was a send-back,
+   * so return to review and put it back in the human's hands rather than let that happen.
    */
   const discard = async (): Promise<void> => {
     try {

@@ -8,6 +8,12 @@ enforce them live in [architecture.md](architecture.md) and
 
 - **Logic is 100% in the main process.** The renderer does display and input only. Windows
   can be destroyed at any time.
+- **A task never changes CLI.** The first CLI that actually read a task (`taskLineage`: a run
+  the CLI accepted, not one turned away at a limit or never spawned) takes every run after it,
+  fresh sessions included, and a conversation is resumed by the agent that opened it. Never
+  widen the candidates around this — not for a free slot, a cooldown, a failure that asks for
+  another agent, or an explicit pick. A Codex conversation handed to `claude` is broken work,
+  and it happened once.
 - **Done (`done`) is a human's call.** Neither the scheduler, nor agents, nor error handlers
   ever write `done`. A normal agent exit can reach `review` at most.
 - **Never ask a human in the normal path.** Limits fall back automatically. Hand things to a
