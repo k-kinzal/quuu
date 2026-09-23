@@ -8,7 +8,7 @@ import type { Db } from '../src/main/db/database.js'
 import * as repo from '../src/main/db/repo.js'
 import { SessionImporter } from '../src/main/import/importer.js'
 import { resetLivenessMemo } from '../src/main/import/liveness.js'
-import { sessionLogDir } from '../src/main/session/claudePaths.js'
+import { sessionLogDir } from '../src/main/agent-adapters/claude/paths.js'
 import { attachActiveRuns, attachSessionLog } from '../src/main/session/sessionAttach.js'
 import { isolateSessionDirs, makeAgent, makeProject, memoryDb, releaseSessionDirs } from './helpers.js'
 

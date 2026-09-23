@@ -253,6 +253,8 @@ function toRun(r: Row): Run {
     cwd: s(r.cwd),
     command: s(r.command),
     args: parseJson<string[]>(r.args, []),
+    logAdapter: s(r.log_adapter, 'stdout') as LogAdapter,
+    limitPatterns: parseJson<string[]>(r.limit_patterns, []),
     promptPreview: s(r.prompt_preview),
     exitCode: typeof r.exit_code === 'number' ? r.exit_code : null,
     errorKind: (sn(r.error_kind) as RunErrorKind | null) ?? null,
@@ -1191,12 +1193,13 @@ export function insertRun(
     externalKey?: string | null
   }
 ): Run {
+  const agent = getAgent(db, run.agentId)
   db.prepare(
     `INSERT INTO runs (id, task_id, agent_id, resolved_from_group_id, session_id, kind, status,
        attempt, fallback_from_run_id, pid, cwd, command, args, prompt_preview, exit_code,
        error_kind, error_message, session_log_path, stdout_log_path, source, external_key,
-       started_at, ended_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       started_at, ended_at, log_adapter, limit_patterns)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     run.id,
     run.taskId,
@@ -1220,7 +1223,9 @@ export function insertRun(
     run.source ?? 'user',
     run.externalKey ?? null,
     run.startedAt ?? nowIso(),
-    run.endedAt ?? null
+    run.endedAt ?? null,
+    run.logAdapter ?? agent?.logAdapter ?? 'stdout',
+    JSON.stringify(run.limitPatterns ?? agent?.limitPatterns ?? [])
   )
   return getRun(db, run.id)!
 }

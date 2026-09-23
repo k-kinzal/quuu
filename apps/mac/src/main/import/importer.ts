@@ -1,3 +1,4 @@
+import { adapterFor } from '../agent-adapters/registry.js'
 import { existsSync } from 'node:fs'
 import { basename } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
@@ -32,34 +33,6 @@ import { t } from '../i18n/index.js'
  * Imported projects get no execution target assigned,
  * so Quuu's scheduler never starts agents on external projects on its own.
  */
-
-/**
- * Fallback when the liveness probe (liveness.ts) is unavailable.
- * A session updated within this window counts as "running".
- */
-const RUNNING_WINDOW_MS = 3 * 60 * 1000
-
-/**
- * Why Cursor alone gets a longer window.
- *
- * The other CLIs' logs are **append-only**: every tool call adds lines.
- * So 3 minutes of silence really means stopped.
- *
- * Cursor is different. It swaps the root of store.db once per turn (cursorStore.ts),
- * so **nothing is written mid-turn**. Observed: during a 200-second shell run,
- * neither store.db, store.db-wal, nor meta.json was touched once, and past
- * the 3-minute mark the session dropped to "done" (the process was still alive).
- *
- * Running builds or tests easily pushes a turn past 10 minutes. Sessions started
- * from the CLI are known precisely via the liveness.ts marker, but chats started
- * inside the IDE carry no marker, so this window is all we have for them.
- * Too long and finished chats keep looking active — 10 minutes is that balance.
- */
-const CURSOR_RUNNING_WINDOW_MS = 10 * 60 * 1000
-
-function runningWindowMs(adapter: LogAdapter): number {
-  return adapter === 'cursor' ? CURSOR_RUNNING_WINDOW_MS : RUNNING_WINDOW_MS
-}
 
 /**
  * Grace period when the liveness probe says "finished".
@@ -368,7 +341,7 @@ export function isRunning(
     return probe.confirmed(adapter, sessionId) === true
   }
   if (probe.authoritative(adapter, sessionId)) return idleMs < STOP_GRACE_MS
-  return idleMs < runningWindowMs(adapter)
+  return idleMs < adapterFor(adapter).idleWindowMs
 }
 
 /**
@@ -386,9 +359,9 @@ function startedBefore(startedAt: string, since: string | null): boolean {
   return a <= b
 }
 
-/** Adapter of an imported Run. Unreadable markers mean claude (Runs from when import first shipped). */
+/** A run keeps the adapter captured when it was imported. */
 export function adapterOf(run: Run): LogAdapter {
-  return adapterOfExternalKey(run.externalKey) ?? 'claude'
+  return run.logAdapter ?? adapterOfExternalKey(run.externalKey) ?? 'stdout'
 }
 
 /**

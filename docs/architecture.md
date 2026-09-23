@@ -7,6 +7,8 @@ This document supersedes the earlier proposal.
 Below, the user's stated requirements, the claims of external sources, and the design decisions applied to Quuu are kept distinct.
 [AGENTS.md](../AGENTS.md) and the boundary checks were also revised to match this design's responsibilities and contracts.
 
+The Agent integration boundaries were revised on 2026-09-23. See [Agent integration](agent-adapters.md) for the implemented CLI/Adapter split, compatibility guarantees and verification sequence.
+
 ## 1. Target state and scope of the design
 
 The goal is to put this Electron + React app for managing AI agents into a state where a change and its impact can be traced.
@@ -66,7 +68,9 @@ apps/mac/
         runner.ts                 # Launch, cancel, observation of external processes
         recovery.ts               # Re-adoption after restart and applying results
       automation/                 # Automations and cron. Validation and next-run queries
-      agents/                     # CLI identification, launch/resume methods, defaults
+      agents/                     # Agent definitions, configuration and compatibility
+      agent-clis/                 # Native CLI syntax and invocation defaults, per CLI
+      agent-adapters/             # Provider errors, sessions and logs translated for Quuu
       projects/                   # Project settings and operations
       settings/                   # Settings, identity resolution
       session/                    # Session-log parsing and subscription

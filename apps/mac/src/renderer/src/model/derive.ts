@@ -406,7 +406,13 @@ export function nextSend(task: Task, hasRuns: boolean, delivered: string[] = [])
     return task.prompt.trim().length > 0 ? { field: 'prompt', value: task.prompt } : null
   }
   if (task.status === 'queued' || task.status === 'failed') {
-    return { field: 'prompt', value: task.prompt }
+    // Initial instructions can be accepted before a limit too. Use the same
+    // delivery evidence as follow-ups and the scheduler's resume message.
+    if (delivered.length === 0) return { field: 'prompt', value: task.prompt }
+    const rest = undelivered(task.prompt, delivered)
+    return rest.length > 0
+      ? { field: 'prompt', value: rest === task.prompt.trim() ? task.prompt : rest }
+      : null
   }
   return null
 }

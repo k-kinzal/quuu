@@ -1,19 +1,11 @@
-import {
-  closeSync,
-  existsSync,
-  openSync,
-  readSync,
-  readdirSync,
-  realpathSync,
-  statSync
-} from 'node:fs'
-import { join } from 'node:path'
+import { existsSync } from 'node:fs'
+import { jsonLogMentions } from '../agent-adapters/discovery.js'
+import { adapterFor } from '../agent-adapters/registry.js'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import { inTransaction, type Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { Run } from '../execution/types.js'
-import { readCursorChat } from './cursorStore.js'
-import { expectedLogPath, readsExternalLog, resolveLogPath, sessionDirFor } from './logAdapters.js'
+import { expectedLogPath, readsExternalLog, resolveLogPath } from './logAdapters.js'
 import { sessionIdInStdout } from './stdoutSessionId.js'
 
 /**
@@ -31,17 +23,6 @@ import { sessionIdInStdout } from './stdoutSessionId.js'
  * So the ID is no longer taken on faith: the real one is found in the cwd's log directory and
  * re-bound. Whatever the template says, "you can see what you ran" comes first.
  */
-
-/**
- * Adapters whose CLI announces, in its own output, the session it opened.
- *
- * Neither can be handed the ID Quuu minted, so this is the only way the record stops being a lie
- * (`session/stdoutSessionId.ts` holds the two shapes).
- */
-const ANNOUNCES_SESSION_ID = new Set<LogAdapter>(['codex', 'agy'])
-
-/** How many bytes of the log head to read for prompt matching. */
-const HEAD_BYTES = 64 * 1024
 
 /** How much of the prompt to match on (code points). Beyond this there is no risk of a mix-up. */
 const MATCH_CHARS = 200
@@ -76,15 +57,14 @@ export interface SessionReadTarget {
 export function attachSessionLog(db: Db, run: Run): Run {
   // An imported run carries the real path from the start
   if (run.source !== 'user') return run
-  const agent = repo.getAgent(db, run.agentId)
-  const adapter: LogAdapter = agent?.logAdapter ?? 'claude'
+  const adapter: LogAdapter = run.logAdapter ?? 'stdout'
   /*
    * Codex cannot be handed an ID on the first run, but it announces the real one in its stdout header.
    * Align the ID with reality first and the rollout JSONL in the date tree can be looked up by it.
    * The Antigravity CLI is the same story with a different spelling: its stream opens with the
    * conversation it created, and only that ID reaches the transcript under `brain/`.
    */
-  const identified = ANNOUNCES_SESSION_ID.has(adapter) ? adoptFromStdout(db, run, adapter) : run
+  const identified = adapterFor(adapter).sessionIdInStdout ? adoptFromStdout(db, run, adapter) : run
   /*
    * The stdout adapter reads a log Quuu wrote itself, so **there is no file to re-bind to**.
    * The ID can still be re-bound: the CLI announces its own session ID in the header at launch,
@@ -120,8 +100,7 @@ export function attachSessionLog(db: Db, run: Run): Run {
  * back to the grey raw log on its own, so the decision is centralized here.
  */
 export function sessionReadTarget(db: Db, run: Run): SessionReadTarget {
-  const agent = repo.getAgent(db, run.agentId)
-  const configured: LogAdapter = agent?.logAdapter ?? 'claude'
+  const configured: LogAdapter = run.logAdapter ?? 'stdout'
   const attached = attachSessionLog(db, run)
   const external =
     attached.sessionLogPath ?? expectedLogPath(configured, attached.cwd, attached.sessionId)
@@ -145,8 +124,7 @@ export function sessionReadTarget(db: Db, run: Run): SessionReadTarget {
 
 /** While stdout is on screen, has a structured log worth swapping in appeared? */
 export function structuredSessionTarget(db: Db, run: Run): SessionReadTarget | null {
-  const agent = repo.getAgent(db, run.agentId)
-  const configured: LogAdapter = agent?.logAdapter ?? 'claude'
+  const configured: LogAdapter = run.logAdapter ?? 'stdout'
   if (!readsExternalLog(configured)) return null
 
   const attached = attachSessionLog(db, run)
@@ -232,7 +210,7 @@ export function attachActiveRuns(db: Db): number {
 export function discoverSessionLog(
   db: Db,
   run: Run,
-  adapter: LogAdapter = 'claude'
+  adapter: LogAdapter = run.logAdapter ?? 'stdout'
 ): AttachedSession | null {
   const head = [...run.promptPreview].slice(0, MATCH_CHARS).join('').trim()
   // No clue to match on. Better left unbound than bound to the wrong one.
@@ -241,7 +219,7 @@ export function discoverSessionLog(
   const startedMs = Date.parse(run.startedAt)
   const claimed = repo.claimedSessionIds(db, run.id)
 
-  const candidates = sessionCandidates(adapter, run.cwd).filter((c) => {
+  const candidates = (adapterFor(adapter).sessionCandidates?.(run.cwd) ?? []).filter((c) => {
     // The log under the minted ID has already been checked by the caller
     if (c.sessionId === run.sessionId) return false
     if (claimed.has(c.sessionId)) return false
@@ -251,138 +229,6 @@ export function discoverSessionLog(
 
   // Oldest-born first (so re-running the same prompt does not pick up the older one)
   candidates.sort((a, b) => a.bornMs - b.bornMs)
-  const hit = candidates.find((c) => logMentions(adapter, c, head))
+  const hit = candidates.find((c) => (adapterFor(adapter).logMentions ?? jsonLogMentions)(c, head))
   return hit ? { sessionId: hit.sessionId, logPath: hit.logPath } : null
-}
-
-// ---------------------------------------------------------------------------
-
-interface Candidate extends AttachedSession {
-  bornMs: number
-}
-
-/**
- * Candidate sessions in the cwd's log directory.
- *
- * The layout differs per adapter (logAdapters.ts).
- *
- *   claude ... <dir>/<sessionId>.jsonl
- *   grok   ... <dir>/<sessionId>/chat_history.jsonl
- *   cursor ... <dir>/<sessionId>/store.db
- *
- * Layouts cwd cannot reach (codex cuts its tree by date, copilot by ID alone) produce no
- * candidates. Those CLIs do not take Quuu's ID anyway, so they are left to the path that picks
- * the ID out of a live process's traces (sessionIdentity.ts).
- */
-function sessionCandidates(adapter: LogAdapter, cwd: string): Candidate[] {
-  const out: Candidate[] = []
-
-  for (const dir of candidateDirs(adapter, cwd)) {
-    let names: string[]
-    try {
-      names = readdirSync(dir)
-    } catch {
-      continue
-    }
-
-    for (const name of names) {
-      const found = candidateIn(adapter, dir, name)
-      if (found) out.push(found)
-    }
-  }
-  return out
-}
-
-function candidateIn(adapter: LogAdapter, dir: string, name: string): Candidate | null {
-  let sessionId: string
-  let logPath: string
-
-  if (adapter === 'claude') {
-    if (!name.endsWith('.jsonl')) return null
-    sessionId = name.slice(0, -'.jsonl'.length)
-    logPath = join(dir, name)
-  } else if (adapter === 'grok') {
-    sessionId = name
-    logPath = join(dir, name, 'chat_history.jsonl')
-  } else if (adapter === 'cursor') {
-    sessionId = name
-    logPath = join(dir, name, 'store.db')
-  } else {
-    return null
-  }
-
-  try {
-    const stat = statSync(logPath)
-    if (stat.size === 0) return null
-    // Where birthtime is unavailable, fall back to the last modification
-    return {
-      sessionId,
-      logPath,
-      bornMs: stat.birthtimeMs > 0 ? stat.birthtimeMs : stat.mtimeMs
-    }
-  } catch {
-    return null
-  }
-}
-
-/**
- * Candidate directories for the log.
- * When cwd comes through a symlink, the CLI writes under the real name.
- */
-function candidateDirs(adapter: LogAdapter, cwd: string): string[] {
-  const dirs: string[] = []
-  const add = (dir: string | null): void => {
-    if (dir && !dirs.includes(dir)) dirs.push(dir)
-  }
-
-  add(sessionDirFor(adapter, cwd))
-  try {
-    add(sessionDirFor(adapter, realpathSync(cwd)))
-  } catch {
-    // Even when cwd is gone, still look where we expect it to be
-  }
-  return dirs
-}
-
-/**
- * Does the prompt handed to this run appear in that log?
- *
- * Cursor is SQLite, so its contents are read to check. The others are JSON lines, so the head is
- * searched in the form the log stores it in (a JSON string).
- */
-function logMentions(adapter: LogAdapter, candidate: Candidate, head: string): boolean {
-  if (adapter === 'cursor') {
-    const chat = readCursorChat(candidate.logPath, candidate.sessionId)
-    if (!chat) return false
-    return chat.messages.some(
-      (m) => m.role === 'user' && JSON.stringify(m.content).includes(jsonEscaped(head))
-    )
-  }
-  return headContains(candidate.logPath, jsonEscaped(head))
-}
-
-/**
- * The prompt fragment used for matching.
- * It appears in the log as a JSON string, so it is shaped to match that form.
- */
-function jsonEscaped(head: string): string {
-  return JSON.stringify(head).slice(1, -1)
-}
-
-function headContains(logPath: string, needle: string): boolean {
-  let fd: number
-  try {
-    fd = openSync(logPath, 'r')
-  } catch {
-    return false
-  }
-  try {
-    const buf = Buffer.allocUnsafe(HEAD_BYTES)
-    const read = readSync(fd, buf, 0, HEAD_BYTES, 0)
-    return buf.subarray(0, read).toString('utf8').includes(needle)
-  } catch {
-    return false
-  } finally {
-    closeSync(fd)
-  }
 }

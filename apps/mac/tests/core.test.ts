@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { expandArgs, expandTemplate, unknownVars } from '../src/main/execution/templating.js'
-import type { TemplateVars } from '../src/main/execution/templating.js'
-import { classifyRunResult } from '../src/main/execution/errorClassifier.js'
+import { expandArgs, expandTemplate, unknownVars } from '../src/main/agent-clis/templating.js'
+import type { TemplateVars } from '../src/main/agent-clis/templating.js'
+import { classifyRunResult } from '../src/main/agent-adapters/result.js'
 
 const vars: TemplateVars = {
   prompt: 'Queue を Stream にする\n改行を含む',

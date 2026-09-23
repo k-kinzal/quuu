@@ -8,8 +8,9 @@ import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { SessionImporter } from '../src/main/import/importer.js'
 import { resetLivenessMemo } from '../src/main/import/liveness.js'
-import { slugForCwd } from '../src/main/session/claudePaths.js'
-import { argsCarrySessionId, findClaudeSessionId } from '../src/main/session/sessionIdentity.js'
+import { slugForCwd } from '../src/main/agent-adapters/claude/paths.js'
+import { argsCarrySessionId } from '../src/main/session/sessionIdentity.js'
+import { findClaudeSessionId } from '../src/main/agent-adapters/claude/identity.js'
 import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, releaseSessionDirs } from './helpers.js'
 
 /**

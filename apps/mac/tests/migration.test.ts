@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { openDatabase } from '../src/main/db/database.js'
 import * as repo from '../src/main/db/repo.js'
 import type { ReviewSnapshot } from '../src/main/review/types.js'
+import { makeAgent, makeProject, makeTask, occupy } from './helpers.js'
 
 const nodeRequire = createRequire(import.meta.url)
 const { DatabaseSync } = nodeRequire('node:sqlite') as typeof import('node:sqlite')
@@ -198,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('26')
+    expect(version.value).toBe('27')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -266,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('26')
+    expect(version.value).toBe('27')
     db.close()
   })
 
@@ -620,5 +621,44 @@ describe('calendar frequency migration', () => {
     const reopened = openDatabase(path)
     expect(repo.getTaskRule(reopened, rule.id)?.frequency).toBe('weekly')
     reopened.close()
+  })
+})
+
+describe('run adapter migration', () => {
+  it('preserves v26 runs and freezes their adapter and custom diagnostics across reopening', () => {
+    const old = openDatabase(path)
+    const agent = makeAgent(old, { name: 'custom', command: '/opt/bin/codex', logAdapter: 'codex', limitPatterns: ['private ceiling'] })
+    const project = makeProject(old, { name: 'p', targetId: agent })
+    const task = makeTask(old, project, 'keep the history')
+    const run = occupy(old, task, agent)
+    const before = repo.getRun(old, run)!
+    const taskBefore = repo.getTask(old, task)
+    old.exec("ALTER TABLE runs DROP COLUMN log_adapter; ALTER TABLE runs DROP COLUMN limit_patterns; UPDATE meta SET value = '26' WHERE key = 'schema_version'")
+    old.close()
+
+    const migrated = openDatabase(path)
+    expect(repo.getRun(migrated, run)).toEqual(before)
+    expect(repo.getTask(migrated, task)).toEqual(taskBefore)
+    repo.updateAgent(migrated, agent, { command: 'claude', logAdapter: 'claude', limitPatterns: [] })
+    migrated.close()
+
+    const reopened = openDatabase(path)
+    expect(repo.getRun(reopened, run)).toEqual(before)
+    expect(repo.getTask(reopened, task)).toEqual(taskBefore)
+    reopened.close()
+  })
+
+  it('recovers the recorded CLI when a legacy agent definition already names another CLI', () => {
+    const old = openDatabase(path)
+    const agent = makeAgent(old, { name: 'rewritten', command: 'codex', logAdapter: 'codex' })
+    const project = makeProject(old, { name: 'p', targetId: agent })
+    const task = makeTask(old, project, 'a Codex conversation')
+    const run = occupy(old, task, agent)
+    repo.updateAgent(old, agent, { command: 'claude', logAdapter: 'claude' })
+    old.exec("ALTER TABLE runs DROP COLUMN log_adapter; ALTER TABLE runs DROP COLUMN limit_patterns; UPDATE meta SET value = '26' WHERE key = 'schema_version'")
+    old.close()
+    const migrated = openDatabase(path)
+    expect(repo.getRun(migrated, run)).toMatchObject({ command: 'codex', logAdapter: 'codex' })
+    migrated.close()
   })
 })

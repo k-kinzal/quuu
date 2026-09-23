@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { limitLiftsAt } from '../src/main/execution/limitWindow.js'
+import { limitLiftsAt } from '../src/main/agent-adapters/limitWindow.js'
 
 /**
  * Reading a limit's own statement of when it lifts.

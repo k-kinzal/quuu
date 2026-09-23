@@ -88,6 +88,17 @@ describe('what the next run sends', () => {
     expect(nextSend(t, true, ['ここも直して'])).toBeNull()
   })
 
+  it.each(['queued', 'failed'] as const)('does not relabel an accepted initial instruction as unsent after %s', (status) => {
+    const t = task({ status, sessionId: 's1' })
+    expect(nextSend(t, true, [t.prompt])).toBeNull()
+  })
+
+  it('retains editable prompt whitespace when no matching delivery has been proven', () => {
+    const t = task({ status: 'failed', prompt: '  keep my indentation\n' })
+    expect(nextSend(t, true)).toEqual({ field: 'prompt', value: t.prompt })
+    expect(nextSend(t, true, ['another message'])).toEqual({ field: 'prompt', value: t.prompt })
+  })
+
   it('returns only the part the agent has not been given yet', () => {
     const t = task({ status: 'queued', sessionId: 's1', pendingMessage: 'ここも直して\n\nついでにこれも' })
     expect(nextSend(t, true, ['ここも直して'])).toEqual({

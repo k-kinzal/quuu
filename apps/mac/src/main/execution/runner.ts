@@ -23,9 +23,9 @@ import type { Task } from '../tasks/types.js'
 import { newId, newSessionId, nowIso } from '../util.js'
 import { sameLineage, taskLineage } from './agentResolver.js'
 import type { Classification } from './errorClassifier.js'
-import { classifyRunResult, runStatusForKind } from './errorClassifier.js'
-import type { TemplateVars } from './templating.js'
-import { expandArgs } from './templating.js'
+import { runStatusForKind } from './errorClassifier.js'
+import type { TemplateVars } from '../agent-clis/templating.js'
+import { adapterFor } from '../agent-adapters/registry.js'
 import type { Run, RunKind } from './types.js'
 
 const KILL_GRACE_MS = 5000
@@ -146,7 +146,8 @@ export class Runner extends EventEmitter {
         taskId: task.id,
         runId
       }
-      const args = expandArgs(template, vars)
+      const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command, template, vars })
+      const args = invocation.args
       const stdoutLog = runLogPath(runId)
       const attempt = repo.listRunsByTask(this.db, task.id).length + 1
 
@@ -162,7 +163,9 @@ export class Runner extends EventEmitter {
         fallbackFromRunId,
         pid: null,
         cwd: project.path,
-        command: agent.command,
+        command: invocation.command,
+        logAdapter: agent.logAdapter,
+        limitPatterns: agent.limitPatterns,
         args,
         promptPreview: message.slice(0, 500),
         exitCode: null,
@@ -280,7 +283,7 @@ export class Runner extends EventEmitter {
     try {
       writeSync(
         logFd,
-        `# Quuu run ${runId}\n# ${nowIso()}\n# cwd: ${project.path}\n# cmd: ${agent.command} ${args
+        `# Quuu run ${runId}\n# ${nowIso()}\n# cwd: ${project.path}\n# cmd: ${run.command} ${args
           .map(quoteForDisplay)
           .join(' ')}\n\n`
       )
@@ -290,7 +293,7 @@ export class Runner extends EventEmitter {
 
     let child: ChildProcess
     try {
-      child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', agent.command, ...args], {
+      child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', run.command, ...args], {
         cwd: project.path,
         env,
         stdio: ['ignore', logFd, logFd],
@@ -320,8 +323,9 @@ export class Runner extends EventEmitter {
 
     // When the argument template does not pass {{sessionId}} (some CLIs offer no way to), the CLI
     // picks its own session ID. The ID we recorded does not exist, so the real one is picked back up.
-    if (!argsCarrySessionId(args, sessionId) && canRecoverSessionId(agent.logAdapter)) {
-      this.startSessionAdoption(runId, task.id, project.path, agent.logAdapter)
+    const adapter = run.logAdapter ?? agent.logAdapter
+    if (!argsCarrySessionId(args, sessionId) && canRecoverSessionId(adapter)) {
+      this.startSessionAdoption(runId, task.id, project.path, adapter)
     }
 
     child.on('error', (err) => {
@@ -522,12 +526,11 @@ export class Runner extends EventEmitter {
     clearExitFile(exitFile)
 
     const tail = readLogTail(run.stdoutLogPath)
-    const agent = repo.getAgent(this.db, run.agentId)
-    const classification = classifyRunResult({
+    const classification = adapterFor(run.logAdapter ?? 'stdout').classify({
       exitCode: recorded ?? code,
       signal,
       output: tail,
-      limitPatterns: agent?.limitPatterns ?? [],
+      limitPatterns: run.limitPatterns ?? [],
       timedOut: live.timedOut,
       canceled: live.canceled
     })

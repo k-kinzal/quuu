@@ -1,4 +1,5 @@
 import type { RecordSource, RunStatus } from '../tasks/status.js'
+import type { LogAdapter } from '../agents/cliAdapter.js'
 
 // ---------------------------------------------------------------------------
 // Runs
@@ -42,6 +43,10 @@ export interface Run {
   cwd: string
 
   command: string
+
+  /** Captured at launch; later edits to the agent cannot reinterpret this run. */
+  logAdapter?: LogAdapter
+  limitPatterns?: string[]
 
   args: string[]
 

@@ -46,6 +46,24 @@ test('distinguishes shared branches from cycles', () => {
   graph.get('c').add('a')
   assert.deepEqual(cyclesOf(graph), [['a','b','c','a']])
 })
+test('keeps native CLI syntax, provider adapters and Quuu policy in separate layers', () => {
+  const prefix = 'apps/mac/src/main/'
+  for (const [from, to] of [
+    ['agent-clis/claude.ts', 'agent-adapters/types.ts'],
+    ['agent-clis/codex.ts', 'tasks/types.ts'],
+    ['execution/runner.ts', 'agent-clis/claude.ts'],
+    ['session/index.ts', 'agent-adapters/claude/parser.ts'],
+    ['mobile-sync/sessionText.ts', 'agent-adapters/codex/parser.ts'],
+    ['agent-adapters/claude/index.ts', 'db/repo.ts'],
+    ['agent-adapters/codex/index.ts', 'execution/scheduler.ts']
+  ]) assert.ok(layerViolation(prefix + from, prefix + to), `${from} → ${to}`)
+  for (const [from, to] of [
+    ['execution/runner.ts', 'agent-adapters/registry.ts'],
+    ['session/index.ts', 'agent-adapters/types.ts'],
+    ['agent-adapters/claude/index.ts', 'agent-clis/claude.ts'],
+    ['agent-adapters/registry.ts', 'agent-adapters/claude/index.ts']
+  ]) assert.equal(layerViolation(prefix + from, prefix + to), null)
+})
 for (const [from,to] of [
   ['shared/a.ts','main/bootstrap.ts'],
   ['renderer/src/model/a.ts','renderer/src/state/store.ts'],

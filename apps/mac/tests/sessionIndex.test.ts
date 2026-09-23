@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import * as repo from '../src/main/db/repo.js'
-import { ClaudeSessionParser } from '../src/main/session/claudeParser.js'
+import { ClaudeSessionParser } from '../src/main/agent-adapters/claude/parser.js'
 import { SessionIndex, SESSION_PAGE, SESSION_WINDOW, sessionKey } from '../src/main/session/index.js'
 import { sessionReadTarget } from '../src/main/session/sessionAttach.js'
 import { SessionView } from '../src/main/session/view.js'
@@ -236,9 +236,11 @@ it('shows the new tail immediately when the log grew while the app was closed', 
 })
 
 it('indexes raw output incrementally and patches only its unfinished page', async () => {
+  const agentId = repo.getRun(db, runId)!.agentId
+  repo.updateAgent(db, agentId, { logAdapter: 'stdout' })
+  // Adapter selection is fixed at launch; create this raw-output run after configuring it.
+  runId = occupy(db, taskId, agentId, { stdoutLogPath: join(dir, 'raw.log') })
   const run = repo.getRun(db, runId)!
-  repo.updateAgent(db, run.agentId, { logAdapter: 'stdout' })
-  repo.updateRun(db, runId, { sessionLogPath: null })
   writeFileSync(run.stdoutLogPath, '# Quuu run test\n# start\n# cwd: /tmp\n# cmd: example\n\n' + Array.from({ length: 450 }, (_, i) => `line ${i}\n`).join('') + 'partial')
   view.loadSession(runId)
   await index.settled()

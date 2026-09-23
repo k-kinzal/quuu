@@ -1,11 +1,6 @@
 import { closeSync, existsSync, fstatSync, openSync, readFileSync, readSync } from 'node:fs'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import { t } from '../i18n/index.js'
-import { AgySessionParser } from '../session/agyParser.js'
-import { ClaudeSessionParser } from '../session/claudeParser.js'
-import { CodexSessionParser } from '../session/codexParser.js'
-import { CopilotSessionParser } from '../session/copilotParser.js'
-import { GrokSessionParser } from '../session/grokParser.js'
 import { readsWholeStore } from '../session/logAdapters.js'
 import { isStoreParser, newParser, stdoutToMessages } from '../session/sessionWatcher.js'
 import type { SessionMessage } from '../session/types.js'
@@ -95,33 +90,9 @@ function parseFile(
 }
 
 function parseLines(lines: string[], mode: LogAdapter): SessionMessage[] {
-  switch (mode) {
-    case 'codex': {
-      const parser = new CodexSessionParser()
-      parser.pushLines(lines)
-      return parser.messages
-    }
-    case 'grok': {
-      const parser = new GrokSessionParser()
-      parser.pushLines(lines)
-      return parser.messages
-    }
-    case 'copilot': {
-      const parser = new CopilotSessionParser()
-      parser.pushLines(lines)
-      return parser.messages
-    }
-    case 'agy': {
-      const parser = new AgySessionParser()
-      parser.pushLines(lines)
-      return parser.messages
-    }
-    default: {
-      const parser = new ClaudeSessionParser()
-      parser.pushLines(lines)
-      return parser.messages
-    }
-  }
+  const parser = newParser(mode)
+  if (!isStoreParser(parser)) parser.pushLines(lines)
+  return parser.messages
 }
 
 export interface ConversationTail {

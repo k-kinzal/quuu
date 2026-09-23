@@ -21,6 +21,12 @@ const isChannel = file => file === 'apps/mac/src/preload/channels.ts'
 const isIpcOwner = file => file.startsWith('apps/mac/src/main/ipc/') || ['apps/mac/src/main/index.ts','apps/mac/src/main/menus.ts'].includes(file)
 export function layerViolation(from, to, typeOnly = false) {
   const source = layerOf(from), target = layerOf(to)
+  if (source === 'main/agent-clis' && target.startsWith('main/') && target !== source) return 'CLI drivers must not depend on Quuu or its adapters'
+  const provider = /^apps\/mac\/src\/main\/agent-adapters\/(claude|codex|cursor|grok|copilot|agy|opencode|stdout)\//
+  if (provider.test(to) && source !== 'main/agent-adapters') return 'provider formats are private to agent adapters; use the adapter registry'
+  if (source === 'main/agent-adapters' && ['main/db', 'main/tasks', 'main/import'].includes(target)) return 'adapters translate provider evidence; Quuu owns persistence and task policy'
+  if (source === 'main/agent-adapters' && target === 'main/execution' && !(typeOnly && to.endsWith('/types.ts'))) return 'adapters must not depend on execution management'
+  if (['main/execution', 'main/session', 'main/import', 'main/report', 'main/mobile-sync'].includes(source) && target === 'main/agent-clis' && !typeOnly) return 'Quuu flows must invoke CLIs through an agent adapter'
   if (from.split('/').includes('shared') || to.split('/').includes('shared')) return 'shared is forbidden'
   if (from.startsWith('apps/mac/') && to.startsWith('apps/mobile/') || from.startsWith('apps/mobile/') && to.startsWith('apps/mac/')) return 'cross-app source imports are forbidden'
   if (source.startsWith('renderer/') && target.startsWith('main/')) return 'renderer must not import main implementation'

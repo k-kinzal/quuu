@@ -1,3 +1,4 @@
+import { adapterFor } from '../agent-adapters/registry.js'
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
 import { closeSync, openSync, readSync, statSync } from 'node:fs'
@@ -8,10 +9,8 @@ import { inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { Run } from '../execution/types.js'
 import { REVIEW_EVIDENCE_VERSION } from '../review/evidence.js'
-import { ClaudeSessionParser } from './claudeParser.js'
 import { readsWholeStore, sharesOneStore } from './logAdapters.js'
 import { IndexedMessages } from './messageBuffer.js'
-import { StdoutSessionParser } from './stdoutParser.js'
 import { sessionReadTarget, type SessionReadTarget } from './sessionAttach.js'
 import { isStoreParser, newParser, snapshotStamp, stdoutToMessages } from './sessionWatcher.js'
 import type { SessionMessage, SessionSnapshot } from './types.js'
@@ -33,7 +32,7 @@ interface Reader {
 
 export function sessionKey(target: SessionReadTarget): string {
   // Bump when a parser change requires rebuilding previously materialized messages.
-  const version = target.mode === 'cursor' ? 'v2' : 'v1'
+  const version = adapterFor(target.mode).parserVersion
   const key = `${version}:${target.mode}:${target.logPath}`
   /*
    * Where one store holds every session (opencode) the path names no session at all, so the id
@@ -272,7 +271,7 @@ export class SessionIndex extends EventEmitter {
           if (!read) break
           reader.offset += read
           const chunk = reader.decoder.write(buffer.subarray(0, read))
-          if (parser instanceof StdoutSessionParser) {
+          if (parser.pushChunk) {
             parser.pushChunk(chunk)
             await persistChanges()
           } else {
@@ -299,7 +298,7 @@ export class SessionIndex extends EventEmitter {
   }
 
   private saveImages(key: string, parser: ReturnType<typeof newParser>, messages: SessionMessage[]): void {
-    if (!(parser instanceof ClaudeSessionParser)) return
+    if (!parser.images) return
     for (const message of messages) for (const block of message.blocks) {
       const images = block.kind === 'image' ? [block.image] : block.kind === 'tool' ? block.tool.images : []
       for (const image of images) {

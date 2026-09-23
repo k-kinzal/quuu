@@ -12,7 +12,7 @@ import { SessionImporter } from '../src/main/import/importer.js'
 import { resetLivenessMemo } from '../src/main/import/liveness.js'
 import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
-import { CodexSessionParser } from '../src/main/session/codexParser.js'
+import { CodexSessionParser } from '../src/main/agent-adapters/codex/parser.js'
 import { targetLabel, taskTargetKey, taskTargetLabel } from '../src/renderer/src/model/derive.js'
 import { isolateSessionDirs, makeAgent, memoryDb, releaseSessionDirs } from './helpers.js'
 

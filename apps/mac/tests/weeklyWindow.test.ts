@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { RunOutcome } from '../src/main/execution/types.js'
-import { isModelLimit, weeklyLimitLiftsAt } from '../src/main/execution/weeklyWindow.js'
+import { isModelLimit, weeklyLimitLiftsAt } from '../src/main/agent-adapters/claude/weeklyWindow.js'
 
 /**
  * Working out when a limit on one model lifts, from the week it belongs to.

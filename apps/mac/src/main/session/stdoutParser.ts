@@ -1,5 +1,5 @@
 import { MemoryMessages, type MessageBuffer } from './messageBuffer.js'
-import type { PushResult } from './parserUtil.js'
+import type { PushResult } from '../agent-adapters/parserUtil.js'
 import type { SessionMessage } from './types.js'
 
 /** Raw logs also have no length limit. Keep just the unfinished 200-line message between reads. */

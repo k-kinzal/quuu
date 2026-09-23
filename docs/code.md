@@ -87,21 +87,21 @@ packages/            the independent Design System
 | `apps/mac/src/main/platform/reportViews.ts` | shows a generated page. Static documents only — its session refuses every request that is not the report file |
 | `apps/mac/src/main/execution/runner.ts` | agent launch, cancel, exit classification (restart resilience lives here) |
 | `apps/mac/src/main/platform/runProcess.ts` | process-group operations, reading log tails and exit codes |
-| `apps/mac/src/main/execution/errorClassifier.ts` | exit result → Limit / auth / spawn-failure classification |
-| `apps/mac/src/main/execution/limitWindow.ts` / `weeklyWindow.ts` | when a Limit lifts: read out of what the CLI printed, or — for a limit on one model, which never prints one — off the week that model's share belongs to |
+| `apps/mac/src/main/agent-adapters/` | Per-provider errors, logs, session identity and liveness translated to Quuu contracts |
+| `apps/mac/src/main/agent-adapters/limitWindow.ts` / `claude/weeklyWindow.ts` | when a Limit lifts: read out of what the CLI printed, or — for a limit on one model, which never prints one — off the week that model's share belongs to |
 | `apps/mac/src/main/nativeMenu.ts` | lets the OS draw menus the screens request. **Never draw menus inside the window** |
 | `apps/mac/src/main/contextMenu.ts` | right-click for inputs, selection, links (a base with no app vocabulary) |
 | `apps/mac/src/main/db/repo.ts` | SQL is confined here. No raw SQL anywhere else |
-| `apps/mac/src/main/session/logAdapters.ts` | **which CLI leaves sessions where.** Adding CLI support starts here |
-| `apps/mac/src/main/agents/cli.ts` | **how each CLI resumes interactively.** The pair of the above — add to both |
-| `apps/mac/src/main/session/opencodeStore.ts` | the one CLI whose sessions are **not files**: opencode keeps every session in a single SQLite store, so it is named by id, never by path |
+| `apps/mac/src/main/session/logAdapters.ts` | Provider-independent session lookup through the adapter registry |
+| `apps/mac/src/main/agents/cli.ts` | CLI compatibility queries; native syntax lives per provider in `main/agent-clis/` |
+| `apps/mac/src/main/agent-adapters/opencode/store.ts` | the one CLI whose sessions are **not files**: opencode keeps every session in a single SQLite store, so it is named by id, never by path |
 | `apps/mac/src/main/platform/terminal.ts` | opens a terminal (writes a `.command`, hands it to `open`) |
 | `apps/mac/src/main/platform/editorApps.ts` | finds and opens installed IDEs / editors |
 | `apps/mac/src/main/platform/launch.ts` | the single `open(1)` path. **The reason we don't use AppleScript is documented here** |
 | `apps/mac/src/main/automation/cron.ts` | homegrown cron parser, kept only to compute the next allowed enqueue time |
 | `apps/mac/src/main/tasks/ordering.ts` | acquisition order and prerequisites. Consistency with display order is tested too |
 | `apps/mac/src/main/import/` | importing sessions that were launched directly |
-| `apps/mac/src/main/session/` | session log path resolution, parsing, tailing (one parser per CLI) |
+| `apps/mac/src/main/session/` | session attachment, indexing and tailing (provider parsers belong to adapters) |
 | `packages/design-system/` | MUI-based design system (`@design-system/react`). **No domain** |
 | `apps/mac/src/renderer/src/ui/` | display that belongs to Views (status marks, conversation, run history). Sits on top of the design system |
 | `apps/mac/src/renderer/src/` | React screens. State is centralized in `state/store.ts`. **No CSS** |

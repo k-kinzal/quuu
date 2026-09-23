@@ -2,16 +2,10 @@ import { EventEmitter } from 'node:events'
 import type { FSWatcher } from 'node:fs'
 import { closeSync, existsSync, mkdirSync, openSync, readSync, statSync, watch } from 'node:fs'
 import { dirname } from 'node:path'
+import { adapterFor } from '../agent-adapters/registry.js'
+import { isStoreParser, type SessionParser as Parser } from '../agent-adapters/types.js'
 import type { LogAdapter } from '../agents/cliAdapter.js'
-import { AgySessionParser } from './agyParser.js'
-import { ClaudeSessionParser } from './claudeParser.js'
-import { CodexSessionParser } from './codexParser.js'
-import { CopilotSessionParser } from './copilotParser.js'
-import { CursorSessionParser } from './cursorParser.js'
-import { GrokSessionParser } from './grokParser.js'
 import { readsWholeStore } from './logAdapters.js'
-import { OpencodeSessionParser } from './opencodeParser.js'
-import { StdoutSessionParser } from './stdoutParser.js'
 import type { MessageBuffer } from './messageBuffer.js'
 import type { SessionMessage, SessionSnapshot } from './types.js'
 
@@ -55,48 +49,11 @@ interface OpenTarget {
   resolve?: () => { sessionId: string; logPath: string; mode?: LogAdapter } | null
 }
 
-type Parser =
-  | AgySessionParser
-  | ClaudeSessionParser
-  | CodexSessionParser
-  | CopilotSessionParser
-  | CursorSessionParser
-  | GrokSessionParser
-  | OpencodeSessionParser
-  | StdoutSessionParser
-
-/**
- * Parsers that answer with the whole conversation instead of with what was appended.
- *
- * Their content lives in SQLite and is rewritten in place, so they are re-read rather than
- * followed (`logAdapters.ts`). Everything that reads a session has to take this fork, so the
- * question is asked in one place rather than by naming Cursor at four call sites.
- */
-export type StoreParser = CursorSessionParser | OpencodeSessionParser
-
-export function isStoreParser(parser: Parser): parser is StoreParser {
-  return parser instanceof CursorSessionParser || parser instanceof OpencodeSessionParser
-}
+export { isStoreParser } from '../agent-adapters/types.js'
+export type { StoreParser } from '../agent-adapters/types.js'
 
 export function newParser(mode: LogAdapter, imageNamespace?: string, buffer?: MessageBuffer): Parser {
-  switch (mode) {
-    case 'stdout':
-      return new StdoutSessionParser(buffer)
-    case 'codex':
-      return new CodexSessionParser(buffer)
-    case 'cursor':
-      return new CursorSessionParser()
-    case 'grok':
-      return new GrokSessionParser(buffer)
-    case 'copilot':
-      return new CopilotSessionParser(buffer)
-    case 'agy':
-      return new AgySessionParser(buffer)
-    case 'opencode':
-      return new OpencodeSessionParser()
-    default:
-      return new ClaudeSessionParser(imageNamespace, buffer)
-  }
+  return adapterFor(mode).createParser(imageNamespace, buffer)
 }
 
 /**
@@ -118,7 +75,7 @@ function isSnapshotMode(mode: LogAdapter): boolean {
  */
 export class SessionWatcher extends EventEmitter {
   private target: OpenTarget | null = null
-  private parser: Parser = new ClaudeSessionParser()
+  private parser: Parser = newParser('stdout')
   private stdoutBuffer = ''
   /** For the wholesale-replacement layout (Cursor), the mark that remembers the state at the last read. */
   private snapshotStamp = ''
@@ -163,7 +120,7 @@ export class SessionWatcher extends EventEmitter {
    * null when not found (past the retention cap, or the session was switched).
    */
   image(id: string): string | null {
-    return this.parser instanceof ClaudeSessionParser ? this.parser.images.get(id) : null
+    return this.parser.images?.get(id) ?? null
   }
 
   close(): void {

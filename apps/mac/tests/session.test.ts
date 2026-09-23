@@ -2,11 +2,11 @@ import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync, appendFileSy
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { ClaudeSessionParser } from '../src/main/session/claudeParser.js'
-import { CodexSessionParser } from '../src/main/session/codexParser.js'
+import { ClaudeSessionParser } from '../src/main/agent-adapters/claude/parser.js'
+import { CodexSessionParser } from '../src/main/agent-adapters/codex/parser.js'
 import { SessionWatcher } from '../src/main/session/sessionWatcher.js'
 import type { AppendedEvent } from '../src/main/session/sessionWatcher.js'
-import { expectedSessionLogPath, resolveSessionLogPath, slugForCwd } from '../src/main/session/claudePaths.js'
+import { expectedSessionLogPath, resolveSessionLogPath, slugForCwd } from '../src/main/agent-adapters/claude/paths.js'
 
 const line = (obj: unknown): string => `${JSON.stringify(obj)}\n`
 

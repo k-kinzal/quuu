@@ -313,8 +313,8 @@ look back, manual run).
 ### Where each CLI keeps things
 
 This is not published specification; it was **verified by measurement** (the
-implementation is gathered in
-[`apps/mac/src/main/session/logAdapters.ts`](../apps/mac/src/main/session/logAdapters.ts)).
+provider implementations live in
+[`apps/mac/src/main/agent-adapters/`](../apps/mac/src/main/agent-adapters/)).
 
 | CLI | Session log | Can a session ID be passed? | Running detection |
 |-----|---------------|----------------------|-------------|
@@ -482,6 +482,12 @@ by passing the `appPaths` values explicitly. **Renaming the app does not move th
 location.**
 
 ## About agent configuration
+
+See [Agent integration](agent-adapters.md) for CLI and Adapter responsibilities.
+The existing log-adapter selection also selects the provider diagnostic and session
+capabilities. Runs retain that selection and custom limit patterns from launch, so
+editing an Agent affects future runs without reinterpreting its history. Fable uses
+the Claude adapter with its model specified in the existing argument templates.
 
 Quuu pins no permission mode. Things like `--permission-mode bypassPermissions` are
 **written by the user as part of the agent definition's argument template**.

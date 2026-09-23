@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { reportDir, reportRoot } from '../appPaths.js'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
-import { expandArgs } from '../execution/templating.js'
+import { adapterFor } from '../agent-adapters/registry.js'
 import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
@@ -174,14 +174,16 @@ export class ReportOperations extends EventEmitter {
         page,
         instructions: settings.reportInstructions
       })
-      const args = expandArgs(agent.argsTemplate, {
-        prompt,
-        title: task.title,
-        sessionId: newSessionId(),
-        projectPath: place.project.path,
-        projectName: place.project.name,
-        taskId,
-        runId: id
+      const { args } = adapterFor(agent.logAdapter).invoke({
+        command: agent.command, template: agent.argsTemplate, vars: {
+          prompt,
+          title: task.title,
+          sessionId: newSessionId(),
+          projectPath: place.project.path,
+          projectName: place.project.name,
+          taskId,
+          runId: id
+        }
       })
       // Taken before the launch, so the window starts no later than the session the CLI opens in it
       const startedAt = nowIso()

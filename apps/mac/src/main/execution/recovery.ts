@@ -7,7 +7,8 @@ import { attachSessionLog } from '../session/sessionAttach.js'
 import { recordExecutionState } from '../tasks/execution.js'
 import { ACTIVE_RUN_STATUSES } from '../tasks/status.js'
 import { nowIso } from '../util.js'
-import { classifyDetachedResult, classifyRunResult, runStatusForKind } from './errorClassifier.js'
+import { runStatusForKind } from './errorClassifier.js'
+import { adapterFor } from '../agent-adapters/registry.js'
 import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
 import type { Run } from './types.js'
@@ -91,13 +92,13 @@ export class ExecutionRecovery {
     const current = repo.getRun(this.db, run.id)
     if (!current || !ACTIVE_RUN_STATUSES.includes(current.status)) return
 
-    const agent = repo.getAgent(this.db, run.agentId)
-    const limitPatterns = agent?.limitPatterns ?? []
+    const limitPatterns = run.limitPatterns ?? []
     const tail = readLogTail(run.stdoutLogPath)
+    const adapter = adapterFor(run.logAdapter ?? 'stdout')
     const classification =
       code === null
-        ? classifyDetachedResult({ output: tail, limitPatterns })
-        : classifyRunResult({
+        ? adapter.classifyDetached({ output: tail, limitPatterns })
+        : adapter.classify({
           exitCode: code,
           signal: null,
           output: tail,

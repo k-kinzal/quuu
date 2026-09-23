@@ -1,3 +1,10 @@
+import { claudeCli } from './agent-clis/claude.js'
+import { codexCli } from './agent-clis/codex.js'
+import { cursorCli } from './agent-clis/cursor.js'
+import { grokCli } from './agent-clis/grok.js'
+import { agyCli } from './agent-clis/agy.js'
+import { opencodeCli } from './agent-clis/opencode.js'
+import { copilotCli } from './agent-clis/copilot.js'
 import type { LogAdapter } from './agents/cliAdapter.js'
 import { DEFAULT_LIMIT_PATTERNS } from './agents/defaults.js'
 import type { AgentInput } from './agents/types.js'
@@ -31,7 +38,7 @@ const OPTIONAL_AGENTS: Array<
       name: 'Codex',
       descriptionKey: 'seed.codex',
       command: 'codex',
-      argsTemplate: ['exec', '--skip-git-repo-check', '--', '{{prompt}}'],
+      argsTemplate: codexCli.argsTemplate,
       /*
        * `codex exec resume <SESSION_ID> <PROMPT>` (observed on v0.149.0).
        *
@@ -40,14 +47,7 @@ const OPTIONAL_AGENTS: Array<
        * it (`session/stdoutSessionId.ts`). The `{{sessionId}}` used here is
        * that recovered ID.
        */
-      resumeArgsTemplate: [
-        'exec',
-        'resume',
-        '{{sessionId}}',
-        '--skip-git-repo-check',
-        '--',
-        '{{prompt}}'
-      ],
+      resumeArgsTemplate: codexCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'codex'
     },
@@ -56,8 +56,8 @@ const OPTIONAL_AGENTS: Array<
       descriptionKey: 'seed.cursor',
       command: 'cursor-agent',
       // -p is non-interactive. --force never asks for permission. --resume also creates a new chat
-      argsTemplate: ['--resume', '{{sessionId}}', '-p', '--force', '--', '{{prompt}}'],
-      resumeArgsTemplate: ['--resume', '{{sessionId}}', '-p', '--force', '--', '{{prompt}}'],
+      argsTemplate: cursorCli.argsTemplate,
+      resumeArgsTemplate: cursorCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'cursor'
     },
@@ -70,20 +70,8 @@ const OPTIONAL_AGENTS: Array<
        * Grok is the one CLI that takes the prompt as an option value, so it is joined with `=`
        * (`agents/cli.ts` explains why a separate `-p {{prompt}}` breaks).
        */
-      argsTemplate: [
-        '--single={{prompt}}',
-        '--session-id',
-        '{{sessionId}}',
-        '--permission-mode',
-        'bypassPermissions'
-      ],
-      resumeArgsTemplate: [
-        '--resume',
-        '{{sessionId}}',
-        '--single={{prompt}}',
-        '--permission-mode',
-        'bypassPermissions'
-      ],
+      argsTemplate: grokCli.argsTemplate,
+      resumeArgsTemplate: grokCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'grok'
     },
@@ -101,24 +89,8 @@ const OPTIONAL_AGENTS: Array<
        * belongs to this run (`session/stdoutSessionId.ts`). The conversation view reads that
        * transcript, so the JSON stream is only ever the fallback view.
        */
-      argsTemplate: [
-        '--add-dir',
-        '{{projectPath}}',
-        '--dangerously-skip-permissions',
-        '--output-format',
-        'stream-json',
-        '--print={{prompt}}'
-      ],
-      resumeArgsTemplate: [
-        '--conversation',
-        '{{sessionId}}',
-        '--add-dir',
-        '{{projectPath}}',
-        '--dangerously-skip-permissions',
-        '--output-format',
-        'stream-json',
-        '--print={{prompt}}'
-      ],
+      argsTemplate: agyCli.argsTemplate,
+      resumeArgsTemplate: agyCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'agy'
     },
@@ -135,8 +107,8 @@ const OPTIONAL_AGENTS: Array<
        * There is no way to name a new session (`--session` only continues one that exists), so
        * the ID opencode chose is recovered from its store afterwards (`sessionIdentity.ts`).
        */
-      argsTemplate: ['run', '--auto', '{{prompt}}'],
-      resumeArgsTemplate: ['run', '--session', '{{sessionId}}', '--auto', '{{prompt}}'],
+      argsTemplate: opencodeCli.argsTemplate,
+      resumeArgsTemplate: opencodeCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'opencode'
     },
@@ -145,19 +117,13 @@ const OPTIONAL_AGENTS: Array<
       descriptionKey: 'seed.copilot',
       command: 'copilot',
       // --allow-all-tools is required for non-interactive runs (stated in the help)
-      argsTemplate: ['-p', '{{prompt}}', '--allow-all-tools', '--no-color'],
+      argsTemplate: copilotCli.argsTemplate,
       /*
        * --resume takes an optional value, so written separately as
        * `--resume <id>` the ID is not read as its argument. Join with `=`,
        * matching the example in the help.
        */
-      resumeArgsTemplate: [
-        '-p',
-        '{{prompt}}',
-        '--resume={{sessionId}}',
-        '--allow-all-tools',
-        '--no-color'
-      ],
+      resumeArgsTemplate: copilotCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'copilot'
     }
@@ -176,28 +142,8 @@ export async function seedIfEmpty(db: Db): Promise<void> {
     name: 'Claude Opus',
     description: t('seed.opus'),
     command: 'claude',
-    argsTemplate: [
-      '-p',
-      '--session-id',
-      '{{sessionId}}',
-      '--model',
-      'opus',
-      '--permission-mode',
-      'bypassPermissions',
-      '--',
-      '{{prompt}}'
-    ],
-    resumeArgsTemplate: [
-      '--resume',
-      '{{sessionId}}',
-      '-p',
-      '--model',
-      'opus',
-      '--permission-mode',
-      'bypassPermissions',
-      '--',
-      '{{prompt}}'
-    ],
+    argsTemplate: claudeCli.argsTemplate.map(arg => arg === '{{model}}' ? 'opus' : arg),
+    resumeArgsTemplate: claudeCli.resumeArgsTemplate.map(arg => arg === '{{model}}' ? 'opus' : arg),
     env: {},
     concurrency: 2,
     fallbackAgentId: null,
@@ -213,28 +159,8 @@ export async function seedIfEmpty(db: Db): Promise<void> {
     name: 'Claude Sonnet',
     description: t('seed.sonnet'),
     command: 'claude',
-    argsTemplate: [
-      '-p',
-      '--session-id',
-      '{{sessionId}}',
-      '--model',
-      'sonnet',
-      '--permission-mode',
-      'bypassPermissions',
-      '--',
-      '{{prompt}}'
-    ],
-    resumeArgsTemplate: [
-      '--resume',
-      '{{sessionId}}',
-      '-p',
-      '--model',
-      'sonnet',
-      '--permission-mode',
-      'bypassPermissions',
-      '--',
-      '{{prompt}}'
-    ],
+    argsTemplate: claudeCli.argsTemplate.map(arg => arg === '{{model}}' ? 'sonnet' : arg),
+    resumeArgsTemplate: claudeCli.resumeArgsTemplate.map(arg => arg === '{{model}}' ? 'sonnet' : arg),
     env: {},
     concurrency: 3,
     fallbackAgentId: null,

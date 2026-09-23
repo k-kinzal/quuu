@@ -2,7 +2,7 @@ import { createRequire } from 'node:module'
 import type { DatabaseSync as DatabaseSyncType } from 'node:sqlite'
 import { externalAgentName } from '../agents/catalog.js'
 import { promptAsValue } from '../agents/cli.js'
-import { IMPORTABLE_ADAPTERS } from '../agents/cliAdapter.js'
+import { IMPORTABLE_ADAPTERS, legacyRunAdapter, type LogAdapter } from '../agents/cliAdapter.js'
 import { dbPath, ensureAppDirs } from '../appPaths.js'
 import { HOLDING_PRIORITY } from '../tasks/status.js'
 
@@ -327,7 +327,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 26
+  const target = 27
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -587,6 +587,24 @@ function migrate(db: Db): void {
 
   // Existing cron deadlines retain their meaning; frequency is opt-in.
   if (current < 26) addColumnIfMissing(db, 'task_rules', 'frequency', "TEXT NOT NULL DEFAULT 'none'")
+
+  // Freeze how each run is interpreted before agent definitions can change again.
+  if (current < 27) {
+    addColumnIfMissing(db, 'runs', 'log_adapter', 'TEXT')
+    addColumnIfMissing(db, 'runs', 'limit_patterns', "TEXT NOT NULL DEFAULT '[]'")
+    const rows = db.prepare(`SELECT r.id, r.command, r.external_key, a.command AS agent_command,
+      a.log_adapter, a.limit_patterns FROM runs r LEFT JOIN agents a ON a.id = r.agent_id
+      WHERE r.log_adapter IS NULL`).all() as Array<{
+        id: string; command: string; external_key: string | null; agent_command: string | null
+        log_adapter: LogAdapter | null; limit_patterns: string | null
+      }>
+    const save = db.prepare('UPDATE runs SET log_adapter = ?, limit_patterns = ? WHERE id = ?')
+    for (const row of rows) {
+      const adapter = legacyRunAdapter({ command: row.command, externalKey: row.external_key },
+        row.agent_command && row.log_adapter ? { command: row.agent_command, logAdapter: row.log_adapter } : null)
+      save.run(adapter, row.limit_patterns ?? '[]', row.id)
+    }
+  }
 
   setSchemaVersion(db, target)
 }

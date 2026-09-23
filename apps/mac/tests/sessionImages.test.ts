@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ClaudeSessionParser } from '../src/main/session/claudeParser.js'
+import { ClaudeSessionParser } from '../src/main/agent-adapters/claude/parser.js'
 import { imageSize } from '../src/main/session/imageMeta.js'
 
 /**
