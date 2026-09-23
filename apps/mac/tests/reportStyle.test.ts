@@ -1,80 +1,46 @@
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { palettes } from '@design-system/react'
 import { reportPrompt } from '../src/main/report/prompt.js'
-import { REPORT_COLORS, reportCss } from '../src/main/report/style.js'
 
-/**
- * A report is dressed by Quuu, so it has to be dressed in Quuu's colors.
- *
- * Main is process logic and must not import a UI package, so the report stylesheet spells the
- * values out instead of reading the tokens. That leaves two places holding the same colors —
- * and a color changed in one of them is invisible until someone opens a report and finds it
- * faintly wrong. This is where that becomes a failing test instead.
- */
-describe('the report stylesheet wears the app’s colors', () => {
-  const expected = {
-    canvas: [palettes.dark.surface.canvas, palettes.light.surface.canvas],
-    inset: [palettes.dark.surface.subtle, palettes.light.surface.subtle],
-    text: [palettes.dark.text.primary, palettes.light.text.primary],
-    secondary: [palettes.dark.text.secondary, palettes.light.text.secondary],
-    tertiary: [palettes.dark.text.tertiary, palettes.light.text.tertiary],
-    border: [palettes.dark.border.subtle, palettes.light.border.subtle],
-    card: [palettes.dark.surface.default, palettes.light.surface.default],
-    borderStrong: [palettes.dark.border.strong, palettes.light.border.strong],
-    link: [palettes.dark.primaryText, palettes.light.primary],
-    slate: [palettes.dark.accents.slate, palettes.light.accents.slate],
-    green: [palettes.dark.accents.green, palettes.light.accents.green],
-    violet: [palettes.dark.accents.violet, palettes.light.accents.violet],
-    blue: [palettes.dark.accents.blue, palettes.light.accents.blue],
-    red: [palettes.dark.accents.red, palettes.light.accents.red],
-    amber: [palettes.dark.accents.amber, palettes.light.accents.amber]
-  } as const
+const css = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url), 'utf8')
+const prompt = reportPrompt({
+  cwd: '/tmp', title: 'Task', prompt: 'Task', revision: null,
+  changes: [], commits: [], pullRequests: [], runs: [],
+  page: '/tmp/reports/task/r.html', instructions: ''
+})
 
-  for (const [name, [dark, light]] of Object.entries(expected)) {
-    it(`takes ${name} from the design system's tokens`, () => {
-      expect(REPORT_COLORS[name as keyof typeof REPORT_COLORS]).toEqual({ dark, light })
-    })
-  }
-
-  it('names every color it declares, so a stale one cannot sit unchecked', () => {
-    expect(Object.keys(REPORT_COLORS).sort()).toEqual(Object.keys(expected).sort())
-  })
-
-  it('writes both appearances into one file, since a report outlives the theme it was read in', () => {
-    const css = reportCss()
+describe('document-design report assets', () => {
+  it('ships the unmodified v1.0.0 distribution with no external asset dependencies', () => {
+    expect(createHash('sha256').update(css).digest('hex'))
+      .toBe('05f312d9faf6de35a0995cfa9434df1cab3a93c836a533307f9e23338a527793')
+    expect(css).not.toMatch(/@import\b|url\(\s*["']?(?:https?:|\/\/)/i)
     expect(css).toContain('color-scheme: light dark')
-    for (const value of Object.values(REPORT_COLORS)) {
-      expect(css).toContain(`light-dark(${value.light}, ${value.dark})`)
-    }
   })
 
-  it('offers the drawing colors by name, so a diagram never has to invent one', () => {
-    const css = reportCss()
-    // The prompt points at these names. A page that reaches past them is a page nobody designed
-    for (const name of ['blue', 'green', 'amber', 'red', 'violet', 'slate']) {
-      expect(css).toContain(`--${name}:`)
+  it('teaches only components and drawing tokens that exist in the bundled version', () => {
+    const drawn = new Set([...css.matchAll(/\.([a-z][a-z0-9-]*)/g)].map((match) => match[1]))
+    const named = [...prompt.matchAll(/^- \.([a-z][a-z0-9- /]*) —/gm)]
+      .flatMap((match) => match[1].split('/').map((part) => part.trim()))
+    expect(named.length).toBeGreaterThan(0)
+    for (const name of named) expect(drawn, name).toContain(name)
+    for (const match of prompt.matchAll(/class="([^"]+)"/g)) {
+      for (const name of match[1].split(' ')) expect(drawn, name).toContain(name)
     }
+    for (const match of prompt.matchAll(/var\((--dd-[a-z-]+)\)/g)) {
+      expect(css).toMatch(new RegExp(`${match[1]}\\s*:`))
+    }
+    expect(prompt).not.toMatch(/class="(?:page|three|holds|hold|mono)"|var\(--(?:ink|now|rule)\)/)
   })
 
-  it('draws every component the instructions name, and names every one it draws', () => {
-    /*
-     * The sheet and the instructions are one thing. A class the sheet styles but the
-     * instructions never mention is a component nobody uses; a class the instructions name but
-     * the sheet does not style is a page that arrives undressed.
-     */
-    const drawn = new Set(
-      [...reportCss().matchAll(/\.([a-z][a-z0-9-]*)/g)].map((match) => match[1])
-    )
-    const prompt = reportPrompt({
-      cwd: '/tmp', title: 'Task', prompt: 'Task', revision: null,
-      changes: [], commits: [], pullRequests: [], runs: [],
-      page: '/tmp/r.html', instructions: ''
-    })
-    const named = new Set(
-      [...prompt.matchAll(/^- \.([a-z][a-z0-9- /]*) —/gm)]
-        .flatMap((match) => match[1].split('/').map((part) => part.trim()))
-    )
-    for (const name of named) expect(drawn).toContain(name)
-    for (const name of drawn) expect([...named]).toContain(name)
+  it('keeps figures readable and usable in the static offline viewer', () => {
+    expect(prompt).toContain('inside .draw-wrap')
+    expect(prompt).toContain('--dd-draw-width: 640px')
+    expect(prompt).toContain('id="dd-arrow"')
+    expect(prompt).toContain('<meta name="viewport"')
+    expect(prompt).toContain('lang="ja"')
+    expect(prompt).toContain('Captions explain what the figure establishes')
+    expect(prompt).toContain('omit controls that need document-design.js')
+    expect(prompt).not.toMatch(/<script\s+src=|href="https?:.*\.css/)
   })
 })

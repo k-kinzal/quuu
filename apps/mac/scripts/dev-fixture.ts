@@ -15,7 +15,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { crc32, deflateSync } from 'node:zlib'
 import { openDatabase } from '../src/main/db/database.js'
-import { writeReportAssets } from '../src/main/report/assets.js'
+import { REPORT_ASSET_HREF, REPORT_STYLE_FILE, writeReportAssets } from '../src/main/report/assets.js'
 import * as repo from '../src/main/db/repo.js'
 import { markOptionalAgentsOffered } from '../src/main/seed.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
@@ -1495,165 +1495,69 @@ mkdirSync(reportHome, { recursive: true })
 writeReportAssets()
 writeFileSync(reportPage, `<!doctype html>
 <html lang="ja"><head><meta charset="utf-8"><title>変更の意図</title>
-<link rel="stylesheet" href="../assets/report.css"></head><body>
-<div class="page">
-
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"></head><body>
+<svg class="draw-defs" aria-hidden="true" focusable="false"><defs>
+  <marker id="dd-arrow" markerUnits="userSpaceOnUse" viewBox="0 0 8 6"
+    refX="8" refY="3" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+    <path class="draw-arrowhead" d="M0 0L8 3L0 6Z"/>
+  </marker>
+</defs></svg>
+<article class="sheet">
   <p class="eyebrow">CHANGE OF INTENT</p>
-  <h1>レビューは<br>「読む」に変わった</h1>
+  <h1>レビューは「読む」に変わった</h1>
   <p class="stand">材料は同じ。組み立てる人が変わった。</p>
-
   <div class="hero">
-    <div class="was"><span class="cap">BEFORE</span><span class="claim">人が差分から<br>意味を組み立てる</span>
+    <div class="was"><span class="cap">BEFORE</span><span class="claim">人が差分から意味を組み立てる</span>
       <span class="unit">材料はあるが、まとまりはない</span></div>
-    <div class="mid">
-      <svg viewBox="0 0 56 16" aria-hidden="true">
-        <path d="M0 8 H44" stroke="var(--rule)" stroke-width="2" fill="none"/>
-        <path d="M42 2 L52 8 L42 14" stroke="var(--rule)" stroke-width="2" fill="none"
-              stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </div>
-    <div class="now"><span class="cap">AFTER</span><span class="claim">別の AI が組み立て、<br>人は読む</span>
-      <span class="unit">届くのは 1 ページ</span></div>
+    <div class="mid"><svg class="draw" viewBox="0 0 56 16" aria-hidden="true">
+      <path class="draw-line draw-arrow" d="M0 8H52"/>
+    </svg></div>
+    <div class="now"><span class="cap">AFTER</span><span class="claim">別の AI が組み立て、人は読む</span>
+      <span class="unit">届くのは変更の意味</span></div>
   </div>
-
-  <!-- 01 ------------------------------------------------------- -->
-  <div class="sec">
-    <div class="label">01<br>誰が組み立てるか</div>
+  <section class="sec" aria-labelledby="section-1">
+    <div class="label"><h2 id="section-1">01 / 誰が組み立てるか</h2></div>
     <div class="field">
       <p class="lead">同じ材料を、別の AI が組み立てる。</p>
-      <svg viewBox="0 0 820 268" role="img"
-           aria-label="以前は61ファイル分の差分がそのまま人に届いていた。今は同じ61が別のAIに入り、出てくるのは1ページだけで、人にはそれだけが届く。">
-        <defs>
-          <marker id="b" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M2 2 L9 6 L2 10" fill="none" stroke="var(--now)" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"/></marker>
-          <!-- the small diagrams below reference this one; markers resolve by id across the document -->
-          <marker id="g" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="6" markerHeight="6" orient="auto">
-            <path d="M2 2 L9 6 L2 10" fill="none" stroke="var(--rule)" stroke-width="2"
-                  stroke-linecap="round" stroke-linejoin="round"/></marker>
-        </defs>
-
-        <text x="0" y="10" font-size="12" font-weight="600" letter-spacing="1.9" fill="var(--dim)">BEFORE</text>
-        <rect x="0" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="5" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="10" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="15" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="20" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="25" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="30" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="35" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="40" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="45" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="50" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="55" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="60" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="65" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="70" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="75" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="80" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="85" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="90" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="95" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="100" y="24" width="2.5" height="7" fill="var(--rule)"/><rect x="0" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="5" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="10" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="15" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="20" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="25" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="30" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="35" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="40" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="45" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="50" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="55" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="60" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="65" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="70" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="75" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="80" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="85" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="90" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="95" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="100" y="35" width="2.5" height="7" fill="var(--rule)"/><rect x="0" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="5" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="10" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="15" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="20" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="25" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="30" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="35" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="40" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="45" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="50" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="55" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="60" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="65" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="70" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="75" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="80" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="85" y="46" width="2.5" height="7" fill="var(--rule)"/><rect x="90" y="46" width="2.5" height="7" fill="var(--rule)"/>
-        <text x="0" y="76" font-size="12" fill="var(--dim)">61 ファイル分の差分</text>
-        <path d="M112 28.0 C300 28.0 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 31.4 C300 31.4 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 34.8 C300 34.8 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 38.2 C300 38.2 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 41.6 C300 41.6 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 45.0 C300 45.0 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 48.4 C300 48.4 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 51.8 C300 51.8 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 55.2 C300 55.2 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/><path d="M112 58.599999999999994 C300 58.599999999999994 420 40 616 40" fill="none" stroke="var(--rule)" stroke-width="1" opacity=".65"/>
-        <circle cx="636" cy="28" r="8.5" fill="none" stroke="var(--rule)" stroke-width="2"/><path d="M622 54 C622 39 650 39 650 54" fill="none" stroke="var(--rule)" stroke-width="2" stroke-linecap="round"/>
-        <text x="668" y="36" font-size="16" font-weight="600">人が組み立てる</text>
-        <text x="668" y="56" font-size="13" fill="var(--dim)">全部が自分に届く</text>
-
-        <text x="0" y="152" font-size="12" font-weight="600" letter-spacing="1.9" fill="var(--now)">AFTER</text>
-        <rect x="0" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="5" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="10" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="15" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="20" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="25" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="30" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="35" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="40" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="45" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="50" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="55" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="60" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="65" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="70" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="75" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="80" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="85" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="90" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="95" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="100" y="166" width="2.5" height="7" fill="var(--rule)"/><rect x="0" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="5" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="10" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="15" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="20" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="25" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="30" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="35" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="40" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="45" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="50" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="55" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="60" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="65" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="70" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="75" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="80" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="85" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="90" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="95" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="100" y="177" width="2.5" height="7" fill="var(--rule)"/><rect x="0" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="5" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="10" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="15" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="20" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="25" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="30" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="35" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="40" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="45" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="50" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="55" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="60" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="65" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="70" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="75" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="80" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="85" y="188" width="2.5" height="7" fill="var(--rule)"/><rect x="90" y="188" width="2.5" height="7" fill="var(--rule)"/>
-        <text x="0" y="218" font-size="12" fill="var(--dim)">同じ 61</text>
-        <path d="M112 170.0 C180 170.0 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 173.4 C180 173.4 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 176.8 C180 176.8 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 180.2 C180 180.2 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 183.6 C180 183.6 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 187.0 C180 187.0 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 190.4 C180 190.4 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 193.8 C180 193.8 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 197.2 C180 197.2 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/><path d="M112 200.6 C180 200.6 210 184 268 184" fill="none" stroke="var(--now)" stroke-width="1" opacity=".6"/>
-
-        <circle cx="296" cy="184" r="26" fill="none" stroke="var(--now)" stroke-width="2"/>
-        <path d="M296 172 l3.4 8.6 8.6 3.4 -8.6 3.4 -3.4 8.6 -3.4 -8.6 -8.6 -3.4 8.6 -3.4 z"
-              fill="var(--now)"/>
-        <path d="M328 184 H392" stroke="var(--now)" stroke-width="2" fill="none" marker-end="url(#b)"/>
-        <g stroke="var(--now)" stroke-width="2" fill="none">
-          <rect x="410" y="160" width="48" height="48" rx="5"/>
-          <path d="M422 176 H446 M422 185 H446 M422 194 H438" stroke-linecap="round"/></g>
-        <path d="M474 184 H600" stroke="var(--now)" stroke-width="2" fill="none" marker-end="url(#b)"/>
-        <circle cx="636" cy="172" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2"/><path d="M622 198 C622 183 650 183 650 198" fill="none" stroke="var(--ink)" stroke-width="2" stroke-linecap="round"/>
-        <text x="668" y="180" font-size="16" font-weight="600">人は読む</text>
-        <text x="668" y="200" font-size="13" fill="var(--dim)">届くのは 1 ページ</text>
-
-        <path d="M270 228 v8 H484 v-8" stroke="var(--hair)" stroke-width="1.5" fill="none"/>
-        <text x="377" y="256" font-size="12" fill="var(--dim)" text-anchor="middle">Quuu の中で起きる</text>
-      </svg>
+      <figure class="plate plate-full plate-unnumbered" id="figure-flow">
+        <ol class="flow tone-blue">
+          <li><span class="flow-mark">01</span><strong class="flow-name">作業の記録</strong><span class="flow-detail">依頼・会話・差分を集める</span></li>
+          <li><span class="flow-mark">02</span><strong class="flow-name">意味を整理</strong><span class="flow-detail">別の AI が、何が変わったかを説明する</span></li>
+          <li><span class="flow-mark">03</span><strong class="flow-name">人が読む</strong><span class="flow-detail">結果と根拠を確かめ、判断する</span></li>
+        </ol>
+        <figcaption><span class="plate-label">図 1.</span>読む人へ届く前に、材料が説明へ変わる。
+          <span class="plate-source">検証用のサンプル。実際のタスクの成果ではありません。</span></figcaption>
+      </figure>
     </div>
-  </div>
-
-  <!-- 02 ------------------------------------------------------- -->
-  <div class="sec">
-    <div class="label">02<br>変わった意図</div>
+  </section>
+  <section class="sec" aria-labelledby="section-2">
+    <div class="label"><h2 id="section-2">02 / 作業と独立</h2></div>
     <div class="field">
-      <p class="lead">置き場所・見せ方・伝え方を、迷わない側へ寄せた。</p>
-    </div>
-    <div class="three">
-
-      <figure>
-        <svg viewBox="0 0 260 96" role="img" aria-label="離れていたレポートの面が、差分やPRと同じタブ列に並んだ">
-          <g stroke="var(--rule)" stroke-width="2" fill="none" opacity=".55">
-            <rect x="0" y="10" width="76" height="18" rx="3"/><path d="M38 10 v18"/>
-            <rect x="26" y="46" width="50" height="18" rx="3"/></g>
-          <text x="10" y="23" font-size="9" fill="var(--dim)">差分</text>
-          <text x="47" y="23" font-size="9" fill="var(--dim)">PR</text>
-          <text x="34" y="59" font-size="9" fill="var(--dim)">レポート</text>
-          <text x="38" y="86" font-size="12" fill="var(--dim)" text-anchor="middle">離れている</text>
-          <path d="M104 37 H126" stroke="var(--rule)" stroke-width="2" fill="none" marker-end="url(#g)"/>
-          <g stroke="var(--rule)" stroke-width="2" fill="none">
-            <rect x="146" y="28" width="114" height="18" rx="3"/><path d="M176 28 v18 M206 28 v18"/></g>
-          <rect x="206" y="29" width="53" height="16" fill="var(--now)" opacity=".16"/>
-          <path d="M206 46 H259" stroke="var(--now)" stroke-width="2"/>
-          <text x="161" y="41" font-size="9" fill="var(--dim)" text-anchor="middle">差分</text>
-          <text x="191" y="41" font-size="9" fill="var(--dim)" text-anchor="middle">PR</text>
-          <text x="233" y="41" font-size="9" fill="var(--now)" text-anchor="middle">レポート</text>
-          <text x="203" y="86" font-size="12" fill="var(--dim)" text-anchor="middle">同じ列に並ぶ</text>
-        </svg>
-        <h3>置き場所</h3>
-        <p>レビュー中に読むものだから、差分と PR の隣に置いた。</p>
+      <p class="lead">レポートの生成を待たず、次の作業へ進める。</p>
+      <figure class="plate plate-full plate-unnumbered" id="figure-runs">
+        <div class="draw-wrap"><svg class="draw" style="--dd-draw-width: 640px" viewBox="0 0 640 176"
+          role="img" aria-label="作業がレビューに届くと、別の実行でレポートを生成する。次の作業も並行して進められる。">
+          <rect class="draw-box" x="8" y="52" width="160" height="64" rx="6"/>
+          <text class="draw-label draw-strong" x="88" y="89" text-anchor="middle">レビューに到達</text>
+          <path class="draw-line draw-arrow" d="M168 84H264V40H312"/>
+          <path class="draw-line draw-arrow" d="M264 84V136H312"/>
+          <rect class="draw-box-toned tone-blue" x="320" y="8" width="300" height="64" rx="6"/>
+          <text class="draw-label draw-strong" x="470" y="45" text-anchor="middle">別の実行でレポートを生成</text>
+          <rect class="draw-box" x="320" y="104" width="300" height="64" rx="6"/>
+          <text class="draw-label" x="470" y="141" text-anchor="middle">次の作業を進める</text>
+        </svg></div>
+        <figcaption><span class="plate-label">図 2.</span>作業の実行枠とレポート生成は別に管理される。</figcaption>
       </figure>
-
-      <figure>
-        <svg viewBox="0 0 260 96" role="img" aria-label="どの状態でも状態と操作を両方出していたのが、状態ごとに1つだけになった">
-          <g opacity=".55">
-            <g fill="var(--rule)">
-              <rect x="0" y="14" width="22" height="7" rx="2"/><rect x="0" y="25" width="22" height="7" rx="2"/>
-              <rect x="28" y="14" width="22" height="7" rx="2"/><rect x="28" y="25" width="22" height="7" rx="2"/>
-              <rect x="56" y="14" width="22" height="7" rx="2"/><rect x="56" y="25" width="22" height="7" rx="2"/>
-              <rect x="84" y="14" width="22" height="7" rx="2"/><rect x="84" y="25" width="22" height="7" rx="2"/></g>
-            <path d="M0 40 H106" stroke="var(--rule)" stroke-width="1"/></g>
-          <text x="53" y="58" font-size="12" fill="var(--dim)" text-anchor="middle">2 つずつ</text>
-          <path d="M120 24 H142" stroke="var(--rule)" stroke-width="2" fill="none" marker-end="url(#g)"/>
-          <g fill="var(--now)">
-            <rect x="154" y="20" width="22" height="7" rx="2"/><rect x="182" y="20" width="22" height="7" rx="2"/>
-            <rect x="210" y="20" width="22" height="7" rx="2"/><rect x="238" y="20" width="22" height="7" rx="2"/></g>
-          <path d="M154 40 H260" stroke="var(--rule)" stroke-width="1" opacity=".55"/>
-          <text x="207" y="58" font-size="12" fill="var(--dim)" text-anchor="middle">1 つずつ</text>
-          <text x="53" y="86" font-size="10" fill="var(--dim)" text-anchor="middle">状態 ＋ 操作</text>
-          <text x="207" y="86" font-size="10" fill="var(--dim)" text-anchor="middle">どちらか一方</text>
-        </svg>
-        <h3>詳細の行</h3>
-        <p>作成中は状態だけ。それ以外は操作だけを出す。</p>
-      </figure>
-
-      <figure>
-        <svg viewBox="0 0 260 96" role="img" aria-label="失敗の理由が行の中に埋もれていたのが、アプリ端の通知として出るようになった">
-          <g opacity=".55">
-            <rect x="0" y="8" width="106" height="56" rx="4" fill="none" stroke="var(--rule)" stroke-width="1.5"/>
-            <rect x="10" y="30" width="60" height="8" rx="2" fill="var(--rule)"/>
-            <circle cx="78" cy="34" r="3" fill="var(--rule)"/></g>
-          <text x="53" y="86" font-size="12" fill="var(--dim)" text-anchor="middle">行の中に埋もれる</text>
-          <path d="M120 36 H142" stroke="var(--rule)" stroke-width="2" fill="none" marker-end="url(#g)"/>
-          <rect x="154" y="8" width="106" height="56" rx="4" fill="none" stroke="var(--rule)" stroke-width="1.5" opacity=".55"/>
-          <g fill="none" stroke="var(--warn)" stroke-width="2">
-            <rect x="176" y="14" width="80" height="26" rx="5"/></g>
-          <circle cx="188" cy="27" r="3.5" fill="var(--warn)"/>
-          <path d="M196 22 H246 M196 32 H232" stroke="var(--warn)" stroke-width="1.5" opacity=".6"/>
-          <text x="207" y="86" font-size="12" fill="var(--dim)" text-anchor="middle">端に通知が出る</text>
-        </svg>
-        <h3>失敗の伝え方</h3>
-        <p>他の失敗と同じ経路で、生成側の言葉のまま届ける。</p>
-      </figure>
-
     </div>
-  </div>
-
-  <!-- 03 ------------------------------------------------------- -->
-  <div class="sec">
-    <div class="label">03<br>変えなかったもの</div>
-    <div class="field">
-      <p class="lead">レポートは判断の補助であって、仕事の工程ではない。</p>
+    <div class="figures">
+      <figure><h3>読む場所はひとつ</h3><p>レポートは差分や PR と同じタブ列で開く。</p></figure>
+      <figure><h3>タスク全体を説明</h3><p>最初の依頼から追加の修正までを一つの結果として読む。</p></figure>
+      <figure><h3>根拠を残す</h3><p>図の説明には、検証条件と分かっていない点も添える。</p></figure>
     </div>
-    <div class="holds">
-      <div class="hold"><b>0</b><span>レポートが触れるタスク状態<br>done にも failed にもできない</span></div>
-      <div class="hold"><b>0</b><span>レポートが占める実行枠<br>次のタスクは待たされない</span></div>
-    </div>
-    <p class="caveat">生成が失敗しても、前に書けたページは読めるまま残る。タスク 1 つにつきレポートは 1 つ。</p>
-  </div>
-
-</div>
+    <p class="caveat">レポートは判断の材料。作業を完了にするのは人です。</p>
+  </section>
+</article>
 </body></html>
 `)
 repo.saveTaskReport(db, {

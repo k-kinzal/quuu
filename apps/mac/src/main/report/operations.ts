@@ -158,9 +158,7 @@ export class ReportOperations extends EventEmitter {
       const id = newId('rpt')
       const dir = reportDir(taskId)
       /*
-       * The stylesheet, the drawing library and its setup, ready beside the reports. Refreshed
-       * here rather than at startup so a report asked for right after an update opens in the
-       * design that shipped with it.
+       * Restore the bundled, versioned stylesheet before handing its local path to the writer.
        */
       writeReportAssets()
       const page = join(dir, `${id}.html`)
@@ -366,8 +364,7 @@ export class ReportOperations extends EventEmitter {
    * Drop report directories whose task is gone. Deleting a task should not leave pages behind.
    *
    * **The shared assets are not one of them.** They sit at the same level and belong to no task,
-   * so a sweep that only asks "is this a task?" takes the stylesheet and the drawing library with
-   * it — and every report on the machine opens undressed and undrawn. That actually happened.
+   * so a sweep that only asks "is this a task?" takes every version's stylesheet with it.
    */
   private sweep(): void {
     const root = reportRoot()

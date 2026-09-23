@@ -9,7 +9,7 @@ import { settleReport } from '../src/main/report/generator.js'
 import { ReportOperations, alreadyReported } from '../src/main/report/operations.js'
 import type { StoredReport } from '../src/main/report/types.js'
 import type { Project } from '../src/main/projects/types.js'
-import { REPORT_ASSETS, REPORT_STYLE_FILE } from '../src/main/report/assets.js'
+import { REPORT_ASSETS, REPORT_STYLE_FILE, writeReportAssets } from '../src/main/report/assets.js'
 import { reportPrompt } from '../src/main/report/prompt.js'
 import { captureReviewBaseline, snapshotWorktree } from '../src/main/review/git.js'
 import type { ReviewSnapshot } from '../src/main/review/types.js'
@@ -584,6 +584,19 @@ describe('whether reaching review again writes one', () => {
 })
 
 describe('the shared assets', () => {
+  it('restores the pinned CSS without overwriting an older report stylesheet', () => {
+    writeReportAssets()
+    const assets = join(data, 'reports', REPORT_ASSETS)
+    const stylesheet = join(assets, REPORT_STYLE_FILE)
+    const bundled = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url))
+    expect(readFileSync(stylesheet).equals(bundled)).toBe(true)
+    writeFileSync(join(assets, 'report.css'), 'legacy report styles')
+    writeFileSync(stylesheet, 'damaged')
+    writeReportAssets()
+    expect(readFileSync(stylesheet).equals(bundled)).toBe(true)
+    expect(readFileSync(join(assets, 'report.css'), 'utf8')).toBe('legacy report styles')
+  })
+
   it('survive the sweep that clears reports of deleted tasks', async () => {
     const taskId = makeTask(db, projectId, 'Rename the queue')
     await ops.generate(taskId)
@@ -656,19 +669,14 @@ describe('what the generator is told', () => {
     expect(text).toContain(`git diff ${'a'.repeat(40)} ${'b'.repeat(40)} --`)
   })
 
-  /*
-   * Nothing is offered, on purpose.
-   *
-   * What a writer reaches for unprompted is the only way to tell a page held back by what it was
-   * given from a page at the limit of what the writer can do. The assets stay on disk; they are
-   * simply not pointed at.
-   */
   it('hands over the sheet, the components and the shape of the page', () => {
     const text = prompt()
     expect(text).toContain(REPORT_STYLE_FILE)
     expect(text).toContain('Components the stylesheet draws')
     expect(text).toContain('Structure:')
-    expect(text).toContain('<div class="page">')
+    expect(text).toContain('document-design (doc-ui) v1.0.0, bundled locally')
+    expect(text).toContain('<article class="sheet">')
+    expect(text).toContain('href="../assets/document-design-v1.0.0.css"')
   })
 
   it('says the page is static, so nothing is written against a CDN or a script', () => {
@@ -685,7 +693,7 @@ describe('what the generator is told', () => {
      * little else.
      */
     expect(text).toContain('<h1>...</h1>')
-    expect(text).toContain('<div class="label">01<br>...</div>')
+    expect(text).toContain('<div class="label"><h2 id="section-1">01 / ...</h2></div>')
     // No upper bound: a change with more to say must not be told to stop
     expect(text).toMatch(/As many sections as the change needs/)
     expect(text).not.toMatch(/Two to four/)

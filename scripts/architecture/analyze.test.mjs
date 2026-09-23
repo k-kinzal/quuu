@@ -143,3 +143,20 @@ test('detects unresolved imports and type cycles from real sources', () => {
   assert.match(issues(),/unresolvable dependency/)
   assert.match(issues(),/file cycle/)
 })
+
+test('resolves bundled CSS and notices as raw text without accepting missing assets', () => {
+  const {write,issues} = fixture()
+  write('apps/mac/src/main/report/report.css', '.sheet { display: grid; }')
+  write('apps/mac/src/main/report/NOTICE.txt', 'Upstream notice')
+  write('apps/mac/src/main/report/assets.ts', "import css from './report.css?raw'; import notice from './NOTICE.txt?raw'")
+  assert.equal(issues(), '')
+  write('apps/mac/src/main/report/assets.ts', "import css from './missing.css?raw'")
+  assert.match(issues(), /unresolvable asset/)
+})
+
+test('raw asset imports cannot bypass a package boundary', () => {
+  const {write,issues} = fixture()
+  write('apps/mobile/src/report.css', '.sheet { display: grid; }')
+  write('apps/mac/src/main/report/assets.ts', "import css from '../../../../mobile/src/report.css?raw'")
+  assert.match(issues(), /another package's internal asset/)
+})

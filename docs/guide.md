@@ -371,6 +371,23 @@ Existing logs are backfilled after startup, including earlier runs of a task.
 `QUUU_FIXTURE_HISTORY=6000 npm run dev:fixture` creates a long conversation and a
 real repository under `/tmp/taskd-shot` for checking scrolling and saved reviews.
 
+## Report appearance
+
+New reports use [document-design](https://k-kinzal.github.io/document-design/)
+**v1.0.0**, bundled in the app and written locally to
+`reports/assets/document-design-v1.0.0.css`. Generation and viewing require no
+stylesheet download. Existing reports keep their original stylesheet.
+
+The report writer receives the library's `.sheet` layout, a static component
+guide, and an HTML skeleton. It uses figures with captions and sources, readable
+SVG labels, tables, and notes to explain the evidence. The document language
+selects English or Japanese typography, and colors follow the app's appearance.
+Reports remain static: the library's optional JavaScript controls are not used.
+Use **Write again** to regenerate an existing report with this layout.
+
+The pinned file, upstream source, checksum, and license declaration are recorded
+in [the vendored asset notes](../apps/mac/src/main/report/vendor/document-design/v1.0.0/README.md).
+
 ## Task ordering
 
 Expresses "run this once the currently running task finishes" and "don't run these in

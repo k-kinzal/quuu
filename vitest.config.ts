@@ -42,6 +42,8 @@ export default defineConfig({
      * the file. Making everything jsdom drags a DOM into main-process tests and slows them down
      */
     environment: 'node',
+    // Report CSS is a raw bundled asset; Vitest's default CSS stub would write an empty file.
+    css: { include: [/document-design\.css\?raw$/] },
     root,
     include: [
       'apps/*/tests/**/*.test.ts',

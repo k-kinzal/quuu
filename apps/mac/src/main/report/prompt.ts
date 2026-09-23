@@ -30,14 +30,11 @@ export interface ReportRequest {
 }
 
 /**
- * The components the stylesheet draws, and what each is for.
- *
- * **This list and the stylesheet are one thing.** A class the sheet styles but the instructions
- * never mention is a component nobody uses; a class named here that the sheet does not style is a
- * page that arrives undressed. `tests/reportStyle.test.ts` fails when they disagree.
+ * The static report components from the pinned document-design release. The full library also
+ * has application controls; offer the subset that works in the script-free report viewer.
  */
 const COMPONENTS: Array<[string, string]> = [
-  ['page', 'the sheet. One <div class="page"> wraps everything; it lays the 12 columns.'],
+  ['sheet', 'the report layout. One <article class="sheet"> wraps everything on a 12-column grid.'],
   ['eyebrow', 'the small line above the title.'],
   ['stand', 'the one sentence under the title.'],
   ['hero', 'what the page leads with. Either .was/.mid/.now side by side, or one <svg>.'],
@@ -49,30 +46,28 @@ const COMPONENTS: Array<[string, string]> = [
   ['label', 'the section name, in the left column.'],
   ['field', 'the section body, in the right columns.'],
   ['lead', 'the one line that says what the section is about.'],
-  ['three', 'things abreast, three to a row, any number of them. Each is a <figure> with an <svg>, an <h3>, a <p>.'],
-  ['holds / hold', 'number cards, two to a row, any number of them. Each is <div class="hold"><b>0</b><span>…</span></div>.'],
+  ['figures', 'parallel findings, any number of <figure> children with an <h3> and a <p>. Place directly in .sec, alongside .label and .field.'],
+  ['stats / stat / stat-fig / stat-label / stat-note', 'measured results with units and conditions. Place .stats directly in .sec; each .stat contains .stat-fig, .stat-label and an optional .stat-note.'],
+  ['plate / plate-wide / plate-full', 'a <figure> containing a drawing, HTML flow or table plus a <figcaption> explaining the takeaway. Use an id for references.'],
+  ['plate-unnumbered / plate-label / plate-source / ref', 'use .plate-unnumbered with an explicit .plate-label in the caption for unique figure numbers across sections; .plate-source gives evidence or conditions, and .ref links to a figure.'],
+  ['compare / compare-title', 'before/after or other parallel evidence. Each side has a heading; it stacks when narrow.'],
+  ['flow / flow-mark / flow-name / flow-detail', 'a CSS-only ordered process: <ol class="flow"> with <li> children containing a mark, name and detail.'],
+  ['rail / sidenote', 'notes beside a section: .rail holds .label and .sidenote, followed by the section’s .field.'],
   ['caveat', 'something the reader would be wrong to assume still holds.'],
   ['note', 'a plain paragraph in the section body.'],
-  ['mono', 'a path, an identifier, a command, inline.']
+  ['prose', 'semantic paragraphs and lists for the evidence that needs explanation. Use <code> for inline identifiers.'],
+  ['table-wrap', 'a scrollable wrapper around a semantic <table> with <caption>, <thead> and scoped <th> cells.'],
+  ['code-block / code', 'a code sample: <div class="code-block"><pre class="code"><code>...</code></pre></div>.'],
+  ['draw-wrap / draw', 'a scrollable wrapper and inline SVG. Set style="--dd-draw-width: 640px" to match viewBox="0 0 640 ..." so labels stay readable.'],
+  ['draw-label / draw-strong / draw-note / draw-value / draw-cap / draw-mono', 'SVG text roles: ordinary, emphasized, supporting, numeric, band label and identifier.'],
+  ['draw-box / draw-box-toned / draw-box-open / draw-line / draw-arrow / draw-arrowhead / draw-defs', 'SVG shape and connector roles. Arrow lines need the dd-arrow marker shown in the skeleton.'],
+  ['tone-blue / tone-teal / tone-violet / tone-neutral / tone-warn / tone-danger', 'consistent category or state tones. Pair color with a label or shape, never color alone.']
 ]
 
 /**
  * What the report agent is told.
  *
- * Six versions of steering and two of handing over nothing both came back as documents with
- * pictures in them. Handed only the ask, the writer wrote its own stylesheet and its own
- * drawings; handed a licence to fetch anything, it reached for a font, a chart library, an icon
- * set and a diagram engine — and still produced a report.
- *
- * **So the design is Quuu\'s and the content is the writer\'s.** The sheet, the components and
- * the shape of the page are handed over ready to use, because a page that has to invent its own
- * appearance spends its effort there and six reports come out looking like six products — the
- * point at which a reader stops trusting what is in them. What is left to the writer is the part
- * only it can do: what changed, and which picture shows it.
- *
- * The one thing the ask still carries is **what an infographic is**. The word alone was read as
- * "a report, illustrated" every time.
- *
+ * document-design owns the appearance; the writer chooses evidence and explanatory figures.
  * The text is dev-facing: it goes to a CLI, never onto a screen. Only the language the report is
  * written in follows the app\'s locale.
  */
@@ -118,53 +113,92 @@ Run history (oldest first; JSON):
 ${JSON.stringify(request.runs, null, 2)}
 Write the page to: ${request.page}
 Write language: ${t('report.language')}`,
-    `Assets:
-- ${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE} — the page stylesheet. Link it; write no CSS of your own unless the sheet has no component for what you need.
+    `Assets — document-design (doc-ui) v1.0.0, bundled locally:
+- ${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE} — the unmodified page stylesheet. Link this relative path.
+
+Use its report layout, components and --dd-* tokens. Do not fetch CSS, fonts or other assets,
+load a CDN, or rewrite the supplied stylesheet. Do not invent CSS classes or override its
+typography, spacing or colors. Inline --dd-* geometry properties are allowed for a drawing
+or chart's data; SVG coordinates and viewBox describe the drawing, not a replacement theme.
+The local CSS file is readable if you need to inspect additional static components.
 
 The page is a static document. It cannot reach the network and does not run script - a fetched
-font or a <script> renders as nothing.`,
-    `Components the stylesheet draws:
+font or a <script> renders as nothing. Use semantic HTML, CSS-only figures and inline SVG;
+omit controls that need document-design.js, such as tabs, filters, copy or theme buttons.`,
+    `Components the stylesheet draws (document-design v1.0.0):
 ${COMPONENTS.map(([name, what]) => `- .${name} — ${what}`).join('\n')}`,
     `Structure:
 
     <!doctype html>
     <html lang="..."><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>...</title>
     <link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"></head><body>
-    <div class="page">
+    <svg class="draw-defs" aria-hidden="true" focusable="false">
+      <defs><marker id="dd-arrow" markerUnits="userSpaceOnUse" viewBox="0 0 8 6"
+        refX="8" refY="3" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+        <path class="draw-arrowhead" d="M0 0L8 3L0 6Z"/>
+      </marker></defs>
+    </svg>
+    <article class="sheet">
       <p class="eyebrow">...</p>
       <h1>...</h1>
       <p class="stand">...</p>
       <div class="hero">
         <div class="was"><span class="cap">BEFORE</span><span class="claim">...</span><span class="unit">...</span></div>
-        <div class="mid"><svg viewBox="0 0 56 16">...</svg></div>
+        <div class="mid"><svg class="draw" viewBox="0 0 56 16" aria-hidden="true">
+          <path class="draw-line draw-arrow" d="M0 8H52"/>
+        </svg></div>
         <div class="now"><span class="cap">AFTER</span><span class="claim">...</span><span class="unit">...</span></div>
       </div>
-      <div class="sec">
-        <div class="label">01<br>...</div>
-        <div class="field"><p class="lead">...</p><svg viewBox="0 0 820 268">...</svg></div>
-      </div>
-      <div class="sec">
-        <div class="label">02<br>...</div>
-        <div class="field"><p class="lead">...</p></div>
-        <div class="three">
-          <figure><svg viewBox="0 0 260 96">...</svg><h3>...</h3><p>...</p></figure>
-          ... two more ...
+      <section class="sec" aria-labelledby="section-1">
+        <div class="label"><h2 id="section-1">01 / ...</h2></div>
+        <div class="field">
+          <p class="lead">...</p>
+          <figure class="plate plate-full plate-unnumbered" id="figure-1">
+            <ol class="flow tone-blue">
+              <li><span class="flow-mark">01</span><strong class="flow-name">...</strong><span class="flow-detail">...</span></li>
+              <li><span class="flow-mark">02</span><strong class="flow-name">...</strong><span class="flow-detail">...</span></li>
+              <li><span class="flow-mark">03</span><strong class="flow-name">...</strong><span class="flow-detail">...</span></li>
+            </ol>
+            <figcaption><span class="plate-label">...</span>...<span class="plate-source">...</span></figcaption>
+          </figure>
         </div>
-      </div>
-    </div>
+      </section>
+      <section class="sec" aria-labelledby="section-2">
+        <div class="label"><h2 id="section-2">02 / ...</h2></div>
+        <div class="field"><p class="lead">...</p></div>
+        <div class="figures">
+          <figure><h3>...</h3><p>...</p></figure>
+          <figure><h3>...</h3><p>...</p></figure>
+        </div>
+        <p class="caveat">...</p>
+      </section>
+    </article>
     </body></html>
 
-As many sections as the change needs - at least two. The hero is what the page leads with, and
-there is exactly one.
+As many sections as the change needs. Choose the components that explain the evidence;
+the skeleton is a composition example, not a requirement to fill empty sections or caveats.
+Use one hero to introduce the central change, then connect evidence, meaning and limitations.
+Set the actual document language (lang="ja" for Japanese, lang="en" for English); the stylesheet
+uses it for typography. Write figure labels in that language and number them across the whole
+document. Use .plate-unnumbered with .plate-label because automatic counters can restart inside
+separate .field containers. Let headings wrap naturally instead of inserting layout <br>s.
+Leave the theme automatic so the stylesheet follows the app's light/dark appearance.
 **Use .fig only when a number is the point of the change.** Most changes have none worth
 showing, and a page that leads with a count nobody asked about has spent its largest type on
 the least interesting true thing about the work - put a short phrase in .claim instead, or
 drop .was/.mid/.now and lead with a drawing.
-Draw with inline <svg> inside .field or a <figure>; it inherits the page's colours through
-\`var(--ink) var(--sub) var(--dim) var(--rule) var(--hair) var(--now) var(--warn)\` and the
-named \`--blue --green --amber --red --violet --slate\`. Lay a drawing out on a grid before placing it: shapes
-of one kind at one size, one stroke width, arrows of one length. A label that does not fit its
-shape goes outside it.`
+Prefer .flow for a sequence and .compare for parallel evidence. When the relationship needs
+a custom drawing, put <svg class="draw" style="--dd-draw-width: 640px" viewBox="0 0 640 240"
+role="img" aria-label="..."> inside .draw-wrap inside a .plate. Match the width to its viewBox;
+keep SVG text in .draw-* roles so narrow screens scroll the figure instead of shrinking labels.
+Use .draw-box, .draw-line and .draw-arrow for marks; define dd-arrow once per page as above.
+Use \`var(--dd-fg) var(--dd-fg-muted) var(--dd-border-strong) var(--dd-accent) var(--dd-warn)\`
+when an SVG presentation attribute needs a color. Lay shapes on a consistent grid; move a label
+outside its shape if it will not fit. Captions explain what the figure establishes and cite its
+source or conditions. Keep evidence and qualifications readable; minimizing text must not
+remove the context that makes a claim true.`
   ]
   if (request.instructions.trim().length > 0) sections.push(request.instructions.trim())
   return sections.join('\n\n')

@@ -1,0 +1,8 @@
+document-design (doc-ui) v1.0.0
+Author: k-kinzal
+Source: https://github.com/k-kinzal/document-design/tree/v1.0.0
+Stylesheet: https://k-kinzal.github.io/document-design/v1.0.0/document-design.css
+
+Upstream declares the MIT license in package.json and packages/doc-ui/package.json.
+The v1.0.0 tag does not include a separate license or copyright notice.
+MIT license terms: https://opensource.org/license/mit

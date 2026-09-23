@@ -1,4 +1,4 @@
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, realpathSync } from 'node:fs'
 import { createRequire, isBuiltin } from 'node:module'
 import { dirname, join, relative, resolve } from 'node:path'
 import ts from 'typescript'
@@ -119,14 +119,17 @@ export function analyze(root) {
         if (purePackages.has(pkg.name) || layerOf(from).startsWith('renderer/') || pkg.name === '@quuu/mobile' || pkg.name === '@design-system/react' || (layer === 'preload' && specifier !== 'electron')) fail(`OS dependency ${specifier} is not allowed in this layer`)
         continue
       }
-      // CSS is not a TypeScript module; verify it exists via Node's resolution rules.
-      if (specifier.endsWith('.css')) {
-        if (purePackages.has(pkg.name)) fail(`CSS is not allowed in a pure package: ${specifier}`)
+      // Vite raw text assets are files, not TypeScript modules. Resolve the actual file and
+      // keep the same package boundary as CSS imports; a query must not hide another owner.
+      const assetSpecifier = /\.(?:css|txt)\?raw$/.test(specifier) ? specifier.slice(0, -4) : specifier
+      if (assetSpecifier.endsWith('.css') || assetSpecifier !== specifier) {
+        if (purePackages.has(pkg.name)) fail(`assets are not allowed in a pure package: ${specifier}`)
         try {
-          const cssPath = createRequire(file).resolve(specifier)
-          const cssOwner = ownerOf(cssPath)
-          if (cssOwner && cssOwner.name !== pkg.name) fail(`must not import another package's internal CSS directly: ${specifier}`)
-        } catch { fail(`unresolvable CSS ${specifier}`) }
+          const assetPath = createRequire(file).resolve(assetSpecifier)
+          // Node resolves symlinks, including macOS's /var → /private/var temporary roots.
+          const assetOwner = packages.find((candidate) => assetPath.startsWith(`${realpathSync(candidate.dir)}/`))
+          if (assetOwner && assetOwner.name !== pkg.name) fail(`must not import another package's internal asset directly: ${specifier}`)
+        } catch { fail(`unresolvable asset ${specifier}`) }
         continue
       }
       const resolved = ts.resolveModuleName(specifier, file, compilerOptions(file, pkg), ts.sys).resolvedModule
