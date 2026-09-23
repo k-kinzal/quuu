@@ -425,8 +425,13 @@ export class Scheduler extends EventEmitter {
     // out, and the way out of that is a human running it by hand into the same wall
     if (reason === 'all-cooling') {
       const until = cooldownClearsAt(this.db, project, options)
-      return until === null
-        ? resolveFailureMessage(reason)
+      if (until === null) return resolveFailureMessage(reason)
+      // A continuation waits for one party in particular. Unnamed, "the agents are cooling" reads
+      // as if nothing could run at all, and the way out that was taken was to discard the
+      // follow-up so the task could go somewhere else
+      const owner = continuation ? sessionOwnerLabel(this.db, continuation) : ''
+      return owner.length > 0
+        ? t('scheduler.ownerCoolingUntil', { owner, time: formatTime(until) })
         : t('scheduler.coolingUntil', { time: formatTime(until) })
     }
     if (reason !== 'all-reserved') return resolveFailureMessage(reason)

@@ -256,3 +256,18 @@ describe('the launch itself', () => {
     runner.shutdown()
   })
 })
+
+describe('what a human is told while the conversation waits', () => {
+  it('names the agent it is waiting for when a continuation is held by its cooldown', async () => {
+    const db = memoryDb()
+    const { codex, project } = frontier(db)
+    const task = makeTask(db, project, 't')
+    sessioned(db, task, codex, 'failed', { pendingMessage: '続きをお願いします。' })
+    repo.setCooldown(db, codex, isoPlusSeconds(600), 'Limit')
+
+    const result = await scheduler(db).runNow(task)
+
+    expect(result.ok).toBe(false)
+    expect(result.reason).toMatch(/^The Codex that opened this session is in Limit cooldown \(back at /)
+  })
+})

@@ -222,6 +222,7 @@ export const ja: typeof en = {
     projectDisabled: 'プロジェクトが無効化されています',
     cooldownUntil: '{{agent}} が Limit クールダウン中（{{time}} 復帰）',
     coolingUntil: 'エージェントが Limit クールダウン中です（{{time}} 復帰）',
+    ownerCoolingUntil: 'セッションを開いた {{owner}} が Limit クールダウン中です（{{time}} 復帰）',
     paused: 'スケジューラは一時停止中です',
     moreStuck_one: 'ほか {{count}} 件が同じ理由で止まっています',
     moreStuck_other: 'ほか {{count}} 件が同じ理由で止まっています',

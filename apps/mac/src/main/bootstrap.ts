@@ -5,6 +5,7 @@ import { AutomationOperations } from './automation/operations.js'
 import type { Db } from './db/database.js'
 import { afterCommit, openDatabase } from './db/database.js'
 import * as repo from './db/repo.js'
+import type { FinishedEvent } from './execution/runner.js'
 import { Runner } from './execution/runner.js'
 import { Scheduler } from './execution/scheduler.js'
 import { t } from './i18n/index.js'
@@ -84,6 +85,16 @@ export class QuuuApp extends EventEmitter {
     this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id))
     this.sessions = new SessionIndex(this.db, (run, messages) => recordSessionEvidence(this.db, run.taskId, messages))
     this.sessions.on('indexed', (_key: string, taskId: string) => this.reviews.requestRefresh(taskId))
+    /*
+     * A run that just ended is what the human looks at next, and what the next run is decided
+     * from: whether the instruction it carried already sits in the conversation is read off the
+     * index. Left to the periodic sweep, a long log could still be catching up while the screen
+     * marked a delivered instruction as unsent and the retry sent it a second time.
+     */
+    this.runner.on('finished', (event: FinishedEvent) => {
+      try { this.sessions.request(event.run, undefined, true) }
+      catch (error) { console.warn('Cannot schedule session indexing', error) }
+    })
     this.terminal = new TerminalOperations(this.terminals, id => this.workspace.workbenchPlace(id))
     this.settings.on('changed', (settings: AppSettings, patch: Partial<AppSettings>) => {
       if (patch.tickIntervalMs !== undefined) this.scheduler.start(settings.tickIntervalMs)
