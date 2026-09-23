@@ -14,6 +14,10 @@ enforce them live in [architecture.md](architecture.md) and
   widen the candidates around this — not for a free slot, a cooldown, a failure that asks for
   another agent, or an explicit pick. A Codex conversation handed to `claude` is broken work,
   and it happened once.
+- **A per-task agent pick is binding.** `agentOverrideId` names the whole field: that agent and
+  its own fallback chain. The project's target never stands in for a pick that is busy; the task
+  waits, and the wait names the agent. A task set to Codex that opened on Fable because Codex's
+  slot was taken is how a Claude lineage got stamped on Codex work, and it happened.
 - **Done (`done`) is a human's call.** Neither the scheduler, nor agents, nor error handlers
   ever write `done`. A normal agent exit can reach `review` at most.
 - **Never ask a human in the normal path.** Limits fall back automatically. Hand things to a

@@ -15,6 +15,7 @@ export type ResolveFailure =
   | 'no-target'
   | 'target-missing'
   | 'no-usable-agent'
+  | 'pick-unavailable'
   | 'other-cli'
   | 'no-continuable-agent'
   | 'all-busy'
@@ -226,7 +227,14 @@ function orderByStrategy(db: Db, groupId: string, strategy: GroupStrategy, membe
 }
 
 export interface ResolveOptions {
-  /** A per-task agent choice ("just this one on Sonnet" from the composer). */
+  /**
+   * A per-task agent choice ("just this one on Codex" from the composer).
+   *
+   * **A choice is binding, not a preference.** The candidates are that agent and its own fallback
+   * chain; the project's target never stands in for it. A busy pick is waited for. Handing the
+   * run to a free group member instead is how a task set to Codex opened on Claude, and the
+   * lineage then kept it there for good (it happened).
+   */
   preferredAgentId?: string | null
   /** Slots reserved by other tasks (agent ID -> count). */
   reserved?: ReadonlyMap<string, number>
@@ -249,45 +257,61 @@ export interface ResolveOptions {
 }
 
 /**
+ * The agent a task was set to run on, when that choice can be honored at all.
+ *
+ * A pick that crosses the task's CLI cannot be honored: a task never changes CLI, so the task
+ * stays with whoever its history names and the pick is set aside (`cliPin.test.ts`). A pick whose
+ * definition is gone is set aside the same way; deleting an agent clears the picks that named it,
+ * so this is only a stale row.
+ */
+export function pickedAgent(db: Db, options: Pick<ResolveOptions, 'preferredAgentId' | 'lineage'>): Agent | null {
+  const preferred = options.preferredAgentId ? repo.getAgent(db, options.preferredAgentId) : null
+  return preferred && sameLineage(preferred, options.lineage) ? preferred : null
+}
+
+/**
  * Who this task is allowed to run on at all, in resolution order - before any slot or cooldown is
  * looked at. Shared by "who takes it now" and "when could anyone take it", so the two can never
  * disagree about who was in the running.
+ *
+ * A picked agent replaces the project's target outright: the field is the pick and its own
+ * fallback chain, nothing else. Without a pick, the field is the project's target and its
+ * fallbacks. Either way, only agents of the task's CLI remain.
  */
 export function eligibleAgents(
   db: Db,
   project: Project,
   options: ResolveOptions
 ): { ok: true; value: Agent[] } | { ok: false; reason: ResolveFailure } {
-  const { preferredAgentId, continuation, lineage } = options
-  const preferred = preferredAgentId ? repo.getAgent(db, preferredAgentId) : null
+  const { continuation, lineage } = options
+  const picked = pickedAgent(db, options)
 
-  if (!project.targetId && !preferred) return { ok: false, reason: 'no-target' }
-
-  if (project.targetId) {
+  let usable: Agent[]
+  if (picked) {
+    // The pick's own configured fallbacks are the human's choice too; the project's are not
+    usable = [picked, ...fallbackChain(db, picked.id)].filter((a) => a.enabled && sameLineage(a, lineage))
+    if (usable.length === 0) return { ok: false, reason: 'pick-unavailable' }
+  } else {
+    if (!project.targetId) return { ok: false, reason: 'no-target' }
     const target =
       project.targetKind === 'agent'
         ? repo.getAgent(db, project.targetId)
         : repo.getGroup(db, project.targetId)
-    if (!target && !preferred) return { ok: false, reason: 'target-missing' }
-  }
+    if (!target) return { ok: false, reason: 'target-missing' }
 
-  const base = candidateAgents(db, project).filter((a) => a.enabled)
-  const preferredChain = preferred
-    ? [preferred, ...fallbackChain(db, preferred.id)].filter((a) => a.enabled)
-    : []
-  const preferredIds = new Set(preferredChain.map((a) => a.id))
-  const enabledAgents = [...preferredChain, ...base.filter((a) => !preferredIds.has(a.id))]
-  if (enabledAgents.length === 0) return { ok: false, reason: 'no-usable-agent' }
-  // The CLI is settled by the task's history, and nothing chosen afterwards - a group member
-  // with a free slot, an explicit pick of another CLI - gets to unsettle it
-  const usable = enabledAgents.filter((a) => sameLineage(a, lineage))
-  if (usable.length === 0) return { ok: false, reason: 'other-cli' }
+    const enabledAgents = candidateAgents(db, project).filter((a) => a.enabled)
+    if (enabledAgents.length === 0) return { ok: false, reason: 'no-usable-agent' }
+    // The CLI is settled by the task's history, and nothing chosen afterwards - a group member
+    // with a free slot, an explicit pick of another CLI - gets to unsettle it
+    usable = enabledAgents.filter((a) => sameLineage(a, lineage))
+    if (usable.length === 0) return { ok: false, reason: 'other-cli' }
+  }
 
   // A configured fallback is an explicit choice too. Expand only during cooldown: a busy
   // opener still waits for its slot, and unrelated group members never inherit its session.
   const roots = continuation
     ? usable.filter((a) =>
-      a.id === preferred?.id
+      a.id === picked?.id
         ? canReadSession(a, continuation)
         : canContinueSession(a, continuation)
     )
@@ -305,8 +329,8 @@ export function eligibleAgents(
 /**
  * Pick one candidate that can start right now. As a side effect, advances the round-robin position.
  *
- * `preferredAgentId`, when given, becomes the top candidate, but falls back to normal resolution
- * if it has no slot or is cooling down.
+ * `preferredAgentId`, when given, is the whole field (with its own fallbacks). A pick with no
+ * slot is waited for; it is never traded for a free agent the human did not choose.
  *
  * `reserved` counts as occupied even when nothing is running, so a follow-up on a task that
  * reserved its slot is not dragged into the queue.
@@ -322,8 +346,8 @@ export function resolveAgentForProject(
   project: Project,
   options: ResolveOptions = {}
 ): ResolveResult {
-  const { preferredAgentId, reserved, continuation, lineage } = options
-  const preferred = preferredAgentId ? repo.getAgent(db, preferredAgentId) : null
+  const { reserved, continuation, lineage } = options
+  const picked = pickedAgent(db, options)
 
   const eligible = eligibleAgents(db, project, options)
   if (!eligible.ok) return eligible
@@ -362,8 +386,9 @@ export function resolveAgentForProject(
       continue
     }
 
+    // A run on a picked agent (or its fallback) was not the group's decision, so it is not recorded as one
     const groupId =
-      project.targetKind === 'group' && agent.id !== preferred?.id ? project.targetId : null
+      project.targetKind === 'group' && !picked ? project.targetId : null
     if (groupId) repo.advanceGroupRotation(db, groupId, agent.id)
     return { ok: true, value: { agent, groupId } }
   }

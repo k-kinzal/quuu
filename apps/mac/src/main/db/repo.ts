@@ -371,6 +371,9 @@ export function deleteAgent(db: Db, id: string): void {
     "UPDATE projects SET target_id = NULL WHERE target_kind = 'agent' AND target_id = ?"
   ).run(id)
   db.prepare('UPDATE task_rules SET agent_override_id = NULL WHERE agent_override_id = ?').run(id)
+  // A pick that names nothing would silently fall through to the project's target; clearing it
+  // keeps the row honest about what the task will run on
+  db.prepare('UPDATE tasks SET agent_override_id = NULL WHERE agent_override_id = ?').run(id)
   db.prepare('DELETE FROM agent_cooldowns WHERE agent_id = ?').run(id)
   db.prepare('DELETE FROM agents WHERE id = ?').run(id)
 }

@@ -23,7 +23,7 @@ import * as repo from '../db/repo.js'
 import { newId, nowIso, truncate } from '../util.js'
 import { t } from '../i18n/index.js'
 import type { ResolveFailure, ResolveOptions, SessionOwner } from './agentResolver.js'
-import { candidateAgents, canResumeConversation, cooldownClearsAt, eligibleAgents, fallbackHolds, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel, taskLineage } from './agentResolver.js'
+import { canResumeConversation, cooldownClearsAt, eligibleAgents, fallbackHolds, pickedAgent, resolveAgentForProject, resolveFailureMessage, sessionOwner, sessionOwnerLabel, taskLineage } from './agentResolver.js'
 import { cliLabel } from '../agents/cli.js'
 import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
@@ -351,7 +351,8 @@ export class Scheduler extends EventEmitter {
           // "Cannot continue" and "nobody of its CLI" are facts about the task, not the project.
           // Keying them by project would overwrite the reason for another task in the same
           // project, so they are kept per task
-          if (resolved.reason === 'no-continuable-agent' || resolved.reason === 'other-cli') {
+          if (resolved.reason === 'no-continuable-agent' || resolved.reason === 'other-cli' ||
+            resolved.reason === 'pick-unavailable') {
             stuck.set(task.id, `${truncate(task.title, 24)} — ${label}`)
           } else {
             reasons.set(project.id, label)
@@ -407,6 +408,17 @@ export class Scheduler extends EventEmitter {
     options: ResolveOptions
   ): string {
     const continuation = options.continuation
+    const picked = pickedAgent(this.db, options)
+    // The agent this task was set to can be named. Enabling it, or clearing the pick, is the fix
+    if (reason === 'pick-unavailable') {
+      return picked
+        ? t('tasks.pickUnavailable', { agent: picked.name })
+        : resolveFailureMessage(reason)
+    }
+    // A pick is waited for rather than traded away, so the wait has to say who it is for
+    if (reason === 'all-busy' && picked) {
+      return t('scheduler.pickBusy', { agent: picked.name })
+    }
     // The CLI the task belongs to can be named. Which CLI to enable is the whole fix
     if (reason === 'other-cli') {
       const lineage = options.lineage
@@ -435,7 +447,8 @@ export class Scheduler extends EventEmitter {
         : t('scheduler.coolingUntil', { time: formatTime(until) })
     }
     if (reason !== 'all-reserved') return resolveFailureMessage(reason)
-    const ids = new Set(candidateAgents(this.db, project).map((a) => a.id))
+    const eligible = eligibleAgents(this.db, project, options)
+    const ids = new Set((eligible.ok ? eligible.value : []).map((a) => a.id))
     const holders = others.filter((r) => r.agentId !== null && ids.has(r.agentId))
     return t('scheduler.slotHeld', { holder: holdLabel(holders) })
   }
