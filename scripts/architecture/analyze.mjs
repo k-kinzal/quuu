@@ -121,7 +121,7 @@ export function analyze(root) {
       }
       // Vite raw text assets are files, not TypeScript modules. Resolve the actual file and
       // keep the same package boundary as CSS imports; a query must not hide another owner.
-      const assetSpecifier = /\.(?:css|txt)\?raw$/.test(specifier) ? specifier.slice(0, -4) : specifier
+      const assetSpecifier = /\.(?:css|txt|mjs)\?raw$/.test(specifier) ? specifier.slice(0, -4) : specifier
       if (assetSpecifier.endsWith('.css') || assetSpecifier !== specifier) {
         if (purePackages.has(pkg.name)) fail(`assets are not allowed in a pure package: ${specifier}`)
         try {
@@ -129,6 +129,16 @@ export function analyze(root) {
           // Node resolves symlinks, including macOS's /var → /private/var temporary roots.
           const assetOwner = packages.find((candidate) => assetPath.startsWith(`${realpathSync(candidate.dir)}/`))
           if (assetOwner && assetOwner.name !== pkg.name) fail(`must not import another package's internal asset directly: ${specifier}`)
+          // Detached runtime sources are bundled as text, but keep their code
+          // dependency visible so raw imports cannot bypass layer/cycle checks.
+          if (assetSpecifier.endsWith('.mjs')) {
+            const target = resolve(root, relative(realpathSync(root), assetPath))
+            if (fileSet.has(target)) {
+              graph.get(file).add(target)
+              const violation = layerViolation(from, relative(root, target), false)
+              if (violation) fail(violation)
+            }
+          }
         } catch { fail(`unresolvable asset ${specifier}`) }
         continue
       }

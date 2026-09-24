@@ -1,4 +1,5 @@
 import { inTransaction } from '../src/main/db/database.js'
+import { execFileSync } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -75,6 +76,21 @@ async function startRun(
 }
 
 describe('restarting the app and the agents', () => {
+  it('the rebuild script leaves detached GitHub auth supervisors running', () => {
+    const script = readFileSync(join(import.meta.dirname, '../scripts/restart-app.sh'), 'utf8')
+    const matcher = script.slice(script.indexOf('running_pids()'), script.indexOf('quit_running()'))
+    const output = execFileSync('/bin/sh', ['-c', `ps() { printf '%s\\n' "$QUUU_PROBE_PROCESSES"; }\n${matcher}\nrunning_pids`], {
+      encoding: 'utf8',
+      env: { ...process.env, QUUU_PROBE_PROCESSES: [
+        '101 /Applications/Quuu.app/Contents/MacOS/Quuu',
+        '102 /Applications/Quuu.app/Contents/MacOS/Quuu /tmp/quuu-github-AbCd/runtime.mjs /bin/sh',
+        '103 /Applications/Quuu.app/Contents/Frameworks/Quuu Helper.app/Contents/MacOS/Quuu Helper',
+        '104 /Applications/taskd.app/Contents/MacOS/taskd'
+      ].join('\n') }
+    })
+    expect(output.trim().split('\n')).toEqual(['101', '104'])
+  })
+
   it('runs an agent in its own process group', async () => {
     const db = memoryDb()
     const runner = new Runner(db)

@@ -38,25 +38,6 @@ function pullFileChange(file: Record<string, unknown>): FileChangeKind {
   return 'modified'
 }
 
-async function withGitHub<T>(
-  cwd: string,
-  project: Project,
-  settings: AppSettings,
-  run: (env: NodeJS.ProcessEnv) => Promise<T>
-): Promise<T> {
-  const prepared = prepareGitHubAuthEnvironment(
-    resolveCommitIdentity(settings, project),
-    cwd,
-    process.env.PATH ?? '',
-    process.env
-  )
-  try {
-    return await run({ ...process.env, ...prepared.env })
-  } finally {
-    cleanupGitHubAuth(prepared.dir)
-  }
-}
-
 export async function gh(
   cwd: string,
   project: Project,
@@ -64,7 +45,24 @@ export async function gh(
   args: string[],
   timeout = 20_000
 ): Promise<CommandResult> {
-  return withGitHub(cwd, project, settings, (env) => command('gh', args, { cwd, env, timeout }))
+  const prepared = prepareGitHubAuthEnvironment(
+    resolveCommitIdentity(settings, project),
+    cwd,
+    process.env.PATH ?? '',
+    process.env
+  )
+  try {
+    // Review reads use the same authenticated launcher as agent Runs. The
+    // prepared config initially contains a sentinel, not an issued token.
+    const [executable, ...invocation] = [...(prepared.launch ?? []), 'gh', ...args]
+    return await command(executable, invocation, {
+      cwd,
+      env: { ...process.env, ...prepared.env, ELECTRON_RUN_AS_NODE: undefined, NODE_OPTIONS: undefined },
+      timeout
+    })
+  } finally {
+    cleanupGitHubAuth(prepared.dir)
+  }
 }
 
 export function pullRequestUrl(value: string): { repository: string; number: number; url: string } | null {

@@ -144,14 +144,22 @@ test('detects unresolved imports and type cycles from real sources', () => {
   assert.match(issues(),/file cycle/)
 })
 
-test('resolves bundled CSS and notices as raw text without accepting missing assets', () => {
+test('resolves bundled CSS, notices and detached runtime sources without accepting missing assets', () => {
   const {write,issues} = fixture()
   write('apps/mac/src/main/report/report.css', '.sheet { display: grid; }')
   write('apps/mac/src/main/report/NOTICE.txt', 'Upstream notice')
-  write('apps/mac/src/main/report/assets.ts', "import css from './report.css?raw'; import notice from './NOTICE.txt?raw'")
+  write('apps/mac/src/main/report/runtime.mjs', "import { spawn } from 'node:child_process'")
+  write('apps/mac/src/main/report/assets.ts', "import css from './report.css?raw'; import notice from './NOTICE.txt?raw'; import runtime from './runtime.mjs?raw'")
   assert.equal(issues(), '')
   write('apps/mac/src/main/report/assets.ts', "import css from './missing.css?raw'")
   assert.match(issues(), /unresolvable asset/)
+})
+
+test('raw runtime imports retain layer boundaries', () => {
+  const {write,issues} = fixture()
+  write('apps/mac/src/main/platform/runtime.mjs', 'export const marker = 1')
+  write('apps/mac/src/renderer/src/assets.ts', "import runtime from '../../main/platform/runtime.mjs?raw'")
+  assert.match(issues(), /renderer must not import main implementation/)
 })
 
 test('raw asset imports cannot bypass a package boundary', () => {

@@ -49,9 +49,11 @@ const ADOPT_SESSION_GIVEUP_MS = 2 * 60 * 1000
  *
  * The command and arguments are passed through `"$@"`, so the shell never interprets them
  * (none of the quoting accidents of `shell: true`).
+ * Defer handled signals until the foreground child exits, keeping the recorded
+ * process group alive while the auth supervisor finishes cancellation/cleanup.
  */
 const WRAPPER =
-  '"$@"; __quuu_code=$?; if [ -n "${QUUU_GITHUB_HELPER:-}" ]; then "$QUUU_GITHUB_HELPER" cleanup 2>/dev/null || true; fi; printf %s "$__quuu_code" > "$QUUU_EXIT_FILE" 2>/dev/null; exit $__quuu_code'
+  'trap ":" TERM INT HUP; "$@"; __quuu_code=$?; printf %s "$__quuu_code" > "$QUUU_EXIT_FILE" 2>/dev/null; exit $__quuu_code'
 
 export interface StartParams {
   task: Task
@@ -238,12 +240,14 @@ export class Runner extends EventEmitter {
       PATH: path
     }
 
+    let launch = [run.command, ...args]
     let githubAuthDir: string | null = null
     let githubAuthEnv: NodeJS.ProcessEnv
     try {
       const prepared = prepareGitHubAuthEnvironment(identity, project.path, path, baseEnv)
       githubAuthDir = prepared.dir
       githubAuthEnv = prepared.env
+      if (prepared.launch) launch = [...prepared.launch, ...launch]
     } catch (err) {
       this.fail(run, 'spawn', err instanceof Error ? err.message : String(err))
       return repo.getRun(this.db, runId)!
@@ -293,7 +297,7 @@ export class Runner extends EventEmitter {
 
     let child: ChildProcess
     try {
-      child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', run.command, ...args], {
+      child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', ...launch], {
         cwd: project.path,
         env,
         stdio: ['ignore', logFd, logFd],
@@ -515,7 +519,7 @@ export class Runner extends EventEmitter {
       this.adoptSessionId(runId, live.adoption)
     }
     this.live.delete(runId)
-    // Clean up the child-side wrapper too. While the app is alive, make sure it goes here as well.
+    // Also remove private credentials after a forced kill of the process group.
     cleanupGitHubAuth(live.githubAuthDir)
 
     const run = repo.getRun(this.db, runId)

@@ -16,6 +16,8 @@ cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 
 # Target only the main process (Helper command lines carry the same path).
+# Detached GitHub auth supervisors also use Quuu's executable in Node mode;
+# they must survive this restart together with the agents they supervise.
 # pgrep never matches its own ancestors. This script is run by an agent that
 # Quuu launched — Quuu is an ancestor — so use ps instead of pgrep.
 #
@@ -24,7 +26,7 @@ ROOT="$(pwd)"
 # the new one.
 running_pids() {
   ps -ax -o pid=,command= |
-    awk '$0 ~ /(Quuu|QUUUU|taskd)\.app\/Contents\/MacOS\/(Quuu|QUUUU|taskd)([ ]|$)/ && $0 !~ /Helper/ { print $1 }'
+    awk '$0 ~ /(Quuu|QUUUU|taskd)\.app\/Contents\/MacOS\/(Quuu|QUUUU|taskd)([ ]|$)/ && $0 !~ /Helper/ && $0 !~ /\/quuu-github-[^\/]+\/runtime\.mjs([ ]|$)/ { print $1 }'
 }
 
 quit_running() {

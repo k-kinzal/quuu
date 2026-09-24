@@ -1,19 +1,21 @@
 import { execFileSync, spawn } from 'node:child_process'
-import { createSign } from 'node:crypto'
 import {
   accessSync,
   constants,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join } from 'node:path'
-import { hasGitHubAppAuthentication } from '../settings/commitIdentity.js'
+import runtimeSource from './githubAuthRuntime.mjs?raw'
+import { githubAppJwt, writeGitHubHosts } from './githubAuthRuntime.mjs'
+import { botLogin, hasGitHubAppAuthentication } from '../settings/commitIdentity.js'
 import type { CommitIdentity } from '../settings/identity.js'
+
+export { githubAppJwt } from './githubAuthRuntime.mjs'
 
 /** The private key lives only in the macOS login keychain — never in the DB or the run environment. */
 export const GITHUB_APP_KEYCHAIN_SERVICE = 'net.kinzal.quuu.github-app'
@@ -23,8 +25,10 @@ export const GITHUB_API_VERSION = '2026-03-10'
 
 export interface PreparedGitHubAuth {
   env: NodeJS.ProcessEnv
-  /** The wrapper shares the detached Run's lifetime. Removed only on normal exit. */
+  /** Private files share the detached Run's lifetime, including across app restarts. */
   dir: string | null
+  /** Prefix for the command that starts the agent after authentication succeeds. */
+  launch?: string[]
 }
 
 /** Entrust to the Keychain the private key handed over exactly once by the manifest conversion. */
@@ -110,24 +114,6 @@ async function runSecurity(args: string[], input = ''): Promise<string> {
   })
 }
 
-/** The 10-minute JWT for calling the API as the App. Not the same thing as an installation token. */
-export function githubAppJwt(appId: string, pem: string, nowMs = Date.now()): string {
-  if (!/^\d+$/.test(appId)) throw new Error('Could not read the GitHub App ID')
-  const now = Math.floor(nowMs / 1000)
-  const header = base64Url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }))
-  // Backdate 60s so a slightly fast clock doesn't make a just-issued JWT count as from the future.
-  const payload = base64Url(JSON.stringify({ iat: now - 60, exp: now + 9 * 60, iss: appId }))
-  const unsigned = `${header}.${payload}`
-  const signer = createSign('RSA-SHA256')
-  signer.update(unsigned)
-  signer.end()
-  return `${unsigned}.${signer.sign(pem).toString('base64url')}`
-}
-
-function base64Url(value: string): string {
-  return Buffer.from(value).toString('base64url')
-}
-
 /** The origin's GitHub repository. Credentials are never handed to other hosts or local remotes. */
 export function githubRepositoryFromRemote(remote: string): string | null {
   const value = remote.trim()
@@ -143,11 +129,8 @@ export function githubRepositoryFromRemote(remote: string): string | null {
 }
 
 /**
- * Add the gh wrapper to the Run's PATH, and point Git's credential helper at the same token mint.
- *
- * Installation tokens expire in an hour, so none is minted at Run start. The wrapper
- * mints one from the Keychain key each time, right before gh / git actually touches
- * GitHub. Even in a long Run, no path is left where only the final push is expired.
+ * Give native gh and Git one private, populated configuration. A detached
+ * supervisor issues and refreshes the token without depending on shell PATH.
  */
 export function prepareGitHubAuthEnvironment(
   identity: CommitIdentity | null,
@@ -170,17 +153,20 @@ export function prepareGitHubAuthEnvironment(
   const dir = mkdtempSync(join(tmpdir(), 'quuu-github-'))
   try {
     const configDir = join(dir, 'config')
-    const helperPath = join(dir, 'github-app-credential')
-    const ghWrapperPath = join(dir, 'gh')
-    mkdirSync(configDir, { recursive: true })
-    writeFileSync(helperPath, credentialHelperScript(), { mode: 0o700 })
-
+    const runtimePath = join(dir, 'runtime.mjs')
     const realGh = findExecutable(pathEnv, 'gh')
-    if (realGh) {
-      writeFileSync(ghWrapperPath, '#!/bin/sh\nexec "$QUUU_GITHUB_HELPER" gh "$@"\n', {
-        mode: 0o700
-      })
-    }
+    if (!realGh) throw new Error('gh was not found. Install GitHub CLI to use the GitHub App.')
+    mkdirSync(configDir, { mode: 0o700 })
+    // A nonempty sentinel prevents Keychain fallback even before the first issue.
+    writeGitHubHosts(configDir, botLogin(identity.appSlug), 'quuu-authentication-pending')
+    writeFileSync(runtimePath, `${runtimeSource}\nawait run()\n`, { mode: 0o600 })
+    writeFileSync(join(dir, 'runtime.json'), JSON.stringify({
+      appId,
+      repository,
+      user: botLogin(identity.appSlug),
+      keychainService: GITHUB_APP_KEYCHAIN_SERVICE,
+      apiVersion: GITHUB_API_VERSION
+    }), { mode: 0o600 })
 
     const env: NodeJS.ProcessEnv = {
       GH_TOKEN: undefined,
@@ -189,11 +175,11 @@ export function prepareGitHubAuthEnvironment(
       GH_REPO: repository,
       GH_CONFIG_DIR: configDir,
       GH_PROMPT_DISABLED: '1',
-      QUUU_GITHUB_APP_ID: appId,
-      QUUU_GITHUB_REPOSITORY: repository,
-      QUUU_GITHUB_HELPER: helperPath,
-      QUUU_REAL_GH: realGh ?? '',
-      PATH: realGh ? `${dir}${delimiter}${pathEnv}` : pathEnv
+      // Do not inherit the obsolete PATH wrapper when Quuu rebuilds itself.
+      QUUU_GITHUB_APP_ID: undefined,
+      QUUU_GITHUB_REPOSITORY: undefined,
+      QUUU_GITHUB_HELPER: undefined,
+      QUUU_REAL_GH: undefined
     }
 
     appendGitConfig(env, inherited, 'credential.https://github.com.helper', '')
@@ -201,7 +187,7 @@ export function prepareGitHubAuthEnvironment(
       env,
       { ...inherited, ...env },
       'credential.https://github.com.helper',
-      `!${shellQuote(helperPath)} credential`
+      `!${shellQuote(realGh)} auth git-credential`
     )
     appendGitConfig(
       env,
@@ -216,7 +202,7 @@ export function prepareGitHubAuthEnvironment(
       'ssh://git@github.com/'
     )
 
-    return { env, dir }
+    return { env, dir, launch: ['/usr/bin/env', 'ELECTRON_RUN_AS_NODE=1', process.execPath, runtimePath] }
   } catch (err) {
     cleanupGitHubAuth(dir)
     throw err
@@ -276,139 +262,4 @@ function appendGitConfig(
 
 function shellQuote(value: string): string {
   return `'${value.replace(/'/g, `'"'"'`)}'`
-}
-
-/** A wrapper holding no secrets. The real key leaves the Keychain into a temp file only for the moment of the call. */
-function credentialHelperScript(): string {
-  return `#!/bin/sh
-set -eu
-
-service=${shellQuote(GITHUB_APP_KEYCHAIN_SERVICE)}
-api_version=${shellQuote(GITHUB_API_VERSION)}
-
-b64url() {
-  /usr/bin/openssl base64 -A | /usr/bin/tr '+/' '-_' | /usr/bin/tr -d '='
-}
-
-mint() {
-  app_id="${'$'}{QUUU_GITHUB_APP_ID:?GitHub App ID is missing}"
-  repository="${'$'}{QUUU_GITHUB_REPOSITORY:?GitHub repository is missing}"
-  owner="${'$'}{repository%%/*}"
-  repo="${'$'}{repository#*/}"
-  key_file="${'$'}(/usr/bin/mktemp "${'$'}{TMPDIR:-/tmp}/quuu-github-key.XXXXXX")"
-  /bin/chmod 600 "${'$'}key_file"
-  trap '/bin/rm -f "${'$'}key_file"' EXIT HUP INT TERM
-
-  if ! encoded_key="${'$'}(/usr/bin/security find-generic-password -s "${'$'}service" -a "${'$'}app_id" -w)"; then
-    echo "Quuu's GitHub App private key was not found. Update the App from Settings." >&2
-    return 1
-  fi
-  if ! printf '%s' "${'$'}encoded_key" | /usr/bin/openssl base64 -d -A >"${'$'}key_file"; then
-    echo "Could not read Quuu's GitHub App private key. Update the App from Settings." >&2
-    return 1
-  fi
-  unset encoded_key
-  if [ ! -s "${'$'}key_file" ] || ! /usr/bin/openssl pkey -in "${'$'}key_file" -noout >/dev/null 2>&1; then
-    echo "Could not read Quuu's GitHub App private key. Update the App from Settings." >&2
-    return 1
-  fi
-
-  now="${'$'}(/bin/date +%s)"
-  iat="${'$'}((now - 60))"
-  exp="${'$'}((now + 540))"
-  header="${'$'}(printf '%s' '{"alg":"RS256","typ":"JWT"}' | b64url)"
-  payload="${'$'}(printf '{"iat":%s,"exp":%s,"iss":"%s"}' "${'$'}iat" "${'$'}exp" "${'$'}app_id" | b64url)"
-  unsigned="${'$'}header.${'$'}payload"
-  signature="${'$'}(printf '%s' "${'$'}unsigned" | /usr/bin/openssl dgst -sha256 -sign "${'$'}key_file" | b64url)"
-  jwt="${'$'}unsigned.${'$'}signature"
-
-  installation_file="${'$'}(/usr/bin/mktemp "${'$'}{TMPDIR:-/tmp}/quuu-github-installation.XXXXXX")"
-  trap '/bin/rm -f "${'$'}key_file" "${'$'}installation_file"' EXIT HUP INT TERM
-  if ! installation_status="${'$'}(/usr/bin/curl --silent --show-error --location \\
-    --output "${'$'}installation_file" --write-out '%{http_code}' \\
-    -H 'Accept: application/vnd.github+json' \\
-    -H "Authorization: Bearer ${'$'}jwt" \\
-    -H "X-GitHub-Api-Version: ${'$'}api_version" \\
-    "https://api.github.com/repos/${'$'}owner/${'$'}repo/installation")"; then
-    echo 'Could not connect to GitHub.' >&2
-    return 1
-  fi
-  case "${'$'}installation_status" in
-    200) ;;
-    401)
-      echo 'GitHub App authentication failed. Update the App from Settings.' >&2
-      return 1
-      ;;
-    404)
-      echo "The GitHub App is not installed on ${'$'}repository." >&2
-      return 1
-      ;;
-    *)
-      echo "GitHub returned ${'$'}installation_status." >&2
-      return 1
-      ;;
-  esac
-  installation="${'$'}(/bin/cat "${'$'}installation_file")"
-  installation_id="${'$'}(printf '%s' "${'$'}installation" | /usr/bin/plutil -extract id raw -o - - 2>/dev/null)" || return 1
-
-  if ! token_status="${'$'}(/usr/bin/curl --silent --show-error --location --request POST \\
-    --output "${'$'}installation_file" --write-out '%{http_code}' \\
-    -H 'Accept: application/vnd.github+json' \\
-    -H "Authorization: Bearer ${'$'}jwt" \\
-    -H "X-GitHub-Api-Version: ${'$'}api_version" \\
-    -H 'Content-Type: application/json' \\
-    --data "{\\"repositories\\":[\\"${'$'}repo\\"]}" \\
-    "https://api.github.com/app/installations/${'$'}installation_id/access_tokens")"; then
-    echo 'Could not connect to GitHub.' >&2
-    return 1
-  fi
-  case "${'$'}token_status" in
-    201) ;;
-    401)
-      echo 'GitHub App authentication failed. Update the App from Settings.' >&2
-      return 1
-      ;;
-    422)
-      echo "The GitHub App cannot access ${'$'}repository. Add it in the GitHub installation settings." >&2
-      return 1
-      ;;
-    *)
-      echo "GitHub returned ${'$'}token_status." >&2
-      return 1
-      ;;
-  esac
-  response="${'$'}(/bin/cat "${'$'}installation_file")"
-  printf '%s' "${'$'}response" | /usr/bin/plutil -extract token raw -o - - 2>/dev/null
-}
-
-case "${'$'}{1:-}" in
-  gh)
-    shift
-    token="${'$'}(mint)"
-    if [ -z "${'$'}{QUUU_REAL_GH:-}" ]; then
-      echo 'gh was not found.' >&2
-      exit 1
-    fi
-    GH_TOKEN="${'$'}token" GITHUB_TOKEN='' exec "${'$'}QUUU_REAL_GH" "${'$'}@"
-    ;;
-  credential)
-    while IFS= read -r line; do [ -z "${'$'}line" ] && break; done
-    token="${'$'}(mint)"
-    printf 'username=x-access-token\npassword=%s\n\n' "${'$'}token"
-    ;;
-  cleanup)
-    # Clean up only the Quuu-made temp directory this script itself lives in.
-    /bin/rm -rf -- "${'$'}{0%/*}"
-    ;;
-  *)
-    echo 'Invalid invocation of the GitHub App credential helper.' >&2
-    exit 1
-    ;;
-esac
-`
-}
-
-/** Lets tests verify no secret is written into the wrapper. */
-export function readPreparedHelper(dir: string): string {
-  return readFileSync(join(dir, 'github-app-credential'), 'utf8')
 }

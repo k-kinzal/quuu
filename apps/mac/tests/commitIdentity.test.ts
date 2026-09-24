@@ -1,4 +1,3 @@
-import { execFileSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -20,12 +19,6 @@ import { makeAgent, makeProject, makeTask, memoryDb } from './helpers.js'
  */
 
 const IDENTITY: CommitIdentity = { appSlug: 'quuu-bot', botUserId: '1234567' }
-const AUTH_IDENTITY: CommitIdentity = {
-  ...IDENTITY,
-  appId: '123',
-  setupVersion: GITHUB_APP_SETUP_VERSION
-}
-
 describe('building the identity', () => {
   it('folds the different ways of writing the slug into one form', () => {
     expect(normalizeAppSlug('  quuu-bot ')).toBe('quuu-bot')
@@ -199,37 +192,6 @@ describe('the identity that reaches the run', () => {
     expect(log).toContain('GIT_AUTHOR_NAME=other-bot[bot]')
     expect(log).not.toContain('書き置き')
     expect(log).not.toContain('stale@example.com')
-  })
-
-  it('overwrites a human gh login left in the agent definition on the current version of the App', async () => {
-    const db = memoryDb()
-    repo.saveAppSettings(db, {
-      ...DEFAULT_SETTINGS,
-      commitIdentityEnabled: true,
-      commitIdentity: AUTH_IDENTITY
-    })
-    const agent = makeAgent(db, {
-      name: 'env',
-      command: '/usr/bin/env',
-      argsTemplate: [],
-      env: { GH_TOKEN: 'human-token', GITHUB_TOKEN: 'human-github-token' }
-    })
-    const project = makeProject(db, { name: 'p', targetId: agent, path: workdir })
-    execFileSync('/usr/bin/git', ['init', workdir], { stdio: 'ignore' })
-    execFileSync('/usr/bin/git', [
-      '-C',
-      workdir,
-      'remote',
-      'add',
-      'origin',
-      'git@github.com:acme/query-kit.git'
-    ])
-
-    const log = await runAndReadEnv(db, project)
-    expect(log).toContain('GH_REPO=acme/query-kit')
-    expect(log).toContain('QUUU_GITHUB_APP_ID=123')
-    expect(log).not.toContain('human-token')
-    expect(log).not.toContain('human-github-token')
   })
 
   it('adds no identity environment variables when nothing is configured', async () => {

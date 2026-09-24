@@ -1,15 +1,19 @@
 import { execFileSync } from 'node:child_process'
 import { createVerify, generateKeyPairSync } from 'node:crypto'
 import {
+  existsSync,
   mkdtempSync,
+  readFileSync,
+  statSync,
   realpathSync,
   rmSync,
   writeFileSync
 } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { cleanupGitHubAuth, githubAppJwt, githubRepositoryFromRemote, prepareGitHubAuthEnvironment, readPreparedHelper, saveGitHubAppPrivateKey } from '../src/main/platform/githubAuth.js'
+import { cleanupGitHubAuth, githubAppJwt, githubRepositoryFromRemote, prepareGitHubAuthEnvironment, saveGitHubAppPrivateKey } from '../src/main/platform/githubAuth.js'
+import { refreshDelay, writeGitHubHosts } from '../src/main/platform/githubAuthRuntime.mjs'
 import { GITHUB_APP_SETUP_VERSION } from '../src/main/settings/commitIdentity.js'
 
 let dir: string
@@ -79,7 +83,7 @@ describe('GitHub App runtime authentication', () => {
     expect(verifier.verify(pair.publicKey, Buffer.from(signature, 'base64url'))).toBe(true)
   })
 
-  it("overrides the human logins of gh and git with a per-run App token issuer", () => {
+  it("overrides the human logins of gh and git with one private config without changing PATH", () => {
     execFileSync('/usr/bin/git', ['init', dir], { stdio: 'ignore' })
     execFileSync('/usr/bin/git', [
       '-C',
@@ -111,20 +115,19 @@ describe('GitHub App runtime authentication', () => {
       expect(prepared.env.GH_TOKEN).toBeUndefined()
       expect(prepared.env.GITHUB_TOKEN).toBeUndefined()
       expect(prepared.env.GH_REPO).toBe('acme/query-kit')
-      expect(prepared.env.QUUU_REAL_GH).toBe(realpathSync(gh))
-      expect(prepared.env.PATH?.split(delimiter)[0]).toBe(prepared.dir)
+      expect(prepared.env.PATH).toBeUndefined()
+      expect(prepared.env.GIT_CONFIG_VALUE_1).toBe(`!'${realpathSync(gh)}' auth git-credential`)
+      expect(existsSync(join(prepared.dir!, 'gh'))).toBe(false)
+      expect(statSync(prepared.dir!).mode & 0o777).toBe(0o700)
+      expect(statSync(prepared.env.GH_CONFIG_DIR!).mode & 0o777).toBe(0o700)
+      expect(statSync(join(prepared.env.GH_CONFIG_DIR!, 'hosts.yml')).mode & 0o777).toBe(0o600)
       expect(prepared.env.GIT_CONFIG_COUNT).toBe('4')
       expect(prepared.env.GIT_CONFIG_VALUE_0).toBe('')
       expect(prepared.env.GIT_CONFIG_VALUE_2).toBe('git@github.com:')
       expect(prepared.env.GIT_CONFIG_VALUE_3).toBe('ssh://git@github.com/')
 
-      const helper = readPreparedHelper(prepared.dir!)
-      execFileSync('/bin/sh', ['-n', join(prepared.dir!, 'github-app-credential')])
-      execFileSync('/bin/sh', ['-n', join(prepared.dir!, 'gh')])
-      expect(helper).toContain('/usr/bin/security find-generic-password')
-      expect(helper).toContain('/access_tokens')
-      expect(helper).toContain('GitHub App authentication failed')
-      expect(helper).toContain('Add it in the GitHub installation settings')
+      const helper = readFileSync(join(prepared.dir!, 'runtime.mjs'), 'utf8')
+      execFileSync(process.execPath, ['--check', join(prepared.dir!, 'runtime.mjs')])
       expect(helper).not.toContain('the human token')
       expect(helper).not.toContain('BEGIN PRIVATE KEY')
 
@@ -141,10 +144,32 @@ describe('GitHub App runtime authentication', () => {
           ['-C', dir, 'config', '--get-all', 'credential.https://github.com.helper'],
           { encoding: 'utf8', env }
         ).trim()
-      ).toContain('github-app-credential')
+      ).toContain('auth git-credential')
     } finally {
       cleanupGitHubAuth(prepared.dir)
     }
+  })
+
+  it('refreshes 15 minutes before GitHub expiration using wall time', () => {
+    const now = 1_800_000_000_000
+    expect(refreshDelay(now + 60 * 60 * 1000, now)).toBe(45 * 60 * 1000)
+    expect(refreshDelay(now + 10 * 60 * 1000, now)).toBe(1000)
+  })
+
+  it('makes native gh and Git read an atomic replacement even through a login shell', () => {
+    // Deliberately invalid tokens; boolean assertions cannot print a personal
+    // credential even if a regression accidentally reads one from the Keychain.
+    const gh = execFileSync('/bin/zsh', ['-lc', 'command -v gh'], { encoding: 'utf8' }).trim()
+    const env = { ...process.env, GH_TOKEN: undefined, GITHUB_TOKEN: undefined, GH_CONFIG_DIR: dir }
+    writeGitHubHosts(dir, 'quuu-test[bot]', 'quuu-invalid-first')
+    const args = ['auth', 'token', '--hostname', 'github.com']
+    expect(execFileSync(gh, args, { env, encoding: 'utf8' }).trim() === 'quuu-invalid-first').toBe(true)
+    writeGitHubHosts(dir, 'quuu-test[bot]', 'quuu-invalid-second')
+    expect(execFileSync('/bin/zsh', ['-lc', 'gh auth token --hostname github.com'], { env, encoding: 'utf8' }).trim() === 'quuu-invalid-second').toBe(true)
+    expect(execFileSync(gh, ['auth', 'git-credential', 'get'], {
+      env, encoding: 'utf8', input: 'protocol=https\nhost=github.com\n\n'
+    }).includes('password=quuu-invalid-second')).toBe(true)
+    expect(statSync(join(dir, 'hosts.yml')).mode & 0o777).toBe(0o600)
   })
 
   it('never mixes auth into an old-version App or a non-GitHub remote', () => {
@@ -205,8 +230,8 @@ describe('GitHub App runtime authentication', () => {
     try {
       expect(prepared.dir).not.toBeNull()
       expect(prepared.env.GH_TOKEN).toBeUndefined()
-      expect(prepared.env.QUUU_GITHUB_APP_ID).toBe('123')
-      expect(readPreparedHelper(prepared.dir!)).toContain('Update the App from Settings')
+      expect(readFileSync(join(prepared.dir!, 'runtime.json'), 'utf8')).toContain('123')
+      expect(prepared.launch).toBeDefined()
     } finally {
       cleanupGitHubAuth(prepared.dir)
     }
