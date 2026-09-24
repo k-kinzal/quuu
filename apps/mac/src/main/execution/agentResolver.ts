@@ -254,6 +254,14 @@ export interface ResolveOptions {
    * failure that asks for another agent.
    */
   lineage?: SessionOwner | null
+  /**
+   * Start even while every candidate is cooling down.
+   *
+   * A Limit can be lifted from outside Quuu — a plan change, credits bought — and the only way
+   * to learn that is to try. Automatic claims still wait the cooldown out. A human's "run now"
+   * does not: this one run is allowed through, and a Limit on the way out puts the task back to waiting.
+   */
+  ignoreCooldown?: boolean
 }
 
 /**
@@ -365,7 +373,7 @@ export function resolveAgentForProject(
   let sawReserved = false
   let sawFallbackFull = false
   for (const agent of candidates) {
-    if (repo.isCoolingDown(db, agent.id)) {
+    if (!options.ignoreCooldown && repo.isCoolingDown(db, agent.id)) {
       sawCooling = true
       continue
     }

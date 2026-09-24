@@ -83,6 +83,14 @@ export class Scheduler extends EventEmitter {
   /** Warnings such as "the automation rules could not be read". Surfaced in the status. */
   private ruleWarnings: string[] = []
   private tickIntervalMs = 3000
+  /**
+   * Runs a human started through a Limit cooldown, and the moment that cooldown ended.
+   *
+   * The cooldown stays in place while the probe runs, so the rest of the queue does not pile
+   * into an account that may still be out. A run that gets through clears it; one that is
+   * still limited is parked again by the ordinary finish path.
+   */
+  private limitProbes = new Map<string, string | null>()
 
   constructor(
     private db: Db,
@@ -463,6 +471,7 @@ export class Scheduler extends EventEmitter {
       const { run, classification } = event
       const task = repo.getTask(this.db, run.taskId)
       if (!task) {
+        this.limitProbes.delete(run.id)
         afterCommit(this.db, () => this.emit('changed'))
         return
       }
@@ -474,6 +483,8 @@ export class Scheduler extends EventEmitter {
         repo.setCooldown(this.db, run.agentId, until,
           classification.kind === 'auth' ? t('runErrorKind.auth') : classification.message || 'Limit')
       }
+      const probedUntil = this.limitProbes.get(run.id)
+      this.limitProbes.delete(run.id)
 
       const project = repo.getProject(this.db, task.projectId)
       const retry = classification.kind !== null && project !== null &&
@@ -503,6 +514,15 @@ export class Scheduler extends EventEmitter {
         case 'failed':
           this.notify('error', t('scheduler.failedToast', { title: truncate(task.title, 50) }), task.id, classification.message || undefined)
           break
+      }
+      // A probe that got through means the account is back. One that is still limited was
+      // re-cooled above and parked with the other retries.
+      if (probedUntil !== undefined && classification.kind === null) {
+        repo.clearCooldown(this.db, run.agentId)
+        const parked = repo.getTask(this.db, task.id)
+        if (parked && probedUntil !== null && parked.scheduledAt !== null && parked.scheduledAt <= probedUntil) {
+          repo.setTaskSchedule(this.db, parked.id, null)
+        }
       }
       this.afterTransition()
     })
@@ -572,7 +592,14 @@ export class Scheduler extends EventEmitter {
   // Manual run
   // -------------------------------------------------------------------------
 
-  /** "Run now". Launches immediately, ignoring queue order. Returns the reason when no slot is free. */
+  /**
+   * "Run now". Launches immediately, ignoring queue order. Returns the reason when no slot is free.
+   *
+   * A Limit cooldown is not one of those reasons. The human asked to try now because the Limit
+   * may already be gone (a plan change, credits bought). This run is let through; if it is still
+   * limited, the finish path puts it back to waiting. The cooldown itself stays until that
+   * result, so nothing else starts on the strength of the request.
+   */
   async runNow(taskId: string): Promise<{ ok: boolean; reason?: string }> {
     const prepared = inTransaction(this.db, () => {
       const task = repo.getTask(this.db, taskId)
@@ -587,7 +614,12 @@ export class Scheduler extends EventEmitter {
       // The reserving side is not blocked by it (same rule as claimNext).
       const others = holdsSlot(task.priority) ? [] : repo.listSlotReservations(this.db)
       const options = this.resolveOptionsFor(task, others)
-      const resolved = resolveAgentForProject(this.db, project, options)
+      let resolved = resolveAgentForProject(this.db, project, options)
+      let probeUntil: string | null | undefined
+      if (!resolved.ok && resolved.reason === 'all-cooling') {
+        resolved = resolveAgentForProject(this.db, project, { ...options, ignoreCooldown: true })
+        if (resolved.ok) probeUntil = repo.cooldownEnd(this.db, resolved.value.agent.id)
+      }
       if (!resolved.ok) {
         return {
           ok: false,
@@ -605,9 +637,10 @@ export class Scheduler extends EventEmitter {
         sessionId: this.sessionIdFor(task),
         fallbackFromRunId: this.previousFailedRunId(taskId)
       }
-      return { ok: true as const, params, run: this.runner.prepare(params) }
+      return { ok: true as const, params, run: this.runner.prepare(params), probeUntil }
     })
     if (!prepared.params) return prepared
+    if (prepared.probeUntil !== undefined) this.limitProbes.set(prepared.run.id, prepared.probeUntil)
     await this.runner.start(prepared.params, prepared.run)
     this.emit('changed')
     this.emitStatus()

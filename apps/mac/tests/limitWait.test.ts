@@ -525,4 +525,65 @@ describe('a Limit that says when it lifts', () => {
 
     expect(repo.getTask(f.db, task)?.scheduledAt).toBe(later)
   })
+
+  it('starts a manual run through a Limit, and parks it again when the account is still out', async () => {
+    const f = fixture()
+    const task = followupOn(f, 'Fuzzの再編')
+    repo.setCooldown(f.db, f.limited, f.liftsAt.toISOString(), 'Limit')
+    repo.setTaskSchedule(f.db, task, f.liftsAt.toISOString())
+
+    const done = finishes(f.runner, 1)
+    const result = await f.scheduler.runNow(task)
+    // The rest of the queue still sees the cooldown until this probe comes back
+    expect(repo.cooldownEnd(f.db, f.limited)).toBe(f.liftsAt.toISOString())
+    await done
+
+    expect(result.ok).toBe(true)
+    const after = repo.getTask(f.db, task)!
+    expect(after.status).toBe('queued')
+    expect(after.scheduledAt).toBe(f.liftsAt.toISOString())
+    expect(repo.cooldownEnd(f.db, f.limited)).toBe(f.liftsAt.toISOString())
+    expect(repo.readyTaskIds(f.db, new Date().toISOString()).map((r) => r.task_id)).not.toContain(task)
+  })
+
+  it('clears the Limit when a manual run gets through', async () => {
+    const db = memoryDb()
+    const runner = new Runner(db)
+    const agent = makeAgent(db, { name: 'Codex', command: '/bin/echo', argsTemplate: ['ok'] })
+    const project = makeProject(db, { name: 'p', targetId: agent, path: workdir })
+    const task = makeTask(db, project, 't')
+    const liftsAt = tomorrowEvening().toISOString()
+    repo.setCooldown(db, agent, liftsAt, 'Limit')
+    repo.setTaskSchedule(db, task, liftsAt)
+
+    const done = finishes(runner, 1)
+    const result = await new Scheduler(db, runner).runNow(task)
+    await done
+
+    expect(result.ok).toBe(true)
+    const after = repo.getTask(db, task)!
+    expect(after.status).toBe('review')
+    expect(after.scheduledAt).toBeNull()
+    expect(repo.cooldownEnd(db, agent)).toBeNull()
+  })
+
+  it('keeps a later schedule a human set when the manual probe gets through', async () => {
+    const db = memoryDb()
+    const runner = new Runner(db)
+    const agent = makeAgent(db, { name: 'Codex', command: '/bin/echo', argsTemplate: ['ok'] })
+    const project = makeProject(db, { name: 'p', targetId: agent, path: workdir })
+    const task = makeTask(db, project, 't')
+    const liftsAt = tomorrowEvening()
+    const later = new Date(liftsAt.getTime() + 86_400_000).toISOString()
+    repo.setCooldown(db, agent, liftsAt.toISOString(), 'Limit')
+    repo.setTaskSchedule(db, task, later)
+
+    const done = finishes(runner, 1)
+    await new Scheduler(db, runner).runNow(task)
+    await done
+
+    expect(repo.getTask(db, task)?.status).toBe('review')
+    expect(repo.getTask(db, task)?.scheduledAt).toBe(later)
+    expect(repo.cooldownEnd(db, agent)).toBeNull()
+  })
 })
