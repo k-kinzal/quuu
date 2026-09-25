@@ -48,6 +48,12 @@ You've hit your session limit · resets 10:40pm (Asia/Tokyo)
 ```
 
 Its reset time reaches the scheduler, which applies cooldown and parks the task.
+Weekly limits also join a date to the clock with `at`, for example
+`You've hit your weekly limit · resets Sep 28 at 7pm (Asia/Tokyo)`.
+This waits until September 28 at 19:00, without adding the configured cooldown.
+On restart, queued limited runs with a matching saved cooldown are checked against
+their recorded diagnostic. A newly readable reset extends a shorter guessed wait;
+relative times are anchored to the run's end, and later human schedules are kept.
 Normal completion and restart recovery call the same adapter. Claude model limits
 without a reset time retain the existing observed-week estimate, now owned by the
 Claude adapter. Without evidence, the configured cooldown remains the fallback.

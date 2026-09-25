@@ -119,7 +119,8 @@ function yearFor(month: number, day: number, now: Date): number {
 
 function parseClockTime(text: string, now: Date): number | null {
   const date = parseDate(text, now)
-  const m = CLOCK.exec(date ? date.rest : text)
+  // Claude's weekly reset joins the date and clock with "at"; Codex leaves only whitespace.
+  const m = CLOCK.exec(date ? date.rest.replace(/^at\s+/i, '') : text)
   if (!m) return null
   const meridiem = m[3]?.toLowerCase()
   // Without a meridiem, only the "19:13" form is a time. "reset in 4" says nothing on its own

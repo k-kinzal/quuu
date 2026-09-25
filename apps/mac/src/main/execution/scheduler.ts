@@ -13,6 +13,7 @@ import type { StartParams } from './runner.js'
 import type { AgentSlotStatus, SchedulerStatus, SlotHold } from './status.js'
 import type { Run, RunErrorKind } from './types.js'
 import { adapterFor } from '../agent-adapters/registry.js'
+import { limitLiftsAt } from '../agent-adapters/limitWindow.js'
 
 import type { Db } from '../db/database.js'
 import { afterCommit, inTransaction } from '../db/database.js'
@@ -114,7 +115,41 @@ export class Scheduler extends EventEmitter {
     void this.tick()
   }
 
-  reconcile(): void { this.recovery.reconcile() }
+  reconcile(): void {
+    this.recovery.reconcile()
+    this.restoreLimitWaits()
+  }
+
+  /** A parser fix must reach tasks already waiting, before another attempt spends a slot. */
+  private restoreLimitWaits(): void {
+    inTransaction(this.db, () => {
+      const cooldowns = new Map(repo.listCooldowns(this.db).map(cooldown => [cooldown.agentId, cooldown]))
+      if (cooldowns.size === 0) return
+      const waiting = repo.listTasks(this.db)
+        .filter(task => task.status === 'queued')
+        .map(task => task.currentRunId ? repo.getRun(this.db, task.currentRunId) : null)
+        .filter((run): run is Run => run?.status === 'limited')
+      let changed = false
+      for (const run of waiting) {
+        if (run.endedAt === null) continue
+        const cooldown = cooldowns.get(run.agentId)
+        if (!cooldown || cooldown.reason !== run.errorMessage) continue
+
+        // Interpret relative and year-less times when they were printed, not each time we restart.
+        const retryAt = limitLiftsAt(run.errorMessage, new Date(run.endedAt))
+        if (retryAt === null) continue
+        const until = cooldownUntil('limit', undefined, retryAt, run.endedAt)
+        if (until === null || until <= cooldown.until) continue
+        repo.setCooldown(this.db, run.agentId, until, cooldown.reason)
+        cooldown.until = until
+        changed = true
+      }
+      if (!changed) return
+      // Reuse candidate resolution and preserve any later schedule the human chose.
+      for (const run of waiting) this.parkUntilAgentReturns(run.taskId)
+      afterCommit(this.db, () => this.emit('changed'))
+    })
+  }
 
   stop(): void {
     this.stopped = true

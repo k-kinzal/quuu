@@ -20,6 +20,13 @@ describe('when a limit lifts', () => {
     expect(limitLiftsAt(out, now)).toBe(local(2026, 9, 19, 19, 13))
   })
 
+  it('reads the date joined to the clock with at in a Claude weekly limit', () => {
+    const out = "You've hit your weekly limit · resets Sep 28 at 7pm (Asia/Tokyo)"
+    expect(limitLiftsAt(out, now)).toBe(local(2026, 9, 28, 19))
+    expect(limitLiftsAt('resets September 28, 2026 at 7:30 PM', now))
+      .toBe(local(2026, 9, 28, 19, 30))
+  })
+
   it('reads a bare clock time as the next time that clock comes round', () => {
     expect(limitLiftsAt('Claude usage limit reached. Your limit will reset at 3pm', now))
       .toBe(local(2026, 9, 18, 15))

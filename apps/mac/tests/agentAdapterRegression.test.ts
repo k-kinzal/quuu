@@ -16,6 +16,17 @@ import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, occupy,
 const SESSION_LIMIT = "You've hit your session limit · resets 10:40pm (Asia/Tokyo)"
 const input = { exitCode: 1, signal: null, output: SESSION_LIMIT, limitPatterns: [], timedOut: false, canceled: false }
 
+function weeklyLimit(): { message: string; until: string } {
+  const at = new Date()
+  at.setDate(at.getDate() + 3)
+  at.setHours(19, 0, 0, 0)
+  const month = at.toLocaleString('en-US', { month: 'short' })
+  return {
+    message: `You've hit your weekly limit · resets ${month} ${at.getDate()} at 7pm (${Intl.DateTimeFormat().resolvedOptions().timeZone})`,
+    until: at.toISOString()
+  }
+}
+
 describe('Claude limit translation', () => {
   it('recognizes the Fable session limit with its reset time', () => {
     const result = adapterFor('claude').classify(input)
@@ -31,6 +42,16 @@ describe('Claude limit translation', () => {
   it('reads a failed JSON result even when the CLI exits zero', () => {
     const output = JSON.stringify({ type: 'result', subtype: 'success', is_error: true, result: SESSION_LIMIT })
     expect(adapterFor('claude').classify({ ...input, exitCode: 0, output })).toMatchObject({ kind: 'limit', message: SESSION_LIMIT })
+  })
+
+  it('carries the exact weekly reset through text and failed JSON results', () => {
+    const { message, until } = weeklyLimit()
+    for (const output of [message, JSON.stringify({ type: 'result', is_error: true, result: message })]) {
+      expect(adapterFor('claude').classify({ ...input, output }))
+        .toEqual({ kind: 'limit', message, retryAt: until })
+      expect(adapterFor('claude').classifyDetached({ ...input, output }))
+        .toEqual({ kind: 'limit', message, retryAt: until })
+    }
   })
 
   it('does not turn successful discussion of a limit into a limited run', () => {
@@ -58,12 +79,18 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true })
 })
 
-it.each([false, true])('parks a Fable session limit automatically (recovered after restart: %s)', async (recovered) => {
+it.each([
+  { recovered: false, weekly: false },
+  { recovered: true, weekly: false },
+  { recovered: false, weekly: true },
+  { recovered: true, weekly: true }
+])('parks a Claude limit automatically (recovered: $recovered, weekly: $weekly)', async ({ recovered, weekly }) => {
   const db = memoryDb()
   const runner = new Runner(db)
   const scheduler = new Scheduler(db, runner)
+  const { message, until } = weekly ? weeklyLimit() : { message: SESSION_LIMIT, until: null }
   const script = join(root, 'limited.sh')
-  writeFileSync(script, `#!/bin/sh\nprintf '%s\\n' "${SESSION_LIMIT}"\nexit 1\n`)
+  writeFileSync(script, `#!/bin/sh\nprintf '%s\\n' "${message}"\nexit 1\n`)
   const agent = makeAgent(db, { name: 'Fable', command: '/bin/sh', logAdapter: 'claude', argsTemplate: [script] })
   const project = makeProject(db, { name: 'p', targetId: agent, path: root })
   const task = makeTask(db, project, 'keep the instruction')
@@ -71,7 +98,7 @@ it.each([false, true])('parks a Fable session limit automatically (recovered aft
     if (recovered) {
       const stdoutLogPath = join(root, 'output.log')
       const run = occupy(db, task, agent, { stdoutLogPath })
-      writeFileSync(stdoutLogPath, SESSION_LIMIT)
+      writeFileSync(stdoutLogPath, message)
       writeFileSync(runExitPath(run), '1')
       scheduler.reconcile()
     } else {
@@ -79,10 +106,69 @@ it.each([false, true])('parks a Fable session limit automatically (recovered aft
       await runner.start({ task: repo.getTask(db, task)!, project: repo.getProject(db, project)!, agent: repo.getAgent(db, agent)!, kind: 'initial', groupId: null, fallbackFromRunId: null })
       await finished
     }
-    expect(repo.listRunsByTask(db, task)[0]).toMatchObject({ status: 'limited', errorKind: 'limit', errorMessage: SESSION_LIMIT })
+    expect(repo.listRunsByTask(db, task)[0]).toMatchObject({ status: 'limited', errorKind: 'limit', errorMessage: message })
     expect(repo.getTask(db, task)).toMatchObject({ status: 'queued', prompt: 'keep the instruction' })
     expect(repo.getTask(db, task)?.scheduledAt).toBe(repo.listCooldowns(db).find(cooldown => cooldown.agentId === agent)?.until)
+    if (until !== null) expect(repo.getTask(db, task)?.scheduledAt).toBe(until)
     expect(scheduler.claimNext()).toBeNull()
+  } finally {
+    scheduler.stop()
+    runner.shutdown()
+    db.close()
+  }
+})
+
+it.each([false, true])('restores a saved weekly wait on restart (later human schedule: %s)', (scheduledLater) => {
+  const db = memoryDb()
+  const runner = new Runner(db)
+  const scheduler = new Scheduler(db, runner)
+  const agent = makeAgent(db, { name: 'Opus', command: 'claude', logAdapter: 'claude' })
+  const project = makeProject(db, { name: 'p', targetId: agent, path: root })
+  const task = makeTask(db, project, 'wait for the weekly reset')
+  const run = occupy(db, task, agent)
+  const { message, until } = weeklyLimit()
+  const guessed = new Date(Date.now() + 900_000).toISOString()
+  const scheduled = scheduledLater ? new Date(Date.parse(until) + 3_600_000).toISOString() : guessed
+  repo.updateRun(db, run, { status: 'limited', errorKind: 'limit', errorMessage: message, endedAt: new Date().toISOString() })
+  repo.setTaskStatus(db, task, 'queued')
+  repo.setTaskSchedule(db, task, scheduled)
+  repo.setCooldown(db, agent, guessed, message)
+  try {
+    scheduler.reconcile()
+    expect(repo.cooldownEnd(db, agent)).toBe(until)
+    expect(repo.getTask(db, task)?.scheduledAt).toBe(scheduledLater ? scheduled : until)
+    expect(scheduler.claimNext()).toBeNull()
+    scheduler.reconcile()
+    expect(repo.cooldownEnd(db, agent)).toBe(until)
+    expect(repo.listRunsByTask(db, task)).toHaveLength(1)
+  } finally {
+    scheduler.stop()
+    runner.shutdown()
+    db.close()
+  }
+})
+
+it('does not restart an elapsed relative limit when restoring a saved wait', () => {
+  const db = memoryDb()
+  const runner = new Runner(db)
+  const scheduler = new Scheduler(db, runner)
+  const agent = makeAgent(db, { name: 'a' })
+  const project = makeProject(db, { name: 'p', targetId: agent, path: root })
+  const task = makeTask(db, project, 't')
+  const run = occupy(db, task, agent)
+  const message = 'Usage limit reached. Try again in 2 hours'
+  const guessed = new Date(Date.now() + 900_000).toISOString()
+  repo.updateRun(db, run, {
+    status: 'limited', errorKind: 'limit', errorMessage: message,
+    endedAt: new Date(Date.now() - 86_400_000).toISOString()
+  })
+  repo.setTaskStatus(db, task, 'queued')
+  repo.setTaskSchedule(db, task, guessed)
+  repo.setCooldown(db, agent, guessed, message)
+  try {
+    scheduler.reconcile()
+    expect(repo.cooldownEnd(db, agent)).toBe(guessed)
+    expect(repo.getTask(db, task)?.scheduledAt).toBe(guessed)
   } finally {
     scheduler.stop()
     runner.shutdown()
