@@ -143,6 +143,12 @@ function AgentList(): JSX.Element {
       separatorBefore: true,
       onSelect: () => void window.quuu.agents.update({ id: agent.id, patch: { enabled: !agent.enabled } })
     },
+    ...(slots.get(agent.id)?.cooldownUntil
+      ? [{
+          label: t('agentSettings.resetLimit'),
+          onSelect: () => void window.quuu.agents.resetLimit(agent.id)
+        }]
+      : []),
     {
       label: t('agentSettings.duplicate'),
       onSelect: () => void window.quuu.agents.duplicate(agent.id).then((copy) => editAgent(copy.id))

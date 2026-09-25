@@ -61,6 +61,7 @@ export const model: typeof en = {
         create: 'エージェントの追加',
         update: 'エージェントの変更',
         duplicate: 'エージェントの複製',
+        resetLimit: 'Limit の解除',
         remove: 'エージェントの削除'
       },
       groups: {

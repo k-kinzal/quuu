@@ -21,6 +21,7 @@ export const views: typeof en = {
     enable: '有効にする',
     disable: '無効にする',
     duplicate: '複製',
+    resetLimit: 'Limit を解除',
     delete: '削除…',
     deleteAgentConfirm: 'エージェント「{{name}}」を削除しますか？',
     deleteAgentDetail: 'このエージェントを使うプロジェクトは、割り当てを選び直すまでタスクを実行できなくなります。',

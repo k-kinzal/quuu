@@ -60,6 +60,7 @@ export const model = {
         create: 'add the agent',
         update: 'update the agent',
         duplicate: 'duplicate the agent',
+        resetLimit: 'reset the Limit',
         remove: 'delete the agent'
       },
       groups: {

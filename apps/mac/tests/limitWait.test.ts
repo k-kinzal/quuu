@@ -586,4 +586,98 @@ describe('a Limit that says when it lifts', () => {
     expect(repo.getTask(db, task)?.scheduledAt).toBe(later)
     expect(repo.cooldownEnd(db, agent)).toBeNull()
   })
+
+  it('lifts a Limit from the agent, and starts the tasks that were waiting on it', async () => {
+    const db = memoryDb()
+    const runner = new Runner(db)
+    const scheduler = new Scheduler(db, runner)
+    const agent = makeAgent(db, { name: 'Codex', command: '/bin/echo', argsTemplate: ['ok'] })
+    const project = makeProject(db, { name: 'p', targetId: agent, path: workdir })
+    const task = makeTask(db, project, 't')
+    const liftsAt = tomorrowEvening().toISOString()
+    repo.setCooldown(db, agent, liftsAt, 'Limit')
+    repo.setTaskSchedule(db, task, liftsAt)
+
+    const done = finishes(runner, 1)
+    scheduler.resetAgentLimit(agent)
+    await done
+    scheduler.stop()
+
+    expect(repo.cooldownEnd(db, agent)).toBeNull()
+    const after = repo.getTask(db, task)!
+    expect(after.status).toBe('review')
+    expect(after.scheduledAt).toBeNull()
+  })
+
+  it('keeps a later schedule a human set when the Limit is reset', () => {
+    const db = memoryDb()
+    const runner = new Runner(db)
+    const scheduler = new Scheduler(db, runner)
+    const agent = makeAgent(db, { name: 'Codex', command: '/bin/echo', argsTemplate: ['ok'] })
+    const project = makeProject(db, { name: 'p', targetId: agent, path: workdir })
+    const task = makeTask(db, project, 't')
+    const liftsAt = tomorrowEvening()
+    const later = new Date(liftsAt.getTime() + 86_400_000).toISOString()
+    repo.setCooldown(db, agent, liftsAt.toISOString(), 'Limit')
+    repo.setTaskSchedule(db, task, later)
+
+    scheduler.resetAgentLimit(agent)
+    scheduler.stop()
+
+    expect(repo.cooldownEnd(db, agent)).toBeNull()
+    expect(repo.getTask(db, task)).toMatchObject({ status: 'queued', scheduledAt: later })
+  })
+
+  it('starts a task when one of its agents comes back, even if another is still in Limit', async () => {
+    const db = memoryDb()
+    const runner = new Runner(db)
+    const scheduler = new Scheduler(db, runner)
+    const sooner = tomorrowEvening()
+    const later = new Date(sooner.getTime() + 86_400_000)
+    const first = makeAgent(db, { name: 'Opus', command: '/bin/echo', argsTemplate: ['ok'], sortOrder: 0 })
+    const second = makeAgent(db, { name: 'Sonnet', command: '/bin/echo', argsTemplate: ['ok'], sortOrder: 1 })
+    const group = repo.insertGroup(db, {
+      name: 'Claude',
+      description: '',
+      strategy: 'priority',
+      memberIds: [first, second],
+      sortOrder: 0
+    }).id
+    const project = makeProject(db, { name: 'p', targetId: group, targetKind: 'group', path: workdir })
+    const task = makeTask(db, project, 't')
+    repo.setCooldown(db, first, sooner.toISOString(), 'Limit')
+    repo.setCooldown(db, second, later.toISOString(), 'Limit')
+    repo.setTaskSchedule(db, task, sooner.toISOString())
+
+    const done = finishes(runner, 1)
+    scheduler.resetAgentLimit(first)
+    await done
+    scheduler.stop()
+
+    expect(repo.cooldownEnd(db, first)).toBeNull()
+    expect(repo.cooldownEnd(db, second)).toBe(later.toISOString())
+    expect(repo.getTask(db, task)).toMatchObject({ status: 'review', scheduledAt: null })
+    expect(repo.listRunsByTask(db, task)[0]?.agentId).toBe(first)
+  })
+
+  it('leaves a task parked when the Limit it is waiting on belongs to another agent', () => {
+    const db = memoryDb()
+    const runner = new Runner(db)
+    const scheduler = new Scheduler(db, runner)
+    const liftsAt = tomorrowEvening().toISOString()
+    const waiting = makeAgent(db, { name: 'Codex', command: '/bin/echo', argsTemplate: ['ok'], sortOrder: 0 })
+    const other = makeAgent(db, { name: 'Claude', command: 'claude', sortOrder: 1 })
+    const project = makeProject(db, { name: 'p', targetId: waiting, path: workdir })
+    const task = makeTask(db, project, 't')
+    repo.setCooldown(db, waiting, liftsAt, 'Limit')
+    repo.setCooldown(db, other, liftsAt, 'Limit')
+    repo.setTaskSchedule(db, task, liftsAt)
+
+    scheduler.resetAgentLimit(other)
+    scheduler.stop()
+
+    expect(repo.cooldownEnd(db, other)).toBeNull()
+    expect(repo.cooldownEnd(db, waiting)).toBe(liftsAt)
+    expect(repo.getTask(db, task)).toMatchObject({ status: 'queued', scheduledAt: liftsAt })
+  })
 })

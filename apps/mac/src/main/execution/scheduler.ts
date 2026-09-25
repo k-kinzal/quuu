@@ -628,6 +628,46 @@ export class Scheduler extends EventEmitter {
   // -------------------------------------------------------------------------
 
   /**
+   * Lift this agent's Limit now.
+   *
+   * Credits bought or a plan change can end a Limit before the moment the CLI printed, and until
+   * now the only way to find out was to probe with one task. Clearing the cooldown is not enough
+   * on its own: every task that was parked until that moment would still sit out the old wait.
+   * A schedule a human set for later than the Limit is left where they put it.
+   */
+  resetAgentLimit(agentId: string): void {
+    const agent = repo.getAgent(this.db, agentId)
+    if (!agent) throw new Error(`agent not found: ${agentId}`)
+    if (isManagedAgent(agent)) throw new Error(`managed agent is not editable: ${agent.name}`)
+
+    inTransaction(this.db, () => {
+      if (repo.cooldownEnd(this.db, agentId) === null) return
+      const waiting = repo.listTasks(this.db).filter((task) => task.status === 'queued' && task.scheduledAt !== null)
+      // The park time is the earliest cooldown among the task's own candidates. Remember which
+      // waits were that time, so a later schedule a human chose is not pulled forward.
+      const parkedAt = new Map<string, string>()
+      for (const task of waiting) {
+        const project = repo.getProject(this.db, task.projectId)
+        if (!project || task.scheduledAt === null) continue
+        const until = cooldownClearsAt(this.db, project, this.resolveOptionsFor(task))
+        if (until !== null && task.scheduledAt === until) parkedAt.set(task.id, until)
+      }
+      repo.clearCooldown(this.db, agentId)
+      for (const task of waiting) {
+        const was = parkedAt.get(task.id)
+        if (was === undefined) continue
+        const project = repo.getProject(this.db, task.projectId)
+        if (!project) continue
+        const until = cooldownClearsAt(this.db, project, this.resolveOptionsFor(task))
+        // Unchanged means this agent was not the one holding the task
+        if (until === was) continue
+        repo.setTaskSchedule(this.db, task.id, until)
+      }
+      this.afterTransition()
+    })
+  }
+
+  /**
    * "Run now". Launches immediately, ignoring queue order. Returns the reason when no slot is free.
    *
    * A Limit cooldown is not one of those reasons. The human asked to try now because the Limit

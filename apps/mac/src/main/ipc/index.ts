@@ -213,6 +213,10 @@ export function createAppRouter(app: QuuuApp) {
     const id = input
     return app.agents.duplicateAgent(id)
   })
+  const agentResetLimit = os.agents.resetLimit.handler(({ input }) => {
+    const id = input
+    app.scheduler.resetAgentLimit(id)
+  })
   const agentDelete = os.agents.remove.handler(({ input }) => {
     const id = input
     return app.agents.deleteAgent(id)
@@ -532,6 +536,7 @@ export function createAppRouter(app: QuuuApp) {
       create: agentCreate,
       update: agentUpdate,
       duplicate: agentDuplicate,
+      resetLimit: agentResetLimit,
       remove: agentDelete,
     },
     settings: {

@@ -20,6 +20,7 @@ export const views = {
     enable: 'Enable',
     disable: 'Disable',
     duplicate: 'Duplicate',
+    resetLimit: 'Reset Limit',
     delete: 'Delete…',
     deleteAgentConfirm: 'Delete agent "{{name}}"?',
     deleteAgentDetail: 'Projects using this agent cannot run tasks until you assign them another one.',

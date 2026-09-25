@@ -83,6 +83,7 @@ export const contract = {
       patch: AgentInputSchema.partial().strict()
     })).output(AgentSchema),
     duplicate: procedure.input(z.string()).output(AgentSchema),
+    resetLimit: procedure.input(z.string()).output(z.void()),
     remove: procedure.input(z.string()).output(z.void()),
   },
   groups: {
