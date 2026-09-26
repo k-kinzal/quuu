@@ -160,7 +160,7 @@ it('publishes local review data while GitHub is still pending and coalesces simu
 it('hands the recorded commits and the run windows to the service, and retains PRs when GitHub is temporarily unavailable', async () => {
   const old = snapshot()
   old.commits = [{ sha: 'a'.repeat(40), shortSha: 'aaaaaaa', subject: 'Created in this session', author: 'Fixture', committedAt: '2026-09-09T00:00:00Z', files: [] }]
-  old.pullRequests = [{ number: 42, title: 'Created in this session', url: 'https://github.com/owner/repo/pull/42', headRefName: 'feature', baseRefName: 'main', headSha: 'a'.repeat(40), draft: false, updatedAt: '', check: 'neutral', files: [] }]
+  old.pullRequests = [{ number: 42, title: 'Created in this session', url: 'https://github.com/owner/repo/pull/42', headRefName: 'feature', baseRefName: 'main', headSha: 'a'.repeat(40), draft: false, updatedAt: '', check: 'neutral', mergeState: 'unknown', state: 'open', files: [] }]
   repo.saveReviewSnapshot(db, taskId, old)
   const compute = vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), pullRequestNotice: 'offline' })
   const saved = await operations.refresh(taskId)
@@ -221,4 +221,50 @@ it('does not resurrect a task deleted while its review is being computed', async
   finish(snapshot())
   await expect(work).rejects.toThrow('Task not found')
   expect(repo.getReviewSnapshot(db, taskId)).toBeNull()
+})
+
+
+/**
+ * CI is what the person waits on once the agent has pushed, and nothing on this machine says
+ * when it ends. A check still running is looked at again on its own; a check that has answered
+ * is not. What follows from a Pull Request's state (`automation/pullRequestFollowUp.ts`) hears
+ * about full projections only: the local pass carries the retained PRs, which say nothing new.
+ */
+it('keeps watching a PR whose checks are running, lets go once they answer, and announces full projections only', async () => {
+  const pull = (check: 'pending' | 'success') => ({ number: 42, title: 'Watched', url: 'https://github.com/owner/repo/pull/42', headRefName: 'feature',
+    baseRefName: 'main', headSha: 'a'.repeat(40), draft: false, updatedAt: '', check, mergeState: 'clean' as const, state: 'open' as const, files: [] })
+  const projected = vi.fn()
+  operations.on('projected', projected)
+  vi.spyOn(service, 'snapshot').mockImplementation(async (_cwd, _project, _settings, _baseline, _evidence, local) => {
+    await local?.(snapshot())
+    return { ...snapshot(), pullRequests: [pull('pending')] }
+  })
+  await operations.refresh(taskId)
+  expect(operations.watching()).toEqual([taskId])
+  expect(projected).toHaveBeenCalledTimes(1)
+  expect(projected.mock.calls[0]).toEqual([taskId, expect.objectContaining({ pullRequests: [pull('pending')] })])
+
+  vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), pullRequests: [pull('success')] })
+  await operations.refresh(taskId)
+  expect(operations.watching()).toEqual([])
+  expect(projected).toHaveBeenCalledTimes(2)
+})
+
+it('does not watch, and says nothing, when GitHub could not be reached', async () => {
+  const projected = vi.fn()
+  operations.on('projected', projected)
+  vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), pullRequestNotice: 'offline' })
+  await operations.refresh(taskId)
+  expect(operations.watching()).toEqual([])
+  expect(projected).toHaveBeenCalledTimes(1)
+  expect(projected.mock.calls[0]?.[1]).toMatchObject({ pullRequestNotice: 'offline' })
+})
+
+it('fills in the merge state and openness for a projection saved before they were read', () => {
+  const legacy = snapshot()
+  const pull = { number: 42, title: 'Old', url: 'https://github.com/owner/repo/pull/42', headRefName: 'feature', baseRefName: 'main',
+    headSha: 'a'.repeat(40), draft: false, updatedAt: '', check: 'success' as const, files: [] }
+  legacy.pullRequests = [pull as unknown as ReviewSnapshot['pullRequests'][number]]
+  repo.saveReviewSnapshot(db, taskId, legacy)
+  expect(operations.reviewSnapshot(taskId).pullRequests).toEqual([{ ...pull, mergeState: 'unknown', state: 'open' }])
 })

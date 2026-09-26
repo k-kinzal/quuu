@@ -5,7 +5,10 @@ import { resolveCommitIdentity } from '../settings/commitIdentity.js'
 import type { AppSettings } from '../settings/types.js'
 import type { CommandResult } from './command.js'
 import { command, git } from './command.js'
-import type { FileChangeKind, ReviewPullRequest } from './types.js'
+import type { FileChangeKind, PullRequestMergeState, PullRequestState, ReviewPullRequest } from './types.js'
+
+/** Everything the review reads off one Pull Request. Both the single fetch and the listing ask for it. */
+const PULL_REQUEST_FIELDS = 'number,title,url,headRefName,baseRefName,headRefOid,isDraft,updatedAt,statusCheckRollup,mergeable,mergeStateStatus,state'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -28,6 +31,23 @@ function pullRequestCheck(value: unknown): ReviewPullRequest['check'] {
     return 'success'
   }
   return 'neutral'
+}
+
+/**
+ * GitHub answers two questions about merging: `mergeable` (can it, at all) and `mergeStateStatus`
+ * (why not). A conflict shows up as `CONFLICTING` on the first and `DIRTY` on the second; either one
+ * is enough. Everything that is not a plain yes stays `unknown` - a base branch that moved, or a
+ * computation GitHub has not finished yet, is not a conflict the agent can resolve.
+ */
+function pullRequestMergeState(mergeable: unknown, status: unknown): PullRequestMergeState {
+  if (textValue(mergeable) === 'CONFLICTING' || textValue(status) === 'DIRTY') return 'conflicting'
+  if (textValue(mergeable) === 'MERGEABLE') return 'clean'
+  return 'unknown'
+}
+
+function pullRequestState(value: unknown): PullRequestState {
+  const state = textValue(value)
+  return state === 'MERGED' ? 'merged' : state === 'CLOSED' ? 'closed' : 'open'
 }
 
 function pullFileChange(file: Record<string, unknown>): FileChangeKind {
@@ -78,18 +98,19 @@ async function recordedPullRequests(cwd: string, project: Project, settings: App
     if (!ref) continue
     let item: ReviewPullRequest = {
       number: ref.number, url, title: t('review.recordedPullRequest', { number: ref.number }),
-      headRefName: '', baseRefName: '', headSha: '', draft: false, updatedAt: '', check: 'neutral', files: []
+      headRefName: '', baseRefName: '', headSha: '', draft: false, updatedAt: '', check: 'neutral',
+      mergeState: 'unknown', state: 'open', files: []
     }
     try {
-      const detail = await gh(cwd, project, settings, ['pr', 'view', url, '--json',
-        'number,title,url,headRefName,baseRefName,headRefOid,isDraft,updatedAt,statusCheckRollup'])
+      const detail = await gh(cwd, project, settings, ['pr', 'view', url, '--json', PULL_REQUEST_FIELDS])
       if (detail.code !== 0) throw new Error(detail.stderr.trim() || t('review.fetchFailed'))
       const value: unknown = JSON.parse(detail.stdout)
       if (!isRecord(value) || Number(value.number) !== ref.number) throw new Error(t('review.fetchFailed'))
       item = { ...item, title: textValue(value.title) || item.title,
         headRefName: textValue(value.headRefName), baseRefName: textValue(value.baseRefName),
         headSha: textValue(value.headRefOid), draft: Boolean(value.isDraft), updatedAt: textValue(value.updatedAt),
-        check: pullRequestCheck(value.statusCheckRollup) }
+        check: pullRequestCheck(value.statusCheckRollup),
+        mergeState: pullRequestMergeState(value.mergeable, value.mergeStateStatus), state: pullRequestState(value.state) }
       const files = await gh(cwd, project, settings, ['api', '--paginate', '--slurp', `repos/${ref.repository}/pulls/${ref.number}/files?per_page=100`])
       if (files.code !== 0) throw new Error(files.stderr.trim() || t('review.fetchFailed'))
       const pages: unknown = JSON.parse(files.stdout)
@@ -128,7 +149,7 @@ export async function pullRequests(
       '--limit',
       '1000',
       '--json',
-      'number,title,url,headRefName,baseRefName,headRefOid,isDraft,updatedAt,statusCheckRollup,files'
+      `${PULL_REQUEST_FIELDS},files`
     ])
     if (result.code !== 0) {
       return { items: [], notice: result.stderr.trim() || t('review.fetchFailed') }
@@ -151,6 +172,8 @@ export async function pullRequests(
         draft: Boolean(item.isDraft),
         updatedAt: textValue(item.updatedAt),
         check: pullRequestCheck(item.statusCheckRollup),
+        mergeState: pullRequestMergeState(item.mergeable, item.mergeStateStatus),
+        state: pullRequestState(item.state),
         files: Array.isArray(item.files)
           ? item.files.filter(isRecord).map((file) => ({
             path: textValue(file.path),

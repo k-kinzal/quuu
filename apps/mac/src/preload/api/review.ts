@@ -50,6 +50,13 @@ export type ReviewCommit = z.infer<typeof ReviewCommitSchema>
 export const PullRequestCheckSchema = z.union([z.literal('success'), z.literal('failure'), z.literal('pending'), z.literal('neutral')])
 export type PullRequestCheck = z.infer<typeof PullRequestCheckSchema>
 
+/** Whether the branch still merges into its base. `unknown` while GitHub has not computed it. */
+export const PullRequestMergeStateSchema = z.union([z.literal('clean'), z.literal('conflicting'), z.literal('unknown')])
+export type PullRequestMergeState = z.infer<typeof PullRequestMergeStateSchema>
+
+export const PullRequestStateSchema = z.union([z.literal('open'), z.literal('merged'), z.literal('closed')])
+export type PullRequestState = z.infer<typeof PullRequestStateSchema>
+
 export const ReviewPullRequestSchema = z.object({
   number: z.number(),
   title: z.string(),
@@ -60,6 +67,8 @@ export const ReviewPullRequestSchema = z.object({
   draft: z.boolean(),
   updatedAt: z.string(),
   check: PullRequestCheckSchema,
+  mergeState: PullRequestMergeStateSchema,
+  state: PullRequestStateSchema,
   files: ReviewChangeSchema.array()
 })
 export type ReviewPullRequest = z.infer<typeof ReviewPullRequestSchema>

@@ -53,6 +53,11 @@ export const labels: typeof enLabels = {
     off: '名義を渡さない',
     custom: 'このプロジェクトの App'
   },
+  pullRequestPromptMode: {
+    inherit: 'アプリの設定に従う',
+    off: 'レビュー待ちのままにする',
+    custom: 'このプロジェクト独自のプロンプト'
+  },
   addAction: {
     draft: '下書きで追加',
     held: '保留で追加',

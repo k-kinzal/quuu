@@ -35,6 +35,7 @@ const PROJECT: Project = {
   id: 'p1', name: 'Quuu', path: '/Users/me/Projects/taskd', color: '#5EABF1', priority: 2,
   targetKind: 'agent', targetId: 'a1', maxConcurrent: 1, enabled: true, deletedAt: null,
   importSince: null, editorApp: '', reportEnabled: false, commitIdentityMode: 'inherit',
+  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
   commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0,
   createdAt: '', updatedAt: ''
 }

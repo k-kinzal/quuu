@@ -232,6 +232,13 @@ export const ja: typeof en = {
     queueEmptyHeld: 'キューは空です（保留 {{count}} 件）'
   },
 
+  pullRequestFollowUp: {
+    failure: 'プルリクエストの CI が失敗したので送り返しました: {{title}}',
+    pending: 'プルリクエストの CI がまだ実行中なので送り返しました: {{title}}',
+    conflict: 'プルリクエストがベースとコンフリクトしているので送り返しました: {{title}}',
+    roundsExhausted: 'プルリクエストを {{count}} 回送り返したのでレビュー待ちに残しました: {{title}}'
+  },
+
   run: {
     canceled: '中断されました',
     timedOut: 'タイムアウトしました',

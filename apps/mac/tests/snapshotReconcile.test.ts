@@ -19,6 +19,7 @@ function project(id: string, name: string): Project {
   return {
     id, name, path: '/tmp', color: '#fff', priority: 2, targetKind: 'agent', targetId: null, maxConcurrent: 1,
     enabled: true, deletedAt: null, importSince: null, editorApp: '', reportEnabled: true,
+    pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
     commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0,
     createdAt: '', updatedAt: ''
   }

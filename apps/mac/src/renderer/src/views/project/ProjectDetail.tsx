@@ -2,7 +2,8 @@ import type { Project } from '../../../../preload/api/projects.js'
 import { userAgents } from '../../model/agents.js'
 import { COMMIT_IDENTITY_MODES } from '../../model/identityOptions.js'
 
-import { COMMIT_IDENTITY_MODE_LABEL } from '../../model/labels.js'
+import { COMMIT_IDENTITY_MODE_LABEL, PULL_REQUEST_PROMPT_MODE_LABEL } from '../../model/labels.js'
+import { PULL_REQUEST_PROMPT_MODES } from '../../model/pullRequestPrompts.js'
 import { PROJECT_COLORS } from '../../model/projectDefaults.js'
 
 import {
@@ -16,6 +17,7 @@ import {
   Section,
   Select,
   SwatchGroup,
+  TextArea,
   TextInput
 } from '@design-system/react'
 import { CommitIdentityPanel, CommitIdentityReadout } from '../../components/CommitIdentity.js'
@@ -251,6 +253,51 @@ export function ProjectDetail({
             />
           </Section>
         )}
+
+        <Section title={t('projectDetail.pullRequestSection')}>
+          <Field label={t('projectDetail.pullRequestMode')} width="md">
+            <Select
+              aria-label={t('projectDetail.pullRequestMode')}
+              value={project.pullRequestPromptMode}
+              onChange={(e) => update({ pullRequestPromptMode: e.target.value })}
+              options={PULL_REQUEST_PROMPT_MODES.map((m) => ({
+                value: m,
+                label: PULL_REQUEST_PROMPT_MODE_LABEL[m]
+              }))}
+            />
+          </Field>
+          {project.pullRequestPromptMode === 'custom' && (
+            <>
+              <Field label={t('pullRequestSettings.failure')} width="full">
+                <TextArea
+                  key={`${project.id}-failure`}
+                  rows={3}
+                  placeholder={t('pullRequestSettings.failurePlaceholder')}
+                  defaultValue={project.pullRequestFailurePrompt}
+                  onChange={(e) => update({ pullRequestFailurePrompt: e.target.value })}
+                />
+              </Field>
+              <Field label={t('pullRequestSettings.pending')} width="full">
+                <TextArea
+                  key={`${project.id}-pending`}
+                  rows={3}
+                  placeholder={t('pullRequestSettings.pendingPlaceholder')}
+                  defaultValue={project.pullRequestPendingPrompt}
+                  onChange={(e) => update({ pullRequestPendingPrompt: e.target.value })}
+                />
+              </Field>
+              <Field label={t('pullRequestSettings.conflict')} width="full">
+                <TextArea
+                  key={`${project.id}-conflict`}
+                  rows={3}
+                  placeholder={t('pullRequestSettings.conflictPlaceholder')}
+                  defaultValue={project.pullRequestConflictPrompt}
+                  onChange={(e) => update({ pullRequestConflictPrompt: e.target.value })}
+                />
+              </Field>
+            </>
+          )}
+        </Section>
 
         <Section title={t('projectDetail.identitySection')}>
           <Field label={t('projectDetail.identityMode')} width="md">

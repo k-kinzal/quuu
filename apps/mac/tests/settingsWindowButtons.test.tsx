@@ -40,6 +40,7 @@ const PROJECT: Project = {
   importSince: null,
   editorApp: '',
   reportEnabled: true,
+  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
   commitIdentityMode: 'inherit',
   commitIdentity: { appSlug: '', botUserId: '' },
   source: 'user',

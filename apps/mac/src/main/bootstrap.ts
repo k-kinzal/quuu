@@ -13,10 +13,12 @@ import { SessionImporter } from './import/importer.js'
 import { MobileSync } from './mobile-sync/mobileSync.js'
 import { primeProcessPath } from './platform/shellEnv.js'
 import { ProjectOperations } from './projects/operations.js'
+import { PullRequestFollowUp } from './automation/pullRequestFollowUp.js'
 import { ReportOperations } from './report/operations.js'
 import { WorkspaceOperations } from './projects/workspace.js'
 import { ReviewOperations } from './review/operations.js'
 import { ReviewService } from './review/service.js'
+import type { ReviewSnapshot } from './review/types.js'
 import { offerNewAgents, seedIfEmpty } from './seed.js'
 import { attachActiveRuns } from './session/sessionAttach.js'
 import { SessionView } from './session/view.js'
@@ -51,6 +53,7 @@ export class QuuuApp extends EventEmitter {
   readonly mobile: MobileSync
   readonly reviews: ReviewOperations
   readonly reports: ReportOperations
+  readonly pullRequestFollowUp: PullRequestFollowUp
   readonly terminal: TerminalOperations
   readonly review: ReviewService
   readonly terminals: TerminalService
@@ -84,6 +87,14 @@ export class QuuuApp extends EventEmitter {
     this.workspace = new WorkspaceOperations(this.db, () => this.settings.getSettings())
     this.reviews = new ReviewOperations(this.db, () => this.settings.getSettings(), this.review, id => this.workspace.workbenchPlace(id))
     this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id))
+    /*
+     * A Pull Request that is not in order sends the task back through the same entry a person's
+     * follow-up takes. It decides on full projections only, so a retained copy never speaks for
+     * GitHub.
+     */
+    this.pullRequestFollowUp = new PullRequestFollowUp(this.db, () => this.settings.getSettings(),
+      id => this.reviews.refresh(id), (id, message) => this.tasks.send(id, message))
+    this.reviews.on('projected', (taskId: string, snapshot: ReviewSnapshot) => { this.pullRequestFollowUp.onProjected(taskId, snapshot) })
     /*
      * Everything derived from a conversation is derived here, as its pages land: the commits and
      * Pull Requests the review shows, and the directory the agent worked in. Screens, reports and
@@ -130,12 +141,15 @@ export class QuuuApp extends EventEmitter {
     this.scheduler.on('changed', () => this.emit('changed'))
     // Something is now waiting to be read, which is the moment a report is worth writing
     this.scheduler.on('review', (taskId: string) => { void this.reports.requestReport(taskId) })
+    // ...and the moment to ask GitHub whether the Pull Request it left is in order
+    this.scheduler.on('review', (taskId: string) => { void this.pullRequestFollowUp.onReview(taskId) })
     this.scheduler.on('status', () => {
       this.mobile.setSchedulerRunning(this.scheduler.status().running)
       this.emit('status', this.scheduler.status())
     })
     this.scheduler.on('notify', (t: ToastPayload) => this.emit('notify', t))
     this.reports.on('notify', (t: ToastPayload) => this.emit('notify', t))
+    this.pullRequestFollowUp.on('notify', (t: ToastPayload) => this.emit('notify', t))
     this.terminals.on('terminal', (event) => this.emit('terminal', event))
   }
 

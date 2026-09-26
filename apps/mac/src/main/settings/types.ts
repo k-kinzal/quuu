@@ -65,6 +65,17 @@ export interface AppSettings {
    * without a rebuild between each attempt.
    */
   reportInstructions: string
+  /**
+   * What a task is told when its run ends and the Pull Request it produced is not in order.
+   *
+   * Empty means nothing is sent and the task waits for a person as before. Filled in, the task
+   * goes back to its agent with this instruction instead of landing in review: once when CI has
+   * failed, once when CI is still running, once when the branch conflicts with its base. A
+   * project may answer differently (`Project.pullRequestPromptMode`).
+   */
+  pullRequestFailurePrompt: string
+  pullRequestPendingPrompt: string
+  pullRequestConflictPrompt: string
   theme: 'dark' | 'light' | 'system'
 }
 
@@ -85,5 +96,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reportTargetKind: 'agent',
   reportTargetId: '',
   reportInstructions: '',
+  pullRequestFailurePrompt: '',
+  pullRequestPendingPrompt: '',
+  pullRequestConflictPrompt: '',
   theme: 'dark'
 }

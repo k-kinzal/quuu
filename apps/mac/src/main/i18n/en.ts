@@ -231,6 +231,13 @@ export const en = {
     queueEmptyHeld: 'The queue is empty ({{count}} held)'
   },
 
+  pullRequestFollowUp: {
+    failure: 'CI failed on the pull request. Sent back: {{title}}',
+    pending: 'CI is still running on the pull request. Sent back: {{title}}',
+    conflict: 'The pull request conflicts with its base. Sent back: {{title}}',
+    roundsExhausted: 'Left in review after {{count}} rounds over its pull request: {{title}}'
+  },
+
   run: {
     canceled: 'Canceled',
     timedOut: 'Timed out',

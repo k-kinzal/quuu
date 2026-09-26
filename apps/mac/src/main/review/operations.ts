@@ -1,13 +1,50 @@
+import { EventEmitter } from 'node:events'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import type { Project } from '../projects/types.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ReviewService } from './service.js'
-import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewSnapshot } from './types.js'
+import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewPullRequest, ReviewSnapshot } from './types.js'
 
-export class ReviewOperations {
-  constructor(private db: Db, private getSettings: () => AppSettings, private review: ReviewService, private workbenchPlace: (taskId: string) => { dir: string; project: Project }) { }
+/**
+ * How often a Pull Request whose checks are still running is looked at again.
+ *
+ * CI is what the person is waiting on once the agent has pushed, and nothing on this machine
+ * says when it ends. A minute is the grain GitHub's own page refreshes at; one `gh pr view`
+ * per open Pull Request per minute is nothing against the rate limit.
+ */
+export const PULL_REQUEST_WATCH_MS = 60_000
+
+/**
+ * How many looks a still-running check gets before the watch lets go.
+ *
+ * A required check that never reports (`EXPECTED` forever, a workflow that was deleted) would
+ * otherwise be polled until the app quits. Two hours covers every CI run this project has seen;
+ * a push after that starts a fresh count, and pressing refresh always asks again.
+ */
+export const PULL_REQUEST_WATCH_LIMIT = 120
+
+/** The fields older projections were saved without. */
+type SavedPullRequest = Omit<ReviewPullRequest, 'mergeState' | 'state'> & Partial<Pick<ReviewPullRequest, 'mergeState' | 'state'>>
+function completePullRequest(pr: SavedPullRequest): ReviewPullRequest {
+  return { ...pr, mergeState: pr.mergeState ?? 'unknown', state: pr.state ?? 'open' }
+}
+
+/** The heads whose checks are still running - a push changes the head, so it starts the watch over. */
+function pendingHeads(snapshot: ReviewSnapshot): string {
+  return snapshot.pullRequests
+    .filter(pr => pr.state === 'open' && pr.check === 'pending')
+    .map(pr => `${pr.url}@${pr.headSha}`).sort().join('\n')
+}
+
+/**
+ * Emits `projected` (taskId, snapshot) each time a task's review is fully observed - Git and
+ * GitHub both answered - so what follows from the state of its Pull Requests can be decided on
+ * a fresh look, never on the retained copy a failed fetch leaves behind.
+ */
+export class ReviewOperations extends EventEmitter {
+  constructor(private db: Db, private getSettings: () => AppSettings, private review: ReviewService, private workbenchPlace: (taskId: string) => { dir: string; project: Project }) { super() }
 
 
 
@@ -17,6 +54,7 @@ export class ReviewOperations {
   private stopped = false
   private activeTask: string | null = null
   private refreshedAt = new Map<string, number>()
+  private watches = new Map<string, { timer: NodeJS.Timeout; heads: string; looks: number }>()
 
   /**
    * Reads only materialized data. Git and GitHub belong to the refresh queue.
@@ -33,7 +71,9 @@ export class ReviewOperations {
     if (!task) throw new Error(t('tasks.notFound'))
     const saved = repo.getReviewSnapshot(this.db, taskId)?.snapshot
     if (saved) {
-      if (Array.isArray(saved.localChanges) && Array.isArray(saved.stagedChanges)) return saved
+      if (Array.isArray(saved.localChanges) && Array.isArray(saved.stagedChanges)) {
+        return { ...saved, pullRequests: saved.pullRequests.map(completePullRequest) }
+      }
       // Older projections combine index and working changes. Refresh instead of relabeling that data.
       if (this.activeTask !== taskId) this.requestRefresh(taskId)
       return { ...this.empty(saved.cwd), ...saved, localChanges: [], localRevision: null,
@@ -74,6 +114,37 @@ export class ReviewOperations {
     if (this.timer) clearTimeout(this.timer)
     this.timer = null
     this.pending.clear()
+    for (const watch of this.watches.values()) clearTimeout(watch.timer)
+    this.watches.clear()
+  }
+
+  /** The tasks whose Pull Request checks are being looked at again on their own. */
+  watching(): string[] {
+    return [...this.watches.keys()]
+  }
+
+  /**
+   * Keep looking while a check is running; let go the moment none is.
+   *
+   * The count restarts when the set of running heads changes: that is a new push, and its CI
+   * deserves its own two hours. The same heads still running keep counting down.
+   */
+  private watch(taskId: string, snapshot: ReviewSnapshot): void {
+    const current = this.watches.get(taskId)
+    if (current) { clearTimeout(current.timer); this.watches.delete(taskId) }
+    const heads = pendingHeads(snapshot)
+    if (this.stopped || !heads) return
+    const looks = current && current.heads === heads ? current.looks + 1 : 1
+    if (looks > PULL_REQUEST_WATCH_LIMIT) return
+    const timer = setTimeout(() => {
+      this.watches.delete(taskId)
+      // The watch is the only caller that keeps the entry; re-adding it below is what continues it.
+      this.watches.set(taskId, { timer, heads, looks })
+      this.refreshedAt.delete(taskId)
+      this.requestRefresh(taskId)
+    }, PULL_REQUEST_WATCH_MS)
+    timer.unref?.()
+    this.watches.set(taskId, { timer, heads, looks })
   }
 
   private empty(cwd: string, preparing = false): ReviewSnapshot {
@@ -106,6 +177,9 @@ export class ReviewOperations {
         const saved = repo.getReviewSnapshot(this.db, taskId)?.snapshot
         repo.saveReviewSnapshot(this.db, taskId, { ...this.empty(this.launchDir(taskId)), ...saved, preparing: false,
           error: error instanceof Error ? error.message : String(error) })
+        // A look that failed does not schedule the next one; the refresh button asks again.
+        const watch = this.watches.get(taskId)
+        if (watch) { clearTimeout(watch.timer); this.watches.delete(taskId) }
         console.warn('Review materialization failed', error)
       } finally { this.activeTask = null }
     }
@@ -149,6 +223,9 @@ export class ReviewOperations {
       snapshot.pullRequests = [...prs.values()]
     }
     save(snapshot)
+    if (this.stopped || !repo.getTask(this.db, taskId)) return
+    this.watch(taskId, snapshot)
+    this.emit('projected', taskId, snapshot)
   }
 
 

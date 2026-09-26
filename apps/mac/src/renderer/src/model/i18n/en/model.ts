@@ -254,6 +254,9 @@ export const model = {
       failure: 'CI failed',
       pending: 'CI running',
       neutral: 'No CI status'
+    },
+    mergeState: {
+      conflicting: 'Conflicts with the base branch'
     }
   },
   projectSelect: {

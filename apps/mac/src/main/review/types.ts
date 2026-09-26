@@ -47,6 +47,11 @@ export interface ReviewCommit {
 
 export type PullRequestCheck = 'success' | 'failure' | 'pending' | 'neutral'
 
+/** Whether the branch still merges into its base. `unknown` while GitHub has not computed it. */
+export type PullRequestMergeState = 'clean' | 'conflicting' | 'unknown'
+
+export type PullRequestState = 'open' | 'merged' | 'closed'
+
 export interface ReviewPullRequest {
   number: number
   title: string
@@ -57,6 +62,8 @@ export interface ReviewPullRequest {
   draft: boolean
   updatedAt: string
   check: PullRequestCheck
+  mergeState: PullRequestMergeState
+  state: PullRequestState
   files: ReviewChange[]
 }
 

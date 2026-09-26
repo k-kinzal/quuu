@@ -6,6 +6,7 @@ export const views: typeof en = {
     general: '一般',
     agents: 'エージェント',
     report: 'レポート',
+    pullRequests: 'プルリクエスト',
     notifications: '通知',
     appearance: '外観'
   },
@@ -125,6 +126,16 @@ export const views: typeof en = {
     instructions: '指示に追記する内容',
     instructionsPlaceholder: 'すべてのレポートに書いてほしいこと'
   },
+  pullRequestSettings: {
+    title: 'プルリクエスト',
+    promptsSection: '実行終了時にプルリクエストが整っていないとき',
+    failure: 'CI が失敗',
+    failurePlaceholder: '空欄: レビュー待ちのままにする',
+    pending: 'CI が実行中',
+    pendingPlaceholder: '空欄: レビュー待ちのままにする',
+    conflict: 'ベースブランチとコンフリクト',
+    conflictPlaceholder: '空欄: レビュー待ちのままにする'
+  },
   notificationSettings: {
     title: '通知',
     notifyOnReview: 'レビュー待ちになったら通知する',
@@ -160,6 +171,8 @@ export const views: typeof en = {
     enabled: '有効にする',
     reportSection: 'レポート',
     reportEnabled: 'このプロジェクトで変更レポートを書く',
+    pullRequestSection: 'プルリクエスト',
+    pullRequestMode: '整っていないとき',
     identitySection: 'GitHub の名義',
     identityMode: '決め方'
   },

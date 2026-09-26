@@ -35,10 +35,11 @@ import { t } from '../model/i18n/index.js'
 import { copyText, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useTaskReport } from '../interaction/useTaskReport.js'
+import { overallCheck } from '../model/pullRequestStatus.js'
 import { buildFileTree, projectReviewTree, treeChange } from '../model/reviewTree.js'
 import { useStore } from '../state/store.js'
 import { ChevronDown, ChevronRight, FileDiff, FileText, FolderGit2, FolderTree, GitCommitHorizontal, GitPullRequest, ICON, MessageSquareText, RefreshCw, ScrollText, Send, iconProps } from '../ui/icons.js'
-import { changeLabel, changeTone, CheckMark } from '../ui/workbench.js'
+import { changeLabel, changeTone, CheckDot, CheckMark, ConflictMark } from '../ui/workbench.js'
 import { Chat } from './Chat.js'
 import { Composer } from './Composer.js'
 
@@ -187,7 +188,7 @@ function buildTree(snapshot: ReviewSnapshot, mode: ExplorerMode): BuiltTree {
       label: `#${String(pull.number)} ${pull.title}`,
       title: `${pull.headRefName} → ${pull.baseRefName}`,
       icon: <GitPullRequest size={ICON.sm} {...iconProps} />,
-      meta: <CheckMark status={pull.check} />,
+      meta: <>{pull.mergeState === 'conflicting' && <ConflictMark />}<CheckMark status={pull.check} /></>,
       children: convertTree(
         buildFileTree(pull.files, `pull:${pull.url}`),
         { source: 'pull-request', ref: pull.url },
@@ -579,12 +580,18 @@ export function TaskMainPane({
     }
   }
 
+  const pullCheck = overallCheck(snapshot?.pullRequests ?? [])
   const modeOptions = [
     { value: 'chat', label: t('reviewPane.modeChat'), icon: <MessageSquareText size={ICON.sm} {...iconProps} /> },
     { value: 'tree', label: t('reviewPane.modeTree'), icon: <FolderTree size={ICON.sm} {...iconProps} /> },
     { value: 'changes', label: t('reviewPane.modeChanges'), icon: <FileDiff size={ICON.sm} {...iconProps} />, count: snapshot?.changes.length ?? 0 },
     { value: 'commits', label: t('reviewPane.modeCommits'), icon: <GitCommitHorizontal size={ICON.sm} {...iconProps} />, count: (snapshot?.commits.length ?? 0) + ((snapshot?.localChanges.length ?? 0) > 0 ? 1 : 0) + ((snapshot?.stagedChanges.length ?? 0) > 0 ? 1 : 0) },
-    { value: 'pull-requests', label: t('reviewPane.modePullRequests'), icon: <GitPullRequest size={ICON.sm} {...iconProps} />, count: snapshot?.pullRequests.length ?? 0 },
+    /*
+     * The one small circle says how CI is doing across every open Pull Request, so watching a
+     * check finish does not need the tab open. No circle while nothing is reporting.
+     */
+    { value: 'pull-requests', label: t('reviewPane.modePullRequests'), icon: <GitPullRequest size={ICON.sm} {...iconProps} />, count: snapshot?.pullRequests.length ?? 0,
+      ...(pullCheck !== 'neutral' ? { mark: <CheckDot status={pullCheck} /> } : {}) },
     /*
      * Closed until something was written. A tab that opens onto "nothing yet" spends a click to
      * say what the disabled state already says, and asking for one belongs with the task's other

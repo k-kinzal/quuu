@@ -1,5 +1,20 @@
 # Call-site feedback and decisions
 
+## 2026-09-27 A state mark on a content tab
+
+- Request: the Pull Request tab on a task should say, in one small circle, how CI is doing
+  across the task's Pull Requests — green, red, or yellow — without the tab being open.
+- Finding: `ContentTabOption` carried an icon and a count, but nothing that could say a
+  state. The count is a number and the icon names the contents; a state is a third thing.
+- Accepted: `ContentTabOption.mark`, a slot after the label and count for a small sign the
+  consumer composes (a `StatusIndicator` dot, here). The tab strip only places it; what the
+  mark means, its color, and its word are the app's, so the design system learns no
+  vocabulary from it.
+- Excluded: a `tone` or `status` prop on the tab. That would put "which state gets which
+  color" into the strip, and the same rule already lives in each app's `ui/`.
+- Verification: `Navigation/ContentTabs/WithMark`, and the Mac workbench test that reads the
+  Pull Request tab.
+
 ## 2026-09-21 Settings headers share the window band
 
 - Request: project settings and app settings had oversized, uneven headers.

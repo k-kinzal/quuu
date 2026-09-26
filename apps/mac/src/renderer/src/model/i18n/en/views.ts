@@ -5,6 +5,7 @@ export const views = {
     general: 'General',
     agents: 'Agents',
     report: 'Report',
+    pullRequests: 'Pull Requests',
     notifications: 'Notifications',
     appearance: 'Appearance'
   },
@@ -124,6 +125,16 @@ export const views = {
     instructions: 'Added to the instructions',
     instructionsPlaceholder: 'What every report should cover'
   },
+  pullRequestSettings: {
+    title: 'Pull Requests',
+    promptsSection: 'When a run ends and its pull request is not in order',
+    failure: 'CI failed',
+    failurePlaceholder: 'Empty: leave the task in review',
+    pending: 'CI still running',
+    pendingPlaceholder: 'Empty: leave the task in review',
+    conflict: 'Conflicts with the base branch',
+    conflictPlaceholder: 'Empty: leave the task in review'
+  },
   notificationSettings: {
     title: 'Notifications',
     notifyOnReview: 'Notify when a task needs review',
@@ -159,6 +170,8 @@ export const views = {
     enabled: 'Enabled',
     reportSection: 'Report',
     reportEnabled: 'Write change reports for this project',
+    pullRequestSection: 'Pull Requests',
+    pullRequestMode: 'When not in order',
     identitySection: 'GitHub identity',
     identityMode: 'Mode'
   },

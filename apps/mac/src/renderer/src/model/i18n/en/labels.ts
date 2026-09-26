@@ -52,6 +52,11 @@ export const labels = {
     off: 'Do not pass an identity',
     custom: "This project's App"
   },
+  pullRequestPromptMode: {
+    inherit: 'Follow the app setting',
+    off: 'Leave the task in review',
+    custom: "This project's own prompts"
+  },
   addAction: {
     draft: 'Add as draft',
     held: 'Add held',

@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('28')
+    expect(version.value).toBe('29')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('28')
+    expect(version.value).toBe('29')
     db.close()
   })
 
@@ -522,7 +522,7 @@ describe('schema migration', () => {
     makeV2Database()
     const old = openDatabase(path)
     const phantom = { number: 42, url: 'https://github.com/openai/quuu/pull/42', title: 'Pull Request #42',
-      headRefName: '', baseRefName: '', headSha: '', draft: false, updatedAt: '', check: 'neutral' as const, files: [] }
+      headRefName: '', baseRefName: '', headSha: '', draft: false, updatedAt: '', check: 'neutral' as const, mergeState: 'unknown' as const, state: 'open' as const, files: [] }
     const verified = { ...phantom, number: 7, url: 'https://github.com/upstream/repo/pull/7', headSha: 'a'.repeat(40), title: 'Real PR' }
     const snapshot: ReviewSnapshot = { cwd: '/tmp', branch: 'main', repository: 'owner/repo', tree: [],
       changes: [{ path: 'result.ts', change: 'added' }], stagedChanges: [], stagedRevision: null, localChanges: [],
@@ -685,5 +685,22 @@ describe('run adapter migration', () => {
     const migrated = openDatabase(path)
     expect(repo.getRun(migrated, run)).toMatchObject({ command: 'codex', logAdapter: 'codex' })
     migrated.close()
+  })
+})
+
+
+describe('pull request prompt migration', () => {
+  it('adds the prompt columns to an older database and keeps what a project wrote across reopening', () => {
+    makeV2Database()
+    const old = openDatabase(path)
+    const agentId = makeAgent(old, { name: 'Fixture' })
+    const projectId = makeProject(old, { name: 'Fixture', targetId: agentId })
+    expect(repo.getProject(old, projectId)).toMatchObject({ pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '' })
+    repo.updateProject(old, projectId, { pullRequestPromptMode: 'custom', pullRequestFailurePrompt: 'Fix CI', pullRequestConflictPrompt: 'Rebase' })
+    old.close()
+    const reopened = openDatabase(path)
+    try {
+      expect(repo.getProject(reopened, projectId)).toMatchObject({ pullRequestPromptMode: 'custom', pullRequestFailurePrompt: 'Fix CI', pullRequestPendingPrompt: '', pullRequestConflictPrompt: 'Rebase' })
+    } finally { reopened.close() }
   })
 })

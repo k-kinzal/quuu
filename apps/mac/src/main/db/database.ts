@@ -82,6 +82,10 @@ CREATE TABLE IF NOT EXISTS projects (
   commit_setup_version INTEGER NOT NULL DEFAULT 0,
   editor_app     TEXT NOT NULL DEFAULT '',
   report_enabled INTEGER NOT NULL DEFAULT 1,
+  pull_request_prompt_mode    TEXT NOT NULL DEFAULT 'inherit',
+  pull_request_failure_prompt TEXT NOT NULL DEFAULT '',
+  pull_request_pending_prompt TEXT NOT NULL DEFAULT '',
+  pull_request_conflict_prompt TEXT NOT NULL DEFAULT '',
   source         TEXT NOT NULL DEFAULT 'user',
   sort_order     INTEGER NOT NULL DEFAULT 0,
   created_at     TEXT NOT NULL,
@@ -334,7 +338,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 28
+  const target = 29
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -621,6 +625,14 @@ function migrate(db: Db): void {
    * so the index re-reads those sessions after startup and the rows fill in as it goes; pages
    * materialized under the retired parser version are dropped by the index when it starts.
    */
+
+  // v28 -> v29: what a project's tasks are told when their Pull Request is not in order.
+  if (current < 29) {
+    addColumnIfMissing(db, 'projects', 'pull_request_prompt_mode', "TEXT NOT NULL DEFAULT 'inherit'")
+    addColumnIfMissing(db, 'projects', 'pull_request_failure_prompt', "TEXT NOT NULL DEFAULT ''")
+    addColumnIfMissing(db, 'projects', 'pull_request_pending_prompt', "TEXT NOT NULL DEFAULT ''")
+    addColumnIfMissing(db, 'projects', 'pull_request_conflict_prompt', "TEXT NOT NULL DEFAULT ''")
+  }
 
   setSchemaVersion(db, target)
 }

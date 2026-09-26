@@ -4,12 +4,13 @@ import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import type { SettingsCategory } from '../state/store.js'
 import { useStore } from '../state/store.js'
-import { Bell, Bot, ICON, Palette, ScrollText, SlidersHorizontal, Smartphone, iconProps } from '../ui/icons.js'
+import { Bell, Bot, GitPullRequest, ICON, Palette, ScrollText, SlidersHorizontal, Smartphone, iconProps } from '../ui/icons.js'
 import { AgentSettings } from './settings/AgentSettings.js'
 import { AppearanceSettings } from './settings/AppearanceSettings.js'
 import { GeneralSettings } from './settings/GeneralSettings.js'
 import { MobileSettings } from './settings/MobileSettings.js'
 import { NotificationSettings } from './settings/NotificationSettings.js'
+import { PullRequestSettings } from './settings/PullRequestSettings.js'
 import { ReportSettings } from './settings/ReportSettings.js'
 
 const CATEGORIES: Array<{
@@ -20,6 +21,7 @@ const CATEGORIES: Array<{
     { id: 'general', label: t('settingsShell.general'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
     { id: 'agents', label: t('settingsShell.agents'), icon: <Bot size={ICON.md} {...iconProps} /> },
     { id: 'report', label: t('settingsShell.report'), icon: <ScrollText size={ICON.md} {...iconProps} /> },
+    { id: 'pullRequests', label: t('settingsShell.pullRequests'), icon: <GitPullRequest size={ICON.md} {...iconProps} /> },
     { id: 'notifications', label: t('settingsShell.notifications'), icon: <Bell size={ICON.md} {...iconProps} /> },
     { id: 'mobile', label: 'iPhone', icon: <Smartphone size={ICON.md} {...iconProps} /> },
     { id: 'appearance', label: t('settingsShell.appearance'), icon: <Palette size={ICON.md} {...iconProps} /> }
@@ -65,6 +67,7 @@ export function SettingsShell(): JSX.Element {
         {category === 'general' && <GeneralSettings />}
         {category === 'agents' && <AgentSettings />}
         {category === 'report' && <ReportSettings />}
+        {category === 'pullRequests' && <PullRequestSettings />}
         {category === 'notifications' && <NotificationSettings />}
         {category === 'mobile' && <MobileSettings />}
         {category === 'appearance' && <AppearanceSettings />}

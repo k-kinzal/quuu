@@ -4,6 +4,7 @@ import type { TaskRule, TaskRuleInput } from '../automation/conditions.js'
 import type { Run, RunErrorKind, RunKind, RunOutcome } from '../execution/types.js'
 import type { Project, ProjectInput } from '../projects/types.js'
 import type { CommitIdentityMode } from '../settings/identity.js'
+import type { PullRequestPromptMode } from '../settings/pullRequestPrompts.js'
 import type { AppSettings } from '../settings/types.js'
 import { DEFAULT_SETTINGS } from '../settings/types.js'
 import { dependencyCleared, orderTasks, wouldCycle as wouldCycleIn } from '../tasks/ordering.js'
@@ -242,6 +243,10 @@ function toProject(r: Row): Project {
     },
     editorApp: s(r.editor_app),
     reportEnabled: i2b(r.report_enabled),
+    pullRequestPromptMode: s(r.pull_request_prompt_mode, 'inherit') as PullRequestPromptMode,
+    pullRequestFailurePrompt: s(r.pull_request_failure_prompt),
+    pullRequestPendingPrompt: s(r.pull_request_pending_prompt),
+    pullRequestConflictPrompt: s(r.pull_request_conflict_prompt),
     source: s(r.source, 'user') as RecordSource,
     sortOrder: n(r.sort_order),
     createdAt: s(r.created_at),
@@ -667,9 +672,10 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
   db.prepare(
     `INSERT INTO projects (id, name, path, color, priority, target_kind, target_id,
        max_concurrent, enabled, commit_identity_mode, commit_app_slug, commit_bot_user_id,
-       commit_app_id, commit_setup_version, editor_app, report_enabled, source, sort_order,
-       created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       commit_app_id, commit_setup_version, editor_app, report_enabled,
+       pull_request_prompt_mode, pull_request_failure_prompt, pull_request_pending_prompt,
+       pull_request_conflict_prompt, source, sort_order, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     id,
     input.name,
@@ -687,6 +693,10 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
     input.commitIdentity?.setupVersion ?? 0,
     input.editorApp ?? '',
     b2i(input.reportEnabled ?? true),
+    input.pullRequestPromptMode ?? 'inherit',
+    input.pullRequestFailurePrompt ?? '',
+    input.pullRequestPendingPrompt ?? '',
+    input.pullRequestConflictPrompt ?? '',
     input.source ?? 'user',
     input.sortOrder ?? 0,
     ts,
@@ -703,7 +713,9 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     `UPDATE projects SET name=?, path=?, color=?, priority=?, target_kind=?, target_id=?,
        max_concurrent=?, enabled=?, commit_identity_mode=?, commit_app_slug=?,
        commit_bot_user_id=?, commit_app_id=?, commit_setup_version=?, editor_app=?,
-       report_enabled=?, sort_order=?, updated_at=? WHERE id=?`
+       report_enabled=?, pull_request_prompt_mode=?, pull_request_failure_prompt=?,
+       pull_request_pending_prompt=?, pull_request_conflict_prompt=?, sort_order=?, updated_at=?
+     WHERE id=?`
   ).run(
     next.name,
     next.path,
@@ -720,6 +732,10 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     next.commitIdentity?.setupVersion ?? 0,
     next.editorApp ?? '',
     b2i(next.reportEnabled ?? true),
+    next.pullRequestPromptMode ?? 'inherit',
+    next.pullRequestFailurePrompt ?? '',
+    next.pullRequestPendingPrompt ?? '',
+    next.pullRequestConflictPrompt ?? '',
     next.sortOrder,
     nowIso(),
     id

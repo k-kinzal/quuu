@@ -37,6 +37,15 @@ export type CommitIdentity = z.infer<typeof CommitIdentitySchema>
 export const CommitIdentityModeSchema = z.union([z.literal('inherit'), z.literal('off'), z.literal('custom')])
 export type CommitIdentityMode = z.infer<typeof CommitIdentityModeSchema>
 
+/**
+ * How a project decides what its tasks are told about their Pull Request.
+ *   inherit … the app's prompts (default)
+ *   off     … never send this project's tasks back over a Pull Request
+ *   custom  … this project's own prompts
+ */
+export const PullRequestPromptModeSchema = z.union([z.literal('inherit'), z.literal('off'), z.literal('custom')])
+export type PullRequestPromptMode = z.infer<typeof PullRequestPromptModeSchema>
+
 export const AppSettingsSchema = z.object({
   /** Whether to start the scheduler automatically on app launch. */
   autoStartScheduler: z.boolean(),
@@ -92,6 +101,13 @@ export const AppSettingsSchema = z.object({
   reportTargetId: z.string(),
   /** Added to the end of the instructions handed to that agent. */
   reportInstructions: z.string(),
+  /**
+   * What a task is told when its run ends and its Pull Request is not in order: CI failed, CI
+   * still running, or the branch conflicts with its base. Empty sends nothing.
+   */
+  pullRequestFailurePrompt: z.string(),
+  pullRequestPendingPrompt: z.string(),
+  pullRequestConflictPrompt: z.string(),
   theme: z.union([z.literal('dark'), z.literal('light'), z.literal('system')])
 })
 export type AppSettings = z.infer<typeof AppSettingsSchema>

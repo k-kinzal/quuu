@@ -60,10 +60,22 @@ export interface Project {
    * for the same answer once per project.
    */
   reportEnabled: boolean
+
+  /**
+   * Whose prompts a task of this project is sent back with when its Pull Request is not in
+   * order (`inherit` the app's, `off` for none, `custom` for the three below).
+   */
+  pullRequestPromptMode: PullRequestPromptMode
+
+  /** Used only when `pullRequestPromptMode` is `custom`. Empty sends nothing for that state. */
+  pullRequestFailurePrompt: string
+  pullRequestPendingPrompt: string
+  pullRequestConflictPrompt: string
 }
 
 
 import type { CommitIdentity, CommitIdentityMode } from '../settings/identity.js'
+import type { PullRequestPromptMode } from '../settings/pullRequestPrompts.js'
 
 /**
  * The values accepted on create and update.
@@ -82,10 +94,18 @@ export type ProjectInput = Omit<
   | 'commitIdentity'
   | 'editorApp'
   | 'reportEnabled'
+  | 'pullRequestPromptMode'
+  | 'pullRequestFailurePrompt'
+  | 'pullRequestPendingPrompt'
+  | 'pullRequestConflictPrompt'
 > & {
   source?: RecordSource
   commitIdentityMode?: CommitIdentityMode
   commitIdentity?: CommitIdentity
   editorApp?: string
   reportEnabled?: boolean
+  pullRequestPromptMode?: PullRequestPromptMode
+  pullRequestFailurePrompt?: string
+  pullRequestPendingPrompt?: string
+  pullRequestConflictPrompt?: string
 }

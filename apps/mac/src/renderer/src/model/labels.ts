@@ -1,6 +1,6 @@
 import type { GroupStrategy, LogAdapter } from '../../../preload/api/agents.js'
 import type { RunErrorKind } from '../../../preload/api/execution.js'
-import type { CommitIdentityMode } from '../../../preload/api/settings.js'
+import type { CommitIdentityMode, PullRequestPromptMode } from '../../../preload/api/settings.js'
 import type { AddAction, DependsMode, Priority, RunStatus, TaskStatus } from '../../../preload/api/tasks.js'
 import { t } from './i18n/index.js'
 
@@ -73,6 +73,12 @@ export const COMMIT_IDENTITY_MODE_LABEL: Record<CommitIdentityMode, string> = {
   inherit: t('commitIdentityMode.inherit'),
   off: t('commitIdentityMode.off'),
   custom: t('commitIdentityMode.custom')
+}
+
+export const PULL_REQUEST_PROMPT_MODE_LABEL: Record<PullRequestPromptMode, string> = {
+  inherit: t('pullRequestPromptMode.inherit'),
+  off: t('pullRequestPromptMode.off'),
+  custom: t('pullRequestPromptMode.custom')
 }
 
 export const ADD_ACTION_LABEL: Record<AddAction, string> = {

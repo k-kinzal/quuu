@@ -255,6 +255,9 @@ export const model: typeof en = {
       failure: 'CI 失敗',
       pending: 'CI 実行中',
       neutral: 'CI 状態なし'
+    },
+    mergeState: {
+      conflicting: 'ベースブランチとコンフリクト'
     }
   },
   projectSelect: {

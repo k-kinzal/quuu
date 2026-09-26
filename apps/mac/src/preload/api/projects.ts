@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { RunTargetKindSchema } from './agents.js'
-import { CommitIdentityModeSchema, CommitIdentitySchema } from './settings.js'
+import { CommitIdentityModeSchema, CommitIdentitySchema, PullRequestPromptModeSchema } from './settings.js'
 import { RecordSourceSchema } from './tasks.js'
 
 // ---------------------------------------------------------------------------
@@ -55,7 +55,13 @@ export const ProjectSchema = z.object({
    * Whether this project's tasks get a change report.
    * Only consulted while reports are on app-wide; this is the "not for this one" switch.
    */
-  reportEnabled: z.boolean()
+  reportEnabled: z.boolean(),
+  /** Whose prompts a task of this project is sent back with when its Pull Request is not in order. */
+  pullRequestPromptMode: PullRequestPromptModeSchema,
+  /** Used only when `pullRequestPromptMode` is `custom`. Empty sends nothing for that state. */
+  pullRequestFailurePrompt: z.string(),
+  pullRequestPendingPrompt: z.string(),
+  pullRequestConflictPrompt: z.string()
 })
 export type Project = z.infer<typeof ProjectSchema>
 
@@ -65,13 +71,17 @@ export type Project = z.infer<typeof ProjectSchema>
  * edits, so they are excluded (only `repo.deleteProject` and
  * `repo.reviveProject` write them).
  */
-export const ProjectInputSchema = ProjectSchema.omit({ id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true }).extend({
+export const ProjectInputSchema = ProjectSchema.omit({ id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true }).extend({
   priority: z.number().int().nonnegative(),
   maxConcurrent: z.number().int().positive(),
   source: RecordSourceSchema.optional(),
   commitIdentityMode: CommitIdentityModeSchema.optional(),
   commitIdentity: CommitIdentitySchema.optional(),
   editorApp: z.string().optional(),
-  reportEnabled: z.boolean().optional()
+  reportEnabled: z.boolean().optional(),
+  pullRequestPromptMode: PullRequestPromptModeSchema.optional(),
+  pullRequestFailurePrompt: z.string().optional(),
+  pullRequestPendingPrompt: z.string().optional(),
+  pullRequestConflictPrompt: z.string().optional()
 })
 export type ProjectInput = z.infer<typeof ProjectInputSchema>

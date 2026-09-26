@@ -479,6 +479,7 @@ describe('the workbench display state', () => {
       commitIdentity: { appSlug: '', botUserId: '' },
       editorApp: '',
       reportEnabled: true,
+      pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
       source: 'user',
       sortOrder: 0,
       createdAt: '',
@@ -691,6 +692,8 @@ describe('the workbench display state', () => {
           draft: false,
           updatedAt: '2026-08-29T00:00:00.000Z',
           check: 'success',
+          mergeState: 'clean',
+          state: 'open',
           files: [{ path: 'src/a.ts', change: 'modified' }]
         }
       ],
@@ -798,7 +801,7 @@ describe('the workbench display state', () => {
     const pulls = [42, 43].map(number => ({
       number, title: `Review ${String(number)}`, url: `https://github.com/openai/quuu/pull/${String(number)}`,
       headRefName: 'feature', baseRefName: 'main', headSha: 'abc123', draft: false,
-      updatedAt: '', check: 'success' as const, files: []
+      updatedAt: '', check: 'success' as const, mergeState: 'clean' as const, state: 'open' as const, files: []
     }))
     const popupMenu = vi.fn().mockResolvedValue('0')
     const openExternal = vi.fn().mockResolvedValue(undefined)

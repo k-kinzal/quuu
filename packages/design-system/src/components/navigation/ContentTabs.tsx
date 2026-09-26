@@ -12,6 +12,8 @@ export interface ContentTabOption<T extends string> {
   label: string
   icon?: ReactNode
   count?: number
+  /** A small sign after the label: a state the tab's contents are in, said without opening it. */
+  mark?: ReactNode
   title?: string
   disabled?: boolean
   muted?: boolean
@@ -84,7 +86,8 @@ const Label = styled('span')(({ theme }) => ({
     ...theme.typography.caption,
     color: theme.palette.text.tertiary,
     fontVariantNumeric: 'tabular-nums'
-  }
+  },
+  '& > [data-mark]': { display: 'inline-flex', alignItems: 'center', flex: '0 0 auto' }
 }))
 
 const CloseButton = styled('button')(({ theme }) => ({
@@ -191,7 +194,7 @@ export function ContentTabs<T extends string>({ idBase, label, value, options, a
                 onKeyUp={(event) => event.stopPropagation()}
                 onClick={(event) => { event.stopPropagation(); close(option.value) }}
               ><X aria-hidden="true" /></CloseButton> : undefined } : {})}
-            label={<Label>{option.icon}<span data-label>{option.label}</span>{option.count !== undefined && <span data-count>{option.count}</span>}</Label>}
+            label={<Label>{option.icon}<span data-label>{option.label}</span>{option.count !== undefined && <span data-count>{option.count}</span>}{option.mark !== undefined && <span data-mark>{option.mark}</span>}</Label>}
           />
         )
       })}

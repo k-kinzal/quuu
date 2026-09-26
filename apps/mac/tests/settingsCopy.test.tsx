@@ -14,6 +14,7 @@ import { AgentSettings } from '../src/renderer/src/views/settings/AgentSettings.
 import { AppearanceSettings } from '../src/renderer/src/views/settings/AppearanceSettings.js'
 import { GeneralSettings } from '../src/renderer/src/views/settings/GeneralSettings.js'
 import { NotificationSettings } from '../src/renderer/src/views/settings/NotificationSettings.js'
+import { PullRequestSettings } from '../src/renderer/src/views/settings/PullRequestSettings.js'
 
 /**
  * The **amount of text** on a settings surface (rule G-2).
@@ -58,6 +59,7 @@ const PROJECT: Project = {
   importSince: null,
   editorApp: '',
   reportEnabled: true,
+  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
   commitIdentityMode: 'inherit',
   commitIdentity: { appSlug: '', botUserId: '' },
   source: 'user',
@@ -90,6 +92,7 @@ const VIEWS: Array<[string, () => JSX.Element]> = [
   ['notifications', NotificationSettings],
   ['appearance', AppearanceSettings],
   ['agents', AgentSettings],
+  ['pull requests', PullRequestSettings],
   // A project's configuration is a surface of the same rank (rule F: settings placed in the entity's context)
   ['project', () => <ProjectDetail project={PROJECT} onBack={() => { }} />],
   ['automatic tasks', () => <TaskRuleEditor rule={RULE} onBack={() => { }} />]
