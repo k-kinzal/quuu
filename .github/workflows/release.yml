@@ -36,18 +36,20 @@ jobs:
 
       # The quality gate runs on push via ci.yml. This job only packages.
 
-      # The Release tag is the version. Stamp it onto apps/mac/package.json so the
-      # dmg name and the built app match what was published; git's version is ignored.
+      # The Release tag is the version, dated as YYYY.MM.DD (e.g. 2026.09.26). Stamp it
+      # onto apps/mac/package.json so the dmg name and the built app match what was
+      # published; git's version is ignored. Not semver on purpose: electron-builder only
+      # needs semver for Windows, and macOS takes dotted integers as-is.
       - name: Stamp version from Release tag
         if: github.event_name == 'release'
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
           case "$TAG" in
-            v[0-9]*) ;;
-            *) echo "tag ${TAG} is not v<semver>" >&2; exit 1 ;;
+            [0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]) ;;
+            *) echo "tag ${TAG} is not YYYY.MM.DD" >&2; exit 1 ;;
           esac
-          npm pkg set "version=${TAG#v}" -w quuu
+          npm pkg set "version=${TAG}" -w quuu
 
       # --publish never lives in the dist:dmg script. Passing it here as
       # `npm run dist:dmg -- --publish never` lets npm eat --publish.

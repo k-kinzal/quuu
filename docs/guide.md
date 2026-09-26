@@ -209,16 +209,20 @@ because the tests build `quuu-pty` with `xcrun`.
 
 GitHub Actions ([release.yml](../.github/workflows/release.yml)) builds the Mac app and
 puts dmgs (arm64 / x64) on the Release you published. Publish a GitHub Release (the tag
-is created with it). The workflow stamps `apps/mac/package.json` with that tag's version
-for the build, then rewrites the Release by attaching the dmgs. The version in git is
-not consulted. Title and notes stay as you wrote them.
+is created with it). The tag is the release date, `YYYY.MM.DD`, with no `v` prefix. The
+workflow stamps `apps/mac/package.json` with that tag as the version for the build, then
+rewrites the Release by attaching the dmgs. The version in git is not consulted. Title
+and notes stay as you wrote them.
 
 ```sh
-gh release create v0.1.0 --title v0.1.0 --generate-notes
+tag=$(date +%Y.%m.%d)
+gh release create "$tag" --title "$tag" --generate-notes
 ```
 
 The GitHub Releases UI does the same. Publishing the Release is the trigger — a tag
-push by itself does not ship.
+push by itself does not ship. A tag in any other shape (`v0.1.0`, `2026.9.26`) fails the
+workflow before building, so nothing is attached. One release per day: to ship again the
+same day, delete that day's Release and tag first, then publish again.
 
 - **Signing defaults to ad-hoc (unofficial distribution).** Whoever downloads it has to
   get past Gatekeeper once — if opening is refused, use "Open Anyway" in
