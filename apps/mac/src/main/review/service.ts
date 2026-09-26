@@ -9,9 +9,11 @@ import { git } from './command.js'
 import { readCoverage } from './coverage.js'
 import { pathInside, projectFiles, readRevisionText, readText } from './files.js'
 import type { ReviewBaseline } from './git.js'
-import { changesBetween, commitsSince, inferReviewBaseline, readCommits, snapshotWorktree } from './git.js'
+import { changesBetween, inferReviewBaseline, snapshotWorktree } from './git.js'
 import type { ReviewEvidence } from './evidence.js'
 import { gh, pullRequests, pullRequestUrl } from './github.js'
+import type { RunWindow } from './ownership.js'
+import { ownChanges, taskCommits } from './ownership.js'
 import { buildFileTree } from './tree.js'
 import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewSnapshot } from './types.js'
 
@@ -21,13 +23,18 @@ export class ReviewService {
     return inferReviewBaseline(cwd, startedAt)
   }
 
+  /**
+   * @param work what is known of the task's own doing: when its runs were, and which commits the
+   * last projection named. Without it every commit since the start is taken as the task's.
+   */
   async snapshot(
     cwd: string,
     project: Project,
     settings: AppSettings,
     baseline: ReviewBaseline | null,
     evidence?: ReviewEvidence,
-    localReady?: (snapshot: ReviewSnapshot) => void | Promise<void>
+    localReady?: (snapshot: ReviewSnapshot) => void | Promise<void>,
+    work?: { windows: RunWindow[]; recorded: string[] }
   ): Promise<ReviewSnapshot> {
     const [files, branchResult, origin, current] = await Promise.all([
       projectFiles(cwd),
@@ -35,14 +42,12 @@ export class ReviewService {
       git(cwd, ['config', '--get', 'remote.origin.url']),
       baseline ? snapshotWorktree(cwd, true) : Promise.resolve(null)
     ])
-    const commits = baseline && current?.head
-      ? await commitsSince(cwd, baseline.baseHead, current.head)
-      : []
-    for (const commit of await readCommits(cwd, evidence?.commits ?? [])) {
-      if (!commits.some(existing => existing.sha === commit.sha)) commits.push(commit)
-    }
-    commits.sort((a, b) => b.committedAt.localeCompare(a.committedAt))
-    const changes = baseline?.baseTree && current
+    const { commits, judged } = await taskCommits(cwd, baseline?.baseHead ?? null, baseline && current?.head ? current.head : null, {
+      windows: work?.windows,
+      receipts: evidence?.commits ?? [],
+      recorded: work?.recorded ?? []
+    })
+    const cumulative = baseline?.baseTree && current
       ? await changesBetween(cwd, baseline.baseTree, current.tree)
       : []
     const [working, staged] = current && baseline?.baseTree
@@ -51,7 +56,7 @@ export class ReviewService {
         current.indexTree ? changesBetween(cwd, current.headTree, current.indexTree) : []
       ])
       : [[], []]
-    const taskPaths = new Set(changes.flatMap((file) => [file.path, file.previousPath].filter(Boolean)))
+    const taskPaths = new Set(cumulative.flatMap((file) => [file.path, file.previousPath].filter(Boolean)))
     // A staged edit can be undone in the working file, leaving no net task diff. Keep both steps,
     // while still excluding untouched work that was already dirty when the task started.
     if (current && baseline?.baseTree && staged.some(file => !taskPaths.has(file.path))) {
@@ -70,6 +75,9 @@ export class ReviewService {
     const stagedChanges = staged.filter(
       (file) => taskPaths.has(file.path) || (file.previousPath ? taskPaths.has(file.previousPath) : false)
     )
+    // Where the checkout could say which commits were this task's, the listing is built from them.
+    // The start-to-now comparison alone carries whatever other tasks landed in between.
+    const changes = judged ? ownChanges(cumulative, commits, [...stagedChanges, ...localChanges]) : cumulative
     const remote = origin.code === 0 ? origin.stdout.trim() : ''
     const local: ReviewSnapshot = {
       cwd,

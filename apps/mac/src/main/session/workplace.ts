@@ -14,9 +14,10 @@ import { fileURLToPath } from 'node:url'
  *
  * **The session log is the one witness.** Every CLI stamps the directory it worked in on its
  * entries (measured: Claude puts `cwd` on each message, Codex puts `cwd` on each command it ran,
- * as a `file://` URL). Read those in order and follow the agent to the last worktree of the
- * project it was in. Only Git worktrees of the project count: an agent wandering into a
- * subdirectory, `/tmp`, or another repository to read something has not moved its work.
+ * as a `file://` URL), and the commands themselves say where they went (`cd <dir> && …`). Read
+ * those in order and follow the agent to the last worktree of the project it was in. Only Git
+ * worktrees of the project count: an agent wandering into a subdirectory, `/tmp`, or another
+ * repository to read something has not moved its work.
  */
 
 interface ScanState {
@@ -33,10 +34,20 @@ interface ScanState {
 const scans = new Map<string, ScanState>()
 
 /**
- * Only a structural `"cwd":"…"` matches. A path quoted inside a message body is escaped
+ * What names a directory in the log, in order of appearance.
+ *
+ * `cwd`: only a structural `"cwd":"…"` matches. A path quoted inside a message body is escaped
  * (`\"cwd\":\"`), so what an agent read out of someone else's log never counts as its own move.
+ *
+ * `moved` / `made`: a shell command going somewhere - `cd /x`, `git -C /x` - or making the place
+ * with `git worktree add … /x`. Claude Code keeps its own directory and writes `cd <worktree> &&`
+ * in front of every command instead, so its `cwd` never says where the work went. Measured: a
+ * task's commits and Pull Request were made in a worktree it created this way, and its review
+ * and report read `main` - nine thousand files of other tasks' work. Absolute paths only, without
+ * quotes or spaces; the worktree filter below throws out `/tmp` and other repositories anyway.
  */
-const CWD_FIELD = /"cwd":"((?:[^"\\]|\\.)*)"/g
+const RECORDED =
+  /"cwd":"(?<cwd>(?:[^"\\]|\\.)*)"|(?:^|[\s;&|(`"]|\\n)(?:cd|git\s+-C)\s+(?<moved>\/[^\s"'`;&|<>()\\]+)|git\s+worktree\s+add(?:\s+(?!\/)[^\s"'`;&|<>()\\]+)*\s+(?<made>\/[^\s"'`;&|<>()\\]+)/g
 
 function decodeDir(raw: string): string | null {
   let value: string
@@ -82,8 +93,9 @@ export function recordedWorkingDirs(logPath: string): string[] {
 
     const text = chunk.subarray(0, complete).toString('utf8')
     const dirs = [...state.dirs]
-    for (const match of text.matchAll(CWD_FIELD)) {
-      const dir = decodeDir(match[1])
+    for (const match of text.matchAll(RECORDED)) {
+      const { cwd, moved, made } = match.groups ?? {}
+      const dir = cwd !== undefined ? decodeDir(cwd) : (moved ?? made ?? null)
       if (dir && dirs.at(-1) !== dir) dirs.push(dir)
     }
     scans.set(logPath, { offset: state.offset + complete, dirs })

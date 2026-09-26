@@ -121,7 +121,7 @@ it('refreshes legacy combined changes while preserving saved commits during the 
   legacy.commits = [{ sha: 'a'.repeat(40), shortSha: 'aaaaaaa', subject: 'Saved commit', author: 'Fixture', committedAt: '', files: [] }]
   for (const key of ['localChanges', 'localRevision', 'stagedChanges', 'stagedRevision']) Reflect.deleteProperty(legacy, key)
   repo.saveReviewSnapshot(db, taskId, legacy)
-  vi.spyOn(service, 'snapshot').mockResolvedValue(snapshot())
+  const compute = vi.spyOn(service, 'snapshot').mockResolvedValue(snapshot())
   const preparing = operations.reviewSnapshot(taskId)
   expect(preparing.preparing).toBe(true)
   expect(preparing.localChanges).toEqual([])
@@ -129,7 +129,8 @@ it('refreshes legacy combined changes while preserving saved commits during the 
   expect(preparing.commits).toEqual(legacy.commits)
   const refreshed = await operations.refresh(taskId)
   expect(refreshed.preparing).not.toBe(true)
-  expect(refreshed.commits).toEqual(legacy.commits)
+  // The saved commit is handed to the service, which keeps it unless it turns out to be other work
+  expect(compute.mock.calls[0]?.[6]).toMatchObject({ recorded: ['a'.repeat(40)] })
 })
 
 it('publishes local review data while GitHub is still pending and coalesces simultaneous refreshes', async () => {
@@ -151,16 +152,35 @@ it('publishes local review data while GitHub is still pending and coalesces simu
   expect(compute).toHaveBeenCalledTimes(1)
 })
 
-it('retains recorded commits and PRs when HEAD changes and GitHub is temporarily unavailable', async () => {
+/**
+ * Which recorded commits stay is the service's call (`review/ownership.ts`: one that left the
+ * range stays, one that was other work goes); the projection hands them over along with when the
+ * task's runs were. Recorded PRs are kept here when GitHub cannot be reached.
+ */
+it('hands the recorded commits and the run windows to the service, and retains PRs when GitHub is temporarily unavailable', async () => {
   const old = snapshot()
   old.commits = [{ sha: 'a'.repeat(40), shortSha: 'aaaaaaa', subject: 'Created in this session', author: 'Fixture', committedAt: '2026-09-09T00:00:00Z', files: [] }]
   old.pullRequests = [{ number: 42, title: 'Created in this session', url: 'https://github.com/owner/repo/pull/42', headRefName: 'feature', baseRefName: 'main', headSha: 'a'.repeat(40), draft: false, updatedAt: '', check: 'neutral', files: [] }]
   repo.saveReviewSnapshot(db, taskId, old)
-  vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), pullRequestNotice: 'offline' })
+  const compute = vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), pullRequestNotice: 'offline' })
   const saved = await operations.refresh(taskId)
-  expect(saved.commits).toEqual(old.commits)
+  const run = repo.listRunsByTask(db, taskId)[0]
+  expect(compute.mock.calls[0]?.[6]).toEqual({ windows: [{ from: run.startedAt, to: null }], recorded: ['a'.repeat(40)] })
   expect(saved.pullRequests).toEqual(old.pullRequests)
   expect(saved.pullRequestNotice).toBe('offline')
+})
+
+it('does not hand over commits recorded for another working directory', async () => {
+  const moved = new ReviewOperations(db, () => DEFAULT_SETTINGS, service, () => ({ dir: '/tmp/elsewhere', project: repo.getProject(db, projectId)! }))
+  const old = snapshot()
+  old.commits = [{ sha: 'a'.repeat(40), shortSha: 'aaaaaaa', subject: 'In the launch directory', author: 'Fixture', committedAt: '2026-09-09T00:00:00Z', files: [] }]
+  repo.saveReviewSnapshot(db, taskId, old)
+  vi.spyOn(service, 'inferBaseline').mockResolvedValue({ startedAt: '', baseHead: 'a'.repeat(40), baseTree: 'b'.repeat(40) })
+  const compute = vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), cwd: '/tmp/elsewhere' })
+  try {
+    await moved.refresh(taskId)
+    expect(compute.mock.calls[0]?.[6]).toMatchObject({ recorded: [] })
+  } finally { moved.stop() }
 })
 
 /**

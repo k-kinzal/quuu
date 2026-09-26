@@ -113,7 +113,8 @@ export class ReviewOperations {
 
   private async materialize(taskId: string): Promise<void> {
     const place = this.workbenchPlace(taskId)
-    const firstRun = repo.listRunsByTask(this.db, taskId).at(-1)
+    const runs = repo.listRunsByTask(this.db, taskId)
+    const firstRun = runs.at(-1)
     const savedBase = repo.getTaskReviewBase(this.db, taskId)
     const baseline = firstRun
       ? savedBase?.cwd === place.dir && savedBase.baseTree ? savedBase : await this.review.inferBaseline(place.dir, firstRun.startedAt)
@@ -121,20 +122,24 @@ export class ReviewOperations {
     if (this.stopped || !repo.getTask(this.db, taskId)) return
     if (!savedBase && baseline) repo.insertTaskReviewBase(this.db, { taskId, cwd: place.dir, ...baseline })
     const previous = repo.getReviewSnapshot(this.db, taskId)?.snapshot
-    const keepRecorded = (snapshot: ReviewSnapshot): ReviewSnapshot => {
-      const commits = new Map((previous?.cwd === place.dir ? previous.commits : []).map(commit => [commit.sha, commit]))
-      for (const commit of snapshot.commits) commits.set(commit.sha, commit)
-      return { ...snapshot, commits: [...commits.values()].sort((a, b) => b.committedAt.localeCompare(a.committedAt)) }
-    }
     const save = (snapshot: ReviewSnapshot): void => {
-      if (!this.stopped && repo.getTask(this.db, taskId)) repo.saveReviewSnapshot(this.db, taskId, keepRecorded(snapshot))
+      if (!this.stopped && repo.getTask(this.db, taskId)) repo.saveReviewSnapshot(this.db, taskId, snapshot)
+    }
+    /*
+     * The service decides which commits are the task's; it needs when the runs were, and which
+     * commits the last projection named so one that only left the range (the checkout moved to
+     * another branch) is not forgotten - and one that turned out to be other work is.
+     */
+    const work = {
+      windows: runs.map(run => ({ from: run.startedAt, to: run.endedAt })),
+      recorded: previous?.cwd === place.dir ? previous.commits.map(commit => commit.sha) : []
     }
     const snapshot = await this.review.snapshot(place.dir, place.project, this.getSettings(), baseline,
       repo.reviewEvidence(this.db, taskId), async local => {
         if (this.stopped) return
         await this.review.retain(taskId, local)
         save({ ...local, pullRequests: previous?.pullRequests ?? [] })
-      })
+      }, work)
     // A transient GitHub failure must not erase already recorded PRs.
     if (snapshot.pullRequestNotice && previous?.cwd === place.dir) {
       const prs = new Map(previous.pullRequests.map(pr => [pr.url, pr]))

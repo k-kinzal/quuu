@@ -11,7 +11,7 @@ export interface ReviewBaseline {
   baseTree: string | null
 }
 
-interface WorktreeSnapshot {
+export interface WorktreeSnapshot {
   head: string | null
   headTree: string
   indexTree: string | null
@@ -99,12 +99,21 @@ export async function captureReviewBaseline(
   return { startedAt, baseHead: snapshot.head, baseTree: snapshot.tree }
 }
 
-/** For a task already started under an older version, fill the baseline with the commit before its first run. */
+/**
+ * For a task whose baseline was not captured in this checkout - one started under an older
+ * version, or one whose agent moved into a worktree - take the commit before its first run.
+ *
+ * **Along the first parents only.** A merge brings in commits whose dates predate it, so the
+ * newest commit before the start, over the whole history, is as likely to sit on a branch that
+ * was merged later as on the line the checkout is on. Measured: a task's start was placed on
+ * another task's fuzz branch, five seconds before its first run, and its comparison then carried
+ * that branch's whole difference from `main`.
+ */
 export async function inferReviewBaseline(
   cwd: string,
   startedAt: string
 ): Promise<ReviewBaseline> {
-  const head = await git(cwd, ['rev-list', '-1', `--before=${startedAt}`, 'HEAD'])
+  const head = await git(cwd, ['rev-list', '-1', '--first-parent', `--before=${startedAt}`, 'HEAD'])
   const baseHead = head.code === 0 && /^[a-f0-9]{40}$/i.test(head.stdout.trim())
     ? head.stdout.trim()
     : null

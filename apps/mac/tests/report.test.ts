@@ -338,6 +338,43 @@ describe('writing one', () => {
     expect(ops.report(taskId)?.revision).toBe(finalTree)
   }, LAUNCHES)
 
+  /*
+   * Measured on this machine: a task that changed a handful of files was handed 9,116 - a fuzz
+   * corpus another task had merged into the same `main` in between - and 25 commits, none of them
+   * its own. The checkout's reflog knows which commits were made here during this task's runs.
+   */
+  it("names only this task's commits and files when other work landed in the checkout meanwhile", async () => {
+    initGit()
+    const git = (...args: string[]): string => execFileSync('/usr/bin/git', args, { cwd: work, encoding: 'utf8' }).trim()
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    const first = addRun(taskId)
+    const baseline = await captureReviewBaseline(work, taskId, first.startedAt)
+    repo.insertTaskReviewBase(db, { taskId, cwd: work, ...baseline })
+
+    // Another task's work, merged upstream and pulled in here
+    const upstream = mkdtempSync(join(tmpdir(), 'quuu-report-upstream-'))
+    try {
+      execFileSync('/usr/bin/git', ['clone', '-q', work, upstream])
+      writeFileSync(join(upstream, 'corpus.sql'), 'select 1\n')
+      execFileSync('/usr/bin/git', ['-C', upstream, '-c', 'user.name=Other', '-c', 'user.email=other@example.invalid', 'add', '-A'])
+      execFileSync('/usr/bin/git', ['-C', upstream, '-c', 'user.name=Other', '-c', 'user.email=other@example.invalid', 'commit', '-qm', 'Rebuild the fuzz corpus'])
+      git('pull', '-q', '--ff-only', upstream, 'HEAD')
+    } finally {
+      rmSync(upstream, { recursive: true, force: true })
+    }
+    writeFileSync(join(work, 'queue.ts'), 'export const queue = 2\n')
+    git('commit', '-qam', 'Rename the queue')
+    const mine = git('rev-parse', 'HEAD')
+
+    const prompt = await generatedPrompt(taskId)
+    expect(prompt).toContain('+-queue.ts')
+    expect(prompt).not.toContain('corpus.sql')
+    expect(prompt).toContain(`${mine.slice(0, 7)} Rename the queue`)
+    expect(prompt).not.toContain('Rebuild the fuzz corpus')
+    expect(prompt).toContain('1 commit(s) of other work')
+    expect(prompt).not.toContain('Read the cumulative diff')
+  }, LAUNCHES)
+
   it('does not pass review material from a different working directory as this task result', async () => {
     const taskId = makeTask(db, projectId, 'Rename the queue')
     repo.saveReviewSnapshot(db, taskId, cachedReview({
@@ -374,7 +411,8 @@ describe('writing one', () => {
   it('does not treat the whole repository history as task work when its start cannot be inferred', async () => {
     initGit()
     const taskId = makeTask(db, projectId, 'Rename the queue')
-    addRun(taskId, { startedAt: '2000-01-01T00:00:00Z' })
+    // A run of long ago, over long ago: the commit made just now was not made during it
+    addRun(taskId, { startedAt: '2000-01-01T00:00:00Z', endedAt: '2000-01-01T01:00:00Z' })
     const prompt = await generatedPrompt(taskId)
     expect(prompt).toContain('Task-wide Git comparison: unavailable')
     expect(prompt).toContain('Commit log:\n- (none)')
@@ -618,7 +656,8 @@ describe('what the generator is told', () => {
       cwd: '/Users/me/Projects/taskd',
       title: 'Rename the queue',
       prompt: 'Rename the queue and preserve existing entries.',
-      revision: { base: 'a'.repeat(40), head: 'b'.repeat(40), inferred: false },
+      revision: { base: 'a'.repeat(40), head: 'b'.repeat(40), inferred: false, foreign: 0 },
+      uncommitted: null,
       changes: [{ path: 'src/queue.ts', mark: '+-' }, { path: 'src/inbox.ts', mark: '+' }],
       commits: ['1f4c9ab Rename the queue'],
       pullRequests: ['https://github.com/me/taskd/pull/12'],
@@ -658,6 +697,39 @@ describe('what the generator is told', () => {
     expect(text).toContain('Run history (oldest first; JSON):\n[]')
     expect(text).toContain('Task-wide Git comparison: unavailable')
     expect(text).toMatch(/Commit log:\n- \(none\)/)
+  })
+
+  /*
+   * A task of a project that takes turns on one `main` sees the others' merges land between its
+   * start tree and its end tree. Told to diff the two, the writer describes everybody's work.
+   */
+  it('sends the writer to the commits and the uncommitted diff when other work sits between the trees', () => {
+    const text = prompt({
+      revision: { base: 'a'.repeat(40), head: 'b'.repeat(40), inferred: false, foreign: 25 },
+      uncommitted: { base: 'c'.repeat(40), head: 'b'.repeat(40) }
+    })
+    expect(text).toContain('25 commit(s) of other work')
+    expect(text).toContain('is not this task alone')
+    expect(text).toContain('git show <sha>')
+    expect(text).toContain(`git diff ${'c'.repeat(40)} ${'b'.repeat(40)} --`)
+    expect(text).not.toContain('Read the cumulative diff')
+    expect(text).toContain("Change files (this task's")
+  })
+
+  /*
+   * The prompt is one command-line argument. Nine thousand paths (measured: a fuzz corpus) came
+   * to nearly a megabyte, and the generator exited at once with nothing in its log.
+   */
+  it('names a few hundred files and commits at most, and says how many more there are', () => {
+    const text = prompt({
+      changes: Array.from({ length: 9116 }, (_, i) => ({ path: `packages/corpus/case-${i}.sql`, mark: '+' as const })),
+      commits: Array.from({ length: 450 }, (_, i) => `${i.toString(16).padStart(7, '0')} Commit ${i}`)
+    })
+    expect(text.match(/^- \+packages\/corpus/gm)).toHaveLength(300)
+    expect(text).toContain(`and 8816 more; list them all with: git diff --name-status ${'a'.repeat(40)} ${'b'.repeat(40)} --`)
+    expect(text.match(/^- [0-9a-f]{7} Commit /gm)).toHaveLength(200)
+    expect(text).toContain('and 250 more')
+    expect(text.length).toBeLessThan(100_000)
   })
 
   it('defines the whole task as the scope and uses its start and end trees for comparison', () => {

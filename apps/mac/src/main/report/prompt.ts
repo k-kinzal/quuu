@@ -14,8 +14,15 @@ export interface ReportRequest {
   cwd: string
   title: string
   prompt: string
-  /** Task start to the tree captured for this report, including uncommitted work. */
-  revision: (ReviewRevision & { inferred: boolean }) | null
+  /**
+   * Task start to the tree captured for this report, including uncommitted work. `foreign` counts
+   * the commits in between that are other work: past zero, the two trees no longer isolate this
+   * task, and the writer is told to read the commits and the uncommitted diff instead.
+   */
+  revision: (ReviewRevision & { inferred: boolean; foreign: number }) | null
+  /** The checkout's HEAD to the captured tree. null when nothing is uncommitted. */
+  uncommitted: ReviewRevision | null
+  /** This task's files: from its commits and its uncommitted work. */
   changes: ReportChange[]
   /** One line per commit, newest first. */
   commits: string[]
@@ -65,6 +72,53 @@ const COMPONENTS: Array<[string, string]> = [
 ]
 
 /**
+ * How many files and commits are named outright. Past this, the rest is a count and the command
+ * that lists them.
+ *
+ * The prompt travels as one command-line argument. A listing of nine thousand paths (measured: a
+ * fuzz corpus another task had landed in the same checkout) is nearly a megabyte, which is the
+ * whole argument space a process gets, and the generator died without a word. The writer has the
+ * repository in front of it; the list is where to start, not the evidence itself.
+ */
+const LISTED_FILES = 300
+const LISTED_COMMITS = 200
+
+function listed(values: string[], limit: number, rest: (count: number) => string): string {
+  if (values.length === 0) return '- (none)'
+  const lines = values.slice(0, limit).map((value) => `- ${value}`)
+  if (values.length > limit) lines.push(`- … ${rest(values.length - limit)}`)
+  return lines.join('\n')
+}
+
+/**
+ * How the writer is to read the task's Git side.
+ *
+ * Two trees isolate the task only in a checkout nothing else touched. Once other work sits
+ * between them - tasks of one project take turns on the same `main` and merge it into their
+ * branches - the cumulative diff describes everybody, so the writer is sent to this task's
+ * commits and its uncommitted diff instead.
+ */
+function comparison(revision: ReportRequest['revision'], uncommitted: ReportRequest['uncommitted']): string {
+  if (!revision) {
+    return 'Task-wide Git comparison: unavailable. Reconstruct only what the task logs and verified commits support; do not substitute the latest commit as the task start.'
+  }
+  const lines = [`Task start tree: ${revision.base}`, `Report end tree: ${revision.head}`]
+  if (revision.inferred) {
+    lines.push('The starting tree is inferred from the commit before the first run; uncommitted work at task start is unknown.')
+  }
+  if (revision.foreign > 0) {
+    lines.push(
+      `Between these trees the checkout also took in ${revision.foreign} commit(s) of other work, so \`git diff ${revision.base} ${revision.head}\` is not this task alone. ` +
+        'This task\'s work is the commit log below (read each with: git show <sha>)' +
+        (uncommitted ? ` plus its uncommitted diff: git diff ${uncommitted.base} ${uncommitted.head} --` : '; nothing is uncommitted.')
+    )
+  } else {
+    lines.push(`Read the cumulative diff with: git diff ${revision.base} ${revision.head} --`)
+  }
+  return lines.join('\n')
+}
+
+/**
  * What the report agent is told.
  *
  * document-design owns the appearance; the writer chooses evidence and explanatory figures.
@@ -72,9 +126,8 @@ const COMPONENTS: Array<[string, string]> = [
  * written in follows the app\'s locale.
  */
 export function reportPrompt(request: ReportRequest): string {
-  const lines = (values: string[]): string =>
-    values.length > 0 ? values.map((value) => `- ${value}`).join('\n') : '- (none)'
-
+  const { revision, uncommitted } = request
+  const mixed = revision !== null && revision.foreign > 0
   const sections = [
     `Please create an infographic of the changed intent in HTML.
 
@@ -100,15 +153,16 @@ missing, say what could not be established rather than inventing a complete hist
     `Working directory: ${request.cwd}
 Task title: ${request.title}
 Original request (JSON string): ${JSON.stringify(request.prompt)}
-${request.revision
-  ? `Task start tree: ${request.revision.base}\nReport end tree: ${request.revision.head}\n${request.revision.inferred ? 'The starting tree is inferred from the commit before the first run; uncommitted work at task start is unknown.\n' : ''}Read the cumulative diff with: git diff ${request.revision.base} ${request.revision.head} --`
-  : 'Task-wide Git comparison: unavailable. Reconstruct only what the task logs and verified commits support; do not substitute the latest commit as the task start.'}
-Change files (task start to report end):
-${lines(request.changes.map((change) => `${change.mark}${change.path}`))}
+${comparison(revision, uncommitted)}
+Change files (${mixed ? "this task's, from its commits and its uncommitted work" : 'task start to report end'}):
+${listed(request.changes.map((change) => `${change.mark}${change.path}`), LISTED_FILES, (rest) =>
+    revision && !mixed
+      ? `and ${rest} more; list them all with: git diff --name-status ${revision.base} ${revision.head} --`
+      : `and ${rest} more, in the commits below`)}
 Commit log:
-${lines(request.commits)}
+${listed(request.commits, LISTED_COMMITS, (rest) => `and ${rest} more; the run history below names the sessions that made them`)}
 Pull Request:
-${lines(request.pullRequests)}
+${listed(request.pullRequests, LISTED_COMMITS, (rest) => `and ${rest} more`)}
 Run history (oldest first; JSON):
 ${JSON.stringify(request.runs, null, 2)}
 Write the page to: ${request.page}

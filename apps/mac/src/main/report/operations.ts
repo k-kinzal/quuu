@@ -9,8 +9,8 @@ import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import type { Project } from '../projects/types.js'
-import { changesBetween, commitsSince, inferReviewBaseline, readCommits, snapshotWorktree } from '../review/git.js'
-import type { ReviewChange, ReviewCommit } from '../review/types.js'
+import { changesBetween, inferReviewBaseline, snapshotWorktree } from '../review/git.js'
+import { ownChanges, taskCommits } from '../review/ownership.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ToastPayload } from '../snapshot.js'
 import { newId, newSessionId, nowIso, truncate } from '../util.js'
@@ -241,12 +241,19 @@ export class ReportOperations extends EventEmitter {
    * Review refreshes asynchronously and can still describe the previous run. Recompute the
    * cumulative Git material against the very tree used for this report's revision, keeping the
    * first run's baseline. Recorded commits and PRs supplement it across branch changes.
+   *
+   * Which commits are the task's is the checkout's word against the run windows
+   * (`review/ownership.ts`); receipts and recorded commits are read through the repository the
+   * report is written in, never handed over as written down. A receipt is a string a CLI printed:
+   * a commit made in another checkout, and the odd `[Run 31947246760]` that looks like one, both
+   * survive as far as here, and named to a writer standing in this repository they are a line it
+   * cannot look up - or, worse, a short id that resolves to a different commit.
    */
   private async material(
     taskId: string,
     cwd: string,
     worktree: Awaited<ReturnType<typeof snapshotWorktree>>
-  ): Promise<Pick<ReportRequest, 'changes' | 'commits' | 'pullRequests' | 'runs' | 'revision'>> {
+  ): Promise<Pick<ReportRequest, 'changes' | 'commits' | 'pullRequests' | 'runs' | 'revision' | 'uncommitted'>> {
     const saved = repo.getReviewSnapshot(this.db, taskId)?.snapshot
     const snapshot = saved?.cwd === cwd ? saved : null
     const evidence = repo.reviewEvidence(this.db, taskId)
@@ -255,31 +262,28 @@ export class ReportOperations extends EventEmitter {
     const baseline = savedBase?.cwd === cwd && savedBase.baseTree
       ? savedBase
       : worktree && runs[0] ? await inferReviewBaseline(cwd, runs[0].startedAt) : null
-    const revision = baseline?.baseTree && worktree
-      ? { base: baseline.baseTree, head: worktree.tree, inferred: baseline !== savedBase }
-      : null
-    const [changes, commits]: [ReviewChange[], ReviewCommit[]] = await Promise.all([
-      revision ? changesBetween(cwd, revision.base, revision.head) : [],
-      baseline?.baseTree && worktree?.head ? commitsSince(cwd, baseline.baseHead, worktree.head) : []
+    const comparison = baseline?.baseTree && worktree ? { base: baseline.baseTree, head: worktree.tree } : null
+    const uncommitted = worktree && worktree.headTree !== worktree.tree ? { base: worktree.headTree, head: worktree.tree } : null
+    const [cumulative, pending, { commits, foreign, judged }] = await Promise.all([
+      comparison ? changesBetween(cwd, comparison.base, comparison.head) : [],
+      comparison && uncommitted ? changesBetween(cwd, uncommitted.base, uncommitted.head) : [],
+      taskCommits(cwd, baseline?.baseHead ?? null, baseline?.baseTree && worktree?.head ? worktree.head : null, {
+        windows: runs.map((run) => ({ from: run.startedAt, to: run.endedAt })),
+        receipts: evidence.commits,
+        recorded: (snapshot?.commits ?? []).map((commit) => commit.sha)
+      })
     ])
-    const unseen = [...(snapshot?.commits ?? []).map(commit => commit.sha), ...evidence.commits].filter(
-      sha => !commits.some(known => known.sha.startsWith(sha) || sha.startsWith(known.sha))
-    )
-    /*
-     * Read through the repository the report is being written in, rather than handed over as
-     * written down. A receipt is a string a CLI printed: a commit made in another checkout, and
-     * the odd `[Run 31947246760]` that looks like one, both survive as far as here. Named to a
-     * writer standing in this repository they are a line it cannot look up - or, worse, a short
-     * id that resolves to a different commit - and the page ends up describing other work.
-     */
-    for (const commit of await readCommits(cwd, unseen)) {
-      commits.push(commit)
-    }
+    // Uncommitted work counts only where it differs from the start: what was already dirty then is not the task's
+    const since = new Set(cumulative.flatMap((file) => [file.path, file.previousPath].filter(Boolean)))
+    const changes = judged
+      ? ownChanges(cumulative, commits, pending.filter((file) => since.has(file.path) || (file.previousPath ? since.has(file.previousPath) : false)))
+      : cumulative
     const pullRequests = [
       ...new Set([...(snapshot?.pullRequests ?? []).map((pr) => pr.url), ...evidence.pullRequests])
     ]
     return {
-      revision,
+      revision: comparison ? { ...comparison, inferred: baseline !== savedBase, foreign } : null,
+      uncommitted,
       changes: changes.map((file) => ({
         path: file.previousPath ? `${file.previousPath} -> ${file.path}` : file.path,
         mark: file.change === 'added' || file.change === 'untracked'

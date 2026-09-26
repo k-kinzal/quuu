@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import type { Project } from '../src/main/projects/types.js'
 import { ReviewService } from '../src/main/review/service.js'
-import { aggregateTaskChanges, captureReviewBaseline } from '../src/main/review/git.js'
+import { aggregateTaskChanges, captureReviewBaseline, inferReviewBaseline } from '../src/main/review/git.js'
 import { discoverProjectTasks } from '../src/main/projects/tasks.js'
 import { readCoverage } from '../src/main/review/coverage.js'
 import { buildFileTree } from '../src/main/review/tree.js'
@@ -449,4 +449,105 @@ it('reads and retains a session commit after checkout moves HEAD back before it'
   expect(runGit('rev-parse', `refs/quuu/results/checkout-receipt/commits/${sha}`).trim()).toBe(sha)
   const file = await service.file(dir, project(), DEFAULT_SETTINGS, { source: 'commit', ref: sha, path: 'result.txt' })
   expect(file.content).toBe('session result\n')
+})
+
+/*
+ * Tasks of one project take turns on the same `main`, pull what the others merged and merge
+ * `origin/main` into their branches. Measured on this machine: a task that changed a handful of
+ * files was described by 9,116 - a fuzz corpus another task had landed in between - and by 25
+ * commits, none of them its own. The checkout's reflog says what was created in it and when.
+ */
+describe('whose work the checkout holds', () => {
+  function upstreamCommit(subject: string, file: string): void {
+    const upstream = mkdtempSync(join(tmpdir(), 'taskd-review-upstream-'))
+    try {
+      execFileSync('/usr/bin/git', ['clone', '-q', dir, upstream])
+      writeFileSync(join(upstream, file), `${subject}\n`)
+      const other = ['-C', upstream, '-c', 'user.name=Other', '-c', 'user.email=other@example.invalid']
+      execFileSync('/usr/bin/git', [...other, 'add', '-A'])
+      execFileSync('/usr/bin/git', [...other, 'commit', '-qm', subject])
+      runGit('pull', '-q', '--ff-only', upstream, 'HEAD')
+    } finally {
+      rmSync(upstream, { recursive: true, force: true })
+    }
+  }
+
+  /** A repository with one commit, and the one run window of a task that starts now and is still going. */
+  function startTask(): { windows: Array<{ from: string; to: string | null }> } {
+    initGit()
+    writeFileSync(join(dir, 'result.ts'), 'before\n')
+    runGit('add', '-A')
+    runGit('commit', '-qm', 'before task')
+    return { windows: [{ from: new Date().toISOString(), to: null }] }
+  }
+
+  it("does not count commits that arrived by pull as the task's once its runs are known", async () => {
+    const { windows } = startTask()
+    const baseline = await captureReviewBaseline(dir, 'shared-main', windows[0].from)
+    upstreamCommit('Rebuild the fuzz corpus', 'corpus.sql')
+    writeFileSync(join(dir, 'result.ts'), 'after\n')
+    runGit('commit', '-qam', 'task work')
+    writeFileSync(join(dir, 'notes.md'), 'uncommitted\n')
+    const snapshot = await new ReviewService().snapshot(dir, project(), DEFAULT_SETTINGS, baseline, undefined, undefined, { windows, recorded: [] })
+    expect(snapshot.commits.map((commit) => commit.subject)).toEqual(['task work'])
+    expect(snapshot.changes.map((file) => file.path)).toEqual(['notes.md', 'result.ts'])
+    expect(snapshot.localChanges.map((file) => file.path)).toEqual(['notes.md'])
+  })
+
+  it('keeps a commit the task made on a branch the checkout has since left, and drops other work the last review had named', async () => {
+    const { windows } = startTask()
+    const baseline = await captureReviewBaseline(dir, 'moved-on', windows[0].from)
+    runGit('checkout', '-qb', 'task/branch')
+    writeFileSync(join(dir, 'result.ts'), 'on the branch\n')
+    runGit('commit', '-qam', 'task work on a branch')
+    const own = runGit('rev-parse', 'HEAD').trim()
+    runGit('checkout', '-q', '-')
+    upstreamCommit('Somebody else', 'other.ts')
+    const foreign = runGit('rev-parse', 'HEAD').trim()
+    const snapshot = await new ReviewService().snapshot(dir, project(), DEFAULT_SETTINGS, baseline, undefined, undefined, { windows, recorded: [own, foreign] })
+    expect(snapshot.commits.map((commit) => commit.sha)).toEqual([own])
+    expect(snapshot.changes).toEqual([{ path: 'result.ts', change: 'modified', previousPath: undefined }])
+  })
+
+  it('takes every commit since the start as the task\'s when the checkout was not there to see the task run', async () => {
+    startTask()
+    const baseline = await captureReviewBaseline(dir, 'long-ago', '2000-01-01T00:00:00.000Z')
+    upstreamCommit('Arrived by pull', 'other.ts')
+    const windows = [{ from: '2000-01-01T00:00:00.000Z', to: '2000-01-01T01:00:00.000Z' }]
+    const snapshot = await new ReviewService().snapshot(dir, project(), DEFAULT_SETTINGS, baseline, undefined, undefined, { windows, recorded: [] })
+    expect(snapshot.commits.map((commit) => commit.subject)).toEqual(['Arrived by pull'])
+    expect(snapshot.changes.map((file) => file.path)).toEqual(['other.ts'])
+  })
+
+  it('does not take the commit the task started from as its own when it landed within the same second', async () => {
+    const { windows } = startTask()
+    const baseline = await captureReviewBaseline(dir, 'same-second', windows[0].from)
+    const snapshot = await new ReviewService().snapshot(dir, project(), DEFAULT_SETTINGS, baseline, undefined, undefined, { windows, recorded: [] })
+    expect(snapshot.commits).toEqual([])
+    expect(snapshot.changes).toEqual([])
+  })
+})
+
+/*
+ * A merge brings in commits whose dates predate it. "The newest commit before the start" over
+ * the whole history then lands on a branch merged later - measured: another task's fuzz branch,
+ * five seconds before the first run - and the comparison carries that branch's whole difference.
+ */
+it('infers the start along the first parents, not from a side branch that was merged later', async () => {
+  initGit()
+  const at = (date: string): NodeJS.ProcessEnv => ({ ...process.env, GIT_AUTHOR_DATE: date, GIT_COMMITTER_DATE: date })
+  const dated = (date: string, ...args: string[]): string =>
+    execFileSync('/usr/bin/git', args, { cwd: dir, encoding: 'utf8', env: at(date) }).trim()
+  writeFileSync(join(dir, 'main.ts'), 'main\n')
+  runGit('add', '-A')
+  dated('2030-01-01T00:00:00Z', 'commit', '-qm', 'main before the task')
+  const mainBefore = runGit('rev-parse', 'HEAD').trim()
+  runGit('checkout', '-qb', 'side')
+  writeFileSync(join(dir, 'side.ts'), 'side\n')
+  runGit('add', '-A')
+  dated('2030-01-03T00:00:00Z', 'commit', '-qm', 'side work, dated before the task start')
+  runGit('checkout', '-q', '-')
+  dated('2030-01-04T00:00:00Z', 'merge', '-q', '--no-ff', '-m', 'merge side', 'side')
+  const baseline = await inferReviewBaseline(dir, '2030-01-03T12:00:00Z')
+  expect(baseline.baseHead).toBe(mainBefore)
 })

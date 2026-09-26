@@ -5,7 +5,7 @@ import { reportPrompt } from '../src/main/report/prompt.js'
 
 const css = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url), 'utf8')
 const prompt = reportPrompt({
-  cwd: '/tmp', title: 'Task', prompt: 'Task', revision: null,
+  cwd: '/tmp', title: 'Task', prompt: 'Task', revision: null, uncommitted: null,
   changes: [], commits: [], pullRequests: [], runs: [],
   page: '/tmp/reports/task/r.html', instructions: ''
 })

@@ -96,6 +96,36 @@ describe('where the agent actually worked', () => {
     expect(agentWorkplace({ logPath: stayed, launchDir: repo, projectDir: repo })).toBe(repo)
   })
 
+  /*
+   * Claude Code keeps its own directory and writes `cd <worktree> &&` in front of every command
+   * instead, so `cwd` stays on the launch directory for the whole session. Measured: a task made a
+   * worktree this way, committed and opened its Pull Request there, and its review read `main`.
+   */
+  it('follows a cd into a worktree written inside a shell command, while the recorded cwd stays home', () => {
+    const path = join(dir, 'claude.jsonl')
+    const bash = (command: string): string =>
+      JSON.stringify({ type: 'assistant', cwd: repo, message: { content: [{ type: 'tool_use', name: 'Bash', input: { command } }] } })
+    const result = (content: string): string =>
+      JSON.stringify({ type: 'user', cwd: repo, message: { content: [{ type: 'tool_result', content }] } })
+    writeFileSync(path, [
+      bash(`git worktree add ${worktree} -b feature-2 main 2>&1 | tail -1 && cd ${worktree} && git status --short | wc -l`),
+      result(`0\nShell cwd was reset to ${repo}`),
+      bash(`cd ${worktree} && git commit -q -F - <<'EOF'\nrefactor: read the endpoint\nEOF\ngit log --oneline -1`),
+      result(`98b0d3a refactor: read the endpoint\nShell cwd was reset to ${repo}`)
+    ].map((line) => line + '\n').join(''))
+    expect(recordedWorkingDirs(path)).toEqual([repo, worktree, repo, worktree, repo])
+    expect(agentWorkplace({ logPath: path, launchDir: repo, projectDir: repo })).toBe(worktree)
+  })
+
+  it('reads git -C as a move too, and a cd into /tmp or a relative directory as none', () => {
+    const path = join(dir, 'codex.jsonl')
+    const cmd = (command: string): string => JSON.stringify({ type: 'response_item', payload: { cmd: command, cwd: pathToFileURL(repo).href } })
+    writeFileSync(path, [cmd('cd /tmp && ls'), cmd(`git -C ${worktree} status`), cmd('cd packages/ui && npm test')].map((line) => line + '\n').join(''))
+    // Each line names the command before its cwd
+    expect(recordedWorkingDirs(path)).toEqual(['/tmp', repo, worktree, repo])
+    expect(agentWorkplace({ logPath: path, launchDir: repo, projectDir: repo })).toBe(worktree)
+  })
+
   it('finds a worktree that lives inside the checkout, as Claude Code makes them', () => {
     const inside = join(repo, '.claude', 'worktrees', 'doc-gen')
     git(repo, 'worktree', 'add', '-q', inside, '-b', 'worktree-doc-gen')

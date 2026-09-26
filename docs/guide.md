@@ -360,6 +360,16 @@ are part of the cache key so parser changes can explicitly invalidate old data.
 
 Ingestion also records commit receipts and URLs returned by successful PR operations
 for the task; URLs quoted in source files or conversation are not PR receipts.
+Which commits in a checkout are the task's is decided by the checkout's own reflog
+against the task's run windows (`main/review/ownership.ts`): a commit created there
+while a run was going is the task's; one that arrived by pull, checkout or reset is
+not. Tasks of one project take turns on the same `main` and merge it into their
+branches, so the start-to-now comparison alone would describe everybody's work. When
+other work sits in the range, the task's file list is built from its own commits and
+its uncommitted diff, and the report writer is sent to those instead of the two-tree
+diff. A checkout that was not there to see the task run (no reflog of that time) falls
+back to the whole range. The place a task worked in follows `cd` and `git -C` moves
+written inside shell commands too, since Claude Code keeps its own directory.
 Evidence versions allow cached messages to be reclassified in bounded batches without
 reparsing the original logs. Review projections
 are refreshed in the background, coalesced and throttled, with local Git results
