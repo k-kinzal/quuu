@@ -1,7 +1,11 @@
 import { execFileSync } from 'node:child_process'
-import { closeSync, existsSync, fstatSync, openSync, readSync, realpathSync } from 'node:fs'
+import { existsSync, realpathSync } from 'node:fs'
 import { isAbsolute, join, relative, sep } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import type { Db } from '../db/database.js'
+import * as repo from '../db/repo.js'
+import type { SessionBatch, SessionDerivation } from './derive.js'
+import { shellCommandOf } from './shell.js'
+import type { SessionMessage } from './types.js'
 
 /**
  * Where the agent actually worked, read from what its session recorded.
@@ -12,97 +16,84 @@ import { fileURLToPath } from 'node:url'
  * anything opened from it lands on `main` while the work sits on another branch. That is exactly
  * the moment a terminal is wanted - to look at the work - and it opened somewhere else.
  *
- * **The session log is the one witness.** Every CLI stamps the directory it worked in on its
- * entries (measured: Claude puts `cwd` on each message, Codex puts `cwd` on each command it ran,
- * as a `file://` URL), and the commands themselves say where they went (`cd <dir> && …`). Read
- * those in order and follow the agent to the last worktree of the project it was in. Only Git
- * worktrees of the project count: an agent wandering into a subdirectory, `/tmp`, or another
+ * **The structured session log is the one witness.** Each adapter stamps the directory its CLI
+ * recorded on the message (`SessionMessage.cwd`: Claude puts it on every line, Codex on every
+ * command it runs), and the shell commands themselves say where they went (`cd <dir> && …`).
+ * Read those in order and follow the agent to the last worktree of the project it was in. Only
+ * Git worktrees of the project count: an agent wandering into a subdirectory, `/tmp`, or another
  * repository to read something has not moved its work.
+ *
+ * The directories are derived as the session is indexed and kept with its pages
+ * (`session_workdirs`), so a look - the review, the terminal, the path shown in a menu - reads
+ * a few rows instead of scanning tens of megabytes of log.
  */
 
-interface ScanState {
-  /** How far the log has been read. Only the bytes after this are looked at next time. */
-  offset: number
-  /** The directories seen so far, in order, consecutive repeats collapsed. */
-  dirs: string[]
-}
-
 /**
- * Logs grow to tens of megabytes. Remember how far each was read, so a repeat look (the review,
- * the terminal, the path shown in a menu) costs only what was appended since.
- */
-const scans = new Map<string, ScanState>()
-
-/**
- * What names a directory in the log, in order of appearance.
- *
- * `cwd`: only a structural `"cwd":"…"` matches. A path quoted inside a message body is escaped
- * (`\"cwd\":\"`), so what an agent read out of someone else's log never counts as its own move.
- *
- * `moved` / `made`: a shell command going somewhere - `cd /x`, `git -C /x` - or making the place
- * with `git worktree add … /x`. Claude Code keeps its own directory and writes `cd <worktree> &&`
+ * A shell command going somewhere - `cd /x`, `git -C /x` - or making the place with
+ * `git worktree add … /x`. Claude Code keeps its own directory and writes `cd <worktree> &&`
  * in front of every command instead, so its `cwd` never says where the work went. Measured: a
  * task's commits and Pull Request were made in a worktree it created this way, and its review
  * and report read `main` - nine thousand files of other tasks' work. Absolute paths only, without
  * quotes or spaces; the worktree filter below throws out `/tmp` and other repositories anyway.
  */
-const RECORDED =
-  /"cwd":"(?<cwd>(?:[^"\\]|\\.)*)"|(?:^|[\s;&|(`"]|\\n)(?:cd|git\s+-C)\s+(?<moved>\/[^\s"'`;&|<>()\\]+)|git\s+worktree\s+add(?:\s+(?!\/)[^\s"'`;&|<>()\\]+)*\s+(?<made>\/[^\s"'`;&|<>()\\]+)/g
+const MOVED =
+  /(?:^|[\s;&|(`"'])(?:cd|git\s+-C)\s+(?<moved>\/[^\s"'`;&|<>()\\]+)|git\s+worktree\s+add(?:\s+(?!\/)[^\s"'`;&|<>()\\]+)*\s+(?<made>\/[^\s"'`;&|<>()\\]+)/g
 
-function decodeDir(raw: string): string | null {
-  let value: string
-  try {
-    value = JSON.parse(`"${raw}"`) as string
-  } catch {
-    return null
+/** The directories a shell command names as its destination, in order. */
+export function movesIn(command: string): string[] {
+  const dirs: string[] = []
+  for (const match of command.matchAll(MOVED)) {
+    const dir = match.groups?.moved ?? match.groups?.made
+    if (dir) dirs.push(dir)
   }
-  if (value.startsWith('file:')) {
-    try {
-      value = fileURLToPath(value)
-    } catch {
-      return null
-    }
-  }
-  return isAbsolute(value) ? value : null
+  return dirs
 }
 
 /**
- * The directories a session recorded, in order of appearance.
- *
- * Reads only whole lines: a line still being written may hold half a path, and that half would be
- * lost for good once the offset moved past it.
+ * The directories one message recorded, in order: where the CLI said it stood, then wherever
+ * each of its shell commands went. Only commands the agent ran count - a path quoted in a
+ * reply, or in a file it read, is not a move.
  */
-export function recordedWorkingDirs(logPath: string): string[] {
-  let fd: number
-  try {
-    fd = openSync(logPath, 'r')
-  } catch {
-    return scans.get(logPath)?.dirs ?? []
+export function workingDirsOf(message: SessionMessage): string[] {
+  const dirs: string[] = []
+  if (typeof message.cwd === 'string' && isAbsolute(message.cwd)) dirs.push(message.cwd)
+  for (const block of message.blocks) {
+    if (block.kind !== 'tool') continue
+    const command = shellCommandOf(block.tool)
+    if (command) dirs.push(...movesIn(command))
   }
-  try {
-    const size = fstatSync(fd).size
-    let state = scans.get(logPath)
-    // Rewritten shorter than what was read: start over rather than read garbage from the middle
-    if (!state || size < state.offset) state = { offset: 0, dirs: [] }
-    if (size === state.offset) return state.dirs
+  return dirs
+}
 
-    const chunk = Buffer.allocUnsafe(size - state.offset)
-    const read = readSync(fd, chunk, 0, chunk.length, state.offset)
-    const complete = chunk.subarray(0, read).lastIndexOf(0x0a) + 1
-    if (complete === 0) return state.dirs
+/** Consecutive repeats collapsed: what matters is each move, not how long the agent stayed. */
+export function collapse(dirs: string[]): string[] {
+  const out: string[] = []
+  for (const dir of dirs) if (out.at(-1) !== dir) out.push(dir)
+  return out
+}
 
-    const text = chunk.subarray(0, complete).toString('utf8')
-    const dirs = [...state.dirs]
-    for (const match of text.matchAll(RECORDED)) {
-      const { cwd, moved, made } = match.groups ?? {}
-      const dir = cwd !== undefined ? decodeDir(cwd) : (moved ?? made ?? null)
-      if (dir && dirs.at(-1) !== dir) dirs.push(dir)
-    }
-    scans.set(logPath, { offset: state.offset + complete, dirs })
-    return dirs
-  } finally {
-    closeSync(fd)
+/**
+ * Keeps the directories of every page as it is indexed. Idempotent per message, so a page
+ * rewritten by a late tool result (which changes no directory) lands on the same row.
+ */
+export const workplaceDerivation: SessionDerivation = {
+  apply(db: Db, _run, batch: SessionBatch): void {
+    batch.messages.forEach((message, i) => {
+      repo.writeSessionWorkDirs(db, batch.key, batch.generation, batch.start + i, workingDirsOf(message))
+    })
   }
+}
+
+/**
+ * The directories a session recorded, in order of appearance, as far as it has been indexed.
+ *
+ * Empty until the first pass over the session finished: a page still being read has no
+ * generation on record, and a guess would send the terminal somewhere the work never was.
+ */
+export function recordedWorkingDirs(db: Db, key: string): string[] {
+  const saved = repo.getSessionIndex(db, key)
+  if (!saved) return []
+  return collapse(repo.readSessionWorkDirs(db, key, saved.generation))
 }
 
 function realDir(path: string): string | null {
@@ -145,8 +136,8 @@ function worktreeContaining(dir: string, worktrees: string[]): string | null {
 }
 
 export interface WorkplaceInput {
-  /** The session log of the run. null when there is none yet. */
-  logPath: string | null
+  /** The directories the run's session recorded, in order. Empty when there is no session yet. */
+  dirs: string[]
   /** Where the run was launched. What is answered when the agent never moved. */
   launchDir: string
   /** The project's registered directory. Decides which repository's worktrees count. */
@@ -165,17 +156,15 @@ export interface WorkplaceInput {
  * in the other worktree, when it exists there.
  */
 export function agentWorkplace(input: WorkplaceInput): string {
-  if (!input.logPath || !existsSync(input.logPath)) return input.launchDir
-  const dirs = recordedWorkingDirs(input.logPath)
-  if (dirs.length === 0) return input.launchDir
+  if (input.dirs.length === 0) return input.launchDir
 
   const worktrees = worktreesOf(input.projectDir)
   const projectDir = realDir(input.projectDir)
   const home = projectDir ? worktreeContaining(projectDir, worktrees) : null
   if (!projectDir || !home) return input.launchDir
 
-  for (let i = dirs.length - 1; i >= 0; i--) {
-    const real = realDir(dirs[i])
+  for (let i = input.dirs.length - 1; i >= 0; i--) {
+    const real = realDir(input.dirs[i])
     if (!real) continue
     const tree = worktreeContaining(real, worktrees)
     if (!tree || tree === home) continue

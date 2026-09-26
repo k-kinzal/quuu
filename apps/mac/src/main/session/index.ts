@@ -8,7 +8,8 @@ import type { Db } from '../db/database.js'
 import { inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { Run } from '../execution/types.js'
-import { REVIEW_EVIDENCE_VERSION } from '../review/evidence.js'
+import { IMPORTABLE_ADAPTERS, type LogAdapter } from '../agents/cliAdapter.js'
+import { DERIVATION_VERSION, type SessionBatch, type SessionDerivation } from './derive.js'
 import { readsWholeStore, sharesOneStore } from './logAdapters.js'
 import { IndexedMessages } from './messageBuffer.js'
 import { sessionReadTarget, type SessionReadTarget } from './sessionAttach.js'
@@ -50,25 +51,41 @@ export class SessionIndex extends EventEmitter {
   private stopped = false
   private activeKey: string | null = null
   /**
-   * Tasks whose recorded Pull Requests have already been dropped for re-reading.
+   * Tasks whose derivations have already been reset for re-reading.
    *
    * A task can hold more than one session (a follow-up that could not resume, a fallback to
-   * another agent), and each is re-read on its own. Clearing per session would have the second
+   * another agent), and each is re-read on its own. Resetting per session would have the second
    * one wipe what the first just re-derived - the tab and the report line would disappear from
    * a task that really did produce them.
    */
-  private reclassified = new Set<string>()
+  private rederived = new Set<string>()
 
-  constructor(private db: Db, private onMessages: (run: Run, messages: SessionMessage[]) => void = () => {}) { super() }
+  /**
+   * @param derivations what is read off every page as it lands: review evidence, the working
+   * directory. Applied inside the transaction that persists the page (`session/derive.ts`).
+   */
+  constructor(private db: Db, private derivations: SessionDerivation[] = []) { super() }
+
+  /**
+   * Drop pages materialized under a parser version no adapter reads any more.
+   *
+   * A key carries the parser version that wrote it, so a bumped parser leaves the old pages
+   * behind, unread and taking up most of the database. Run once at startup, before the sweep
+   * that re-reads the sessions under the current version.
+   */
+  sweepRetired(): number {
+    const adapters: LogAdapter[] = [...IMPORTABLE_ADAPTERS, 'stdout']
+    return repo.dropSessionIndexesOutside(this.db, adapters.map(id => `${adapterFor(id).parserVersion}:${id}:`))
+  }
 
   request(run: Run, target = sessionReadTarget(this.db, run), priority = false): void {
     if (this.stopped) return
     const key = sessionKey(target)
     const stamp = snapshotStamp(target.logPath)
     const saved = repo.getSessionIndex(this.db, key)
-    const rebuildEvidence = saved && saved.evidenceVersion !== REVIEW_EVIDENCE_VERSION
-    if (stamp === '-|-' && !rebuildEvidence) return
-    if (saved?.stamp === stamp && !rebuildEvidence) {
+    const rederive = saved && saved.evidenceVersion !== DERIVATION_VERSION
+    if (stamp === '-|-' && !rederive) return
+    if (saved?.stamp === stamp && !rederive) {
       if (run.status !== 'running') this.readers.delete(key)
       return
     }
@@ -185,29 +202,27 @@ export class SessionIndex extends EventEmitter {
   private async ingest(key: string, run: Run, target: SessionReadTarget): Promise<void> {
     const stamp = snapshotStamp(target.logPath)
     const saved = repo.getSessionIndex(this.db, key)
-    if (saved && saved.evidenceVersion !== REVIEW_EVIDENCE_VERSION) {
+    if (saved && saved.evidenceVersion !== DERIVATION_VERSION) {
       /*
        * Re-reading is how a corrected rule reaches what is already recorded, so it has to be
        * able to take something away: a Pull Request the old rule filed as this task's work
        * stays on the task forever if re-reading can only add. Only when there is something to
-       * re-derive from - clearing against no durable messages would leave the task with nothing.
+       * re-derive from - resetting against no durable messages would leave the task with nothing.
        */
-      if (saved.total > 0 && !this.reclassified.has(run.taskId)) {
-        this.reclassified.add(run.taskId)
-        repo.clearReviewEvidence(this.db, run.taskId, 'pull-request')
+      if (saved.total > 0 && !this.rederived.has(run.taskId)) {
+        this.rederived.add(run.taskId)
+        for (const derivation of this.derivations) derivation.reset?.(this.db, run.taskId)
       }
-      // Reclassify durable messages in bounded batches, even if the original log
-      // is gone. Updating extraction must not require parsing all history again.
+      // Re-derive from durable messages in bounded batches, even if the original log
+      // is gone. A changed rule must not require parsing all history again.
       for (let start = 0; start < saved.total; start += SESSION_PAGE) {
         if (this.stopped) return
         const messages = repo.readSessionMessages(this.db, key, saved.generation, start, SESSION_PAGE)
-        inTransaction(this.db, () => {
-          if (repo.getTask(this.db, run.taskId)) this.onMessages(run, messages)
-        })
+        inTransaction(this.db, () => this.derive(run, { key, generation: saved.generation, start, messages }))
         await yieldToApp()
       }
       if (this.stopped) return
-      repo.finishSessionEvidence(this.db, key, REVIEW_EVIDENCE_VERSION)
+      repo.finishSessionEvidence(this.db, key, DERIVATION_VERSION)
       this.emit('indexed', key, run.taskId)
     }
     if (stamp === '-|-') return
@@ -233,8 +248,8 @@ export class SessionIndex extends EventEmitter {
         inTransaction(this.db, () => {
           repo.writeSessionMessages(this.db, key, generation, start, batch)
           this.saveImages(key, parser, batch)
-          // Extraction happens at ingestion, never while assembling a screen.
-          if (repo.getTask(this.db, run.taskId)) this.onMessages(run, batch)
+          // Derivation happens at ingestion, never while assembling a screen.
+          this.derive(run, { key, generation, start, messages: batch })
         })
         await yieldToApp()
       }
@@ -246,9 +261,11 @@ export class SessionIndex extends EventEmitter {
         const batch = changes.slice(start, start + SESSION_PAGE)
         const messages = batch.map(entry => entry.message)
         inTransaction(this.db, () => {
-          for (const entry of batch) repo.writeSessionMessages(this.db, key, generation, entry.index, [entry.message])
+          for (const entry of batch) {
+            repo.writeSessionMessages(this.db, key, generation, entry.index, [entry.message])
+            this.derive(run, { key, generation, start: entry.index, messages: [entry.message] })
+          }
           this.saveImages(key, parser, messages)
-          if (repo.getTask(this.db, run.taskId)) this.onMessages(run, messages)
         })
         await yieldToApp()
       }
@@ -291,10 +308,16 @@ export class SessionIndex extends EventEmitter {
     if (this.stopped) return
     const total = isStoreParser(parser) ? parser.messages.length : messageBuffer.length
     inTransaction(this.db, () => repo.finishSessionIndex(this.db, key, {
-      generation, stamp, title: parser.title, total, evidenceVersion: REVIEW_EVIDENCE_VERSION
+      generation, stamp, title: parser.title, total, evidenceVersion: DERIVATION_VERSION
     }))
     if (run.status !== 'running') this.readers.delete(key)
     this.emit('indexed', key, run.taskId)
+  }
+
+  /** Hand one persisted page to every derivation. A task that is gone has nothing to file against. */
+  private derive(run: Run, batch: SessionBatch): void {
+    if (this.derivations.length === 0 || !repo.getTask(this.db, run.taskId)) return
+    for (const derivation of this.derivations) derivation.apply(this.db, run, batch)
   }
 
   private saveImages(key: string, parser: ReturnType<typeof newParser>, messages: SessionMessage[]): void {

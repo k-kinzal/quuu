@@ -34,6 +34,14 @@ export interface CodexTool {
   input: unknown
   target: string | null
   /**
+   * The directory the command was run in (`workdir`), absolute. null when the call names none.
+   *
+   * This is how Codex moves: it does not `cd` into a worktree it made, it names the worktree
+   * as the `workdir` of every command after. Read off the command text alone, an agent that
+   * did all its work in another checkout looks as if it never left the launch directory.
+   */
+  workdir: string | null
+  /**
    * Number pointing at a launched job (`wait({cell_id})`).
    *
    * The waiting side writes only the number, so **what is being waited on
@@ -243,7 +251,7 @@ function record(value: unknown): Record<string, unknown> | null {
  */
 function fromScript(script: string): CodexTool {
   const hit = TOOL_CALL.exec(script)
-  if (!hit) return { name: 'exec', input: script, target: firstLine(script), cellId: null }
+  if (!hit) return { name: 'exec', input: script, target: firstLine(script), workdir: null, cellId: null }
 
   const name = hit[1]
   const args = callArguments(script, hit.index + hit[0].length - 1)
@@ -251,9 +259,15 @@ function fromScript(script: string): CodexTool {
     name: normalize(name),
     input: script,
     target: targetFromArgs(name, args, script),
+    workdir: absoluteDir(argString(args, 'workdir')),
     ...(normalize(name) === 'update_plan' ? { plan: scriptPlanSteps(args) } : {}),
     cellId: argValue(args, 'cell_id')
   }
+}
+
+/** A directory only when it is absolute. A relative one would be read against the wrong root. */
+function absoluteDir(value: unknown): string | null {
+  return typeof value === 'string' && value.startsWith('/') ? value : null
 }
 
 function targetFromArgs(name: string, args: string, script: string): string | null {
@@ -307,6 +321,8 @@ export function readCodexTool(name: string, raw: unknown): CodexTool {
   const cellId = fields && ['string', 'number'].includes(typeof fields.cell_id)
     ? String(fields.cell_id)
     : null
+  // Both spellings are observed: `workdir` on exec_command, `cwd` on the older shell shapes
+  const workdir = absoluteDir(fields?.workdir ?? fields?.cwd)
 
   switch (name) {
     case 'apply_patch': {
@@ -315,6 +331,7 @@ export function readCodexTool(name: string, raw: unknown): CodexTool {
         name: 'apply_patch',
         input,
         target: typeof patch === 'string' ? patchTarget(patch) : null,
+        workdir,
         cellId
       }
     }
@@ -325,14 +342,15 @@ export function readCodexTool(name: string, raw: unknown): CodexTool {
         name: 'exec_command',
         input,
         target: fields ? commandText(fields.command ?? fields.cmd) : commandText(input),
+        workdir,
         cellId
       }
     case 'view_image': {
       const path = fields?.path ?? fields?.url
-      return { name, input, target: typeof path === 'string' ? path : null, cellId }
+      return { name, input, target: typeof path === 'string' ? path : null, workdir, cellId }
     }
     case 'update_plan':
-      return { name, input, target: null, plan: readPlanSteps(input), cellId }
+      return { name, input, target: null, plan: readPlanSteps(input), workdir, cellId }
     default: {
       const guess = fields
         ? (['command', 'cmd', 'path', 'file_path', 'query', 'search_query'] as const)
@@ -343,6 +361,7 @@ export function readCodexTool(name: string, raw: unknown): CodexTool {
         name: normalize(name),
         input,
         target: typeof guess === 'string' ? guess : commandText(fields?.command),
+        workdir,
         cellId
       }
     }

@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('27')
+    expect(version.value).toBe('28')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('27')
+    expect(version.value).toBe('28')
     db.close()
   })
 
@@ -553,6 +553,31 @@ describe('schema migration', () => {
     const reopened = openDatabase(path)
     expect(repo.reviewEvidence(reopened, 'tsk').pullRequests).toEqual([verified.url])
     reopened.close()
+  })
+
+  /*
+   * v27 -> v28: the working directories a session recorded live beside its pages, and go with
+   * them: a re-read under a new generation, or a shortened session, must not leave rows of a
+   * generation nobody reads any more.
+   */
+  it('adds the working-directory rows to an older database and drops them with their generation', () => {
+    makeV2Database()
+    const old = openDatabase(path)
+    old.close()
+
+    const migrated = openDatabase(path)
+    repo.writeSessionWorkDirs(migrated, 'log', 'g1', 0, ['/a'])
+    repo.writeSessionWorkDirs(migrated, 'log', 'g1', 1, ['/b', '/c'])
+    repo.writeSessionWorkDirs(migrated, 'log', 'g2', 0, ['/z'])
+    repo.writeSessionWorkDirs(migrated, 'log', 'g2', 1, ['/y'])
+    expect(repo.readSessionWorkDirs(migrated, 'log', 'g1')).toEqual(['/a', '/b', '/c'])
+    // A message that turns out to record nothing takes its row away
+    repo.writeSessionWorkDirs(migrated, 'log', 'g1', 1, [])
+    expect(repo.readSessionWorkDirs(migrated, 'log', 'g1')).toEqual(['/a'])
+    repo.finishSessionIndex(migrated, 'log', { stamp: 's', generation: 'g2', title: null, total: 1, evidenceVersion: 0 })
+    expect(repo.readSessionWorkDirs(migrated, 'log', 'g1')).toEqual([])
+    expect(repo.readSessionWorkDirs(migrated, 'log', 'g2')).toEqual(['/z'])
+    migrated.close()
   })
 
   /*

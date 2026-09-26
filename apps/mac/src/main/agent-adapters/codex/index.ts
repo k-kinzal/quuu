@@ -19,7 +19,8 @@ export const codexAdapter: AgentAdapter = {
   sessionIdInStdout: codexSessionId,
 
   idleWindowMs: 3 * 60 * 1000,
-  parserVersion: 'v1',
+  // v2: the working directory rides on every message, a command's own `workdir` first
+  parserVersion: 'v2',
   createParser: (_namespace, buffer) => new CodexSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,

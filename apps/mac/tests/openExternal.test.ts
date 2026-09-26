@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
-import * as repo from '../src/main/db/repo.js'
+import * as repo_ from '../src/main/db/repo.js'
 import { shQuote, terminalScript } from '../src/main/platform/terminal.js'
 import { discoverEditors, openTargetFor } from '../src/main/platform/editorApps.js'
 import { editorAppName, resolveEditorApp } from '../src/main/platform/editorChoice.js'
@@ -154,7 +154,7 @@ describe('how the place to open is decided', () => {
   /** Pretend it ran in a worktree (only the run record is written). */
   function ranIn(app: QuuuApp, taskId: string, agentId: string, cwd: string, sessionLogPath: string | null = null): string {
     const id = `run_${taskId}`
-    repo.insertRun(app.db, {
+    repo_.insertRun(app.db, {
       id,
       taskId,
       agentId,
@@ -193,7 +193,7 @@ describe('how the place to open is decided', () => {
     expect(app.workspace.workingDir({ kind: 'project', id: project })?.dir).toBe(dir)
   })
 
-  it('follows the agent into the worktree its session moved to, for the task and for the run', () => {
+  it('follows the agent into the worktree its session moved to, for the task and for the run', async () => {
     const app = makeApp()
     const agent = makeAgent(app.db, { name: 'a', command: 'claude' })
     const repo = join(dir, 'repo')
@@ -209,8 +209,12 @@ describe('how the place to open is decided', () => {
     const task = makeTask(app.db, project, 't')
     // Launched in the repository, then moved: what the session log says, not the run record
     const log = join(dir, 'session.jsonl')
-    writeFileSync(log, [repo, worktree].map((cwd) => JSON.stringify({ type: 'user', cwd }) + '\n').join(''))
+    writeFileSync(log, [repo, worktree].map((cwd, i) =>
+      JSON.stringify({ type: 'user', uuid: `u${i}`, cwd, message: { role: 'user', content: `step ${i}` } }) + '\n').join(''))
     const run = ranIn(app, task, agent, repo, log)
+    // What is opened is what the index derived from the session, so the session has to be read first
+    app.sessions.request(repo_.getRun(app.db, run)!)
+    await app.sessions.settled()
 
     expect(app.workspace.workingDir({ kind: 'task', id: task })?.dir).toBe(realpathSync(worktree))
     expect(app.workspace.workingDir({ kind: 'run', id: run })?.dir).toBe(realpathSync(worktree))

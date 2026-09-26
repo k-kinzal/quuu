@@ -7,6 +7,7 @@ import { collectText, firstLine } from '../parserUtil.js'
  * Converts the GitHub Copilot CLI's `events.jsonl` into a message list for the UI.
  *
  * Lines handled (observed; `~/.copilot/session-state/<sessionId>/events.jsonl`):
+ *   session.start           … where the session runs (`context.cwd`)
  *   user.message            … utterance. `content` is what the human typed,
  *                             `transformedContent` is the send version with preamble added
  *   assistant.message      … response. `content` and `toolRequests`
@@ -57,6 +58,8 @@ export class CopilotSessionParser {
   private toolIndex = new Map<string, { m: number; b: number }>()
   private counter = 0
   private model: string | null = null
+  /** The directory the session started in. Copilot records it once; every message is stamped with it. */
+  private cwd: string | null = null
 
   pushLines(lines: string[]): PushResult {
     let changedFrom = -1
@@ -79,6 +82,12 @@ export class CopilotSessionParser {
       const ts = typeof entry.timestamp === 'string' ? entry.timestamp : null
 
       switch (entry.type) {
+        case 'session.start': {
+          const cwd = data?.context?.cwd
+          if (typeof cwd === 'string' && cwd.startsWith('/')) this.cwd = cwd
+          break
+        }
+
         case 'session.model_change': {
           // The observed key is newModel. model is insurance against a future alias.
           const next = data?.newModel ?? data?.model
@@ -167,7 +176,8 @@ export class CopilotSessionParser {
       model: message.model ?? null,
       role: message.role,
       timestamp: message.timestamp,
-      blocks: message.blocks
+      blocks: message.blocks,
+      ...(this.cwd ? { cwd: this.cwd } : {})
     })
     mark(this.buffer.length - 1)
   }

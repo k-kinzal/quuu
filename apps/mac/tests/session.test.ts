@@ -129,6 +129,16 @@ describe('parsing Claude session logs', () => {
     expect(result.changedFromIndex).toBe(0)
   })
 
+  it('stamps the directory the CLI stood in on every message, and leaves a line without one alone', () => {
+    const parser = new ClaudeSessionParser()
+    parser.pushLines([
+      line({ type: 'user', uuid: 'u1', cwd: '/Users/me/app', message: { role: 'user', content: 'read it' } }),
+      line({ type: 'assistant', uuid: 'a1', cwd: '/Users/me/app/.claude/worktrees/x', message: { role: 'assistant', content: [{ type: 'text', text: 'done' }] } }),
+      line({ type: 'user', uuid: 'u2', message: { role: 'user', content: 'and this' } })
+    ])
+    expect(parser.messages.map((m) => m.cwd)).toEqual(['/Users/me/app', '/Users/me/app/.claude/worktrees/x', undefined])
+  })
+
   it('marks subagent utterances', () => {
     const parser = new ClaudeSessionParser()
     parser.pushLines([
@@ -312,6 +322,22 @@ describe('injected lines are not shown as human utterances', () => {
       kind: 'text',
       text: '<note>\n参考\n</note>\nこれを直して'
     })
+  })
+
+  it('stamps where Codex stood: the turn directory, and a command\'s own workdir first', () => {
+    const parser = new CodexSessionParser()
+    const item = (payload: unknown, type = 'response_item'): string => line({ type, timestamp: '2026-08-17T01:00:00.000Z', payload })
+    parser.pushLines([
+      item({ id: 's', cwd: '/Users/me/app' }, 'session_meta'),
+      item({ type: 'message', role: 'user', content: [{ type: 'input_text', text: 'テストを直して' }] }),
+      item({ cwd: '/Users/me/app-feature' }, 'turn_context'),
+      item({ type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '直します' }] }),
+      item({ type: 'function_call', name: 'exec_command', call_id: 'c1', arguments: JSON.stringify({ cmd: 'npm test', workdir: '/Users/me/app-feature/packages' }) }),
+      item({ type: 'function_call', name: 'exec_command', call_id: 'c2', arguments: JSON.stringify({ cmd: 'ls' }) })
+    ])
+    expect(parser.messages.map((m) => m.cwd)).toEqual([
+      '/Users/me/app', '/Users/me/app-feature', '/Users/me/app-feature/packages', '/Users/me/app-feature'
+    ])
   })
 
   it("does not turn Codex's environment info and AGENTS.md preamble into utterances", () => {

@@ -52,6 +52,16 @@ export type SessionBlock =
   | { kind: 'tool'; tool: ToolCall }
   | { kind: 'image'; image: SessionImage }
 
+/**
+ * One record of the structured session log.
+ *
+ * Every CLI keeps its conversation in its own shape; the adapter's parser turns that shape into
+ * this one, and everything Quuu derives from a session - the pages on screen, the commits and
+ * Pull Requests filed against the task, where the agent worked - reads this record and never
+ * the provider's file. Whatever a rule needs has to arrive here, or the rule ends up reading the
+ * raw log with a regular expression of its own (which is how the working directory was found
+ * until it stopped matching what Codex writes).
+ */
 export interface SessionMessage {
   /** The log line's uuid. A generated stable key when there is none. */
   id: string
@@ -61,6 +71,14 @@ export interface SessionMessage {
   timestamp: string | null
   blocks: SessionBlock[]
   model: string | null
+  /**
+   * The directory the CLI recorded this entry against, absolute.
+   *
+   * Claude Code stamps it on every line; Codex names it once per turn and again on each command
+   * it runs (`workdir`); Copilot says it when the session starts. Absent where the CLI keeps
+   * none, and on pages materialized before it was read.
+   */
+  cwd?: string
 }
 
 export interface SessionSnapshot {

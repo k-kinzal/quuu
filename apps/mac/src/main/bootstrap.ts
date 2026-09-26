@@ -21,7 +21,8 @@ import { offerNewAgents, seedIfEmpty } from './seed.js'
 import { attachActiveRuns } from './session/sessionAttach.js'
 import { SessionView } from './session/view.js'
 import { SessionIndex } from './session/index.js'
-import { recordSessionEvidence } from './review/evidence.js'
+import { workplaceDerivation } from './session/workplace.js'
+import { reviewEvidenceDerivation } from './review/evidence.js'
 import { SettingsOperations } from './settings/operations.js'
 import type { AppSettings } from './settings/types.js'
 import type { AppSnapshot, MobileSyncStatus, ToastPayload } from './snapshot.js'
@@ -83,7 +84,12 @@ export class QuuuApp extends EventEmitter {
     this.workspace = new WorkspaceOperations(this.db, () => this.settings.getSettings())
     this.reviews = new ReviewOperations(this.db, () => this.settings.getSettings(), this.review, id => this.workspace.workbenchPlace(id))
     this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id))
-    this.sessions = new SessionIndex(this.db, (run, messages) => recordSessionEvidence(this.db, run.taskId, messages))
+    /*
+     * Everything derived from a conversation is derived here, as its pages land: the commits and
+     * Pull Requests the review shows, and the directory the agent worked in. Screens, reports and
+     * the terminal read what was derived; none of them opens a session log.
+     */
+    this.sessions = new SessionIndex(this.db, [reviewEvidenceDerivation, workplaceDerivation])
     this.sessions.on('indexed', (_key: string, taskId: string) => this.reviews.requestRefresh(taskId))
     /*
      * A run that just ended is what the human looks at next, and what the next run is decided
@@ -150,6 +156,8 @@ export class QuuuApp extends EventEmitter {
     this.startImport()
     this.mobile.configure(this.settings.getSettings(), this.scheduler.status().running)
     this.reports.start()
+    try { this.sessions.sweepRetired() }
+    catch (error) { console.warn('Cannot drop retired session pages', error) }
     this.refreshProjections()
     this.projectionTimer = setInterval(() => this.refreshProjections(), 5000)
     this.projectionTimer.unref?.()

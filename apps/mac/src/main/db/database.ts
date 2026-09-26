@@ -205,6 +205,13 @@ CREATE TABLE IF NOT EXISTS session_images (
   log_key TEXT NOT NULL,
   data_url TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS session_workdirs (
+  log_key TEXT NOT NULL,
+  generation TEXT NOT NULL,
+  ordinal INTEGER NOT NULL,
+  dirs TEXT NOT NULL,
+  PRIMARY KEY (log_key, generation, ordinal)
+);
 CREATE TABLE IF NOT EXISTS task_review_evidence (
   task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
   kind TEXT NOT NULL,
@@ -327,7 +334,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 27
+  const target = 28
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -605,6 +612,15 @@ function migrate(db: Db): void {
       save.run(adapter, row.limit_patterns ?? '[]', row.id)
     }
   }
+
+  /*
+   * v27 -> v28: the working directories a session recorded, derived from its pages.
+   *
+   * The table itself is created by SCHEMA. Nothing is backfilled here: opening the database
+   * must never parse session history. The parsers that read the directory got a new version,
+   * so the index re-reads those sessions after startup and the rows fill in as it goes; pages
+   * materialized under the retired parser version are dropped by the index when it starts.
+   */
 
   setSchemaVersion(db, target)
 }

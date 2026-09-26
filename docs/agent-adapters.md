@@ -27,6 +27,37 @@ into every driver. Report launches use adapter invocation too.
 Custom commands, wrappers, argument templates, environment and permission flags
 remain explicit configuration; the adapter does not rewrite them at launch.
 
+## The structured session log
+
+A parser turns the provider's file into `SessionMessage` records (`main/session/types.ts`),
+incrementally where the file is appended to and as a whole where it is rewritten (Cursor,
+opencode). That record is the only thing the rest of Quuu reads about a conversation:
+
+| What is read off it | Owner | Kept in |
+|---|---|---|
+| Pages of the conversation | `session/index.ts` | `session_messages` |
+| Commits and Pull Requests the task produced | `review/evidence.ts` | `task_review_evidence` |
+| Where the agent worked (`cwd`, `cd`, `git -C`, `git worktree add`) | `session/workplace.ts` | `session_workdirs` |
+
+The last two are `SessionDerivation`s (`session/derive.ts`). The index applies them inside the
+transaction that persists each page, so the screen and what was derived from it never
+disagree; when a rule changes, `DERIVATION_VERSION` is bumped and the durable pages are handed
+back to every derivation without parsing a log again. When a parser starts reading something
+new, its `parserVersion` is bumped instead: the session is read again from the provider's file
+and the pages under the old version are dropped at startup.
+
+Whatever a rule needs has to arrive on the record. The working directory is the example: it
+used to be scanned out of the raw file with a regular expression, which matched Claude's
+`"cwd"` and a `cd` inside a command but not the `workdir` Codex names on each command instead
+of moving, so a Codex task that did all its work in a worktree opened its terminal on `main`.
+Now Claude stamps `cwd` on every message, Codex on every message with the command's own
+`workdir` first, Copilot with the directory its session started in, and the rule reads only
+that and the commands the agent ran.
+
+Run classification (a limit, a failure, a cancel) stays where it was: the adapter reads the
+CLI's output at exit (`classify`) and the runner hands the result to the scheduler as one
+`finished` event.
+
 ## Fable and diagnostics
 
 Fable uses the Claude CLI driver and Claude adapter. Its model selection remains

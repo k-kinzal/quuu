@@ -7,7 +7,8 @@ import { ClaudeSessionParser } from '../src/main/agent-adapters/claude/parser.js
 import { SessionIndex, SESSION_PAGE, SESSION_WINDOW, sessionKey } from '../src/main/session/index.js'
 import { sessionReadTarget } from '../src/main/session/sessionAttach.js'
 import { SessionView } from '../src/main/session/view.js'
-import { recordSessionEvidence, REVIEW_EVIDENCE_VERSION } from '../src/main/review/evidence.js'
+import { recordSessionEvidence, reviewEvidenceDerivation } from '../src/main/review/evidence.js'
+import { DERIVATION_VERSION } from '../src/main/session/derive.js'
 import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, occupy, releaseSessionDirs } from './helpers.js'
 
 let dir: string
@@ -31,7 +32,7 @@ beforeEach(() => {
   logPath = join(dir, 'session.jsonl')
   runId = occupy(db, taskId, agentId, { stdoutLogPath: join(dir, 'stdout.log') })
   repo.updateRun(db, runId, { sessionLogPath: logPath })
-  index = new SessionIndex(db, (run, messages) => recordSessionEvidence(db, run.taskId, messages))
+  index = new SessionIndex(db, [reviewEvidenceDerivation])
   view = new SessionView(db, index)
 })
 afterEach(async () => {
@@ -123,7 +124,7 @@ it.each([false, true])('rebuilds outdated PR evidence from bounded cached pages,
   view.closeSession()
   index.stop()
   const receive = vi.fn((source: typeof run, messages: Parameters<typeof recordSessionEvidence>[2]) => recordSessionEvidence(db, source.taskId, messages))
-  index = new SessionIndex(db, receive)
+  index = new SessionIndex(db, [{ ...reviewEvidenceDerivation, apply: (_db, source, batch) => receive(source, batch.messages) }])
   const parse = vi.spyOn(ClaudeSessionParser.prototype, 'pushLines')
   const indexed = vi.fn()
   index.on('indexed', indexed)
@@ -133,7 +134,7 @@ it.each([false, true])('rebuilds outdated PR evidence from bounded cached pages,
   expect(receive.mock.calls).toHaveLength(4)
   expect(receive.mock.calls.every(call => call[1].length <= SESSION_PAGE)).toBe(true)
   expect(repo.reviewEvidence(db, taskId).pullRequests).toEqual([url])
-  expect(repo.getSessionIndex(db, key)?.evidenceVersion).toBe(REVIEW_EVIDENCE_VERSION)
+  expect(repo.getSessionIndex(db, key)?.evidenceVersion).toBe(DERIVATION_VERSION)
   expect(indexed).toHaveBeenCalledWith(key, taskId)
   receive.mockClear()
   index.request(run, target)
@@ -254,4 +255,29 @@ it('indexes raw output incrementally and patches only its unfinished page', asyn
   expect(tail?.kind === 'text' ? tail.text : '').toContain('partial result')
   expect(JSON.stringify(saved.messages)).not.toContain('# Quuu run')
   expect(writes.mock.calls.reduce((total, call) => total + call[4].length, 0)).toBe(1)
+})
+
+/**
+ * A parser that learned to read something new gets a new version, and with it a new key. The
+ * pages under the old key are never opened again, and a long session is tens of thousands of
+ * rows, so they go when the index starts - and nothing under a current key goes with them.
+ */
+it('drops pages materialized under a retired parser version and keeps the current ones', async () => {
+  writeFileSync(logPath, history(3))
+  view.loadSession(runId)
+  await index.settled()
+  const current = sessionKey(sessionReadTarget(db, repo.getRun(db, runId)!))
+  const retired = current.replace(/^v\d+:/, 'v0:')
+  repo.finishSessionIndex(db, retired, { stamp: 's', generation: 'g', title: null, total: 1, evidenceVersion: 0 })
+  repo.writeSessionMessages(db, retired, 'g', 0, [{ id: 'old', role: 'user', isSidechain: false, timestamp: null, blocks: [], model: null }])
+  repo.writeSessionImage(db, retired, 'img', 'data:image/png;base64,aGVsbG8=')
+  repo.writeSessionWorkDirs(db, retired, 'g', 0, ['/old'])
+
+  expect(index.sweepRetired()).toBe(4)
+  expect(repo.getSessionIndex(db, retired)).toBeNull()
+  expect(repo.readSessionMessages(db, retired, 'g', 0, 1)).toEqual([])
+  expect(repo.readSessionImage(db, retired, 'img')).toBeNull()
+  expect(repo.readSessionWorkDirs(db, retired, 'g')).toEqual([])
+  expect(repo.getSessionIndex(db, current)?.total).toBe(3)
+  expect(index.sweepRetired()).toBe(0)
 })

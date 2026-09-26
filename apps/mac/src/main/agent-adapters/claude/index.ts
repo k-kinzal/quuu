@@ -24,7 +24,8 @@ export const claudeAdapter: AgentAdapter = {
   recoverSessionId: findClaudeSessionId,
 
   idleWindowMs: 3 * 60 * 1000,
-  parserVersion: 'v1',
+  // v2: the working directory rides on every message
+  parserVersion: 'v2',
   createParser: (namespace, buffer) => new ClaudeSessionParser(namespace, buffer),
   classify: classifyClaudeResult,
   classifyDetached: classifyDetachedClaudeResult,

@@ -9,8 +9,9 @@ import { discoverEditors, openInApp, openTargetFor } from '../platform/editorApp
 import type { EditorApp } from '../platform/editorChoice.js'
 import { resolveEditorApp } from '../platform/editorChoice.js'
 import { openTerminalAt, openTerminalWith } from '../platform/terminal.js'
+import { sessionKey } from '../session/index.js'
 import { structuredSessionTarget } from '../session/sessionAttach.js'
-import { agentWorkplace } from '../session/workplace.js'
+import { agentWorkplace, recordedWorkingDirs } from '../session/workplace.js'
 import type { AppSettings } from '../settings/types.js'
 import type { Task } from '../tasks/types.js'
 import type { Project } from './types.js'
@@ -53,10 +54,16 @@ export class WorkspaceOperations {
   }
 
 
-  /** Where that run's agent worked: the worktree it moved into, otherwise where it was launched. */
+  /**
+   * Where that run's agent worked: the worktree it moved into, otherwise where it was launched.
+   *
+   * Read off what the session index derived (`session/workplace.ts`), never off the log itself:
+   * the index has already read the whole session, in the CLI's own format, through its adapter.
+   */
   private workplaceOf(run: Run, project: Project | null): string {
+    const target = structuredSessionTarget(this.db, run)
     return agentWorkplace({
-      logPath: structuredSessionTarget(this.db, run)?.logPath ?? null,
+      dirs: target ? recordedWorkingDirs(this.db, sessionKey(target)) : [],
       launchDir: run.cwd,
       projectDir: project?.path ?? run.cwd
     })

@@ -9,7 +9,8 @@ import { readCodexOutput, readCodexTool } from './tools.js'
  * Converts a Codex rollout log (jsonl) into a message list for the UI.
  *
  * Lines handled:
- *   session_meta                          … session identity (not used for the title)
+ *   session_meta                          … session identity and where it started (not used for the title)
+ *   turn_context                          … the directory the turn runs in
  *   response_item / message               … user / assistant utterances (developer is preamble, not shown)
  *   response_item / reasoning             … thinking
  *   response_item / custom_tool_call      … tool execution (current shape; name is always `exec`)
@@ -27,6 +28,8 @@ import { readCodexOutput, readCodexTool } from './tools.js'
 
 interface RawPayload {
   type?: string
+  /** Where the session started (session_meta) or the turn runs (turn_context). */
+  cwd?: string
   role?: string
   content?: unknown
   text?: string
@@ -65,6 +68,8 @@ export class CodexSessionParser {
    */
   private cells = new Map<string, string>()
   private counter = 0
+  /** The directory the CLI last said it was in. Stamped on every message written after. */
+  private cwd: string | null = null
 
   pushLines(lines: string[]): PushResult {
     let changedFrom = -1
@@ -83,7 +88,12 @@ export class CodexSessionParser {
       } catch {
         continue
       }
-      if (entry.type !== 'response_item' || !entry.payload) continue
+      if (!entry.payload) continue
+      if (entry.type === 'session_meta' || entry.type === 'turn_context') {
+        if (typeof entry.payload.cwd === 'string' && entry.payload.cwd.startsWith('/')) this.cwd = entry.payload.cwd
+        continue
+      }
+      if (entry.type !== 'response_item') continue
 
       const payload = entry.payload
       const ts = typeof entry.timestamp === 'string' ? entry.timestamp : null
@@ -148,7 +158,9 @@ export class CodexSessionParser {
               images: []
             },
             ts,
-            mark
+            mark,
+            // The command's own `workdir` is where it ran, whatever the turn said
+            read.workdir
           )
           break
         }
@@ -207,21 +219,24 @@ export class CodexSessionParser {
     return { changedFromIndex: changedFrom }
   }
 
-  private pushTool(tool: ToolCall, timestamp: string | null, mark: (i: number) => void): void {
-    this.push({ role: 'assistant', timestamp, blocks: [{ kind: 'tool', tool }] }, mark)
+  private pushTool(tool: ToolCall, timestamp: string | null, mark: (i: number) => void, workdir: string | null = null): void {
+    this.push({ role: 'assistant', timestamp, blocks: [{ kind: 'tool', tool }] }, mark, workdir)
     this.toolIndex.set(tool.id, { m: this.buffer.length - 1, b: 0 })
   }
 
   private push(
     message: Pick<SessionMessage, 'role' | 'timestamp' | 'blocks'>,
-    mark: (i: number) => void
+    mark: (i: number) => void,
+    workdir: string | null = null
   ): void {
     this.counter += 1
+    const cwd = workdir ?? this.cwd
     this.buffer.push({
       id: `codex_${this.counter}`,
       isSidechain: false,
       model: null,
-      ...message
+      ...message,
+      ...(cwd ? { cwd } : {})
     })
     mark(this.buffer.length - 1)
   }

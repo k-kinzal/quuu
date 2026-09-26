@@ -47,6 +47,44 @@ export function finishSessionIndex(db: Db, key: string, record: SessionIndexReco
   db.prepare('INSERT OR REPLACE INTO session_indexes (log_key, stamp, generation, title, total, evidence_version) VALUES (?, ?, ?, ?, ?, ?)')
     .run(key, record.stamp, record.generation, record.title, record.total, record.evidenceVersion)
   db.prepare('DELETE FROM session_messages WHERE log_key = ? AND (generation <> ? OR ordinal >= ?)').run(key, record.generation, record.total)
+  db.prepare('DELETE FROM session_workdirs WHERE log_key = ? AND (generation <> ? OR ordinal >= ?)').run(key, record.generation, record.total)
+}
+
+/**
+ * Drop every page materialized under a key that does not start with one of `keep`.
+ *
+ * A parser that learned to read something new gets a new version, and with it a new key, so
+ * its sessions are read again from the log. What was materialized under the old version is
+ * never opened again - and a long session is tens of thousands of rows - so it goes.
+ */
+export function dropSessionIndexesOutside(db: Db, keep: string[]): number {
+  if (keep.length === 0) return 0
+  const outside = keep.map(() => 'log_key NOT LIKE ? ESCAPE \'\\\'').join(' AND ')
+  const patterns = keep.map(prefix => `${prefix.replace(/[\\%_]/g, '\\$&')}%`)
+  let dropped = 0
+  for (const table of ['session_indexes', 'session_messages', 'session_images', 'session_workdirs']) {
+    dropped += Number(db.prepare(`DELETE FROM ${table} WHERE ${outside}`).run(...patterns).changes)
+  }
+  return dropped
+}
+
+/** The directories one message recorded. Nothing is written for a message that recorded none. */
+export function writeSessionWorkDirs(db: Db, key: string, generation: string, ordinal: number, dirs: string[]): void {
+  if (dirs.length === 0) {
+    db.prepare('DELETE FROM session_workdirs WHERE log_key = ? AND generation = ? AND ordinal = ?').run(key, generation, ordinal)
+    return
+  }
+  db.prepare('INSERT OR REPLACE INTO session_workdirs (log_key, generation, ordinal, dirs) VALUES (?, ?, ?, ?)')
+    .run(key, generation, ordinal, JSON.stringify(dirs))
+}
+
+/** Every directory the session's pages recorded, in log order. Repeats are not collapsed here. */
+export function readSessionWorkDirs(db: Db, key: string, generation: string): string[] {
+  const rows = db.prepare('SELECT dirs FROM session_workdirs WHERE log_key = ? AND generation = ? ORDER BY ordinal').all(key, generation) as Row[]
+  return rows.flatMap(row => {
+    const dirs = parseJson<unknown>(s(row.dirs), [])
+    return Array.isArray(dirs) ? dirs.filter((dir): dir is string => typeof dir === 'string') : []
+  })
 }
 
 export function finishSessionEvidence(db: Db, key: string, version: number): void {

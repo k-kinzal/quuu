@@ -26,8 +26,17 @@ describe('reading a Codex tool call', () => {
     )
     expect(read.name).toBe('exec_command')
     expect(read.target).toBe('npm run check')
+    // Where it ran travels with it: Codex names the directory instead of moving there
+    expect(read.workdir).toBe('/x')
     // What you see when you open it is the very fragment that ran
     expect(read.input).toContain('tools.exec_command')
+  })
+
+  it('reads the workdir off the older JSON-argument shape too, and refuses a relative one', () => {
+    expect(readCodexTool('exec_command', JSON.stringify({ cmd: 'npm test', workdir: '/w' })).workdir).toBe('/w')
+    expect(readCodexTool('shell', { command: ['bash', '-lc', 'ls'], cwd: '/w' }).workdir).toBe('/w')
+    expect(readCodexTool('exec_command', JSON.stringify({ cmd: 'npm test', workdir: 'packages/ui' })).workdir).toBeNull()
+    expect(readCodexTool('exec_command', JSON.stringify({ cmd: 'npm test' })).workdir).toBeNull()
   })
 
   it('takes a command containing newlines as one unbroken value', () => {

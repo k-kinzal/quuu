@@ -1,10 +1,10 @@
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
+import type { SessionBatch, SessionDerivation } from '../session/derive.js'
+import { isShellTool } from '../session/shell.js'
 import type { SessionMessage } from '../session/types.js'
 
 export interface ReviewEvidence { commits: string[]; pullRequests: string[] }
-export const REVIEW_EVIDENCE_VERSION = 2
-const SHELL = new Set(['Bash', 'Shell', 'exec', 'exec_command', 'shell', 'shell_command', 'run_in_terminal', 'write_stdin', 'wait'])
 const PR_RECEIPT = /^\s*(https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/[1-9]\d*)\s*$/gm
 
 /** Tool wrappers often put the real stdout inside JSON (including nested exec results). */
@@ -65,7 +65,7 @@ export function extractReviewEvidence(messages: SessionMessage[]): ReviewEvidenc
       }
       if (block.kind !== 'tool' || block.tool.result === null) continue
       const tool = block.tool
-      const shell = SHELL.has(tool.name)
+      const shell = isShellTool(tool.name)
       const input = typeof tool.input === 'string' ? tool.input : JSON.stringify(tool.input)
       const invocation = `${tool.target ?? ''} ${input}`
       const actsOnPr = (shell && /\bgh\s+pr\s+(?:create|edit|merge)\b/.test(invocation)) ||
@@ -96,4 +96,21 @@ export function recordSessionEvidence(db: Db, taskId: string, messages: SessionM
   const evidence = extractReviewEvidence(messages)
   for (const sha of evidence.commits) repo.recordReviewEvidence(db, taskId, 'commit', sha)
   for (const url of evidence.pullRequests) repo.recordReviewEvidence(db, taskId, 'pull-request', url)
+}
+
+/**
+ * The commits and Pull Requests a task produced, filed as its sessions are indexed.
+ *
+ * Bump `DERIVATION_VERSION` (`session/derive.ts`) when the rule above changes, so what the old
+ * rule filed is re-derived from the durable pages. Commits are receipts that only ever help;
+ * a Pull Request the old rule mistook for the task's work has to be able to leave the task,
+ * so those are forgotten before the re-read.
+ */
+export const reviewEvidenceDerivation: SessionDerivation = {
+  apply(db: Db, run, batch: SessionBatch): void {
+    recordSessionEvidence(db, run.taskId, batch.messages)
+  },
+  reset(db: Db, taskId: string): void {
+    repo.clearReviewEvidence(db, taskId, 'pull-request')
+  }
 }

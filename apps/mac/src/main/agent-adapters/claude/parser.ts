@@ -40,6 +40,8 @@ interface RawEntry {
   isSidechain?: boolean
   sessionId?: string
   aiTitle?: string
+  /** The directory the CLI stood in when it wrote the line. On every conversation line. */
+  cwd?: string
   /** A line the CLI injected on its own. Not something the human said. */
   isMeta?: boolean
   /** The recap the CLI writes for itself when it compacts a conversation that ran out of context. */
@@ -163,7 +165,8 @@ export class ClaudeSessionParser {
       isSidechain: entry.isSidechain === true,
       timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
       blocks,
-      model: typeof entry.message?.model === 'string' ? entry.message.model : null
+      model: typeof entry.message?.model === 'string' ? entry.message.model : null,
+      ...recordedCwd(entry)
     }
   }
 
@@ -204,7 +207,8 @@ export class ClaudeSessionParser {
         isSidechain: entry.isSidechain === true,
         timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
         blocks: [{ kind: 'text', text }],
-        model: null
+        model: null,
+        ...recordedCwd(entry)
       })
       return { appended: true, patched }
     }
@@ -243,7 +247,8 @@ export class ClaudeSessionParser {
         isSidechain: entry.isSidechain === true,
         timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : null,
         blocks,
-        model: null
+        model: null,
+        ...recordedCwd(entry)
       })
       return { appended: true, patched }
     }
@@ -275,6 +280,11 @@ export class ClaudeSessionParser {
     }
     return found
   }
+}
+
+/** The line's `cwd`, as a field to spread in. Nothing when the line carries none, so the record stays as it was. */
+function recordedCwd(entry: RawEntry): { cwd?: string } {
+  return typeof entry.cwd === 'string' && entry.cwd.startsWith('/') ? { cwd: entry.cwd } : {}
 }
 
 export function stringifyToolResult(content: unknown): string {
