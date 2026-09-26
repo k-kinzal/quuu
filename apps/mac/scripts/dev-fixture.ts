@@ -1409,6 +1409,16 @@ if (process.env.QUUU_FIXTURE_REVIEW === '1') {
   const id = addRun(task.id, 'succeeded', 10, 60, '', cwd)
   repo.setTaskStatus(db, task.id, 'review', { currentRunId: id })
   repo.insertTaskReviewBase(db, { taskId: task.id, cwd, startedAt: iso(10), baseHead, baseTree })
+  // Pull Requests as a projection saved them: one still in CI, one that failed and conflicts.
+  // Recorded as evidence too, so a refresh against a repository with no remote keeps them.
+  const pull = (number: number, title: string, check: 'success' | 'failure' | 'pending', mergeState: 'clean' | 'conflicting' | 'unknown') => ({
+    number, title, url: `https://github.com/example/colors/pull/${String(number)}`, headRefName: `feature/${String(number)}`, baseRefName: 'main',
+    headSha: 'a'.repeat(40), draft: false, updatedAt: iso(5), check, mergeState, state: 'open' as const, files: [{ path: 'src/index.ts', change: 'modified' as const }]
+  })
+  const pulls = [pull(41, 'Row colors follow the project', 'pending', 'clean'), pull(42, 'Directory colors', 'failure', 'conflicting')]
+  repo.saveReviewSnapshot(db, task.id, { cwd, branch: 'main', repository: 'example/colors', tree: [], changes: [], localChanges: [], stagedChanges: [],
+    revision: null, localRevision: null, stagedRevision: null, commits: [], pullRequests: pulls, coverage: null, projectTasks: [] })
+  for (const pr of pulls) repo.recordReviewEvidence(db, task.id, 'pull-request', pr.url)
   writeFileSync(join(cwd, 'src/index.ts'), 'export const version = 2\n')
   writeFileSync(join(cwd, 'new/components/Row.tsx'), 'export const Row = () => null\n')
   writeFileSync(join(cwd, 'src/a-long-new-filename-that-needs-the-available-row-width.ts'), 'export const created = true\n')
