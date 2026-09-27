@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import * as repo from '../src/main/db/repo.js'
 import { Runner } from '../src/main/execution/runner.js'
-import { Scheduler } from '../src/main/execution/scheduler.js'
+import { SLOT_HOLD_MS, Scheduler } from '../src/main/execution/scheduler.js'
+import type { ToastPayload } from '../src/main/snapshot.js'
+import { TaskOperations } from '../src/main/tasks/operations.js'
 import { isoPlusSeconds } from '../src/main/util.js'
 import { makeAgent, makeProject, makeTask, memoryDb, occupy, reviewed, sessioned } from './helpers.js'
 
@@ -614,18 +616,18 @@ describe('scheduler status', () => {
 })
 
 /**
- * A run that ends while its Pull Request might send it straight back keeps its slot until that
- * is decided. Deciding after the slot was free let another task start in between, and the task
- * with the red CI waited behind it for a whole run.
+ * A run that ends while its Pull Request might send it straight back stays running, and keeps its
+ * slot, until that is decided. Landing in review first and being pulled back out read as a
+ * finished task coming back to life; deciding after the slot was free let another task start in
+ * between, and the task with the red CI waited behind it for a whole run.
  */
-describe('a finished task keeps its slot while its Pull Request is decided', () => {
-  function finish(db: ReturnType<typeof memoryDb>, runner: Runner, taskId: string, runId: string): void {
+describe('a finished task stays running while its Pull Request is decided', () => {
+  function finish(db: ReturnType<typeof memoryDb>, runner: Runner, runId: string): void {
     repo.updateRun(db, runId, { status: 'succeeded', exitCode: 0, endedAt: new Date().toISOString() })
     runner.emit('finished', { run: repo.getRun(db, runId)!, classification: { kind: null, message: '' }, tail: '' })
-    expect(repo.getTask(db, taskId)?.status).toBe('review')
   }
 
-  it('gives the slot to nobody else until released, and the task sent back meanwhile takes it', () => {
+  it('stays running, gives the slot to nobody else, and goes straight back into that slot without passing through review', () => {
     const db = memoryDb()
     // It continues its own conversation, so the agent has to be one that can resume it
     const agent = makeAgent(db, { name: 'a', command: 'claude', concurrency: 1, resumeArgsTemplate: ['--resume', '{{sessionId}}', '-p', '{{prompt}}'] })
@@ -633,24 +635,32 @@ describe('a finished task keeps its slot while its Pull Request is decided', () 
     const runner = new Runner(db)
     const s = new Scheduler(db, runner)
     s.setReviewGate(() => true)
+    const checks: string[] = []
+    s.on('check', (id: string) => checks.push(id))
+    const toasts: ToastPayload[] = []
+    s.on('notify', (toast: ToastPayload) => toasts.push(toast))
     const task = makeTask(db, p, 'CI が赤いタスク')
     const runId = occupy(db, task, agent)
     makeTask(db, p, '次に待っているタスク')
 
-    finish(db, runner, task, runId)
+    finish(db, runner, runId)
+    expect(repo.getTask(db, task)?.status).toBe('running')
+    expect(checks).toEqual([task])
     expect(s.heldSlots().map((r) => r.taskId)).toEqual([task])
     expect(s.claimNext()).toBeNull()
     expect(s.status().warnings.join('\n')).toContain('CI が赤いタスク')
 
     // The decision sends it back: a follow-up, first in line, and its own hold never blocks it
-    repo.setPendingMessage(db, task, 'CI を直して')
-    repo.setTaskStatus(db, task, 'queued')
-    s.releaseSlot(task)
+    expect(s.concludeCheck(task, 'CI を直して')).toBe(true)
+    expect(repo.getTask(db, task)).toMatchObject({ status: 'queued', pendingMessage: 'CI を直して' })
+    // It never said it was ready for review
+    expect(toasts.filter(toast => toast.level === 'success')).toEqual([])
+    expect(s.heldSlots()).toEqual([])
     expect(s.claimNext()?.task.id).toBe(task)
     s.stop()
   })
 
-  it('lets the next task in once released without sending, and holds nothing where the gate says no', () => {
+  it('lands in review only once the look ends without sending, and goes to review at once where the gate says no', () => {
     const db = memoryDb()
     const agent = makeAgent(db, { name: 'a', concurrency: 1 })
     const p = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 1 })
@@ -661,26 +671,115 @@ describe('a finished task keeps its slot while its Pull Request is decided', () 
     const task = makeTask(db, p, 'first')
     const next = makeTask(db, p, 'next')
 
-    finish(db, runner, task, occupy(db, task, agent))
-    s.releaseSlot(task)
+    finish(db, runner, occupy(db, task, agent))
+    expect(repo.getTask(db, task)?.status).toBe('running')
+    expect(s.concludeCheck(task)).toBe(false)
+    expect(repo.getTask(db, task)?.status).toBe('review')
     expect(s.claimNext()?.task.id).toBe(next)
+    // A second word on a look that is over changes nothing
+    expect(s.concludeCheck(task, 'late')).toBe(false)
+    expect(repo.getTask(db, task)?.status).toBe('review')
 
     gate = false
     const other = makeTask(db, p, 'other')
-    finish(db, runner, other, occupy(db, other, agent))
+    finish(db, runner, occupy(db, other, agent))
+    expect(repo.getTask(db, other)?.status).toBe('review')
     expect(s.heldSlots()).toEqual([])
     s.stop()
   })
 
-  it('lets the slot go by itself when nobody releases it in time', () => {
+  it('carries an instruction a person reserved while it looked still running, ahead of the Pull Request\'s', () => {
     const db = memoryDb()
     const agent = makeAgent(db, { name: 'a', concurrency: 1 })
     const p = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 1 })
-    const s = scheduler(db)
-    const task = reviewed(db, p, 'waiting', agent)
-    const next = makeTask(db, p, 'next')
-    s.holdSlot({ taskId: task, title: 'waiting', projectId: p, agentId: agent }, -1)
-    expect(s.claimNext()?.task.id).toBe(next)
+    const runner = new Runner(db)
+    const s = new Scheduler(db, runner)
+    s.setReviewGate(() => true)
+    const task = makeTask(db, p, 'task')
+    finish(db, runner, occupy(db, task, agent))
+    repo.setReservedMessage(db, task, 'README も直して')
+
+    expect(s.concludeCheck(task, 'CI を直して')).toBe(true)
+    expect(repo.getTask(db, task)).toMatchObject({ status: 'queued', pendingMessage: 'README も直して\n\nCI を直して', reservedMessage: '' })
+
+    const quiet = makeTask(db, p, 'quiet')
+    finish(db, runner, occupy(db, quiet, agent))
+    repo.setReservedMessage(db, quiet, 'ついでにこれも')
+    expect(s.concludeCheck(quiet)).toBe(true)
+    expect(repo.getTask(db, quiet)).toMatchObject({ status: 'queued', pendingMessage: 'ついでにこれも' })
+    s.stop()
+  })
+
+  it('lands in review when a person cancels it during the look, and the look then sends nothing', () => {
+    const db = memoryDb()
+    const agent = makeAgent(db, { name: 'a', concurrency: 1 })
+    const p = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 1 })
+    const runner = new Runner(db)
+    const s = new Scheduler(db, runner)
+    s.setReviewGate(() => true)
+    const tasks = new TaskOperations(db, () => {}, () => {}, id => s.runNow(id), id => runner.cancel(id), () => {})
+    const task = makeTask(db, p, 'task')
+    finish(db, runner, occupy(db, task, agent))
+
+    tasks.cancelTask(task)
+    expect(repo.getTask(db, task)?.status).toBe('review')
+    expect(s.concludeCheck(task, 'CI を直して')).toBe(false)
+    expect(repo.getTask(db, task)?.status).toBe('review')
     expect(s.heldSlots()).toEqual([])
+    s.stop()
+  })
+
+  it('lands in review and lets the slot go by itself when nobody ends the look in time', () => {
+    vi.useFakeTimers()
+    try {
+      const db = memoryDb()
+      const agent = makeAgent(db, { name: 'a', concurrency: 1 })
+      const p = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 1 })
+      const runner = new Runner(db)
+      const s = new Scheduler(db, runner)
+      s.setReviewGate(() => true)
+      const task = makeTask(db, p, 'waiting')
+      const next = makeTask(db, p, 'next')
+      finish(db, runner, occupy(db, task, agent))
+      expect(s.claimNext()).toBeNull()
+
+      vi.advanceTimersByTime(SLOT_HOLD_MS)
+      expect(repo.getTask(db, task)?.status).toBe('review')
+      expect(s.heldSlots()).toEqual([])
+      expect(s.claimNext()?.task.id).toBe(next)
+      s.stop()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('starts the look over after a restart instead of leaving the task running forever', () => {
+    const db = memoryDb()
+    const agent = makeAgent(db, { name: 'a', concurrency: 1 })
+    const p = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 1 })
+    const before = new Scheduler(db, new Runner(db))
+    before.setReviewGate(() => true)
+    const kept = makeTask(db, p, 'kept')
+    const runId = occupy(db, kept, agent)
+    repo.updateRun(db, runId, { status: 'succeeded', exitCode: 0, endedAt: new Date().toISOString() })
+    repo.setTaskStatus(db, kept, 'running', { currentRunId: runId })
+    before.stop()
+
+    const s = new Scheduler(db, new Runner(db))
+    s.setReviewGate(() => true)
+    const checks: string[] = []
+    s.on('check', (id: string) => checks.push(id))
+    s.reconcile()
+    expect(checks).toEqual([kept])
+    expect(s.heldSlots().map(r => r.taskId)).toEqual([kept])
+    expect(repo.getTask(db, kept)?.status).toBe('running')
+
+    // Where the gate no longer asks for a look, it simply lands in review
+    const other = new Scheduler(db, new Runner(db))
+    other.setReviewGate(() => false)
+    other.reconcile()
+    expect(repo.getTask(db, kept)?.status).toBe('review')
+    s.stop()
+    other.stop()
   })
 })

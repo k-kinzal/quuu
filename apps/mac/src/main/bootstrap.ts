@@ -119,8 +119,8 @@ export class QuuuApp extends EventEmitter {
     this.pullRequestFollowUp = new PullRequestFollowUp(this.db, () => this.settings.getSettings(), {
       indexed: id => this.indexedLatestRun(id),
       refresh: id => this.reviews.refresh(id),
-      send: (id, message) => this.tasks.send(id, message),
-      release: id => this.scheduler.releaseSlot(id)
+      sendBack: (id, message) => this.scheduler.concludeCheck(id, message),
+      conclude: id => { this.scheduler.concludeCheck(id) }
     })
     this.reviews.on('projected', (taskId: string, snapshot: ReviewSnapshot) => { this.pullRequestFollowUp.onProjected(taskId, snapshot) })
     /*
@@ -166,13 +166,13 @@ export class QuuuApp extends EventEmitter {
       }
     })
 
-    // A finished task keeps its slot while its Pull Request decides whether it goes straight back
+    // A finished task stays running, keeping its slot, while its Pull Request decides whether it goes straight back
     this.scheduler.setReviewGate(id => this.pullRequestFollowUp.shouldHold(id))
     this.scheduler.on('changed', () => this.emit('changed'))
     // The built-in report waits for custom hooks; its durable request survives app restarts.
     this.hooks.setReportHook(taskId => this.reports.requestReport(taskId))
     // ...and the moment to ask GitHub whether the Pull Request it left is in order
-    this.scheduler.on('review', (taskId: string) => { void this.pullRequestFollowUp.onReview(taskId) })
+    this.scheduler.on('check', (taskId: string) => { void this.pullRequestFollowUp.onCheck(taskId) })
     this.scheduler.on('status', () => {
       this.mobile.setSchedulerRunning(this.scheduler.status().running)
       this.emit('status', this.scheduler.status())

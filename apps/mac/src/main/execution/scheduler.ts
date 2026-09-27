@@ -95,16 +95,19 @@ export class Scheduler extends EventEmitter {
   private limitProbes = new Map<string, string | null>()
 
   /**
-   * Slots kept for a task that just finished, while what happens next is decided (a Pull Request
-   * that sends it straight back). In memory only: a restart ends the wait, which only costs the
-   * task its turn, never a slot.
+   * Slots kept for a task whose run just finished, while what happens next is decided (a Pull
+   * Request that sends it straight back). In memory only: a restart starts the look over
+   * (`reconcile`), and the timer ends a look nobody ends.
    */
-  private slotHolds = new Map<string, repo.SlotReservation & { until: number }>()
+  private slotHolds = new Map<string, repo.SlotReservation & { until: number; timer: NodeJS.Timeout }>()
 
   /**
-   * Asked, inside the transition, whether a task that just reached review should keep its slot
-   * while something outside execution decides whether it goes straight back. The asker releases
-   * it (`releaseSlot`); `SLOT_HOLD_MS` releases it regardless.
+   * Asked, inside the transition, whether a task whose run just ended normally should be looked
+   * at before it reaches review. Such a task **stays running and keeps its slot** while something
+   * outside execution decides whether it goes straight back (`check`), and only then lands in
+   * review or the queue (`concludeCheck`); `SLOT_HOLD_MS` lands it in review regardless. Landing
+   * in review first and being pulled back out a moment later read as a finished task that came
+   * back to life, and let the slot look free in between.
    */
   private reviewGate: ((taskId: string) => boolean) | null = null
 
@@ -133,6 +136,21 @@ export class Scheduler extends EventEmitter {
   reconcile(): void {
     this.recovery.reconcile()
     this.restoreLimitWaits()
+    this.resumeChecks()
+  }
+
+  /**
+   * A restart ends the look a finished task was kept running for, and nothing else would move it
+   * on: its run is over, so no exit settles it. The look starts over, or the task goes to review
+   * where the gate no longer asks for one.
+   */
+  private resumeChecks(): void {
+    for (const task of repo.listTasks(this.db)) {
+      if (this.slotHolds.has(task.id) || !this.isChecking(task)) continue
+      const run = repo.getRun(this.db, task.currentRunId!)!
+      if (this.reviewGate?.(task.id)) this.beginCheck(task, run)
+      else this.concludeCheck(task.id)
+    }
   }
 
   /** A parser fix must reach tasks already waiting, before another attempt spends a slot. */
@@ -171,6 +189,7 @@ export class Scheduler extends EventEmitter {
     if (this.nextTick) clearTimeout(this.nextTick)
     this.nextTick = null
     this.recovery.stop()
+    for (const hold of this.slotHolds.values()) clearTimeout(hold.timer)
     if (this.timer) clearInterval(this.timer)
     this.timer = null
   }
@@ -201,13 +220,22 @@ export class Scheduler extends EventEmitter {
     this.reviewGate = gate
   }
 
-  /** Keep the project's slot and the agent's lane for this task until released or `ms` passes. */
+  /**
+   * Keep the project's slot and the agent's lane for this task until released or `ms` passes.
+   * When the time is up the look is over too: a task still waiting on it lands in review.
+   */
   holdSlot(reservation: repo.SlotReservation, ms = SLOT_HOLD_MS): void {
-    this.slotHolds.set(reservation.taskId, { ...reservation, reason: 'pull-request', until: Date.now() + ms })
+    const previous = this.slotHolds.get(reservation.taskId)
+    if (previous) clearTimeout(previous.timer)
+    const timer = setTimeout(() => { if (!this.stopped) this.concludeCheck(reservation.taskId) }, Math.max(0, ms))
+    timer.unref?.()
+    this.slotHolds.set(reservation.taskId, { ...reservation, reason: 'pull-request', until: Date.now() + ms, timer })
   }
 
   /** Let the slot go. The next claim runs at once, so a task sent back meanwhile is first in line. */
   releaseSlot(taskId: string): void {
+    const hold = this.slotHolds.get(taskId)
+    if (hold) clearTimeout(hold.timer)
     if (!this.slotHolds.delete(taskId) || this.stopped) return
     this.emitStatus()
     if (this.nextTick) clearTimeout(this.nextTick)
@@ -220,7 +248,57 @@ export class Scheduler extends EventEmitter {
     for (const [taskId, hold] of this.slotHolds) {
       if (hold.until <= now) this.slotHolds.delete(taskId)
     }
-    return [...this.slotHolds.values()].map(({ until: _until, ...reservation }) => reservation)
+    return [...this.slotHolds.values()].map(({ until: _until, timer: _timer, ...reservation }) => reservation)
+  }
+
+  /** Is the task still running for a look at what its finished run left, not for a run? */
+  private isChecking(task: Task): boolean {
+    if (task.status !== 'running' || !task.currentRunId) return false
+    return repo.getRun(this.db, task.currentRunId)?.status === 'succeeded'
+  }
+
+  /**
+   * End the look a finished task was kept running for, then let its slot go.
+   *
+   * With a message the task goes straight back to its agent - queued as a follow-up, so it takes
+   * the slot it kept before anything else starts. Without one it lands in review, which is the
+   * first time it says so. An instruction a person reserved while it looked still running goes
+   * along, ahead of the message, as it would after any run. A task that is no longer being looked
+   * at (a person moved it, the look already ended) only has its slot let go. Says whether the
+   * task was sent on.
+   */
+  concludeCheck(taskId: string, message = ''): boolean {
+    const sent = inTransaction(this.db, () => {
+      const task = repo.getTask(this.db, taskId)
+      if (!task || !this.isChecking(task)) return false
+      const reserved = task.reservedMessage.trim()
+      const body = [reserved, message.trim()].filter(part => part.length > 0).join('\n\n')
+      if (body) {
+        recordExecutionState(this.db, task.id, 'queued', { pendingMessage: body })
+        if (reserved) {
+          consumeReservation(this.db, task.id)
+          this.notify('info', t('scheduler.sentReserved', { title: truncate(task.title, 50) }), task.id)
+        }
+      } else {
+        recordExecutionState(this.db, task.id, 'review')
+        this.announceReview(task)
+      }
+      afterCommit(this.db, () => this.emit('changed'))
+      return body.length > 0
+    })
+    this.releaseSlot(taskId)
+    return sent
+  }
+
+  /** Keep the task running and its slot kept, and say it is time to look. */
+  private beginCheck(task: Task, run: Run): void {
+    this.holdSlot({ taskId: task.id, title: task.title, projectId: task.projectId, agentId: run.agentId })
+    afterCommit(this.db, () => this.emit('check', task.id))
+  }
+
+  /** The task is done running for now and waits for a person to read what it did. */
+  private announceReview(task: Task): void {
+    this.notify('success', t('scheduler.reviewToast', { title: truncate(task.title, 60) }), task.id)
   }
 
   // -------------------------------------------------------------------------
@@ -570,7 +648,10 @@ export class Scheduler extends EventEmitter {
       const retry = classification.kind !== null && project !== null &&
         this.shouldAutoRetry(classification.kind, task, project, run)
       const disposition = runDisposition(task, classification.kind, retry)
-      recordExecutionState(this.db, task.id, disposition.status, {
+      // Asked before the commit, so the claim this transition triggers cannot hand the slot to
+      // another task while the gate's owner finds out whether this one goes straight back
+      const checking = disposition.kind === 'review' && (this.reviewGate?.(task.id) ?? false)
+      recordExecutionState(this.db, task.id, checking ? 'running' : disposition.status, {
         currentRunId: run.id,
         sessionId: run.sessionId,
         ...('pendingMessage' in disposition ? { pendingMessage: disposition.pendingMessage } : {})
@@ -585,18 +666,11 @@ export class Scheduler extends EventEmitter {
           break
         case 'review':
           /*
-           * Kept before the commit, so the claim this transition triggers cannot hand the slot to
-           * another task while the gate's owner finds out whether this one goes straight back.
+           * What the run left may send it straight back. Whether it does is not execution's
+           * business - it only keeps the task running and says when, and the listener decides.
            */
-          if (this.reviewGate?.(task.id)) {
-            this.holdSlot({ taskId: task.id, title: task.title, projectId: task.projectId, agentId: run.agentId })
-          }
-          this.notify('success', t('scheduler.reviewToast', { title: truncate(task.title, 60) }), task.id)
-          /*
-           * Something is now waiting to be read. What happens next is not execution's business —
-           * it only says when, and the listener decides whether anything is worth generating.
-           */
-          afterCommit(this.db, () => this.emit('review', task.id))
+          if (checking) this.beginCheck(task, run)
+          else this.announceReview(task)
           break
         case 'failed':
           this.notify('error', t('scheduler.failedToast', { title: truncate(task.title, 50) }), task.id, classification.message || undefined)
@@ -911,10 +985,10 @@ function reservedByAgent(reservations: repo.SlotReservation[]): Map<string, numb
 
 /** Name the task holding the slot. Adds a count when there is more than one. */
 /**
- * The longest a finished task keeps its slot while its Pull Request is looked at.
+ * The longest a finished task stays running, keeping its slot, while its Pull Request is looked at.
  *
  * Indexing the run's conversation and two GitHub reads take seconds; three minutes is the bound
- * for a GitHub that does not answer, after which the queue moves on regardless.
+ * for a GitHub that does not answer, after which the task lands in review and the queue moves on.
  */
 export const SLOT_HOLD_MS = 3 * 60 * 1000
 

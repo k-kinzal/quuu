@@ -246,7 +246,9 @@ export class TaskOperations {
         .filter((r) => r.status === 'running' || r.status === 'starting')
       for (const run of active) this.cancel(run.id)
       if (active.length === 0 && task.status === 'running') {
-        repo.setTaskStatus(this.db, id, 'draft')
+        // Still running only while what its finished run left is looked at: the run went fine, so stop the look there
+        const finished = task.currentRunId ? repo.getRun(this.db, task.currentRunId)?.status === 'succeeded' : false
+        repo.setTaskStatus(this.db, id, finished ? 'review' : 'draft')
       }
       this.changed()
       return repo.getTask(this.db, id)!
