@@ -447,6 +447,13 @@ can replace that assessment prompt; an empty field uses the default. Task report
 instructions remain separate. Both use the same writer or group and bundled
 HTML document resources.
 
+The project report opens by explaining what the project is: its name and concrete
+function, who uses it for what, and a use case showing input, system behavior and
+result. The hero uses plain descriptions and an overview figure. Progress against
+goals, remaining work and evidence follow in the assessment sections. Customizing
+the assessment focus preserves this introduction; task change reports keep their
+before/after opening.
+
 A saved fingerprint includes the local main commit (master when main is absent),
 HEAD, staged and unstaged binary diffs, non-ignored untracked file contents, and
 the dashboard instructions. An unchanged project keeps its last report. Git is

@@ -1,14 +1,20 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { reportPrompt } from '../src/main/report/prompt.js'
+import { projectReportPrompt, reportPrompt } from '../src/main/report/prompt.js'
 
 const css = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url), 'utf8')
-const prompt = reportPrompt({
+const taskPrompt = reportPrompt({
   cwd: '/tmp', title: 'Task', prompt: 'Task', revision: null, uncommitted: null,
   changes: [], commits: [], pullRequests: [], runs: [],
   page: '/tmp/reports/task/r.html', instructions: ''
 })
+const prompts = [
+  { kind: 'task', prompt: taskPrompt },
+  { kind: 'project', prompt: projectReportPrompt({
+    cwd: '/tmp', title: 'Project', page: '/tmp/reports/project/r.html', instructions: ''
+  }) }
+]
 
 describe('document-design report assets', () => {
   it('ships the unmodified v1.0.0 distribution with no external asset dependencies', () => {
@@ -18,7 +24,7 @@ describe('document-design report assets', () => {
     expect(css).toContain('color-scheme: light dark')
   })
 
-  it('teaches only components and drawing tokens that exist in the bundled version', () => {
+  it.each(prompts)('teaches only bundled components and drawing tokens for $kind reports', ({ prompt }) => {
     const drawn = new Set([...css.matchAll(/\.([a-z][a-z0-9-]*)/g)].map((match) => match[1]))
     const named = [...prompt.matchAll(/^- \.([a-z][a-z0-9- /]*) —/gm)]
       .flatMap((match) => match[1].split('/').map((part) => part.trim()))
@@ -33,7 +39,7 @@ describe('document-design report assets', () => {
     expect(prompt).not.toMatch(/class="(?:page|three|holds|hold|mono)"|var\(--(?:ink|now|rule)\)/)
   })
 
-  it('keeps figures readable and usable in the static offline viewer', () => {
+  it.each(prompts)('keeps $kind figures readable and usable in the static offline viewer', ({ prompt }) => {
     expect(prompt).toContain('inside .draw-wrap')
     expect(prompt).toContain('--dd-draw-width: 640px')
     expect(prompt).toContain('id="dd-arrow"')

@@ -167,7 +167,7 @@ Run history (oldest first; JSON):
 ${JSON.stringify(request.runs, null, 2)}
 Write the page to: ${request.page}
 Write language: ${t('report.language')}`,
-    ...reportDocumentInstructions()
+    ...reportDocumentInstructions('task')
   ]
   if (request.instructions.trim().length > 0) sections.push(request.instructions.trim())
   return sections.join('\n\n')
@@ -175,7 +175,28 @@ Write language: ${t('report.language')}`,
 
 
 /** Both kinds of report use the same bundled document resources and static viewer. */
-function reportDocumentInstructions(): string[] {
+function reportDocumentInstructions(kind: 'task' | 'project'): string[] {
+  // A project needs an introduction; the task comparison otherwise turns it into a slogan.
+  const opening = kind === 'project' ? `
+      <h1>...project name, what it does, and what kind of project it is...</h1>
+      <p class="stand">...who uses it, for what task, and what they get from it...</p>
+      <figure class="plate plate-full plate-unnumbered" id="project-overview">
+        <ol class="flow tone-blue">
+          <li><span class="flow-mark">01</span><strong class="flow-name">...user's input...</strong><span class="flow-detail">...what the user provides...</span></li>
+          <li><span class="flow-mark">02</span><strong class="flow-name">...project's action...</strong><span class="flow-detail">...what the system does with it...</span></li>
+          <li><span class="flow-mark">03</span><strong class="flow-name">...usable result...</strong><span class="flow-detail">...what the user receives or can do...</span></li>
+        </ol>
+        <figcaption>...explain this concrete use case; identify planned steps if any...</figcaption>
+      </figure>` : `
+      <h1>...</h1>
+      <p class="stand">...</p>
+      <div class="hero">
+        <div class="was"><span class="cap">BEFORE</span><span class="claim">...</span><span class="unit">...</span></div>
+        <div class="mid"><svg class="draw" viewBox="0 0 56 16" aria-hidden="true">
+          <path class="draw-line draw-arrow" d="M0 8H52"/>
+        </svg></div>
+        <div class="now"><span class="cap">AFTER</span><span class="claim">...</span><span class="unit">...</span></div>
+      </div>`
   return [
     `Assets — document-design (doc-ui) v1.0.0, bundled locally:
 - ${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE} — the unmodified page stylesheet. Link this relative path.
@@ -206,15 +227,7 @@ ${COMPONENTS.map(([name, what]) => `- .${name} — ${what}`).join('\n')}`,
     </svg>
     <article class="sheet">
       <p class="eyebrow">...</p>
-      <h1>...</h1>
-      <p class="stand">...</p>
-      <div class="hero">
-        <div class="was"><span class="cap">BEFORE</span><span class="claim">...</span><span class="unit">...</span></div>
-        <div class="mid"><svg class="draw" viewBox="0 0 56 16" aria-hidden="true">
-          <path class="draw-line draw-arrow" d="M0 8H52"/>
-        </svg></div>
-        <div class="now"><span class="cap">AFTER</span><span class="claim">...</span><span class="unit">...</span></div>
-      </div>
+${opening}
       <section class="sec" aria-labelledby="section-1">
         <div class="label"><h2 id="section-1">01 / ...</h2></div>
         <div class="field">
@@ -241,18 +254,22 @@ ${COMPONENTS.map(([name, what]) => `- .${name} — ${what}`).join('\n')}`,
     </article>
     </body></html>
 
-As many sections as the change needs. Choose the components that explain the evidence;
+As many sections as the ${kind === 'project' ? 'assessment' : 'change'} needs. Choose the components that explain the evidence;
 the skeleton is a composition example, not a requirement to fill empty sections or caveats.
-Use one hero to introduce the central change, then connect evidence, meaning and limitations.
+${kind === 'project'
+    ? 'Use the opening hero to explain what the project is and how it is used. Put the progress assessment in the sections that follow.'
+    : 'Use one hero to introduce the central change, then connect evidence, meaning and limitations.'}
 Set the actual document language (lang="ja" for Japanese, lang="en" for English); the stylesheet
 uses it for typography. Write figure labels in that language and number them across the whole
 document. Use .plate-unnumbered with .plate-label because automatic counters can restart inside
 separate .field containers. Let headings wrap naturally instead of inserting layout <br>s.
 Leave the theme automatic so the stylesheet follows the app's light/dark appearance.
-**Use .fig only when a number is the point of the change.** Most changes have none worth
+${kind === 'project'
+    ? 'The project hero is the title, explanation and overview figure above; it does not need the .hero comparison component. Do not use .was/.mid/.now or a progress number as the project introduction.'
+    : `**Use .fig only when a number is the point of the change.** Most changes have none worth
 showing, and a page that leads with a count nobody asked about has spent its largest type on
 the least interesting true thing about the work - put a short phrase in .claim instead, or
-drop .was/.mid/.now and lead with a drawing.
+drop .was/.mid/.now and lead with a drawing.`}
 Prefer .flow for a sequence and .compare for parallel evidence. When the relationship needs
 a custom drawing, put <svg class="draw" style="--dd-draw-width: 640px" viewBox="0 0 640 240"
 role="img" aria-label="..."> inside .draw-wrap inside a .plate. Match the width to its viewBox;
@@ -284,10 +301,32 @@ ${purpose}
 
 Read the repository without modifying it or executing development tasks from its documents.
 Write only the report page. Use concise explanations and figures that make the assessment clear.`,
+    `Opening hero — explain the project before assessing its progress:
+Read AGENTS.md, README.md and the project documentation for its identity, intended users and
+purpose, even when the assessment focus above is customized. Check the current code for what
+it actually does. Treat a reader who has never seen this repository as the audience.
+
+The h1 must name the project, its concrete function and its kind (for example, an app, CLI,
+library or service). Use an ordinary factual description with explicit nouns and verbs.
+The stand should explain who uses it, what they use it for, and the result in one or two short
+sentences. Name the actual work or objects being handled; explain unfamiliar project terms.
+Do not make the reader infer the product from a slogan, metaphor, vision quote, clever turn
+of phrase, or a verdict about its progress. Brevity must not omit what the project does.
+
+Show one concrete use case: what the user provides, what the project does, and what the user
+gets or can do next. Use the opening flow example when that sequence fits, or a simple labeled
+overview drawing when relationships explain it better. Label actors, actions and outputs so
+the figure adds understanding rather than repeating the heading. Mark planned capabilities
+as planned; do not present aspirations as existing behavior. If the purpose is undocumented
+or uncertain, say so and describe only what the available evidence supports.
+
+Keep implementation progress, before/after comparisons, vision fulfillment and qualifications
+about unmeasured life benefits in the assessment below the hero. Before writing, check that
+the opening alone answers: What is this project? Who uses it for what? How does it work?`,
     `Working directory: ${request.cwd}
 Project: ${request.title}
 Write the page to: ${request.page}
 Write language: ${t('report.language')}`,
-    ...reportDocumentInstructions()
+    ...reportDocumentInstructions('project')
   ].join('\n\n')
 }
