@@ -261,8 +261,19 @@ export function describeOperation(name) {
   return { name: operation.name, input: z.toJSONSchema(operation.input, { unrepresentable: 'any', io: 'input' }), output: z.toJSONSchema(operation.output, { unrepresentable: 'any' }) }
 }
 
+/**
+ * The input an operation receives from the command line. One that takes a single ID reads it
+ * bare (`quuu projects remove ID`), the way a person and an agent both write it first; quoted
+ * JSON, `-` and `@file` keep working. Everything else is JSON.
+ */
+export function operationInput(name, text) {
+  if (text === undefined || text === '-' || text.startsWith('@') || text.startsWith('"')) return jsonInput(text)
+  const operation = operations().find(operation => operation.name === name)
+  return operation?.input instanceof z.ZodString ? text : jsonInput(text)
+}
+
 export async function callOperation(name, input) {
-  const parsed = jsonInput(input)
+  const parsed = operationInput(name, input)
   connect()
   return client.call(name, parsed)
 }

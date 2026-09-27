@@ -178,7 +178,9 @@ process.stdout.on('error', error => {
 })
 try {
   if (process.argv.length === 2) program.outputHelp()
-  else await program.parseAsync()
+  // Always Node's argv layout: on Quuu's own runtime (bin/quuu without Node) Commander would
+  // otherwise read it as a packaged Electron app and take the script path for a command
+  else await program.parseAsync(process.argv, { from: 'node' })
 } catch (error) {
   if (error instanceof CommanderError) process.exitCode = error.exitCode
   else {

@@ -1,5 +1,5 @@
 import { execFile } from 'node:child_process'
-import { cpSync, mkdtempSync, rmSync } from 'node:fs'
+import { chmodSync, cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { promisify } from 'node:util'
@@ -53,6 +53,22 @@ describe('CLI help and argument validation', () => {
     expect(last.stdout).toBe(first.stdout)
   })
 
+  it('runs on the app’s own runtime inside Quuu.app when Node is not on PATH', async () => {
+    const contents = mkdtempSync(join(tmpdir(), 'quuu-bundle-'))
+    try {
+      const bin = join(contents, 'Resources', 'bin')
+      mkdirSync(bin, { recursive: true })
+      mkdirSync(join(contents, 'MacOS'))
+      cpSync(resolve(import.meta.dirname, '../out/cli/quuu.mjs'), join(bin, 'quuu.mjs'))
+      cpSync(cli, join(bin, 'quuu'))
+      // Stands in for Quuu's executable: runs the script only when asked to behave as Node
+      writeFileSync(join(contents, 'MacOS', 'Quuu'), `#!/bin/sh\n[ "$ELECTRON_RUN_AS_NODE" = 1 ] || exit 9\nexec "${process.execPath}" "$@"\n`)
+      chmodSync(join(contents, 'MacOS', 'Quuu'), 0o755)
+      const result = await execute(join(bin, 'quuu'), ['tasks', 'list', '--help'], { env: { ...env, PATH: '/usr/bin:/bin' } })
+      expect(result.stdout).toContain('--query')
+    } finally { rmSync(contents, { recursive: true, force: true }) }
+  })
+
   it('can display help with all lazy runtime chunks absent', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'quuu-help-'))
     try {
@@ -62,6 +78,21 @@ describe('CLI help and argument validation', () => {
       expect(result.stdout).toContain('--query')
       expect(result.stderr).toBe('')
     } finally { rmSync(directory, { recursive: true, force: true }) }
+  })
+})
+
+describe('CLI operation input', () => {
+  // Input is read before connecting, so without an app the error says which one happened
+  const fails = (args: string[]): Promise<unknown> => execute(cli, args, { env }).catch((error: unknown) => error)
+
+  it('reads a single ID bare, as it is first written', async () => {
+    for (const args of [['projects', 'remove', 'prj_quuu'], ['agents', 'reset-limit', 'agt_1'], ['projects', 'remove', '"prj_quuu"']]) {
+      expect(await fails(args)).toHaveProperty('stderr', expect.stringContaining('Cannot read Quuu connection settings'))
+    }
+  })
+
+  it('still reads JSON for every other input', async () => {
+    expect(await fails(['settings', 'set', 'theme'])).toHaveProperty('stderr', expect.stringMatching(/not valid JSON/))
   })
 })
 

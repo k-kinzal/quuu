@@ -59,7 +59,8 @@ Multi-line instruction.
 EOF
 ```
 
-`--json` / the positional argument is operation **input**. Output is JSON for agents and pipes
+An operation that takes a single ID reads it bare (`quuu agents reset-limit AGENT_ID`,
+`quuu rules enqueue RULE_ID`). `--json` / the positional argument is operation **input**. Output is JSON for agents and pipes
 (`--output json|table` overrides it). `--query` applies a
 [JMESPath](https://jmespath.org/tutorial.html) expression to the whole result. Quote it with
 single quotes so backticks and `&` survive the shell:
