@@ -31,6 +31,18 @@ export const hooks = {
     "incomplete": "実行タイミング・実行先・指示を設定",
     "history": "最近の実行（削除済みタスクを含む）",
     "execution": "フック: {{name}}",
+    "activity": "フック",
+    "agentShort": "AI",
+    "commandShort": "Shell",
+    "builtinShort": "自動",
+    "reportName": "変更レポート",
+    "reportSummary": {
+      "generating": "このタスクの変更レポートを作成しています…",
+      "ready": "変更レポートは「レポート」タブから確認できます。",
+      "failed": "変更レポートを作成できませんでした。"
+    },
+    "loadingOutput": "出力を読み込んでいます…",
+    "noOutput": "出力なしで終了しました。",
     "openLog": "ログ全体を開く",
     "output": "出力（末尾64 KiB）",
     "waitingOutput": "出力を待っています…",

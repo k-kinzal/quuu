@@ -97,6 +97,21 @@ export const TranscriptTurnBody = styled('div')(({ theme }) => ({
   gap: theme.spacing(2)
 }))
 
+/** An auxiliary phase stays in the transcript's reading flow, bounded by quiet rules. */
+export const TranscriptInterlude = styled('section')(({ theme }) => ({
+  minWidth: 0,
+  marginBottom: theme.spacing(6),
+  paddingBlock: theme.spacing(3),
+  borderBlock: `1px solid ${theme.palette.border.subtle}`
+}))
+
+/** Prose and metadata inside an action share the code sections' inset. */
+export const TranscriptDetailSection = styled('div')(({ theme }) => ({
+  minWidth: 0,
+  padding: theme.spacing(3),
+  '& > article:last-child': { marginBottom: 0 }
+}))
+
 export const TranscriptTurnText = styled('div', { shouldForwardProp: blockProps('role') })<{
   role?: 'user' | 'assistant' | 'system'
 }>(({ theme, role }) => ({
@@ -254,9 +269,10 @@ export const TranscriptToolDetail = styled('div')(({ theme }) => ({
   '& > :not(:first-child)': { borderTop: `1px solid ${theme.palette.border.subtle}` }
 }))
 
-export const TranscriptToolLine = styled('button', { shouldForwardProp: blockProps('outcome') })<{
+export const TranscriptToolLine = styled('button', { shouldForwardProp: blockProps('outcome', 'targetKind') })<{
   outcome?: 'ok' | 'error' | 'pending' | 'more'
-}>(({ theme, outcome = 'ok' }) => ({
+  targetKind?: 'code' | 'text'
+}>(({ theme, outcome = 'ok', targetKind = 'code' }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(2),
@@ -280,7 +296,7 @@ export const TranscriptToolLine = styled('button', { shouldForwardProp: blockPro
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
-    fontFamily: outcome === 'more' ? theme.typography.fontFamily : theme.typography.fontFamilyMono,
+    fontFamily: outcome === 'more' || targetKind === 'text' ? theme.typography.fontFamily : theme.typography.fontFamilyMono,
     ...theme.typography.caption,
     color:
       outcome === 'error'

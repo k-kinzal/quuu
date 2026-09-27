@@ -31,6 +31,18 @@ export const hooks = {
     "incomplete": "Requires an event, execution target and instructions",
     "history": "Recent executions (including deleted tasks)",
     "execution": "Hook: {{name}}",
+    "activity": "Hooks",
+    "agentShort": "AI",
+    "commandShort": "Shell",
+    "builtinShort": "Auto",
+    "reportName": "Change report",
+    "reportSummary": {
+      "generating": "Writing the change report for this task…",
+      "ready": "The change report is available in the Report tab.",
+      "failed": "The change report could not be generated."
+    },
+    "loadingOutput": "Loading output…",
+    "noOutput": "Finished without output.",
     "openLog": "Open full log",
     "output": "Output (latest 64 KiB)",
     "waitingOutput": "Waiting for output…",

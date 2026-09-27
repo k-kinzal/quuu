@@ -1,10 +1,11 @@
-import { HookHistory } from './HookHistory.js'
+import { HookTranscript } from './HookHistory.js'
 import { Alert, Button, ContentInset, Text } from '@design-system/react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { Task } from '../../../api/schemas/tasks.js'
 
 import { useSessionPaging } from '../interaction/useSessionPaging.js'
+import { useHookHistory } from '../interaction/useHookHistory.js'
 import { focusAny, pane } from '../interaction/focus.js'
 import { deliveredInstructions, failureReason, nextSend } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
@@ -85,6 +86,7 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
    * so placing the next send there makes it unreadable which run it follows.
    */
   const latest = runs.length === 0 || runs[0]?.id === selectedRunId
+  const hooks = useHookHistory({ taskId: task.id, active: active && latest && !session?.hasNewer })
   /*
    * What the agent already holds out of the instruction that waits to be sent. Only the end of
    * the conversation can say it, so nothing is claimed while a newer page is still unread.
@@ -112,7 +114,7 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
     moved.current = false
   }, [active, session])
 
-  const revision = useMemo(() => ({ messages, next: next?.value }), [messages, next?.value])
+  const revision = useMemo(() => ({ messages, next: next?.value, hooks: hooks.runs, report: hooks.report }), [messages, next?.value, hooks.runs, hooks.report])
 
   const page = async (direction: 'older' | 'newer' | 'latest'): Promise<void> => {
     if (paging.current) return
@@ -283,8 +285,8 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             </ContentInset>
           )}
 
-          {latest && <ContentInset space="section"><HookHistory taskId={task.id} active={active} /></ContentInset>}
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
+          {latest && !session?.hasNewer && <HookTranscript key={task.id} history={hooks} active={active} />}
           {!session?.hasNewer && next && <PendingTurn task={task} next={next} />}
         </ChatScroll>
 

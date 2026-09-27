@@ -1680,6 +1680,16 @@ if (process.env.QUUU_FIXTURE_HOOKS === '1') {
   const project = repo.insertProject(db, { ...projects[0], name: 'Lifecycle hooks', path: cwd, targetKind: 'agent', targetId: agent.id,
     taskHooks: [{ id: definition.id, enabled: true, events: ['stopped', 'beforeComplete'] }] })
   const task = repo.insertTask(db, { projectId: project.id, title: 'Inspect lifecycle hook execution', prompt: 'Review the hook history below.', status: 'review' })
+  const runId = addRun(task.id, 'succeeded', 5, 120, '', cwd)
+  repo.setTaskStatus(db, task.id, 'review', { currentRunId: runId })
+  writeFileSync(join(dir, 'logs', `${runId}.jsonl`), [
+    { type: 'user', timestamp: iso(5), message: { role: 'user', content: 'Refine the conversation and verify the changes.' } },
+    { type: 'assistant', timestamp: iso(3), message: { role: 'assistant', content: [
+      { type: 'tool_use', id: 'fixture-check', name: 'Bash', input: { command: 'npm run check' } }
+    ] } },
+    { type: 'user', timestamp: iso(3), message: { role: 'user', content: [{ type: 'tool_result', tool_use_id: 'fixture-check', content: 'All checks passed.' }] } },
+    { type: 'assistant', timestamp: iso(3), message: { role: 'assistant', content: [{ type: 'text', text: 'The conversation is updated and all checks passed. The changes are ready to review.' }] } }
+  ].map(line => JSON.stringify(line)).join('\n') + '\n')
   const logPath = join(dir, 'fixture-hook.log')
   writeFileSync(logPath, 'Inspected the working directory. No changes to commit.\n')
   repo.saveHookRun(db, { id: 'fixture-hook', taskId: task.id, taskTitle: task.title, projectId: project.id,
@@ -1687,6 +1697,12 @@ if (process.env.QUUU_FIXTURE_HOOKS === '1') {
     input: definition.prompt, agentId: agent.id, createdAt: iso(2), startedAt: iso(2), endedAt: iso(1), exitCode: 0,
     error: '', logPath, definition: { ...HOOK_DEFAULTS, ...definition }, project, pid: null,
     exitPath: logPath + '.exit', authDir: null, sessionId: 'fixture-hook-session', logAdapter: 'stdout', limitPatterns: [] })
+  const failedLog = join(dir, 'fixture-hook-failed.log')
+  writeFileSync(failedLog, 'Documentation check failed: docs/example.md is missing.\n')
+  repo.saveHookRun(db, { ...repo.getHookRun(db, 'fixture-hook')!, id: 'fixture-hook-failed', name: 'Validate generated documentation before publishing',
+    kind: 'command', input: 'test -f docs/example.md', status: 'failed', event: 'review', createdAt: iso(1), startedAt: iso(1), endedAt: iso(0.9),
+    exitCode: 1, error: 'Command exited with code 1', logPath: failedLog, logAdapter: 'stdout' })
+  repo.saveTaskReport(db, { ...repo.getTaskReport(db, reportTaskId)!, taskId: task.id, startedAt: iso(0.8), endedAt: iso(0.5) })
 }
 
 console.log(`fixture: ${dir}`)

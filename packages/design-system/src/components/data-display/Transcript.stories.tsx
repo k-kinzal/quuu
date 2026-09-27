@@ -5,7 +5,11 @@ import { Markdown } from './Markdown.js'
 import { Reveal } from '../surfaces/Reveal.js'
 import { ThemeProvider } from '../../theme/ThemeProvider.js'
 import { useTheme } from '@mui/material/styles'
+import { Text } from './Text.js'
+import { StatusIndicator } from './StatusIndicator.js'
+import { Button } from '../inputs/Button.js'
 import {
+  TranscriptDetailSection, TranscriptInterlude, TranscriptTurnHead, TranscriptTurnRole,
   TranscriptToolCluster, TranscriptToolDetail, TranscriptToolEntry, TranscriptToolError, TranscriptToolLine, TranscriptToolVerb,
   TranscriptTurn, TranscriptTurnBody, TranscriptTurnText, type TranscriptToolTone
 } from './Transcript.js'
@@ -72,6 +76,43 @@ function ComfortableExamples(): JSX.Element {
 }
 
 export const Comfortable: StoryObj = { render: () => <ComfortableExamples /> }
+
+function BackgroundAction({ name, status = 'Completed' }: { name: string; status?: 'Completed' | 'Running' | 'Failed' }): JSX.Element {
+  const [open, setOpen] = useState(false)
+  const id = useId()
+  return <TranscriptToolEntry open={open}>
+    <TranscriptToolLine targetKind="text" outcome={status === 'Failed' ? 'error' : 'ok'} aria-expanded={open} aria-controls={id} title={name} onClick={() => setOpen(!open)}>
+      <TranscriptToolVerb>Shell</TranscriptToolVerb><span data-target>{name}</span>
+      <span aria-hidden="true"><StatusIndicator shape={status === 'Running' ? 'spinner' : status === 'Failed' ? 'cross' : 'check'} tone={status === 'Failed' ? 'danger' : status === 'Running' ? 'accent' : 'neutral'} label={status} /></span>
+      <Text size="xs" fixed tone={status === 'Failed' ? 'danger' : status === 'Running' ? 'accent' : 'tertiary'}>{status}</Text>
+    </TranscriptToolLine>
+    <Reveal open={open}>{() => <TranscriptToolDetail id={id}>
+      <TranscriptDetailSection><Text size="xs" tone="secondary">After processing · 21:30 · 12s</Text></TranscriptDetailSection>
+      <TranscriptCode label="Command" code="npm run check" language="sh" />
+      <TranscriptCode label="Output" code={status === 'Failed' ? 'Validation failed. Check the output and retry.' : 'Validation complete. All checks passed.'} tone={status === 'Failed' ? 'danger' : 'default'} />
+      <TranscriptDetailSection><Button size="xs" variant="ghost">Open full log</Button></TranscriptDetailSection>
+    </TranscriptToolDetail>}</Reveal>
+  </TranscriptToolEntry>
+}
+
+function InterludeExample(): JSX.Element {
+  return <>
+    <TranscriptTurn><TranscriptTurnText><Markdown>The update is ready. Background actions follow the response in the same reading flow.</Markdown></TranscriptTurnText></TranscriptTurn>
+    <TranscriptInterlude aria-label="Background actions">
+      <TranscriptTurnHead><TranscriptTurnRole>Background actions</TranscriptTurnRole></TranscriptTurnHead>
+      <BackgroundAction name="Validate the changes" />
+      <BackgroundAction name="Prepare the summary" status="Running" />
+      <BackgroundAction name="Publish the generated documentation with a deliberately long descriptive name" status="Failed" />
+    </TranscriptInterlude>
+    <TranscriptTurn><TranscriptTurnText role="user"><Markdown>Please continue with the next change.</Markdown></TranscriptTurnText></TranscriptTurn>
+  </>
+}
+
+export const AuxiliaryPhase: StoryObj = { render: () => <InterludeExample /> }
+export const NarrowAuxiliaryPhase: StoryObj = { render: () => <div style={{ maxWidth: 340 }}><InterludeExample /></div> }
+export const ComfortableAuxiliaryPhase: StoryObj = {
+  render: () => <ThemeProvider density="comfortable"><InterludeExample /></ThemeProvider>
+}
 
 export const SupportingColors: StoryObj = {
   render: () => (

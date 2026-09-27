@@ -1,5 +1,20 @@
 # Call-site feedback and decisions
 
+## 2026-09-28 Auxiliary execution phases in a conversation
+
+- Request: hook history and the built-in report looked like settings rows appended
+  to the chat, with a permanent log button and unrelated disclosure styling.
+- Accepted: `TranscriptInterlude` bounds an auxiliary phase with quiet rules at
+  the conversation's reading width. `TranscriptToolLine targetKind="text"` supports
+  named operations in the body typeface, keeping the existing disclosure behavior.
+  `TranscriptDetailSection` aligns metadata and prose with embedded code sections.
+- Hook names, status shapes and wording, chronological order, report semantics,
+  fetching and actions remain owned by the Mac app. Empty history has no surface.
+- Verification: Transcript auxiliary-phase stories cover narrow and comfortable
+  layouts; the isolated hook fixture contains the surrounding conversation,
+  successful and failed executions, and the built-in report. Regression tests
+  cover lazy log reads, disclosure actions and the final output on completion.
+
 ## 2026-09-28 Reading repository documents beside a persistent input
 
 - Accepted: `DocumentBody` gives documents an independently scrolling surface,

@@ -1,49 +1,105 @@
-import { buildTurns } from '../model/summarize.js'
-import { SessionTurn } from './SessionTurn.js'
-import { Button, CodeBlock, Column, Disclosure, DisclosureCaret, DisclosureDetail, DisclosureSummary, FieldHint, Row, Text } from '@design-system/react'
+import { Button, Column, FieldHint, Reveal, Row, Text, TranscriptCode, TranscriptDetailSection, TranscriptInterlude, TranscriptToolDetail, TranscriptToolEntry, TranscriptToolLine, TranscriptToolVerb, TranscriptTurnHead, TranscriptTurnRole, conversationBlock } from '@design-system/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 import type { HookRun } from '../../../api/schemas/hooks.js'
+import type { TaskReport } from '../../../api/schemas/report.js'
+import { useHookHistory } from '../interaction/useHookHistory.js'
+import { clockOrDate, duration } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
+import { buildTurns } from '../model/summarize.js'
 import { queryClient } from '../state/queryClient.js'
+import { HookStatus } from '../ui/HookStatus.js'
+import { SessionTurn } from './SessionTurn.js'
 
-export function HookHistory({ taskId, projectId, active = true }: { taskId?: string; projectId?: string; active?: boolean }): JSX.Element {
-  const runs = useQuery({ queryKey: ['hooks.list', taskId, projectId], queryFn: () => window.quuu.hooks.list({ taskId, projectId, limit: 100 }),
-    enabled: active, refetchInterval: active ? 2000 : false, retry: false, networkMode: 'always' }, queryClient)
-  const report = useQuery({ queryKey: ['hooks.report', taskId], queryFn: () => window.quuu.report.get(taskId!),
-    enabled: active && Boolean(taskId), refetchInterval: active && taskId ? 2000 : false, retry: false, networkMode: 'always' }, queryClient)
-  return <Column gap="sm">
-    {runs.error && <FieldHint tone="danger">{runs.error.message}</FieldHint>}
-    {(runs.data ?? []).map(run => <HookEntry key={run.id} run={run} active={active} />)}
-    {report.data && <Row gap="sm">
-      <Text>{t('hooks.builtinReport')} · {t(report.data.status === 'generating' ? 'hooks.status.running' : report.data.status === 'ready' ? 'hooks.status.succeeded' : 'hooks.status.failed')}</Text>
-      <Button size="xs" onClick={() => void window.quuu.system.reveal(report.data!.logPath)}>{t('hooks.openLog')}</Button>
-    </Row>}
-  </Column>
+export function HookHistory(): JSX.Element | null {
+  const history = useHookHistory({})
+  return <HookTranscript history={history} showTask />
 }
-function HookEntry({ run, active }: { run: HookRun; active: boolean }): JSX.Element {
+
+export function HookTranscript({ history, active = true, showTask = false }: {
+  history: ReturnType<typeof useHookHistory>; active?: boolean; showTask?: boolean
+}): JSX.Element | null {
+  const id = useId()
+  const entries = [
+    ...(history.runs ?? []).map(run => ({ id: run.id, at: run.createdAt, body: <HookEntry run={run} active={active} showTask={showTask} /> })),
+    ...(history.report ? [{ id: `report:${history.report.startedAt}`, at: history.report.startedAt, body: <ReportEntry report={history.report} /> }] : [])
+  ].sort((a, b) => showTask ? b.at.localeCompare(a.at) : a.at.localeCompare(b.at))
+  if (!entries.length && !history.error) return null
+  return <TranscriptInterlude aria-labelledby={id}>
+    <TranscriptTurnHead><TranscriptTurnRole id={id}>{t('hooks.activity')}</TranscriptTurnRole></TranscriptTurnHead>
+    {history.error && <FieldHint tone="danger">{history.error.message}</FieldHint>}
+    {entries.map(entry => <div key={entry.id} {...conversationBlock(`hook:${entry.id}`)}>{entry.body}</div>)}
+  </TranscriptInterlude>
+}
+
+function ExecutionEntry({ name, kind, status, open, onToggle, children }: {
+  name: string; kind: string; status: HookRun['status']; open: boolean; onToggle(): void; children: () => ReactNode
+}): JSX.Element {
+  const id = useId()
+  return <TranscriptToolEntry open={open}>
+    <TranscriptToolLine type="button" targetKind="text" outcome={status === 'failed' ? 'error' : 'ok'}
+      aria-expanded={open} aria-controls={id} onClick={onToggle} title={name}>
+      <TranscriptToolVerb>{kind}</TranscriptToolVerb>
+      <span data-target>{name}</span>
+      <HookStatus status={status} />
+    </TranscriptToolLine>
+    <Reveal open={open}>{() => <TranscriptToolDetail id={id}>{children()}</TranscriptToolDetail>}</Reveal>
+  </TranscriptToolEntry>
+}
+
+function ExecutionTime({ startedAt, endedAt }: { startedAt: string; endedAt: string | null }): JSX.Element {
+  return <Text size="xs" tone="tertiary" tabular title={new Date(startedAt).toLocaleString()}>
+    {clockOrDate(startedAt)}{endedAt && ` · ${duration(startedAt, endedAt)}`}
+  </Text>
+}
+
+function HookEntry({ run, active, showTask }: { run: HookRun; active: boolean; showTask: boolean }): JSX.Element {
   const [open, setOpen] = useState(false)
   const running = ['queued', 'starting', 'running'].includes(run.status)
-  const log = useQuery({ queryKey: ['hooks.log', run.id], queryFn: () => window.quuu.hooks.log(run.id), enabled: open && active,
+  // Include the status so an open log fetches its final output when polling stops.
+  const log = useQuery({ queryKey: ['hooks.log', run.id, run.status], queryFn: () => window.quuu.hooks.log(run.id), enabled: open && active,
     refetchInterval: open && active && running ? 1000 : false, retry: false, networkMode: 'always' }, queryClient)
   const action = useMutation({ mutationKey: ['hooks', running ? 'cancel' : 'retry'], meta: { feedback: 'inline' }, mutationFn: async () => { if (running) await window.quuu.hooks.cancel(run.id); else await window.quuu.hooks.retry(run.id) },
     onSuccess: async () => { await queryClient.invalidateQueries({ queryKey: ['hooks.list'] }); await queryClient.invalidateQueries({ queryKey: ['hooks.log', run.id] }) }, networkMode: 'always' }, queryClient)
-  return <Disclosure>
-    <DisclosureSummary type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
-      <DisclosureCaret open={open} /><Text>{t('hooks.execution', { name: run.name })} · {t(`hooks.status.${run.status}`)}</Text>
-    </DisclosureSummary>
-    {open && <DisclosureDetail><Column gap="sm">
-      <Text tone="secondary">{run.taskTitle} · {t(`hooks.eventsLabels.${run.event}`)} · {new Date(run.createdAt).toLocaleString()}</Text>
-      <Text selectable>{run.cwd}</Text>
-      <Text>{t(run.kind === 'agent' ? 'hooks.prompt' : 'hooks.command')}</Text><CodeBlock>{run.input}</CodeBlock>
-      {run.error && <FieldHint tone="danger">{run.error}</FieldHint>}
-      <Text>{t('hooks.output')}</Text>
-      {log.data?.messages.length ? buildTurns(log.data.messages).map(turn => <SessionTurn key={turn.id} turn={turn} cwd={run.cwd} />) : <CodeBlock>{log.data?.output || t('hooks.waitingOutput')}</CodeBlock>}
-      {(log.error || action.error) && <FieldHint tone="danger">{log.error?.message || action.error?.message}</FieldHint>}
-      <Row gap="sm">
-        <Button size="xs" disabled={action.isPending} onClick={() => action.mutate()}>{t(running ? 'hooks.cancel' : 'hooks.retry')}</Button>
-        <Button size="xs" onClick={() => void window.quuu.system.reveal(run.logPath)}>{t('hooks.openLog')}</Button>
+  return <ExecutionEntry name={run.name} kind={t(run.kind === 'agent' ? 'hooks.agentShort' : 'hooks.commandShort')} status={run.status} open={open} onToggle={() => setOpen(!open)}>
+    {() => <>
+      <TranscriptDetailSection><Column gap="sm">
+        <Row gap="sm" wrap>
+          <Text size="xs" tone="secondary">{t(`hooks.eventsLabels.${run.event}`)}</Text>
+          <ExecutionTime startedAt={run.startedAt ?? run.createdAt} endedAt={run.endedAt} />
+        </Row>
+        {showTask && <Text size="sm" tone="secondary" selectable>{run.taskTitle}</Text>}
+        <Text size="xs" tone="tertiary" mono truncate="start" title={run.cwd} selectable>{run.cwd}</Text>
+        {run.error && <FieldHint tone="danger">{run.error}</FieldHint>}
+      </Column></TranscriptDetailSection>
+      <TranscriptCode label={t(run.kind === 'agent' ? 'hooks.prompt' : 'hooks.command')} code={run.input} language={run.kind === 'command' ? 'sh' : undefined} />
+      {log.data?.messages.length ? <TranscriptDetailSection>
+        {buildTurns(log.data.messages).map(turn => <SessionTurn key={turn.id} turn={turn} cwd={run.cwd} />)}
+      </TranscriptDetailSection> : log.data?.output ? <TranscriptCode label={t('hooks.output')} code={log.data.output} tone={run.status === 'failed' ? 'danger' : 'default'} />
+        : !log.error && <TranscriptDetailSection><Text size="xs" tone="tertiary">{t(log.isLoading ? 'hooks.loadingOutput' : running ? 'hooks.waitingOutput' : 'hooks.noOutput')}</Text></TranscriptDetailSection>}
+      <TranscriptDetailSection><Column gap="sm">
+        {(log.error || action.error) && <FieldHint tone="danger">{log.error?.message || action.error?.message}</FieldHint>}
+        <Row gap="sm" wrap>
+          <Button size="xs" disabled={action.isPending} onClick={() => action.mutate()}>{t(running ? 'hooks.cancel' : 'hooks.retry')}</Button>
+          <Button size="xs" variant="ghost" onClick={() => void window.quuu.system.reveal(run.logPath)}>{t('hooks.openLog')}</Button>
+        </Row>
+      </Column></TranscriptDetailSection>
+    </>}
+  </ExecutionEntry>
+}
+
+function ReportEntry({ report }: { report: TaskReport }): JSX.Element {
+  const [open, setOpen] = useState(false)
+  const status = report.status === 'generating' ? 'running' : report.status === 'ready' ? 'succeeded' : 'failed'
+  return <ExecutionEntry name={t('hooks.reportName')} kind={t('hooks.builtinShort')} status={status} open={open} onToggle={() => setOpen(!open)}>
+    {() => <TranscriptDetailSection><Column gap="sm">
+      <Row gap="sm" wrap>
+        <Text size="xs" tone="secondary">{t('hooks.builtinReport')}</Text>
+        <ExecutionTime startedAt={report.startedAt} endedAt={report.endedAt} />
       </Row>
-    </Column></DisclosureDetail>}
-  </Disclosure>
+      <Text size="sm" tone="secondary">{t(`hooks.reportSummary.${report.status}`)}</Text>
+      {report.error && <FieldHint tone="danger">{report.error}</FieldHint>}
+      {report.logPath && <Row><Button size="xs" variant="ghost" onClick={() => void window.quuu.system.reveal(report.logPath)}>{t('hooks.openLog')}</Button></Row>}
+    </Column></TranscriptDetailSection>}
+  </ExecutionEntry>
 }
