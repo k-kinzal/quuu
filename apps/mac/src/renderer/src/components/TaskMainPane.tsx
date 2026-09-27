@@ -36,6 +36,7 @@ import { t } from '../model/i18n/index.js'
 import { copyText, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useTaskReport } from '../interaction/useTaskReport.js'
+import { useNativeViewHidden } from '../interaction/useNativeViewHidden.js'
 import { overallCheck } from '../model/pullRequestStatus.js'
 import { buildFileTree, projectReviewTree, treeChange } from '../model/reviewTree.js'
 import { useStore } from '../state/store.js'
@@ -240,10 +241,11 @@ function PullRequestBrowser({
   onError(reason: string): void
 }): JSX.Element {
   const host = useRef<HTMLDivElement>(null)
+  const hidden = useNativeViewHidden()
 
   useLayoutEffect(() => {
     const element = host.current
-    if (!element) return
+    if (!element || hidden) return
     let frame: number | null = null
     let active = true
     let reported = false
@@ -285,7 +287,7 @@ function PullRequestBrowser({
       window.removeEventListener('resize', schedule)
       void window.quuu.review.hidePullRequest(tab.key)
     }
-  }, [onError, tab])
+  }, [onError, hidden, tab])
 
   return <EmbeddedBrowserHost ref={host} aria-label={`Pull Request #${String(tab.pullRequest.number)}`} />
 }

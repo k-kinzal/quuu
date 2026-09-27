@@ -8,6 +8,7 @@ import { cancelGitHubApp, createGitHubApp, fetchBotUserId } from '../platform/gi
 import { openExternalLink } from '../platform/externalLinks.js'
 import { closePullRequestView, hidePullRequestView, showPullRequestView } from '../platform/pullRequestViews.js'
 import { hideReportView, showReportView } from '../platform/reportViews.js'
+import { showDocumentView, hideDocumentView, navigateDocumentView } from '../platform/documentViews.js'
 import type { DesktopOperations } from '../api/host.js'
 
 export function desktopOperations(owner: BrowserWindow): DesktopOperations {
@@ -110,5 +111,8 @@ export function desktopOperations(owner: BrowserWindow): DesktopOperations {
     },
     showReport: request => showReportView(owner, request),
     hideReport: () => hideReportView(owner),
+    showDocument: request => showDocumentView(owner, request),
+    hideDocument: () => hideDocumentView(owner),
+    navigateDocument: direction => navigateDocumentView(owner, direction),
   }
 }

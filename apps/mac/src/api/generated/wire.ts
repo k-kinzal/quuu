@@ -1094,6 +1094,204 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "documents.list": {
+    "method": "documentsList",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "branch": {
+          "kind": "string"
+        },
+        "revision": {
+          "kind": "string"
+        },
+        "files": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "path": {
+                "kind": "string"
+              },
+              "format": {
+                "kind": "string",
+                "choices": [
+                  "markdown",
+                  "text"
+                ]
+              }
+            },
+            "required": [
+              "path",
+              "format"
+            ]
+          }
+        },
+        "websites": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "title": {
+                "kind": "string"
+              },
+              "url": {
+                "kind": "string"
+              }
+            },
+            "required": [
+              "title",
+              "url"
+            ]
+          }
+        }
+      },
+      "required": [
+        "branch",
+        "revision",
+        "files",
+        "websites"
+      ]
+    }
+  },
+  "documents.read": {
+    "method": "documentsRead",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "projectId": {
+          "kind": "string"
+        },
+        "path": {
+          "kind": "string"
+        },
+        "revision": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "path",
+        "revision"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "content": {
+          "kind": "string"
+        },
+        "format": {
+          "kind": "string",
+          "choices": [
+            "markdown",
+            "text"
+          ]
+        },
+        "baseUrl": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "content",
+        "format",
+        "baseUrl"
+      ]
+    }
+  },
+  "documents.show": {
+    "method": "documentsShow",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "projectId": {
+          "kind": "string"
+        },
+        "url": {
+          "kind": "string"
+        },
+        "bounds": {
+          "kind": "object",
+          "fields": {
+            "x": {
+              "kind": "number"
+            },
+            "y": {
+              "kind": "number"
+            },
+            "width": {
+              "kind": "number"
+            },
+            "height": {
+              "kind": "number"
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ]
+        }
+      },
+      "required": [
+        "projectId",
+        "url",
+        "bounds"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "ok": {
+          "kind": "boolean"
+        },
+        "reason": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "ok"
+      ]
+    }
+  },
+  "documents.hide": {
+    "method": "documentsHide",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "ok": {
+          "kind": "boolean"
+        },
+        "reason": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "ok"
+      ]
+    }
+  },
+  "documents.navigate": {
+    "method": "documentsNavigate",
+    "input": {
+      "kind": "string",
+      "choices": [
+        "back",
+        "forward",
+        "reload"
+      ]
+    },
+    "output": {
+      "kind": "void"
+    }
+  },
   "hooks.resolve": {
     "method": "hooksResolve",
     "input": {

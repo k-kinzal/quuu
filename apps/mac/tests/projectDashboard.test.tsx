@@ -3,6 +3,7 @@ import { createRouterClient, implement } from '@orpc/server'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
+import { SearchPicker } from '../../../packages/design-system/src/components/surfaces/SearchPicker.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import type { ProjectReport } from '../src/api/schemas/report.js'
 import { ProjectSchema } from '../src/api/schemas/projects.js'
@@ -12,7 +13,10 @@ import { queryClient } from '../src/renderer/src/state/queryClient.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { ProjectNavigation } from '../src/renderer/src/views/project/ProjectNavigation.js'
 import { ProjectDashboard } from '../src/renderer/src/views/project/ProjectDashboard.js'
+import { ProjectDocuments } from '../src/renderer/src/views/project/ProjectDocuments.js'
 import { ReportSettings } from '../src/renderer/src/views/settings/ReportSettings.js'
+import { DocumentWebsite } from '../src/renderer/src/components/DocumentWebsite.js'
+import { ReportPage } from '../src/renderer/src/components/ReportPage.js'
 
 const project = ProjectSchema.parse({
   id: 'p1', name: 'Project', path: '/tmp/project', color: '#123456', priority: 2,
@@ -26,6 +30,11 @@ const generate = vi.fn(() => Promise.resolve({ ok: true }))
 const show = vi.fn(() => Promise.resolve({ ok: true }))
 const hide = vi.fn(() => Promise.resolve({ ok: true }))
 const save = vi.fn()
+const listDocuments = vi.fn(() => Promise.resolve({ branch: 'main', revision: 'a'.repeat(40),
+  files: [{ path: 'README.md', format: 'markdown' as const }, { path: 'docs/guide.md', format: 'markdown' as const }],
+  websites: [{ title: 'Docs', url: 'https://example.com/docs/' }] }))
+const readDocument = vi.fn((path: string) => Promise.resolve({ content: path === 'README.md' ? '# Read me\n\n[Guide](docs/guide.md#install)' : '# Install\n\nUse this guide.',
+  format: 'markdown' as const, baseUrl: `https://quuu.invalid/${path}` }))
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -42,6 +51,12 @@ beforeEach(() => {
     right: 900, bottom: 650, width: 800, height: 600, toJSON: () => ({}) })
   const os = implement(contract)
   Object.defineProperty(window, 'quuu', { configurable: true, writable: true, value: createRouterClient({
+    documents: {
+      list: os.documents.list.handler(() => listDocuments()),
+      read: os.documents.read.handler(({ input }) => readDocument(input.path)),
+      show: os.documents.show.handler(() => show()), hide: os.documents.hide.handler(() => hide()),
+      navigate: os.documents.navigate.handler(() => undefined)
+    },
     report: {
       projectGet: os.report.projectGet.handler(() => get()),
       projectGenerate: os.report.projectGenerate.handler(() => generate()),
@@ -55,10 +70,35 @@ beforeEach(() => {
 afterEach(() => { cleanup(); queryClient.clear(); vi.restoreAllMocks() })
 
 describe('project navigation and dashboard', () => {
-  it('navigates between the three destinations and restores them with back and forward', async () => {
+  it.each(['documents', 'report'] as const)('lets the composer picker cover %s and restores the page when it closes', async surface => {
+    const onError = vi.fn()
+    const content = surface === 'documents'
+      ? <DocumentWebsite projectId={project.id} url="https://example.com/docs/" reload={false} onError={onError} />
+      : <ReportPage projectId={project.id} path="/tmp/report.html" onError={onError} />
+    const renderPage = (open: boolean): JSX.Element => <ThemeProvider>
+      <div role="listbox" aria-label="Tasks" />
+      {content}
+      <SearchPicker open={open} anchorEl={document.body} label="Choose AI" options={[{ value: 'ai', label: 'Project AI' }]}
+        value="ai" onChange={() => undefined} onClose={() => undefined} />
+    </ThemeProvider>
+    const view = render(renderPage(false))
+    await waitFor(() => expect(show).toHaveBeenCalled())
+    expect(hide).not.toHaveBeenCalled()
+    view.rerender(renderPage(true))
+    await waitFor(() => expect(hide).toHaveBeenCalled())
+    const calls = show.mock.calls.length
+    fireEvent.change(screen.getByRole('combobox', { name: 'Choose AI' }), { target: { value: 'No match' } })
+    expect(screen.queryByRole('option')).toBeNull()
+    expect(show.mock.calls).toHaveLength(calls)
+    view.rerender(renderPage(false))
+    await waitFor(() => expect(show.mock.calls.length).toBeGreaterThan(calls))
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('navigates between project destinations and restores them with back and forward', async () => {
     render(<ThemeProvider><ProjectNavigation project={project} /></ThemeProvider>)
     const nav = screen.getByRole('navigation', { name: 'Project navigation' })
-    expect(nav.querySelectorAll('button')).toHaveLength(3)
+    expect(nav.querySelectorAll('button')).toHaveLength(4)
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }))
     expect(useStore.getState()).toMatchObject({ projectDashboardOpen: true, projectSettingsOpen: false, detailOpen: false })
     fireEvent.click(screen.getByRole('button', { name: 'Project Settings' }))
@@ -71,6 +111,36 @@ describe('project navigation and dashboard', () => {
     expect(useStore.getState().projectDashboardOpen).toBe(true)
     await act(() => useStore.getState().goForward())
     expect(useStore.getState().projectSettingsOpen).toBe(true)
+  })
+
+  it('keeps Documents independent of report settings and restores it after leaving for Tasks', async () => {
+    useStore.setState({ settings: { ...DEFAULT_SETTINGS, reportEnabled: false } })
+    render(<ThemeProvider><ProjectNavigation project={project} /></ThemeProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Documents' }))
+    expect(useStore.getState()).toMatchObject({ projectDocumentsOpen: true, projectDashboardOpen: false, projectSettingsOpen: false })
+    fireEvent.click(screen.getByRole('button', { name: 'Tasks' }))
+    expect(useStore.getState().projectDocumentsOpen).toBe(false)
+    await act(() => useStore.getState().goBack())
+    expect(useStore.getState().projectDocumentsOpen).toBe(true)
+  })
+
+  it('reads relative document links, filters the navigation and hides a website when returning to a file', async () => {
+    HTMLElement.prototype.scrollIntoView = vi.fn()
+    render(<ThemeProvider><ProjectDocuments project={project} /></ThemeProvider>)
+    await screen.findByRole('heading', { name: 'Read me' })
+    fireEvent.click(screen.getByRole('link', { name: 'Guide' }))
+    await screen.findByRole('heading', { name: 'Install' })
+    expect(readDocument).toHaveBeenLastCalledWith('docs/guide.md')
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalled()
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a document…' }), { target: { value: 'guide' } })
+    expect(screen.queryByRole('button', { name: 'README.md' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'docs/guide.md' })).toBeTruthy()
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Find a document…' }), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: /Docs/ }))
+    await waitFor(() => expect(show).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'README.md' }))
+    await waitFor(() => expect(hide).toHaveBeenCalled())
+    await screen.findByRole('heading', { name: 'Read me' })
   })
 
   it('hides the dashboard when report AI or the project report setting is off', () => {

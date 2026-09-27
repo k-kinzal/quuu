@@ -1,5 +1,11 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  documents: {
+    gitFailed: 'Could not read the Git repository. Check the project directory.',
+    notFound: 'This document is no longer available. Refresh the document list.',
+    tooLarge: 'This document is larger than the 2 MB preview limit.',
+    loadFailed: 'Could not load this documentation website. Check the connection and try again.'
+  },
   updates: {
     check: 'Check for Updates…',
     checking: 'Checking for Updates…',

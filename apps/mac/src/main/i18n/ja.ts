@@ -1,6 +1,12 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  documents: {
+    gitFailed: 'Gitリポジトリを読み込めませんでした。プロジェクトのディレクトリを確認してください。',
+    notFound: 'このドキュメントは見つかりません。ドキュメント一覧を更新してください。',
+    tooLarge: 'このドキュメントはプレビューの上限（2 MB）を超えています。',
+    loadFailed: 'ドキュメントサイトを読み込めませんでした。接続を確認して再試行してください。'
+  },
   updates: {
     check: 'アップデートを確認…',
     checking: 'アップデートを確認中…',

@@ -54,6 +54,25 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 | Open in an IDE / editor | Opens the working directory in JetBrains / Xcode / VS Code and so on. Which app to use is chosen per project (Xcode is handed the `.xcworkspace` / `.xcodeproj`) |
 | View and queue from iPhone | State is passed through a folder in iCloud Drive, and the actions taken over there are imported. Each action carries **the state visible when it was tapped**, so crossed updates return to the human instead of silently overwriting |
 
+## Project documents
+
+Open **Documents** in a project's left navigation. The searchable list includes
+Markdown and text documents committed on the default branch; selecting one opens
+its preview. Markdown links can move between documents and heading anchors. The
+header names the branch, and Refresh reads its latest local commit. Uncommitted
+files and the currently checked-out feature branch do not affect this view.
+
+The default branch comes from `origin/HEAD`, with `main` / `master` as fallbacks.
+A repository without remotes and with one branch uses that branch. No fetch or
+checkout is performed. Root README variants also contribute published HTTPS
+Docs links, including linked badges. These websites open inside the preview,
+with page navigation and an action to open the original site in a browser.
+
+The task composer stays below every reading surface, including Documents,
+Dashboard, Needs review and task details. Adding a task keeps the current page
+open; Shift+⌘+Enter also opens the added task. Global and project settings omit
+the composer. Drafts remain available when returning from settings.
+
 ## Development
 
 ```sh

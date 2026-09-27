@@ -36,6 +36,12 @@ export const EditorPane = styled('section')(({ theme }) => ({
   background: theme.palette.surface.canvas
 }))
 
+/** A scrolling document with a bounded reading measure, independent of its navigation. */
+export const DocumentBody = styled('div')(({ theme }) => ({
+  flex: '1 1 auto', minHeight: 0, overflow: 'auto', padding: theme.spacing(6),
+  '& > *': { maxWidth: theme.measure, marginInline: 'auto' }
+}))
+
 export const TerminalSurface = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',

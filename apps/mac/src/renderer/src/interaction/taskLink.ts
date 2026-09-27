@@ -12,10 +12,8 @@ export { LINK_DIRECTION_LABEL, LINK_SUFFIX_LABEL, type LinkDirection, type NewTa
  * Open the queueing surface. If the task is to be linked, pass the link spec
  * with it.
  *
- * The queueing surface differs by screen (the composer at the bottom of the
- * full-width table; the list's one-line input while the detail is open), so
- * open with **a signal that reaches whichever is present**. Same path as
- * `⌘N`.
+ * The common composer stays beside every reading surface. The signal reaches it
+ * after a settings screen has yielded back to its project or the overall list.
  *
  * Passing `null` means "queue a task with no link". A previously chosen spec
  * lingering onto the next task quietly creates queueing nobody asked for.
@@ -24,14 +22,11 @@ export function startNewTask(link: NewTaskLink | null): void {
   const state = useStore.getState()
   state.setNewTaskLink(link)
 
-  // In a surface that can't queue, move to one that can (review and settings have no queueing entry)
-  if (state.section.kind === 'settings' || state.section.kind === 'review') {
+  // Settings has no composer; all reading surfaces keep their current navigation.
+  if (state.section.kind === 'settings') {
     state.setSection({ kind: 'all' })
   }
-  // Don't close the detail. Never lose what was being read in order to queue (same as ⌘N)
-  if (state.detailOpen && state.layout.listMode === 'hidden') {
-    state.setLayout({ listMode: 'compact' })
-  }
+  if (state.projectSettingsOpen) state.openProjectSettings(false)
 
   /*
    * Queue into the linked task's project.

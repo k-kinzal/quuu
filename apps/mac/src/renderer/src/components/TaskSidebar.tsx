@@ -12,7 +12,6 @@ import {
   Panel,
   PanelHeader,
   PanelHeading,
-  Reveal,
   Spacer,
   SupportingText,
   Text,
@@ -31,7 +30,7 @@ import { pane } from '../interaction/focus.js'
 import { runTaskListKey, taskRowId } from '../interaction/listNav.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useTaskView } from '../interaction/useTasks.js'
-import { defaultTargetProjectId, queuePositions } from '../model/derive.js'
+import { queuePositions } from '../model/derive.js'
 import { duration, relativeTime } from '../model/format.js'
 import { holdsSlot } from '../model/taskStatus.js'
 import { useStore } from '../state/store.js'
@@ -39,7 +38,7 @@ import { ICON, Lock, PanelLeftClose, Plus, iconProps } from '../ui/icons.js'
 import { StatusDot } from '../ui/StatusDot.js'
 import { sectionMenuItems } from './SectionMenu.js'
 import { taskMenuItems } from './TaskMenu.js'
-import { TaskQuickAdd } from './TaskQuickAdd.js'
+import { startNewTask } from '../interaction/taskLink.js'
 import { RecurringTaskListRow } from './RecurringTaskRow.js'
 
 /**
@@ -56,8 +55,8 @@ import { RecurringTaskListRow } from './RecurringTaskRow.js'
  * closing the detail is concentrated in the detail header's × and Esc.
  *
  * Even shrunk, **never drop create and delete** (rule C-7).
- * Queue with the one-line input, delete from the row's right-click (the same TaskMenu
- * as the full-width table).
+ * The add action focuses the shell's persistent composer. Delete stays on the
+ * row's right-click (the same TaskMenu as the full-width table).
  *
  * The ground is **a surface you can see through**. The reading surface (the conversation)
  * stays opaque paper; only the incidental surfaces in front of it (the rail and this list)
@@ -72,9 +71,7 @@ export function TaskSidebar(): JSX.Element {
   const setLayout = useStore((s) => s.setLayout)
   const section = useStore((s) => s.section)
   const landedTaskId = useStore((s) => s.landedTaskId)
-  const targetProjectId = useStore((s) => s.targetProjectId)
   const [now, setNow] = useState(() => Date.now())
-  const [adding, setAdding] = useState(false)
 
   /*
    * Grouping is shared with the table. When the full-width table is sorted by a column,
@@ -97,14 +94,6 @@ export function TaskSidebar(): JSX.Element {
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
-  }, [])
-
-  // ⌘N (the rule A shortcut) is taken here with the detail still open.
-  // Forcing the detail closed just to queue something loses what you were reading.
-  useEffect(() => {
-    const open = (): void => setAdding(true)
-    window.addEventListener('quuu:focus-quickadd', open)
-    return () => window.removeEventListener('quuu:focus-quickadd', open)
   }, [])
 
   const listRef = useRef<HTMLDivElement>(null)
@@ -136,16 +125,7 @@ export function TaskSidebar(): JSX.Element {
    */
   const showProject = section.kind !== 'project'
 
-  /* Needs review is a surface for looking at what has piled up, so it carries no queueing action (same as the full-width table) */
-  const openProjects = snapshot?.projects ?? []
-  const targetId = defaultTargetProjectId(
-    section.kind === 'project' ? section.id : null,
-    targetProjectId,
-    snapshot?.tasks.find((t) => t.id === cursorTaskId)?.projectId ?? null,
-    snapshot?.projects ?? []
-  )
-  const target = openProjects.find((p) => p.id === targetId)
-  const canAdd = section.kind !== 'review' && target !== undefined
+  const canAdd = (snapshot?.projects.length ?? 0) > 0
 
   /* Empty space below the rows acts on the list itself (the same menu as the full-width table) */
   const openSectionMenu = (e: MouseEvent): void => {
@@ -166,7 +146,7 @@ export function TaskSidebar(): JSX.Element {
           <IconButton
             title={t('sidebar.addTask')}
             icon={<Plus size={ICON.md} {...iconProps} />}
-            onClick={() => setAdding(true)}
+            onClick={() => startNewTask(null)}
           />
         )}
         <IconButton
@@ -175,18 +155,6 @@ export function TaskSidebar(): JSX.Element {
           onClick={() => setLayout({ listMode: 'hidden' })}
         />
       </PanelHeader>
-
-      <Reveal open={adding && Boolean(target)}>
-        {target && (
-          <TaskQuickAdd
-            project={target}
-            projects={openProjects}
-            /* Fix it only when the hierarchy decides it. A destination that fell through because it is archived must stay re-pickable */
-            fixed={section.kind === 'project' && target.id === section.id}
-            onClose={() => setAdding(false)}
-          />
-        )}
-      </Reveal>
 
       {/*
         Even running alongside, the list keeps the same set of actions as the full-width table (rule C-7).

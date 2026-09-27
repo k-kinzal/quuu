@@ -2,6 +2,7 @@ import { HookRunSchema, TaskHookSchema } from './schemas/hooks.js'
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
 import { PromptFileSchema } from './schemas/files.js'
 import { oc } from '@orpc/contract'
+import { ProjectDocumentsSchema, DocumentReadSchema, DocumentContentSchema, DocumentViewSchema } from './schemas/documents.js'
 import { z } from 'zod'
 import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./schemas/agents.js"
 import { TaskRuleInputSchema, TaskRuleSchema } from "./schemas/automation.js"
@@ -21,6 +22,13 @@ const procedure = oc.errors({ OPERATION_FAILED: { data: z.object({ reason: z.str
 /** The public contract implemented by both Electron ends and by test mocks. */
 export const contract = {
   snapshot: procedure.output(AppSnapshotSchema),
+  documents: {
+    list: procedure.input(z.string()).output(ProjectDocumentsSchema),
+    read: procedure.input(DocumentReadSchema.strict()).output(DocumentContentSchema),
+    show: procedure.input(DocumentViewSchema.strict()).output(ReviewActionResultSchema),
+    hide: procedure.output(ReviewActionResultSchema),
+    navigate: procedure.input(z.enum(['back', 'forward', 'reload'])).output(z.void())
+  },
   hooks: {
     resolve: procedure.input(z.object({ projectId: z.string().optional() })).output(TaskHookSchema.required().array()),
     list: procedure.input(z.object({ taskId: z.string().optional(), projectId: z.string().optional(), limit: z.number().int().min(1).max(200).optional() })).output(HookRunSchema.array()),

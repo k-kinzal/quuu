@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import '@testing-library/jest-dom/vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import { Markdown } from '../../../packages/design-system/src/components/data-display/Markdown.js'
 import { MessageBody } from '../src/renderer/src/components/MessageBody.js'
@@ -237,5 +237,31 @@ describe('raw HTML', () => {
   it('does not let a script through', () => {
     const container = show('<script>alert(1)</script>')
     expect(container.querySelector('script')).toBeNull()
+  })
+})
+
+describe('repository documents', () => {
+  it('resolves relative links and retains duplicate heading anchors on a redraw', () => {
+    const open = vi.fn()
+    const content = '# Install\n\n## Install\n\n[Guide](../guide.md#日本語)\n\n[Unsafe](javascript:alert(1))'
+    const view = render(<ThemeProvider><Markdown baseUrl="https://quuu.invalid/docs/README.md" headingPrefix="doc-" onOpenLink={open}>{content}</Markdown></ThemeProvider>)
+    expect(screen.getAllByRole('heading').map(heading => heading.id)).toEqual(['doc-install', 'doc-install-1'])
+    fireEvent.click(screen.getByRole('link', { name: 'Guide' }))
+    expect(open).toHaveBeenCalledWith('https://quuu.invalid/guide.md#%E6%97%A5%E6%9C%AC%E8%AA%9E')
+    expect(screen.queryByRole('link', { name: 'Unsafe' })).toBeNull()
+    view.rerender(<ThemeProvider colorScheme="light"><Markdown baseUrl="https://quuu.invalid/docs/README.md" headingPrefix="doc-" onOpenLink={open}>{content}</Markdown></ThemeProvider>)
+    expect(screen.getAllByRole('heading').map(heading => heading.id)).toEqual(['doc-install', 'doc-install-1'])
+  })
+
+  it('opens a documentation badge once without fetching its image or nesting links', () => {
+    const open = vi.fn()
+    const view = render(<ThemeProvider><Markdown baseUrl="https://quuu.invalid/README.md" onOpenLink={open}>
+      {'[![Docs](https://img.shields.io/badge/docs-blue)](https://example.com/docs/)'}
+    </Markdown></ThemeProvider>)
+    expect(view.container.querySelectorAll('a')).toHaveLength(1)
+    expect(view.container.querySelector('img')).toBeNull()
+    fireEvent.click(screen.getByRole('link', { name: 'Docs' }))
+    expect(open).toHaveBeenCalledOnce()
+    expect(open).toHaveBeenCalledWith('https://example.com/docs/')
   })
 })

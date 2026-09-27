@@ -6,6 +6,7 @@
  * Everything is lucide, with size and stroke weight following the design system's tokens.
  */
 export {
+  BookOpen,
   Archive, ArrowDownAZ, ArrowLeft, Bell, Bot, Braces, Brain, ChartNoAxesColumnIncreasing, Check, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, CircleAlert, CircleCheckBig, CircleDot,
   // Status and information

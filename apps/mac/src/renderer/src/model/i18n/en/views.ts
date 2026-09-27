@@ -1,5 +1,13 @@
 /** Copy for the settings and project screens (SettingsShell, settings/, project/, CommitIdentity). */
 export const views = {
+  projectDocuments: {
+    title: 'Documents', search: 'Find a document…', files: 'Repository', websites: 'Documentation sites',
+    branch: 'Default branch: {{branch}}', refresh: 'Refresh documents', loading: 'Loading documents…',
+    failed: 'Could not load documents', empty: 'No documents on the default branch', noMatches: 'No matching documents',
+    select: 'Select a document', retry: 'Try again', openBrowser: 'Open in browser',
+    back: 'Previous page', forward: 'Next page', reload: 'Reload page',
+    unavailable: 'This link does not point to a previewable document.'
+  },
   worktreeSettings: {
     "title": "Worktrees",
     "enabled": "Run new tasks in separate Git worktrees",

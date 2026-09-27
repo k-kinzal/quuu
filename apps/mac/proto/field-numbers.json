@@ -4425,5 +4425,80 @@
   },
   "HooksLogResponseValueMessages": {
     "items": 1
-  }
+  },
+  "DocumentsListRequest": {
+    "value": 1
+  },
+  "DocumentsListResponseValueFilesItem": {
+    "path": 1,
+    "format": 2
+  },
+  "DocumentsListResponseValueFiles": {
+    "items": 1
+  },
+  "DocumentsListResponseValueWebsitesItem": {
+    "title": 1,
+    "url": 2
+  },
+  "DocumentsListResponseValueWebsites": {
+    "items": 1
+  },
+  "DocumentsListResponseValue": {
+    "branch": 1,
+    "revision": 2,
+    "files": 3,
+    "websites": 4
+  },
+  "DocumentsListResponse": {
+    "value": 1
+  },
+  "DocumentsReadRequestValue": {
+    "projectId": 1,
+    "path": 2,
+    "revision": 3
+  },
+  "DocumentsReadRequest": {
+    "value": 1
+  },
+  "DocumentsReadResponseValue": {
+    "content": 1,
+    "format": 2,
+    "baseUrl": 3
+  },
+  "DocumentsReadResponse": {
+    "value": 1
+  },
+  "DocumentsShowRequestValueBounds": {
+    "x": 1,
+    "y": 2,
+    "width": 3,
+    "height": 4
+  },
+  "DocumentsShowRequestValue": {
+    "projectId": 1,
+    "url": 2,
+    "bounds": 3
+  },
+  "DocumentsShowRequest": {
+    "value": 1
+  },
+  "DocumentsShowResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "DocumentsShowResponse": {
+    "value": 1
+  },
+  "DocumentsHideRequest": {},
+  "DocumentsHideResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "DocumentsHideResponse": {
+    "value": 1
+  },
+  "DocumentsNavigateRequest": {
+    "value": 1
+  },
+  "DocumentsNavigateResponse": {}
 }

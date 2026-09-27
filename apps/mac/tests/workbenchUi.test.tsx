@@ -765,6 +765,12 @@ describe('the workbench display state', () => {
       })
     )
 
+    const callsBeforePalette = openPullRequest.mock.calls.length
+    act(() => useStore.setState({ paletteOpen: true }))
+    await waitFor(() => expect(hidePullRequest).toHaveBeenCalled())
+    act(() => useStore.setState({ paletteOpen: false }))
+    await waitFor(() => expect(openPullRequest.mock.calls.length).toBeGreaterThan(callsBeforePalette))
+
     const prompt = screen.getByRole('textbox', { name: 'Write instructions' })
     fireEvent.click(screen.getByRole('tab', { name: 'Chat' }))
     expect(hidePullRequest).toHaveBeenCalledWith('pull-request-page:42:https://github.com/openai/quuu/pull/42')

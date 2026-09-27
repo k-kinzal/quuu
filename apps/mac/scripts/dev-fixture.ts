@@ -1387,6 +1387,23 @@ writeSession(heldRun, [
   { role: 'user', text: 'please continue', minutesAgo: 61 }
 ])
 
+// An isolated repository makes the default-branch reader visible without production data.
+if (process.env.QUUU_FIXTURE_DOCUMENTS === '1') {
+  const cwd = join(dir, 'documents-repo')
+  mkdirSync(join(cwd, 'docs'), { recursive: true })
+  const git = (...args: string[]): void => { execFileSync('/usr/bin/git', ['-c', 'commit.gpgsign=false', ...args], { cwd }) }
+  writeFileSync(join(cwd, 'README.md'), '# Project documentation\n\n[![Docs](https://img.shields.io/badge/docs-sql--semantics-0969da?logo=php&logoColor=white)](https://k-kinzal.github.io/ztd-query-php/k-kinzal/sql-semantics/)\n\nRead the committed documentation while adding a task.\n\n[Getting started](docs/guide.md#installation)\n\n| Source | Content |\n| --- | --- |\n| Default branch | Committed documents |\n| Documentation site | Published API reference |\n')
+  writeFileSync(join(cwd, 'docs/guide.md'), '# Getting started\n\n## Installation\n\n日本語の説明もこの画面で確認できます。\n\n```sh\nnpm install\n```\n\n[Back to README](../README.md)\n')
+  git('init', '-q', '-b', 'main')
+  git('config', 'user.name', 'Fixture')
+  git('config', 'user.email', 'fixture@example.invalid')
+  git('add', '.')
+  git('commit', '-qm', 'Documentation fixture')
+  git('switch', '-qc', 'work-in-progress')
+  writeFileSync(join(cwd, 'README.md'), '# This uncommitted text must not appear in Documents\n')
+  repo.insertProject(db, { ...projects[0], name: 'Documentation preview', path: cwd })
+}
+
 /* -------------------------------------------------------------- Settings */
 
 // A real diff exercises the full project/change listing and deleted-file reads.

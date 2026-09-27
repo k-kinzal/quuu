@@ -1,4 +1,5 @@
 import { SessionHistory } from '../session/history.js'
+import { listProjectDocuments, readProjectDocument } from '../projects/documents.js'
 import * as repo from '../db/repo.js'
 import { implement, ORPCError } from '@orpc/server'
 import { contract } from '../../api/contract.js'
@@ -22,6 +23,17 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   const sessions = new Map<Owner, SessionView>()
   const releaseSessions = new Map<Owner, () => void>()
   const terminals = new Map<Owner, Set<string>>()
+  const documentRequests = new Map<Owner, { generation: number }>()
+  const documentRequest = (owner: Owner): { generation: number } => {
+    let state = documentRequests.get(owner)
+    if (!state) {
+      state = { generation: 0 }
+      documentRequests.set(owner, state)
+      const owned = state
+      host.releaseWithOwner(owner, () => { owned.generation++; documentRequests.delete(owner) })
+    }
+    return state
+  }
   const sessionFor = (owner: Owner): SessionView => {
     let view = sessions.get(owner)
     if (!view) {
@@ -455,6 +467,23 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       update: projectUpdate,
       remove: projectDelete,
     },
+    documents: {
+      list: os.documents.list.handler(({ input }) => listProjectDocuments(app.db, input)),
+      read: os.documents.read.handler(({ input }) => readProjectDocument(app.db, input)),
+      show: os.documents.show.handler(async ({ input, context }) => {
+        const state = documentRequest(context.owner)
+        const generation = ++state.generation
+        const documents = await listProjectDocuments(app.db, input.projectId)
+        if (generation !== state.generation) return { ok: true }
+        if (!documents.websites.some(link => link.url === input.url)) throw new Error(t('documents.notFound'))
+        return host.desktopFor(context.owner).showDocument(input)
+      }),
+      hide: os.documents.hide.handler(({ context }) => {
+        documentRequest(context.owner).generation++
+        return host.desktopFor(context.owner).hideDocument()
+      }),
+      navigate: os.documents.navigate.handler(({ input, context }) => host.desktopFor(context.owner).navigateDocument(input))
+    },
     tasks: {
       list: os.tasks.list.handler(({ input }) => app.tasks.listPage(input)),
       get: os.tasks.get.handler(({ input }) => { const task = app.tasks.getTask(input); if (!task) throw new Error(`Task not found: ${input}`); return task }),
@@ -537,4 +566,3 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   })
 
 }
-

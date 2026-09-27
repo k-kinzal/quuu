@@ -1,6 +1,14 @@
 import type { views as en } from '../en/views.js'
 
 export const views: typeof en = {
+  projectDocuments: {
+    title: 'ドキュメント', search: 'ドキュメントを検索…', files: 'リポジトリ', websites: 'ドキュメントサイト',
+    branch: 'デフォルトブランチ: {{branch}}', refresh: 'ドキュメントを更新', loading: 'ドキュメントを読み込み中…',
+    failed: 'ドキュメントを読み込めませんでした', empty: 'デフォルトブランチにドキュメントがありません', noMatches: '一致するドキュメントがありません',
+    select: 'ドキュメントを選択', retry: '再試行', openBrowser: 'ブラウザで開く',
+    back: '前のページ', forward: '次のページ', reload: 'ページを再読み込み',
+    unavailable: 'このリンク先はプレビューできるドキュメントではありません。'
+  },
   worktreeSettings: {
     title: 'Worktree', enabled: '新しいタスクを個別のGit Worktreeで実行', mode: 'タスクの作業ディレクトリ',
     inherit: 'グローバル設定に従う', on: 'Worktreeを使用', off: 'プロジェクトのディレクトリを使用'

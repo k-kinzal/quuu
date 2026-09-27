@@ -15,6 +15,8 @@ import { CommandPalette } from './components/CommandPalette.js'
 import { Footer } from './components/Footer.js'
 import { LeftMenu } from './components/LeftMenu.js'
 import { RendererBoundary } from './components/RendererBoundary.js'
+import { ProjectDocuments } from './views/project/ProjectDocuments.js'
+import { TaskComposer } from './components/TaskComposer.js'
 import { TaskOverview } from './components/TaskOverview.js'
 import { TaskWorkspace } from './components/TaskWorkspace.js'
 import { Toasts } from './components/Toasts.js'
@@ -89,6 +91,7 @@ function Shell(): JSX.Element {
   const detailOpen = useStore((s) => s.detailOpen)
   const closeDetail = useStore((s) => s.closeDetail)
   const openTask = useStore((s) => s.openTask)
+  const projectDocumentsOpen = useStore((s) => s.projectDocumentsOpen)
   const projectDashboardOpen = useStore((s) => s.projectDashboardOpen)
   const reportEnabled = useStore((s) => s.settings?.reportEnabled ?? false)
   const projectSettingsOpen = useStore((s) => s.projectSettingsOpen)
@@ -196,10 +199,8 @@ function Shell(): JSX.Element {
           if (s.section.kind === 'project') openProjectSettings(true)
           return
         /*
-         * One path opens the queueing surface (`startNewTask`). The surface differs
-         * per screen (the full-width table uses the bottom composer; while the detail
-         * is open, the list's one-line input), so spelling out how to open it here
-         * quickly produces a state where only one of them got fixed
+         * One path focuses the common creation composer (`startNewTask`). Reading
+         * surfaces stay open; settings yields back to a surface that can accept input.
          */
         case 'task.new':
           // No carry-over: don't let a previously chosen target leak into the next task
@@ -328,7 +329,7 @@ function Shell(): JSX.Element {
         return
       }
 
-      if (state.projectDashboardOpen || state.projectSettingsOpen || state.section.kind === 'settings') return
+      if (state.projectDocumentsOpen || state.projectDashboardOpen || state.projectSettingsOpen || state.section.kind === 'settings') return
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return
 
       /*
@@ -374,7 +375,7 @@ function Shell(): JSX.Element {
       <AppShellBody>
         <MotionLayout
           motionKey={`${detailOpen ? task?.id ?? 'missing' : 'overview'}:${layout.railCollapsed}:${layout.listMode}`}
-          contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}`}
+          contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}:${projectDocumentsOpen}`}
         >
           <LeftMenu
             showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen}
@@ -386,6 +387,8 @@ function Shell(): JSX.Element {
                 <SettingsShell />
               ) : projectSettingsOpen && project ? (
                 <ProjectDetail project={project} onBack={() => openProjectSettings(false)} />
+              ) : projectDocumentsOpen && project ? (
+                <ProjectDocuments key={project.id} project={project} />
               ) : projectDashboardOpen && reportEnabled && project?.reportEnabled ? (
                 <ProjectDashboard key={project.id} project={project} />
               ) : detailOpen ? (
@@ -400,6 +403,9 @@ function Shell(): JSX.Element {
                 <TaskOverview />
               )}
             </AppShellBody>
+            {!isSettings && !(projectSettingsOpen && project) && (
+              <TaskComposer fixedProjectId={project?.id} />
+            )}
             <Footer />
           </AppShellMain>
         </MotionLayout>

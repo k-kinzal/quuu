@@ -5,7 +5,8 @@ import { RPCHandler } from '@orpc/server/message-port'
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { BrowserWindow } from 'electron'
 import { EventEmitter } from 'node:events'
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { makeAgent, occupy } from './helpers.js'
@@ -82,13 +83,55 @@ beforeEach(() => {
     snapshot: app.snapshot(), settings: app.settings.getSettings(), section: { kind: 'all' },
     drafts: {}, newTaskAgentIds: {}, targetProjectId: projectId, newTaskLink: null, addAction: null,
     detailOpen: false, cursorTaskId: null, selectedRunId: null, session: null, runs: [], toasts: [], filters: NO_FILTERS,
-    projectSettingsOpen: false, projectDashboardOpen: false, editingRuleId: null, trail: INITIAL_TRAIL
+    projectSettingsOpen: false, projectDashboardOpen: false, projectDocumentsOpen: false, editingRuleId: null, trail: INITIAL_TRAIL
   })
   useStore.setState({ layout: { ...useStore.getState().layout, rail: paneProfiles.navigation.initial, list: paneProfiles.collection.initial, railCollapsed: false, listMode: 'compact' } })
   app.on('changed', () => useStore.getState().applySnapshot(app.snapshot()))
 })
 
 describe('the single left menu and the footer of the main surface', () => {
+  it('creates a project task while its default-branch document stays open', async () => {
+    const git = (...args: string[]): void => { execFileSync('/usr/bin/git', ['-c', 'commit.gpgsign=false', ...args], { cwd: fixtureDirectory }) }
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.name', 'Fixture')
+    git('config', 'user.email', 'fixture@example.invalid')
+    writeFileSync(join(fixtureDirectory, 'README.md'), '# Read while planning\n')
+    git('add', 'README.md')
+    git('commit', '-qm', 'Documentation')
+    app.projects.updateProject(projectId, { path: fixtureDirectory })
+    useStore.setState({ ready: true })
+    useStore.getState().setSection({ kind: 'project', id: projectId })
+    useStore.getState().openProjectDocuments(true)
+    render(<App />)
+    await screen.findByRole('heading', { name: 'Read while planning' }, { timeout: 5000 })
+    const input = screen.getByPlaceholderText<HTMLTextAreaElement>('Task title...')
+    fireEvent.change(input, { target: { value: 'Plan the next change' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(app.tasks.listTasks().find(task => task.title === 'Plan the next change')?.projectId).toBe(projectId))
+    expect(screen.getByRole('heading', { name: 'Read while planning' })).toBeTruthy()
+    expect(useStore.getState()).toMatchObject({ projectDocumentsOpen: true, detailOpen: false })
+    expect(input.value).toBe('')
+  })
+  it('keeps the task draft on reading surfaces and creates without replacing the open task', async () => {
+    useStore.setState({ ready: true, settingsCategory: 'appearance' })
+    render(<App />)
+    const composer = () => screen.getByPlaceholderText<HTMLTextAreaElement>('Task title...')
+    fireEvent.change(composer(), { target: { value: 'Read while adding' } })
+    act(() => useStore.getState().setSection({ kind: 'review' }))
+    expect(composer().value).toBe('Read while adding')
+    await act(() => useStore.getState().openTask(readingTaskId))
+    expect(composer().value).toBe('Read while adding')
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(app.tasks.listTasks().some(task => task.title === 'Read while adding')).toBe(true))
+    expect(useStore.getState().cursorTaskId).toBe(readingTaskId)
+    expect(useStore.getState().detailOpen).toBe(true)
+    act(() => useStore.getState().setSection({ kind: 'settings' }))
+    expect(screen.queryByPlaceholderText('Task title...')).toBeNull()
+    act(() => useStore.getState().setSection({ kind: 'project', id: projectId }))
+    act(() => useStore.getState().openProjectSettings(true))
+    expect(screen.queryByPlaceholderText('Task title...')).toBeNull()
+  })
+
   it.each(['compact', 'hidden'] as const)('shares the project navigation panel and hides it while a task is open with the list %s', async (listMode) => {
     useStore.setState({ ready: true, layout: { ...useStore.getState().layout, listMode } })
     useStore.getState().setSection({ kind: 'project', id: projectId })
@@ -252,9 +295,9 @@ describe('choosing the AI before creating a task', () => {
   it('offers the same choice in quick add and keeps the decided AI visible without a picker in the detail composer', async () => {
     const { second } = assignGroup()
     useStore.setState({ detailOpen: true, cursorTaskId: readingTaskId })
-    const view = render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+    const view = render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /><TaskComposer /></ThemeProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Add Task (⌘N)' }))
-    fireEvent.click(screen.getByRole('button', { name: 'AI: Project AI' }), { detail: 0 })
+    fireEvent.click(screen.getByRole('button', { name: 'Project AI' }), { detail: 0 })
     fireEvent.click(screen.getByText('AI Two'))
     fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: '一覧から追加する' } })
     fireEvent.keyDown(screen.getByPlaceholderText('Task title...'), { key: 'Enter', metaKey: true })
@@ -365,16 +408,16 @@ describe('choosing a preceding task while writing a new task', () => {
 
   it('keeps empty quick add open during pointer and keyboard selection, saving its prerequisite without leaving the detail', async () => {
     useStore.setState({ detailOpen: true, cursorTaskId: readingTaskId })
-    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /><TaskComposer /></ThemeProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Add Task (⌘N)' }))
     const input = screen.getByPlaceholderText<HTMLInputElement>('Task title...')
-    fireEvent.mouseDown(screen.getByRole('button', { name: 'Choose preceding task' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Dependency' }))
     expect(screen.getByPlaceholderText('Task title...')).toBe(input)
     const search = screen.getByRole('combobox', { name: 'Choose preceding task' })
     fireEvent.keyDown(search, { key: 'Escape' })
-    fireEvent.click(screen.getByRole('button', { name: 'Choose preceding task' }), { detail: 0 })
+    fireEvent.click(screen.getByRole('button', { name: 'Dependency' }), { detail: 0 })
     fireEvent.click(within(screen.getByRole('listbox', { name: 'Choose preceding task' })).getByRole('option', { name: /読んでいるタスク/ }))
-    fireEvent.change(screen.getByPlaceholderText('Task that follows...'), { target: { value: '一覧から追加する' } })
+    fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: '一覧から追加する' } })
     fireEvent.keyDown(input, { key: 'Enter', metaKey: true })
     await waitFor(() => expect(findAdded()).toMatchObject({
       status: 'queued', dependsOn: [{ taskId: readingTaskId, mode: 'done' }]
@@ -504,9 +547,9 @@ describe('typing in the list -> contract-based IPC -> save -> the list updates',
       fireEvent.click(screen.getByRole('button', { name: '追加の検証' }))
     } else {
       useStore.setState({ detailOpen: true, cursorTaskId: readingTaskId })
-      render(<ThemeProvider buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+      render(<ThemeProvider buildTheme={buildTheme}><TaskSidebar /><TaskComposer /></ThemeProvider>)
       fireEvent.click(screen.getByRole('button', { name: 'Add Task (⌘N)' }))
-      fireEvent.click(screen.getByRole('button', { name: /Add to: 追加の検証/ }), { detail: 0 })
+      fireEvent.click(screen.getByRole('button', { name: '追加の検証' }), { detail: 0 })
     }
     const choices = within(screen.getByRole('listbox', { name: 'Add to project' })).getAllByRole('option')
     expect(choices.map(option => option.textContent)).toEqual([
@@ -569,15 +612,15 @@ describe('typing in the list -> contract-based IPC -> save -> the list updates',
   it('does not fold the empty input while searching from the one-line add either, and lets typing continue after a pick', () => {
     app.projects.createProject({ name: 'Beta', path: '/tmp/second-repository' })
     useStore.setState({ detailOpen: true, cursorTaskId: readingTaskId })
-    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /><TaskComposer /></ThemeProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Add Task (⌘N)' }))
-    fireEvent.click(screen.getByRole('button', { name: /Add to: 追加の検証/ }), { detail: 0 })
+    fireEvent.click(screen.getByRole('button', { name: '追加の検証' }), { detail: 0 })
     const search = screen.getByRole('combobox')
     fireEvent.change(search, { target: { value: 'Beta' } })
     fireEvent.keyDown(search, { key: 'Enter' })
     expect(screen.queryByRole('combobox')).toBeNull()
     expect(screen.getByPlaceholderText('Task title...')).toBeTruthy()
-    expect(screen.getByRole('button', { name: /Add to: Beta/ })).toBe(document.activeElement)
+    expect(screen.getByRole('button', { name: 'Beta' })).toBe(document.activeElement)
   })
 
   it.each(['button', 'keyboard'] as const)('saves from the ordinary add field with no preceding task (%s)', async method => {
@@ -593,7 +636,7 @@ describe('typing in the list -> contract-based IPC -> save -> the list updates',
 
   it('adds from the + of a list while reading a detail, without switching the task being read', async () => {
     useStore.setState({ detailOpen: true, cursorTaskId: readingTaskId })
-    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskSidebar /><TaskComposer /></ThemeProvider>)
     fireEvent.click(screen.getByRole('button', { name: 'Add Task (⌘N)' }))
     fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: '一覧から追加する' } })
     fireEvent.keyDown(screen.getByPlaceholderText('Task title...'), { key: 'Enter', metaKey: true })

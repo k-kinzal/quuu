@@ -69,7 +69,6 @@ import { Priority as PriorityText } from '../ui/panes.js'
 import { StatusDot } from '../ui/StatusDot.js'
 import { columnMenuItems, doneScopeItems } from './ColumnMenu.js'
 import { sectionMenuItems } from './SectionMenu.js'
-import { TaskComposer } from './TaskComposer.js'
 import { TaskFilterBar } from './TaskFilterBar.js'
 import { taskMenuItems } from './TaskMenu.js'
 import { RecurringTaskTableRow } from './RecurringTaskRow.js'
@@ -517,9 +516,6 @@ export function TaskOverview(): JSX.Element {
         )}
       </PanelBody>
 
-      {section.kind !== 'review' && (
-        <TaskComposer fixedProjectId={section.kind === 'project' ? section.id : undefined} />
-      )}
     </Panel>
   )
 }

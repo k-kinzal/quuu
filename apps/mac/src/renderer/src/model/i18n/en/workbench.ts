@@ -1,6 +1,7 @@
 /** Copy for the workbench area: list, composer, palette, rail, footer. Groups are the owning components. */
 export const workbench = {
   taskComposer: {
+    added: 'Added “{{title}}”',
     agent: 'AI',
     agentTitle: 'AI: {{name}}',
     agentGroup: '{{name}} (entire group)',

@@ -2,7 +2,7 @@ import { observeLayoutMotion, EmbeddedContentHost as EmbeddedBrowserHost } from 
 import { useLayoutEffect, useRef } from 'react'
 import type { PullRequestViewBounds } from '../../../api/schemas/workbench.js'
 import { t } from '../model/i18n/index.js'
-import { useStore } from '../state/store.js'
+import { useNativeViewHidden } from '../interaction/useNativeViewHidden.js'
 
 function viewBounds(element: HTMLElement): PullRequestViewBounds | null {
   const rect = element.getBoundingClientRect()
@@ -25,11 +25,11 @@ export function ReportPage({
   onError(reason: string): void
 } & ({ taskId: string; projectId?: never } | { projectId: string; taskId?: never })): JSX.Element {
   const host = useRef<HTMLDivElement>(null)
-  const paletteOpen = useStore((s) => s.paletteOpen)
+  const hidden = useNativeViewHidden()
 
   useLayoutEffect(() => {
     const element = host.current
-    if (!element || paletteOpen) return
+    if (!element || hidden) return
     let frame: number | null = null
     let active = true
     const update = (): void => {
@@ -62,7 +62,7 @@ export function ReportPage({
       window.removeEventListener('resize', schedule)
       void window.quuu.report.hide()
     }
-  }, [onError, paletteOpen, path, projectId, taskId])
+  }, [onError, hidden, path, projectId, taskId])
 
   return <EmbeddedBrowserHost ref={host} aria-label={projectId ? t('projectDashboard.report') : t('reviewPane.modeReport')} />
 }

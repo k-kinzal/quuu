@@ -461,6 +461,106 @@ message SnapshotResponse {
   optional SnapshotResponseValue value = 1;
 }
 
+message DocumentsListRequest {
+  optional string value = 1;
+}
+
+message DocumentsListResponseValueFilesItem {
+  optional string path = 1;
+  optional string format = 2;
+}
+
+message DocumentsListResponseValueFiles {
+  repeated DocumentsListResponseValueFilesItem items = 1;
+}
+
+message DocumentsListResponseValueWebsitesItem {
+  optional string title = 1;
+  optional string url = 2;
+}
+
+message DocumentsListResponseValueWebsites {
+  repeated DocumentsListResponseValueWebsitesItem items = 1;
+}
+
+message DocumentsListResponseValue {
+  optional string branch = 1;
+  optional string revision = 2;
+  optional DocumentsListResponseValueFiles files = 3;
+  optional DocumentsListResponseValueWebsites websites = 4;
+}
+
+message DocumentsListResponse {
+  optional DocumentsListResponseValue value = 1;
+}
+
+message DocumentsReadRequestValue {
+  optional string projectId = 1;
+  optional string path = 2;
+  optional string revision = 3;
+}
+
+message DocumentsReadRequest {
+  optional DocumentsReadRequestValue value = 1;
+}
+
+message DocumentsReadResponseValue {
+  optional string content = 1;
+  optional string format = 2;
+  optional string baseUrl = 3;
+}
+
+message DocumentsReadResponse {
+  optional DocumentsReadResponseValue value = 1;
+}
+
+message DocumentsShowRequestValueBounds {
+  optional double x = 1;
+  optional double y = 2;
+  optional double width = 3;
+  optional double height = 4;
+}
+
+message DocumentsShowRequestValue {
+  optional string projectId = 1;
+  optional string url = 2;
+  optional DocumentsShowRequestValueBounds bounds = 3;
+}
+
+message DocumentsShowRequest {
+  optional DocumentsShowRequestValue value = 1;
+}
+
+message DocumentsShowResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message DocumentsShowResponse {
+  optional DocumentsShowResponseValue value = 1;
+}
+
+message DocumentsHideRequest {
+
+}
+
+message DocumentsHideResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message DocumentsHideResponse {
+  optional DocumentsHideResponseValue value = 1;
+}
+
+message DocumentsNavigateRequest {
+  optional string value = 1;
+}
+
+message DocumentsNavigateResponse {
+
+}
+
 message HooksResolveRequestValue {
   optional string projectId = 1;
 }
@@ -5912,6 +6012,11 @@ message WatchResponse { string name = 1; google.protobuf.Value payload = 2; }
 
 service Quuu {
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  rpc DocumentsList(DocumentsListRequest) returns (DocumentsListResponse);
+  rpc DocumentsRead(DocumentsReadRequest) returns (DocumentsReadResponse);
+  rpc DocumentsShow(DocumentsShowRequest) returns (DocumentsShowResponse);
+  rpc DocumentsHide(DocumentsHideRequest) returns (DocumentsHideResponse);
+  rpc DocumentsNavigate(DocumentsNavigateRequest) returns (DocumentsNavigateResponse);
   rpc HooksResolve(HooksResolveRequest) returns (HooksResolveResponse);
   rpc HooksList(HooksListRequest) returns (HooksListResponse);
   rpc HooksLog(HooksLogRequest) returns (HooksLogResponse);

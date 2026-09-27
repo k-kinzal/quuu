@@ -2,6 +2,7 @@ import type { workbench as en } from '../en/workbench.js'
 
 export const workbench: typeof en = {
   taskComposer: {
+    added: '「{{title}}」を追加しました',
     agent: 'AI',
     agentTitle: 'AI: {{name}}',
     agentGroup: '{{name}}（グループ全体）',

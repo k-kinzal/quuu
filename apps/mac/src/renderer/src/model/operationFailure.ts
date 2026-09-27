@@ -5,6 +5,7 @@ import { t } from './i18n/index.js'
 type OperationLabels<T> = { [K in keyof T]: T[K] extends (...args: never[]) => unknown ? string : OperationLabels<T[K]> }
 /** The View owns the wording. Adding an operation to the contract means deciding how its failure is told. */
 const labels: OperationLabels<QuuuApi> = {
+  documents: { list: t('projectDocuments.title'), read: t('projectDocuments.title'), show: t('projectDocuments.title'), hide: t('projectDocuments.title'), navigate: t('projectDocuments.title') },
   hooks: { resolve: t('hooks.title'), list: t('hooks.history'), log: t('hooks.openLog'), cancel: t('hooks.cancel'), retry: t('hooks.retry') },
   snapshot: t('operationFailure.op.snapshot'),
   projects: { list: t('operationFailure.op.projects.list'), create: t('operationFailure.op.projects.create'), update: t('operationFailure.op.projects.update'), remove: t('operationFailure.op.projects.remove') },

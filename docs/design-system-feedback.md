@@ -1,5 +1,17 @@
 # Call-site feedback and decisions
 
+## 2026-09-28 Reading repository documents beside a persistent input
+
+- Accepted: `DocumentBody` gives documents an independently scrolling surface,
+  padding and the existing reading measure. `Markdown.baseUrl` resolves relative
+  links through the existing URL allowlist; `headingPrefix` opts into GitHub-style
+  anchors, including repeated headings. Markdown parsing and slugging use upstream
+  libraries. Raw HTML and network image loading stay disabled.
+- Project selection, Git revisions, published documentation discovery, native
+  browser lifetime and task creation remain with the Mac app.
+- Verification: `Layout/EditorWorkspace/DocumentPreview`, the fixture document
+  screen, Git isolation tests, relative-link rendering and composer navigation tests.
+
 ## 2026-09-27 A state mark on a content tab
 
 - Request: the Pull Request tab on a task should say, in one small circle, how CI is doing

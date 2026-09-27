@@ -24,8 +24,7 @@ export function sectionMenuItems(): MenuItemSpec[] {
   const hasProjects = (snapshot?.projects ?? []).length > 0
   const items: MenuItemSpec[] = []
 
-  /* Needs-review is a "look at what piled up" pane, so it gets no queueing action (same as its list) */
-  if (section.kind !== 'review' && hasProjects) {
+  if (hasProjects) {
     items.push({
       label: t('sectionMenu.newTask'),
       accelerator: 'Cmd+N',

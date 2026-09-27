@@ -1,3 +1,4 @@
+import { Markdown } from '../data-display/Markdown.js'
 import { useId, useState } from 'react'
 import { ContentTabs, ContentTabPanel } from '../navigation/ContentTabs.js'
 import { Composer, ComposerBox, ComposerInput, ComposerToolbar } from '../inputs/Composer.js'
@@ -8,7 +9,7 @@ import { TextArea } from '../inputs/TextInput.js'
 import { PlainInput } from '../inputs/InlineInput.js'
 import { Text } from '../data-display/Text.js'
 import { PaneToolbar } from './Workbench.js'
-import { WorkSurface, ExplorerLayout, ExplorerPane, EditorPane, OverlayViewport, FindBar, FloatingEditorForm } from './EditorWorkspace.js'
+import { DocumentBody, WorkSurface, ExplorerLayout, ExplorerPane, EditorPane, OverlayViewport, FindBar, FloatingEditorForm } from './EditorWorkspace.js'
 
 const meta: Meta = { title: 'Layout/EditorWorkspace', parameters: { layout: 'fullscreen' } }
 export default meta
@@ -67,3 +68,15 @@ function PersistentInputExample(): JSX.Element {
 
 /** Input belongs to the whole surface and stays mounted as the reading context changes. */
 export const WithPersistentInput: StoryObj = { render: () => <PersistentInputExample /> }
+
+export const DocumentPreview: StoryObj = {
+  render: () => <WorkSurface style={{ height: '100vh' }}>
+    <ExplorerLayout>
+      <ExplorerPane><Text>README.md</Text><Text>docs/guide.md</Text></ExplorerPane>
+      <EditorPane><DocumentBody><Markdown baseUrl="https://example.com/docs/" headingPrefix="doc-" onOpenLink={console.log}>
+        {'# Project documentation\n\n[Installation](guide.md#installation)\n\n## Installation\n\n日本語の説明と **structured prose** を読みながら入力できます。\n\n| Option | Meaning |\n| --- | --- |\n| Default | Read the committed documentation |\n\n```ts\nconst message = "Hello"\n```\n\n## Installation\n\nRepeated headings have distinct anchors.'}
+      </Markdown></DocumentBody></EditorPane>
+    </ExplorerLayout>
+    <Composer><ComposerBox><ComposerInput aria-label="New request" placeholder="Add a request while reading…" /></ComposerBox></Composer>
+  </WorkSurface>
+}

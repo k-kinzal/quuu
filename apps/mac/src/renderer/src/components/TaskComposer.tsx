@@ -36,7 +36,7 @@ const ACTION_ICON: Record<AddAction, JSX.Element> = {
 }
 
 /**
- * The task-creation composer at the bottom of the list (rule D).
+ * The task-creation composer shared by every reading surface.
  *
  * Same shape as the agent-conversation composer. Only the specifiable values differ:
  * this one decides "which project, at which priority".
@@ -66,7 +66,7 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
   const [projectAnchor, setProjectAnchor] = useState<HTMLElement | null>(null)
 
   /*
-   * Remember the chosen target (one rule, defaultTargetProjectId — same as the list's one-line input).
+   * Remember the chosen target across navigation.
    * This composer unmounts when a detail opens or you detour into settings, so keeping
    * the value here would reset to the first project every screen change.
    */
@@ -219,7 +219,9 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
     if (action === 'now') await runNow(task.id)
     if (openAfter) await openTask(task.id)
     else {
-      await moveCursor(task.id)
+      const current = useStore.getState()
+      if (!current.detailOpen && !current.projectDashboardOpen && !current.projectDocumentsOpen) await moveCursor(task.id)
+      else pushToast({ id: `created-${task.id}`, level: 'info', message: t('taskComposer.added', { title: task.title }), taskId: task.id })
       ref.current?.focus()
     }
   }
