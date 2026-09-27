@@ -13,6 +13,8 @@ export const AppSnapshotSchema = z.object({
   resumeCommands: z.record(z.string(), z.union([z.string(), z.null()])).optional(),
   externalAgentNames: z.record(z.string(), z.string()).optional(),
   projects: ProjectSchema.array(),
+  /** Task run counts in the last seven days, across the full stored history. */
+  projectRecentRunCounts: z.record(z.string(), z.number()).optional(),
   tasks: TaskSchema.array(),
   /** Automation rule definitions. Used by the project settings screen and to show where generated tasks came from. */
   rules: TaskRuleSchema.array(),

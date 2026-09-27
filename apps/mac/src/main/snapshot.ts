@@ -14,6 +14,8 @@ export interface AppSnapshot {
   resumeCommands?: Record<string, string | null>
   externalAgentNames?: Record<string, string>
   projects: Project[]
+  /** Task run counts in the last seven days, across the full stored history. */
+  projectRecentRunCounts?: Record<string, number>
   tasks: Task[]
   /** Automation rule definitions. Used by project settings and by showing where generated tasks came from. */
   rules: TaskRule[]

@@ -688,6 +688,21 @@ export function listProjects(db: Db): Project[] {
   ).map(toProject)
 }
 
+/** Count every task run in the rolling week, including completed and archived work. */
+export function recentRunCountsByProject(db: Db, now = Date.now()): Record<string, number> {
+  const since = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const until = new Date(now).toISOString()
+  const rows = db.prepare(`
+    SELECT tasks.project_id, COUNT(*) AS run_count
+    FROM tasks
+    JOIN projects ON projects.id = tasks.project_id AND projects.deleted_at IS NULL
+    JOIN runs ON runs.task_id = tasks.id
+    WHERE runs.started_at >= ? AND runs.started_at <= ?
+    GROUP BY tasks.project_id
+  `).all(since, until) as Row[]
+  return Object.fromEntries(rows.map((row) => [s(row.project_id), n(row.run_count)]))
+}
+
 /** Look up by id. Deleted ones are returned too (references from run history stay followable). */
 export function getProject(db: Db, id: string): Project | null {
   const r = db.prepare('SELECT * FROM projects WHERE id = ?').get(id) as Row | undefined

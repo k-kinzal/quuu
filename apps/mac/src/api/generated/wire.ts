@@ -266,6 +266,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             ]
           }
         },
+        "projectRecentRunCounts": {
+          "kind": "value"
+        },
         "tasks": {
           "kind": "array",
           "items": {

@@ -77,6 +77,7 @@ export function useTaskView(): TaskView {
   const context = useMemo<TableContext>(
     () => ({
       projects,
+      projectRecentRunCounts: snapshot?.projectRecentRunCounts,
       runs,
       agentLabel: (task) =>
         snapshot

@@ -683,6 +683,12 @@ send, every input that listens for `Enter` / `Esc` ignores them during compositi
 
 ## Screen structure
 
+The left navigation lists projects by name (A–Z, with natural number order).
+Project choices in the task-list filter and task inputs put the most frequently
+run projects first, counting task runs started in the last seven days. Completed,
+archived, and imported task runs count too; equal counts fall back to name and
+then path. These display orders do not change execution priorities.
+
 The essentials:
 
 ```

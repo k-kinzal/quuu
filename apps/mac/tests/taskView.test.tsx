@@ -8,7 +8,7 @@ import type { Run } from '../src/main/execution/types.js'
 import type { Task } from '../src/main/tasks/types.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { useTaskView } from '../src/renderer/src/interaction/useTasks.js'
-import { NO_FILTERS } from '../src/renderer/src/model/table.js'
+import { filterOptions, NO_FILTERS } from '../src/renderer/src/model/table.js'
 
 /**
  * Everything the list shows is decided in one place by `useTaskView`.
@@ -160,6 +160,12 @@ beforeEach(() => {
 const view = (): ReturnType<typeof useTaskView> => renderHook(() => useTaskView()).result.current
 
 describe('what the list shows', () => {
+  it('passes full-history project usage to the filters even when completed tasks are hidden', () => {
+    useStore.setState({ snapshot: { ...SNAPSHOT, projectRecentRunCounts: { p1: 2, p2: 8 } } })
+    const current = view()
+    expect(filterOptions('project', current.candidates, current.context).map(option => option.value)).toEqual(['p2', 'p1'])
+  })
+
   it('shows the agent name actually assigned once it starts through a group', () => {
     const groupProject = {
       ...project('p1', 'alpha'),

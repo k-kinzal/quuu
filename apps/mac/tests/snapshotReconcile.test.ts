@@ -28,6 +28,7 @@ function project(id: string, name: string): Project {
 function picture(): AppSnapshot {
   return {
     resumeCommands: { a: 'claude', b: null },
+    projectRecentRunCounts: { p1: 2, p2: 1 },
     projects: [project('p1', 'alpha'), project('p2', 'beta')],
     tasks: [task({ id: 'a', title: 'first' }), task({ id: 'b', title: 'second' }), task({ id: 'c', title: 'third' })],
     rules: [],
@@ -70,6 +71,7 @@ describe('applying the picture main sends', () => {
     expect(applied.runs).toBe(current.runs)
     expect(applied.scheduler).toBe(current.scheduler)
     expect(applied.resumeCommands).toBe(current.resumeCommands)
+    expect(applied.projectRecentRunCounts).toBe(current.projectRecentRunCounts)
   })
 
   it('a scheduler status that reads the same as the current one is ignored', () => {
@@ -86,6 +88,15 @@ describe('applying the picture main sends', () => {
 })
 
 describe('reconciling two pictures', () => {
+  it('updates recent project usage without replacing unchanged projects or tasks', () => {
+    const next = picture()
+    next.projectRecentRunCounts = { p2: 3 }
+    const merged = reconcileSnapshot(current, next)
+    expect(merged.projectRecentRunCounts).toEqual({ p2: 3 })
+    expect(merged.projects).toBe(current.projects)
+    expect(merged.tasks).toBe(current.tasks)
+  })
+
   it('a list that lost or reordered rows is replaced while its surviving rows keep their objects', () => {
     const next = picture()
     next.tasks = [next.tasks[2], next.tasks[0]]

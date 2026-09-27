@@ -8,7 +8,8 @@ import { EventEmitter } from 'node:events'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { makeAgent } from './helpers.js'
+import { makeAgent, occupy } from './helpers.js'
+import * as repo from '../src/main/db/repo.js'
 import { Composer } from '../src/renderer/src/components/Composer.js'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,6 +18,7 @@ import { createAppRouter } from '../src/main/ipc/index.js'
 import type { QuuuEvents } from '../src/api/types.js'
 import { App } from '../src/renderer/src/App.js'
 import { TaskComposer } from '../src/renderer/src/components/TaskComposer.js'
+import { Rail } from '../src/renderer/src/components/Rail.js'
 import { TaskSidebar } from '../src/renderer/src/components/TaskSidebar.js'
 import { TaskOverview } from '../src/renderer/src/components/TaskOverview.js'
 import { TaskRuleEditor } from '../src/renderer/src/views/project/TaskRules.js'
@@ -482,6 +484,51 @@ describe('file transfer in a prompt -> contract-based IPC -> disk and task persi
 })
 
 describe('typing in the list -> contract-based IPC -> save -> the list updates', () => {
+  it.each(['composer', 'quick add'] as const)('offers frequent projects first in %s using the full history from main', async surface => {
+    const beta = app.projects.createProject({ name: 'Beta', path: '/tmp/beta' })
+    app.projects.createProject({ name: 'Alpha', path: '/tmp/alpha' })
+    const agent = makeAgent(app.db, { name: 'Test AI' })
+    const completed = app.tasks.createTask({ projectId: beta.id, title: 'Past work', status: 'draft' })
+    for (let i = 0; i < 2; i++) {
+      const runId = occupy(app.db, completed.id, agent, { kind: i ? 'followup' : 'initial' })
+      repo.updateRun(app.db, runId, { status: 'succeeded', endedAt: new Date().toISOString() })
+    }
+    repo.setTaskStatus(app.db, completed.id, 'done')
+    repo.setTaskArchived(app.db, completed.id, true)
+    const snapshot = await window.quuu.snapshot()
+    expect(snapshot.projectRecentRunCounts).toEqual({ [beta.id]: 2 })
+    useStore.getState().applySnapshot(snapshot)
+
+    if (surface === 'composer') {
+      render(<ThemeProvider buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
+      fireEvent.click(screen.getByRole('button', { name: '追加の検証' }))
+    } else {
+      useStore.setState({ detailOpen: true, cursorTaskId: readingTaskId })
+      render(<ThemeProvider buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+      fireEvent.click(screen.getByRole('button', { name: 'Add Task (⌘N)' }))
+      fireEvent.click(screen.getByRole('button', { name: /Add to: 追加の検証/ }), { detail: 0 })
+    }
+    const choices = within(screen.getByRole('listbox', { name: 'Add to project' })).getAllByRole('option')
+    expect(choices.map(option => option.textContent)).toEqual([
+      'Beta/tmp/beta', 'Alpha/tmp/alpha', '追加の検証/tmp'
+    ])
+    expect(useStore.getState().targetProjectId).toBe(projectId)
+    fireEvent.click(choices[0])
+    expect(useStore.getState().targetProjectId).toBe(beta.id)
+  })
+
+  it('keeps navigation in natural name order regardless of priority or usage', () => {
+    const zulu = app.projects.createProject({ name: 'Zulu', path: '/tmp/zulu', priority: 0 })
+    app.projects.createProject({ name: 'alpha 10', path: '/tmp/alpha10' })
+    app.projects.createProject({ name: 'Alpha 2', path: '/tmp/alpha2' })
+    useStore.setState({ snapshot: { ...app.snapshot(), projectRecentRunCounts: { [zulu.id]: 99 } } })
+    render(<ThemeProvider buildTheme={buildTheme}><Rail /></ThemeProvider>)
+    const names = ['Alpha 2', 'alpha 10', 'Zulu', '追加の検証']
+    const buttons = screen.getAllByRole('button')
+    const positions = names.map(name => buttons.indexOf(screen.getByRole('button', { name: new RegExp(`^${name}`) })))
+    expect(positions).toEqual([...positions].sort((a, b) => a - b))
+  })
+
   it('offers destinations in name order and saves to the chosen project, keeping the draft even when filtered by path', async () => {
     const beta = app.projects.createProject({ name: 'Beta', path: '/tmp/second-repository' })
     app.projects.createProject({ name: 'alpha', path: '/tmp/first-repository' })

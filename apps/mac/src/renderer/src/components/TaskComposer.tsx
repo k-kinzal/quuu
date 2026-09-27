@@ -318,6 +318,7 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
     >
       <ProjectSelect
         open={Boolean(projectAnchor)} anchorEl={projectAnchor} projects={projects}
+        recentRunCounts={snapshot?.projectRecentRunCounts}
         value={projectId} onChange={setTargetProject} onClose={() => setProjectAnchor(null)}
       />
     </PromptComposer>

@@ -49,6 +49,7 @@ export function reconcileSnapshot(previous: AppSnapshot | null, next: AppSnapsho
   }
   if (next.resumeCommands) merged.resumeCommands = keep(previous.resumeCommands, next.resumeCommands)
   if (next.externalAgentNames) merged.externalAgentNames = keep(previous.externalAgentNames, next.externalAgentNames)
+  if (next.projectRecentRunCounts) merged.projectRecentRunCounts = keep(previous.projectRecentRunCounts, next.projectRecentRunCounts)
   const keys = new Set([...Object.keys(previous), ...Object.keys(merged)]) as Set<keyof AppSnapshot>
   for (const key of keys) if (merged[key] !== previous[key]) return merged
   return previous

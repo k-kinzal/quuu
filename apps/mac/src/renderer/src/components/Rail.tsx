@@ -21,6 +21,7 @@ import { projectStateItems } from '../interaction/projectActions.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { openCountByProject, reviewCount } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
+import { projectsByName } from '../model/projectOptions.js'
 import type { Section } from '../state/store.js'
 import { useStore } from '../state/store.js'
 import { CircleCheckBig, ICON, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, iconProps } from '../ui/icons.js'
@@ -52,7 +53,7 @@ export function Rail(): JSX.Element {
   const counts = useMemo(() => openCountByProject(snapshot?.tasks ?? []), [snapshot?.tasks])
   const reviews = useMemo(() => reviewCount(snapshot?.tasks ?? []), [snapshot?.tasks])
   /* Removed projects don't enter the snapshot (main filters them out) */
-  const projects = snapshot?.projects ?? []
+  const projects = useMemo(() => projectsByName(snapshot?.projects ?? []), [snapshot?.projects])
   const open = useMemo(() => {
     let total = 0
     for (const v of counts.values()) total += v

@@ -323,7 +323,8 @@
     "agents": 6,
     "groups": 7,
     "runs": 8,
-    "scheduler": 9
+    "scheduler": 9,
+    "projectRecentRunCounts": 10
   },
   "SnapshotResponse": {
     "value": 1

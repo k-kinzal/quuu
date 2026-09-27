@@ -448,6 +448,7 @@ message SnapshotResponseValue {
   optional google.protobuf.Value resumeCommands = 1;
   optional google.protobuf.Value externalAgentNames = 2;
   optional SnapshotResponseValueProjects projects = 3;
+  optional google.protobuf.Value projectRecentRunCounts = 10;
   optional SnapshotResponseValueTasks tasks = 4;
   optional SnapshotResponseValueRules rules = 5;
   optional SnapshotResponseValueAgents agents = 6;

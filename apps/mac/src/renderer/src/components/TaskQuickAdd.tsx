@@ -54,6 +54,7 @@ export function TaskQuickAdd({
   const markLanded = useStore((s) => s.markLanded)
   /* The chosen destination lives in the store. This row collapses, so keeping it here would reset it on the next open */
   const setTargetProject = useStore((s) => s.setTargetProject)
+  const recentRunCounts = useStore((s) => s.snapshot?.projectRecentRunCounts)
   const setNewTaskLink = useStore((s) => s.setNewTaskLink)
 
   /* An ordering decided before queueing (arrives when "task that follows" was picked from a detail) */
@@ -205,6 +206,7 @@ export function TaskQuickAdd({
 
         <ProjectSelect
           open={Boolean(projectAnchor)} anchorEl={projectAnchor} projects={projects}
+          recentRunCounts={recentRunCounts}
           value={target.id} onChange={setTargetProject} onClose={closeProjectPick}
         />
       </InlineAddRow>

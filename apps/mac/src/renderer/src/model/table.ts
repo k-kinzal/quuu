@@ -6,6 +6,7 @@ import { t } from './i18n/index.js'
 import { PRIORITY_LABEL, TASK_STATUS_LABEL } from './labels.js'
 import { STATUS_ORDER } from './statusGroups.js'
 import { compareText } from './collation.js'
+import { compareProjectNames } from './projectOptions.js'
 
 /**
  * The full-width table's "columns" and their sorting/filtering.
@@ -174,6 +175,7 @@ export function nextSort(current: TaskSort | null, key: TaskSortKey): TaskSort |
 
 export interface TableContext {
   projects: Map<string, Project>
+  projectRecentRunCounts?: Readonly<Record<string, number>>
   /** Latest Run per task */
   runs: Map<string, Run>
   /** Name shown in the list's agent column. With a Run, the actually assigned agent */
@@ -394,12 +396,18 @@ function statusOptions(tasks: Task[]): FilterOption[] {
   )
 }
 
-function projectOptions(tasks: Task[], projects: Map<string, Project>): FilterOption[] {
+function projectOptions(tasks: Task[], ctx: TableContext): FilterOption[] {
   return options(
     tasks,
     (t) => t.projectId,
-    (id) => projects.get(id)?.name ?? t('table.deletedProject')
-  )
+    (id) => ctx.projects.get(id)?.name ?? t('table.deletedProject')
+  ).sort((a, b) => {
+    const frequency = (ctx.projectRecentRunCounts?.[b.value] ?? 0) - (ctx.projectRecentRunCounts?.[a.value] ?? 0)
+    if (frequency) return frequency
+    const left = ctx.projects.get(a.value)
+    const right = ctx.projects.get(b.value)
+    return left && right ? compareProjectNames(left, right) : compareText(a.label, b.label) || a.value.localeCompare(b.value)
+  })
 }
 
 const PRIORITY_ORDER = ['0', '1', '2', '3'] as const
@@ -433,7 +441,7 @@ export function filterOptions(axis: FilterAxis, tasks: Task[], ctx: TableContext
     case 'status':
       return statusOptions(tasks)
     case 'project':
-      return projectOptions(tasks, ctx.projects)
+      return projectOptions(tasks, ctx)
     case 'priority':
       return priorityOptions(tasks)
     case 'target':

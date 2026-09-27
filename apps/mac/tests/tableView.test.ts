@@ -369,6 +369,16 @@ describe('filter options', () => {
     expect(filterOptions('priority', tasks, context()).map((o) => o.label)).toEqual(['P0', 'P2'])
   })
 
+  it('orders project choices by recent runs across all history while keeping visible task counts', () => {
+    const ctx = { ...context(), projectRecentRunCounts: { p1: 4, p2: 9, hidden: 50 } }
+    expect(filterOptions('project', tasks, ctx)).toEqual([
+      { value: 'p2', label: 'beta', count: 2 },
+      { value: 'p1', label: 'alpha', count: 1 }
+    ])
+    expect(filterOptions('project', tasks, { ...ctx, projectRecentRunCounts: { p1: 9, p2: 9 } }).map(o => o.value))
+      .toEqual(['p1', 'p2'])
+  })
+
   it('agents group by run target', () => {
     expect(filterOptions('target', tasks, context()).map((o) => o.label)).toEqual([
       'Claude Opus',

@@ -305,6 +305,7 @@ export class QuuuApp extends EventEmitter {
     return {
       ...sessionOptions(tasks, runs, agents),
       projects: repo.listProjects(this.db),
+      projectRecentRunCounts: repo.recentRunCountsByProject(this.db),
       tasks,
       rules: repo.listTaskRules(this.db),
       agents,
