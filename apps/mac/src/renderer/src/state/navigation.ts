@@ -40,6 +40,7 @@ export interface Place {
   editingAgentId: string | null
   editingGroupId: string | null
   projectSettingsOpen: boolean
+  projectDashboardOpen: boolean
   editingRuleId: string | null
 }
 
@@ -52,6 +53,7 @@ export const INITIAL_PLACE: Place = {
   editingAgentId: null,
   editingGroupId: null,
   projectSettingsOpen: false,
+  projectDashboardOpen: false,
   editingRuleId: null
 }
 
@@ -88,6 +90,7 @@ export function placeOf(state: Place): Place {
     editingAgentId: state.editingAgentId,
     editingGroupId: state.editingGroupId,
     projectSettingsOpen: state.projectSettingsOpen,
+    projectDashboardOpen: state.projectDashboardOpen,
     editingRuleId: state.editingRuleId
   }
 }
@@ -101,6 +104,7 @@ export function samePlace(a: Place, b: Place): boolean {
     a.editingAgentId === b.editingAgentId &&
     a.editingGroupId === b.editingGroupId &&
     a.projectSettingsOpen === b.projectSettingsOpen &&
+    a.projectDashboardOpen === b.projectDashboardOpen &&
     a.editingRuleId === b.editingRuleId
   )
 }

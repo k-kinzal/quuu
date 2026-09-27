@@ -1,3 +1,4 @@
+import { ReportPage } from './ReportPage.js'
 import {
   observeLayoutMotion,
   claimContextMenu,
@@ -295,54 +296,6 @@ function PullRequestBrowser({
  * The renderer hands over an area, never a file: which page belongs to this task is main's answer.
  * `path` stays a dependency so a newer report replaces the one on screen.
  */
-function ReportPage({
-  taskId,
-  path,
-  onError
-}: {
-  taskId: string
-  path: string
-  onError(reason: string): void
-}): JSX.Element {
-  const host = useRef<HTMLDivElement>(null)
-
-  useLayoutEffect(() => {
-    const element = host.current
-    if (!element) return
-    let frame: number | null = null
-    let active = true
-    const update = (): void => {
-      frame = null
-      const bounds = viewBounds(element)
-      if (!bounds) return
-      void window.quuu.report
-        .show({ taskId, bounds })
-        .then((result) => { if (active && !result.ok) onError(result.reason ?? '') })
-        .catch((caught: unknown) => {
-          if (active) onError(caught instanceof Error ? caught.message : String(caught))
-        })
-    }
-    const schedule = (): void => {
-      if (frame !== null) cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(update)
-    }
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule)
-    const stopFollowingMotion = observeLayoutMotion(element, schedule)
-    observer?.observe(element)
-    window.addEventListener('resize', schedule)
-    schedule()
-    return () => {
-      active = false
-      if (frame !== null) cancelAnimationFrame(frame)
-      observer?.disconnect()
-      stopFollowingMotion()
-      window.removeEventListener('resize', schedule)
-      void window.quuu.report.hide()
-    }
-  }, [onError, path, taskId])
-
-  return <EmbeddedBrowserHost ref={host} aria-label={t('reviewPane.modeReport')} />
-}
 
 function expandedBranches(nodes: TreeNode[], limit = 240): string[] {
   const result: string[] = []

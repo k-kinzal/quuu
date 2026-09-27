@@ -192,7 +192,7 @@ export function runExitPath(runId: string): string {
 }
 
 /**
- * Root of the generated change reports.
+ * Root of generated task and project reports.
  *
  * The pages are written by an agent, so this doubles as the **only place the report view is
  * allowed to read from**. Keeping that boundary in one function means the view and the writer
@@ -203,7 +203,7 @@ export function reportRoot(): string {
 }
 
 /**
- * Where one task's report lives. Creates the directory if missing.
+ * Where one task's or project's report lives. Creates the directory if missing.
  *
  * The page a person reads, the generator's own output, and its exit code sit together, so
  * "Open logs and data folder" reaches the evidence behind a report that came out wrong, not

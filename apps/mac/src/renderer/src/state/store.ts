@@ -179,6 +179,7 @@ interface State {
   editingGroupId: string | null
   /** Whether the project's configuration is open inside that project's screen (rule F). */
   projectSettingsOpen: boolean
+  projectDashboardOpen: boolean
   editingRuleId: string | null
   /** Everywhere this window has been, and how far back through it we have stepped (`navigation.ts`). */
   trail: Trail
@@ -244,6 +245,7 @@ interface State {
   editAgent(id: string | null): void
   editGroup(id: string | null): void
   openProjectSettings(open: boolean): void
+  openProjectDashboard(open: boolean): void
   editRule(id: string | null): void
 
   selectRun(runId: string): Promise<void>
@@ -457,6 +459,7 @@ export const useStore = create<State>((set, get) => ({
         editingAgentId: null,
         editingGroupId: null,
         projectSettingsOpen: false,
+        projectDashboardOpen: false,
         editingRuleId: null,
         // Filters belong to the section. Carried over, the destination becomes an
         // inexplicably short list (a project filter carried into another project shows 0 rows)
@@ -498,7 +501,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async openTask(taskId) {
-    navigate(set, get, () => set({ cursorTaskId: taskId, detailOpen: true, projectSettingsOpen: false }))
+    navigate(set, get, () => set({ cursorTaskId: taskId, detailOpen: true, projectSettingsOpen: false, projectDashboardOpen: false }))
     await get().refreshRuns(taskId)
   },
 
@@ -547,10 +550,16 @@ export const useStore = create<State>((set, get) => ({
   editGroup(id) {
     navigate(set, get, () => set({ editingGroupId: id, editingAgentId: null }))
   },
+  openProjectDashboard(open) {
+    navigate(set, get, () => {
+      get().closeDetail()
+      set({ projectDashboardOpen: open, projectSettingsOpen: false, detailOpen: false, editingRuleId: null })
+    })
+  },
   openProjectSettings(open) {
     navigate(set, get, () => {
       if (open) get().closeDetail()
-      set({ projectSettingsOpen: open, detailOpen: false, editingRuleId: null })
+      set({ projectSettingsOpen: open, projectDashboardOpen: false, detailOpen: false, editingRuleId: null })
     })
   },
   editRule(id) {

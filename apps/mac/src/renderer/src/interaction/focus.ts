@@ -14,6 +14,7 @@ import { withMenuAnchor } from './menu.js'
  */
 export type PaneId =
   | 'rail'
+  | 'projectNavigation'
   | 'list'
   | 'chat'
   | 'review'

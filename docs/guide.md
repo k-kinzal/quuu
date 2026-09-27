@@ -417,6 +417,28 @@ Existing logs are backfilled after startup, including earlier runs of a task.
 `QUUU_FIXTURE_HISTORY=6000 npm run dev:fixture` creates a long conversation and a
 real repository under `/tmp/taskd-shot` for checking scrolling and saved reviews.
 
+## Project dashboard
+
+Each project has a narrow icon navigation for Dashboard, Tasks and Settings. The
+existing task list and project settings remain available there. Dashboard appears
+only when report AI and the project's reports are enabled.
+
+While Quuu is running, the report AI checks projects once per Mac calendar day.
+It assesses the implementation against the purpose, vision and goals in AGENTS.md,
+README.md and the project documentation. **Settings → Report → Project dashboard**
+can replace that assessment prompt; an empty field uses the default. Task report
+instructions remain separate. Both use the same writer or group and bundled
+HTML document resources.
+
+A saved fingerprint includes the local main commit (master when main is absent),
+HEAD, staged and unstaged binary diffs, non-ignored untracked file contents, and
+the dashboard instructions. An unchanged project keeps its last report. Git is
+read without staging, checking out, or writing objects. Missed days do not queue
+extra generations. **Regenerate report** in the dashboard header always requests
+a new report. Until a page exists the dashboard body is empty; while regenerating,
+it keeps the previous page. A failed generation also keeps that page, and running
+generators survive app restarts just like task report generators.
+
 ## Report appearance
 
 New reports use [document-design](https://k-kinzal.github.io/document-design/)
@@ -460,7 +482,7 @@ parallel".
 
 "Burn down one Issue when the queue is free", "clear PR review comments every morning" —
 a project can hold **definitions that queue a task when conditions line up**. Configured
-at **rail → project → gear → Auto-queue**. Any number can sit on one project.
+at **rail → project → settings icon → Auto-queue**. Any number can sit on one project.
 Recurring task definitions appear as rows at the very bottom of the same task list,
 with the same columns as ordinary tasks. They stay last when sorting, include disabled
 definitions, and also appear in the compact list beside a task. Clicking a definition
@@ -674,5 +696,5 @@ to the full-width table — the same operation as the ✕ in the detail header.
 - Attributes (status, project, priority, agent, run history) go to the info panel on the
   right
 - Agent definitions are a shared resource, so they live in **Settings › Agents**
-- **Project configuration lives on the project's screen** (rail → project → gear).
+- **Project configuration lives on the project's screen** (rail → project → settings icon).
   Configuration that affects only one project is not gathered into the app settings

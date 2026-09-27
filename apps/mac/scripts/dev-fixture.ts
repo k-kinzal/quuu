@@ -1587,6 +1587,30 @@ repo.saveTaskReport(db, {
 })
 writeFileSync(join(reportHome, 'rpt_fixture.log'), '# Quuu report\n# fixture\n')
 
+// A project assessment is a separate artifact from the task's change report.
+const projectReportHome = join(dir, 'reports', projects[0].id)
+mkdirSync(projectReportHome, { recursive: true })
+const projectReportPage = join(projectReportHome, 'rpt_project_fixture.html')
+writeFileSync(projectReportPage, `<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"><title>Quuu の現在地</title></head>
+<body><article class="sheet"><p class="eyebrow">PROJECT REPORT / QUUU</p><h1>人が休んでいる間も、作業が進む</h1>
+<p class="stand">複数のプロジェクトを AI に任せ、必要なときに判断へ戻れる環境を目指す。</p>
+<div class="hero"><div class="was"><span class="cap">目指すもの</span><span class="claim">手渡しからの解放</span><span class="unit">メモを AI に配り続けなくてよい生活</span></div>
+<div class="now"><span class="cap">いま使えること</span><span class="claim">実行とレビューの一元化</span><span class="unit">キュー、継続実行、会話、変更レポート</span></div></div>
+<section class="sec"><div class="label"><h2>01 / 実現できたこと</h2></div>
+<div class="figures"><figure><h3>作業を預ける</h3><p>複数の AI がキューから作業を受け取り、制限時は自動で引き継ぐ。</p></figure>
+<figure><h3>途中で離れる</h3><p>アプリを再起動してもエージェントの実行と会話を引き継ぐ。</p></figure>
+<figure><h3>結果を判断する</h3><p>会話、差分、レポートを読んで、人が完了を決める。</p></figure></div></section>
+<section class="sec"><div class="label"><h2>02 / これから確かめること</h2></div><div class="field">
+<p class="lead">機能があることと、人が休めることの間を確かめる。</p><p class="note">日々の手作業がどれだけ減ったかは、実際の利用を通して評価する必要がある。</p>
+</div></section></article></body></html>`)
+repo.saveProjectReport(db, {
+  projectId: projects[0].id, status: 'ready', cwd: project0Path, revision: 'fixture', pendingRevision: '',
+  checkedAt: new Date().toISOString(), path: projectReportPage, pending: '', logPath: '', exitPath: '',
+  error: '', pid: null, startedAt: iso(22), endedAt: iso(20)
+})
+
 repo.setSetting(
   db,
   'app',

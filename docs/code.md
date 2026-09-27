@@ -87,7 +87,7 @@ packages/            the independent Design System
 |------|------|
 | `apps/mac/src/main/execution/scheduler.ts` | conditional acquisition, end-of-run policy, consistency recovery at startup |
 | `apps/mac/src/main/automation/evaluate.ts` | evaluation of automations (definitions that enqueue tasks when conditions line up) |
-| `apps/mac/src/main/report/` | the change report: when one is written, and what the writing agent is told. **Touches no task state, holds no execution slot** |
+| `apps/mac/src/main/report/` | task change reports and daily project assessments: when they are written, and what the writing agent is told. **Touches no task state, holds no execution slot** |
 | `apps/mac/src/main/platform/reportViews.ts` | shows a generated page. Static documents only — its session refuses every request that is not the report file |
 | `apps/mac/src/main/execution/runner.ts` | agent launch, cancel, exit classification (restart resilience lives here) |
 | `apps/mac/src/main/platform/runProcess.ts` | process-group operations, reading log tails and exit codes |

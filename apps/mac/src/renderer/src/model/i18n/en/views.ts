@@ -112,18 +112,31 @@ export const views = {
     lastSync: 'Last synced {{time}}',
     neverSynced: 'Not synced yet'
   },
+  projectDashboard: {
+    navigation: 'Project navigation',
+    title: 'Dashboard',
+    tasks: 'Tasks',
+    report: 'Project report',
+    regenerate: 'Regenerate report',
+    generating: 'Generating report…',
+    failed: 'Could not display or generate the project report'
+  },
   reportSettings: {
+    projectHint: 'Checks once a day while Quuu is running. Unchanged projects keep their previous report. Leave empty to use the default assessment.',
+    projectPlaceholder: 'Assess progress toward the project’s vision and goals in AGENTS.md and README.md, using the current implementation as evidence.',
+    projectInstructions: 'What the report should cover',
+    projectSection: 'Project dashboard',
     title: 'Report',
     generationSection: 'Generation',
-    enabled: 'Write a change report when a task reaches review',
+    enabled: 'Enable report AI',
     target: 'Written by',
     unset: 'Not set',
     groupsGroup: 'Groups',
     agentsGroup: 'Agents',
     targetNeeded: 'Pick who writes the report',
-    instructionsSection: 'Instructions',
+    instructionsSection: 'Task reports',
     instructions: 'Added to the instructions',
-    instructionsPlaceholder: 'What every report should cover'
+    instructionsPlaceholder: 'What every task report should cover'
   },
   pullRequestSettings: {
     title: 'Pull Requests',
@@ -169,7 +182,7 @@ export const views = {
     maxConcurrentUnit: '',
     enabled: 'Enabled',
     reportSection: 'Report',
-    reportEnabled: 'Write change reports for this project',
+    reportEnabled: 'Write task and dashboard reports for this project',
     pullRequestSection: 'Pull Requests',
     pullRequestMode: 'When not in order',
     identitySection: 'GitHub identity',

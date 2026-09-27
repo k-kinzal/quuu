@@ -462,6 +462,13 @@ export function createAppRouter(app: QuuuApp) {
     const id = input
     return closePullRequestView(owner, id)
   })
+  const projectReportGet = os.report.projectGet.handler(({ input }) => app.projectReports.report(input))
+  const projectReportGenerate = os.report.projectGenerate.handler(({ input }) => app.projectReports.generate(input))
+  const projectReportShow = os.report.projectShow.handler(({ input, context }) => {
+    const report = app.projectReports.report(input.projectId)
+    if (!report?.path) return { ok: false, reason: t('report.noPage') }
+    return showReportView(context.owner, { file: report.path, bounds: input.bounds })
+  })
   const reportGet = os.report.get.handler(({ input }) => app.reports.report(input))
   const reportGenerate = os.report.generate.handler(({ input }) => app.reports.generate(input))
   /*
@@ -615,6 +622,9 @@ export function createAppRouter(app: QuuuApp) {
       closePullRequest: reviewClosePullRequest,
     },
     report: {
+      projectGet: projectReportGet,
+      projectGenerate: projectReportGenerate,
+      projectShow: projectReportShow,
       get: reportGet,
       generate: reportGenerate,
       show: reportShow,

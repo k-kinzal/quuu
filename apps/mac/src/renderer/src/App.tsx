@@ -30,6 +30,8 @@ import { isJapanese, t } from './model/i18n/index.js'
 import { useCursorTask, useStore } from './state/store.js'
 import { buildTheme } from './ui/theme.js'
 import { SettingsShell } from './views/SettingsShell.js'
+import { ProjectDashboard } from './views/project/ProjectDashboard.js'
+import { ProjectNavigation } from './views/project/ProjectNavigation.js'
 import { ProjectDetail } from './views/project/ProjectDetail.js'
 
 /**
@@ -88,6 +90,8 @@ function Shell(): JSX.Element {
   const detailOpen = useStore((s) => s.detailOpen)
   const closeDetail = useStore((s) => s.closeDetail)
   const openTask = useStore((s) => s.openTask)
+  const projectDashboardOpen = useStore((s) => s.projectDashboardOpen)
+  const reportEnabled = useStore((s) => s.settings?.reportEnabled ?? false)
   const projectSettingsOpen = useStore((s) => s.projectSettingsOpen)
   const openProjectSettings = useStore((s) => s.openProjectSettings)
   const snapshot = useStore((s) => s.snapshot)
@@ -325,6 +329,7 @@ function Shell(): JSX.Element {
         return
       }
 
+      if (state.projectDashboardOpen || state.projectSettingsOpen || state.section.kind === 'settings') return
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return
 
       /*
@@ -370,15 +375,18 @@ function Shell(): JSX.Element {
       <AppShellBody>
         <MotionLayout
           motionKey={`${detailOpen ? task?.id ?? 'missing' : 'overview'}:${layout.railCollapsed}:${layout.listMode}`}
-          contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}`}
+          contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}`}
         >
           <LeftMenu showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen} />
           <AppShellMain windowHeader>
             <AppShellBody>
+              {project && <ProjectNavigation project={project} />}
               {isSettings ? (
                 <SettingsShell />
               ) : projectSettingsOpen && project ? (
                 <ProjectDetail project={project} onBack={() => openProjectSettings(false)} />
+              ) : projectDashboardOpen && reportEnabled && project?.reportEnabled ? (
+                <ProjectDashboard key={project.id} project={project} />
               ) : detailOpen ? (
                 task ? (
                   <TaskWorkspace task={task} />

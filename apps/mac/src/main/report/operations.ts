@@ -376,7 +376,7 @@ export class ReportOperations extends EventEmitter {
     try {
       for (const entry of readdirSync(root, { withFileTypes: true })) {
         if (!entry.isDirectory() || entry.name === REPORT_ASSETS) continue
-        if (repo.getTask(this.db, entry.name)) continue
+        if (repo.getTask(this.db, entry.name) || repo.getProject(this.db, entry.name)) continue
         rmSync(join(root, entry.name), { recursive: true, force: true })
       }
     } catch (error) {

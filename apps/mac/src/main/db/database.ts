@@ -250,6 +250,24 @@ CREATE TABLE IF NOT EXISTS task_reports (
   ended_at   TEXT
 );
 
+/* Project assessments keep their daily check and in-flight generation across restarts. */
+CREATE TABLE IF NOT EXISTS project_reports (
+  project_id TEXT PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+  status TEXT NOT NULL,
+  cwd TEXT NOT NULL DEFAULT '',
+  revision TEXT NOT NULL DEFAULT '',
+  pending_revision TEXT NOT NULL DEFAULT '',
+  checked_at TEXT NOT NULL,
+  path TEXT NOT NULL DEFAULT '',
+  pending TEXT NOT NULL DEFAULT '',
+  log_path TEXT NOT NULL DEFAULT '',
+  exit_path TEXT NOT NULL DEFAULT '',
+  error TEXT NOT NULL DEFAULT '',
+  pid INTEGER,
+  started_at TEXT NOT NULL,
+  ended_at TEXT
+);
+
 /*
  * Every agent Quuu launched to write a report: where it worked, and between when and when.
  *
@@ -338,7 +356,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 29
+  const target = 30
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -634,6 +652,7 @@ function migrate(db: Db): void {
     addColumnIfMissing(db, 'projects', 'pull_request_conflict_prompt', "TEXT NOT NULL DEFAULT ''")
   }
 
+  // v29 -> v30: project_reports is created by SCHEMA; existing task reports stay intact.
   setSchemaVersion(db, target)
 }
 

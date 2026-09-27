@@ -6,7 +6,7 @@ import { TaskRuleInputSchema, TaskRuleSchema } from "./api/automation.js"
 import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./api/desktop.js"
 import { RunSchema, SchedulerStatusSchema } from "./api/execution.js"
 import { ProjectInputSchema, ProjectSchema } from "./api/projects.js"
-import { ReportViewRequestSchema, TaskReportSchema } from "./api/report.js"
+import { ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./api/report.js"
 import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewSnapshotSchema } from "./api/review.js"
 import { SessionSnapshotSchema } from "./api/session.js"
 import { AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./api/settings.js"
@@ -161,6 +161,9 @@ export const contract = {
     closePullRequest: procedure.input(z.string()).output(ReviewActionResultSchema),
   },
   report: {
+    projectGet: procedure.input(z.string()).output(z.union([ProjectReportSchema, z.null()])),
+    projectGenerate: procedure.input(z.string()).output(ReviewActionResultSchema),
+    projectShow: procedure.input(ProjectReportViewRequestSchema.strict()).output(ReviewActionResultSchema),
     get: procedure.input(z.string()).output(z.union([TaskReportSchema, z.null()])),
     generate: procedure.input(z.string()).output(ReviewActionResultSchema),
     show: procedure.input(ReportViewRequestSchema.strict()).output(ReviewActionResultSchema),

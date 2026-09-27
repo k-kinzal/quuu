@@ -113,18 +113,31 @@ export const views: typeof en = {
     lastSync: '最終同期 {{time}}',
     neverSynced: 'まだ同期していません'
   },
+  projectDashboard: {
+    navigation: 'プロジェクト内のナビゲーション',
+    title: 'ダッシュボード',
+    tasks: 'タスク一覧',
+    report: 'プロジェクトレポート',
+    regenerate: 'レポートを再作成',
+    generating: 'レポートを作成中…',
+    failed: 'プロジェクトレポートを表示・作成できませんでした'
+  },
   reportSettings: {
+    projectHint: 'Quuuの起動中に1日1回確認し、変更がなければ前回のレポートを維持します。空欄では既定の評価内容を使います。',
+    projectPlaceholder: 'AGENTS.mdやREADME.mdに書かれたプロジェクトのビジョンやゴールに対して、現在の実装でどこまで実現できているかを評価します。',
+    projectInstructions: 'レポートに書いてほしい内容',
+    projectSection: 'プロジェクトダッシュボード',
     title: 'レポート',
     generationSection: '生成',
-    enabled: 'レビュー待ちになったら変更レポートを書く',
+    enabled: 'レポートAIを有効にする',
     target: '書かせるエージェント / グループ',
     unset: '未設定',
     groupsGroup: 'グループ',
     agentsGroup: 'エージェント',
     targetNeeded: 'レポートを書くエージェントを選んでください',
-    instructionsSection: '指示',
+    instructionsSection: 'タスクレポート',
     instructions: '指示に追記する内容',
-    instructionsPlaceholder: 'すべてのレポートに書いてほしいこと'
+    instructionsPlaceholder: '各タスクのレポートに書いてほしいこと'
   },
   pullRequestSettings: {
     title: 'プルリクエスト',
@@ -170,7 +183,7 @@ export const views: typeof en = {
     maxConcurrentUnit: '本',
     enabled: '有効にする',
     reportSection: 'レポート',
-    reportEnabled: 'このプロジェクトで変更レポートを書く',
+    reportEnabled: 'このプロジェクトでタスクとダッシュボードのレポートを書く',
     pullRequestSection: 'プルリクエスト',
     pullRequestMode: '整っていないとき',
     identitySection: 'GitHub の名義',

@@ -14,6 +14,7 @@ import { MobileSync } from './mobile-sync/mobileSync.js'
 import { primeProcessPath } from './platform/shellEnv.js'
 import { ProjectOperations } from './projects/operations.js'
 import { PullRequestFollowUp } from './automation/pullRequestFollowUp.js'
+import { ProjectReportOperations } from './report/projectOperations.js'
 import { ReportOperations } from './report/operations.js'
 import { WorkspaceOperations } from './projects/workspace.js'
 import { ReviewOperations } from './review/operations.js'
@@ -53,6 +54,7 @@ export class QuuuApp extends EventEmitter {
   readonly mobile: MobileSync
   readonly reviews: ReviewOperations
   readonly reports: ReportOperations
+  readonly projectReports: ProjectReportOperations
   readonly pullRequestFollowUp: PullRequestFollowUp
   readonly terminal: TerminalOperations
   readonly review: ReviewService
@@ -86,6 +88,7 @@ export class QuuuApp extends EventEmitter {
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.workspace = new WorkspaceOperations(this.db, () => this.settings.getSettings())
     this.reviews = new ReviewOperations(this.db, () => this.settings.getSettings(), this.review, id => this.workspace.workbenchPlace(id))
+    this.projectReports = new ProjectReportOperations(this.db, () => this.settings.getSettings())
     this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id))
     /*
      * A Pull Request that is not in order sends the task back through the same entry a person's
@@ -148,6 +151,7 @@ export class QuuuApp extends EventEmitter {
       this.emit('status', this.scheduler.status())
     })
     this.scheduler.on('notify', (t: ToastPayload) => this.emit('notify', t))
+    this.projectReports.on('notify', (t: ToastPayload) => this.emit('notify', t))
     this.reports.on('notify', (t: ToastPayload) => this.emit('notify', t))
     this.pullRequestFollowUp.on('notify', (t: ToastPayload) => this.emit('notify', t))
     this.terminals.on('terminal', (event) => this.emit('terminal', event))
@@ -170,6 +174,7 @@ export class QuuuApp extends EventEmitter {
     this.startImport()
     this.mobile.configure(this.settings.getSettings(), this.scheduler.status().running)
     this.reports.start()
+    this.projectReports.start()
     try { this.sessions.sweepRetired() }
     catch (error) { console.warn('Cannot drop retired session pages', error) }
     this.refreshProjections()
@@ -251,6 +256,7 @@ export class QuuuApp extends EventEmitter {
     this.sessions.stop()
     this.reviews.stop()
     this.reports.stop()
+    this.projectReports.stop()
     if (this.initialImport) clearTimeout(this.initialImport)
     if (this.importTimer) clearInterval(this.importTimer)
     if (this.livenessTimer) clearInterval(this.livenessTimer)

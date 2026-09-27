@@ -84,7 +84,7 @@ export const AppSettingsSchema = z.object({
    */
   mobileSyncEnabled: z.boolean(),
   /**
-   * Whether a change report is written when a task reaches review.
+   * Whether task change reports and daily project assessments are written.
    *
    * Off until a writer is named: the feature costs one agent run per review, which is not a
    * cost to start incurring on someone's behalf. A project can opt out (`Project.reportEnabled`).
@@ -101,6 +101,7 @@ export const AppSettingsSchema = z.object({
   reportTargetId: z.string(),
   /** Added to the end of the instructions handed to that agent. */
   reportInstructions: z.string(),
+  projectReportInstructions: z.string(),
   /**
    * What a task is told when its run ends and its Pull Request is not in order: CI failed, CI
    * still running, or the branch conflicts with its base. Empty sends nothing.

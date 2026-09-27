@@ -13,7 +13,6 @@ import {
   FillerCell,
   GROUP_ROW_HEIGHT,
   HeadCell,
-  IconButton,
   InlineMarker,
   InlineNote,
   Panel,
@@ -65,7 +64,7 @@ import { holdsSlot } from '../model/taskStatus.js'
 import type { VisibleRange } from '../model/windowing.js'
 import { rowOffsets, visibleRange } from '../model/windowing.js'
 import { useStore } from '../state/store.js'
-import { ICON, Lock, Settings, iconProps } from '../ui/icons.js'
+import { ICON, Lock, iconProps } from '../ui/icons.js'
 import { Priority as PriorityText } from '../ui/panes.js'
 import { StatusDot } from '../ui/StatusDot.js'
 import { columnMenuItems, doneScopeItems } from './ColumnMenu.js'
@@ -143,7 +142,6 @@ export function TaskOverview(): JSX.Element {
   const landedTaskId = useStore((s) => s.landedTaskId)
   const pushToast = useStore((s) => s.pushToast)
   const markDoneAndAdvance = useStore((s) => s.markDoneAndAdvance)
-  const openProjectSettings = useStore((s) => s.openProjectSettings)
 
   const savedWidths = useStore((s) => s.table.widths)
   const sort = useStore((s) => s.table.sort)
@@ -385,14 +383,6 @@ export function TaskOverview(): JSX.Element {
         <PanelHeading title={title} count={tasks.length}><span {...motionAnchor('heading')}>{title}</span></PanelHeading>
         {/* The band's empty space is a window-drag surface. The window has no title bar, so give that back here */}
         <WindowDragArea />
-        {/* The band's right edge is this pane's settings. Table appearance (sort, filter) belongs to the bar below */}
-        {project && (
-          <IconButton
-            title={t('taskOverview.projectSettings')}
-            icon={<Settings size={ICON.md} {...iconProps} />}
-            onClick={() => openProjectSettings(true)}
-          />
-        )}
       </PanelHeader>
 
       {/*

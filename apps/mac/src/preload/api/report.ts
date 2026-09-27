@@ -26,6 +26,14 @@ export const TaskReportSchema = z.object({
 })
 export type TaskReport = z.infer<typeof TaskReportSchema>
 
+export const ProjectReportSchema = TaskReportSchema.omit({ taskId: true }).extend({ projectId: z.string() })
+export type ProjectReport = z.infer<typeof ProjectReportSchema>
+
+export const ProjectReportViewRequestSchema = z.object({
+  projectId: z.string(),
+  bounds: PullRequestViewBoundsSchema
+})
+
 export const ReportViewRequestSchema = z.object({
   taskId: z.string(),
   bounds: PullRequestViewBoundsSchema

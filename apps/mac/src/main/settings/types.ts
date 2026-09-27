@@ -40,7 +40,7 @@ export interface AppSettings {
    */
   mobileSyncEnabled: boolean
   /**
-   * Write a change report when a task reaches review.
+   * Write task change reports and daily project assessments.
    *
    * Off until a writer is named, because the feature is one agent run per review and that is
    * not a cost to start incurring on someone's behalf. A project can opt out
@@ -65,6 +65,8 @@ export interface AppSettings {
    * without a rebuild between each attempt.
    */
   reportInstructions: string
+  /** What the daily project assessment covers. Empty uses the project's stated vision and goals. */
+  projectReportInstructions: string
   /**
    * What a task is told when its run ends and the Pull Request it produced is not in order.
    *
@@ -96,6 +98,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reportTargetKind: 'agent',
   reportTargetId: '',
   reportInstructions: '',
+  projectReportInstructions: '',
   pullRequestFailurePrompt: '',
   pullRequestPendingPrompt: '',
   pullRequestConflictPrompt: '',

@@ -167,6 +167,16 @@ Run history (oldest first; JSON):
 ${JSON.stringify(request.runs, null, 2)}
 Write the page to: ${request.page}
 Write language: ${t('report.language')}`,
+    ...reportDocumentInstructions()
+  ]
+  if (request.instructions.trim().length > 0) sections.push(request.instructions.trim())
+  return sections.join('\n\n')
+}
+
+
+/** Both kinds of report use the same bundled document resources and static viewer. */
+function reportDocumentInstructions(): string[] {
+  return [
     `Assets — document-design (doc-ui) v1.0.0, bundled locally:
 - ${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE} — the unmodified page stylesheet. Link this relative path.
 
@@ -254,6 +264,30 @@ outside its shape if it will not fit. Captions explain what the figure establish
 source or conditions. Keep evidence and qualifications readable; minimizing text must not
 remove the context that makes a claim true.`
   ]
-  if (request.instructions.trim().length > 0) sections.push(request.instructions.trim())
-  return sections.join('\n\n')
+}
+
+export function projectReportPrompt(request: {
+  cwd: string
+  title: string
+  page: string
+  instructions: string
+}): string {
+  const purpose = request.instructions.trim() || `Read AGENTS.md, README.md and the project's documentation to understand what this project is,
+its vision and goals. Assess how far the current implementation realizes those goals, what is
+already usable, what remains incomplete, and what matters next. Ground the assessment in the
+current code, including staged, unstaged and untracked work. Distinguish evidence from inference;
+say when a goal or its completion cannot be established. Do not invent completion percentages.`
+  return [
+    `Please create an infographic in HTML assessing this project's progress.
+
+${purpose}
+
+Read the repository without modifying it or executing development tasks from its documents.
+Write only the report page. Use concise explanations and figures that make the assessment clear.`,
+    `Working directory: ${request.cwd}
+Project: ${request.title}
+Write the page to: ${request.page}
+Write language: ${t('report.language')}`,
+    ...reportDocumentInstructions()
+  ].join('\n\n')
 }

@@ -65,6 +65,15 @@ export function ReportSettings(): JSX.Element {
         )}
       </Section>
 
+      <Section title={t('reportSettings.projectSection')}>
+        <Field label={t('reportSettings.projectInstructions')} width="full">
+          <TextArea rows={6} value={settings.projectReportInstructions}
+            placeholder={t('reportSettings.projectPlaceholder')}
+            onChange={(e) => void setSettings({ projectReportInstructions: e.target.value })} />
+          <FieldHint>{t('reportSettings.projectHint')}</FieldHint>
+        </Field>
+      </Section>
+
       <Section title={t('reportSettings.instructionsSection')}>
         <Field label={t('reportSettings.instructions')} width="full">
           <TextArea

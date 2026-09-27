@@ -18,8 +18,8 @@ export async function stepHistory(step: -1 | 1): Promise<void> {
   if (!place) return
   // The destination pane is only in the DOM after the redraw (App's `focusPaneSoon` has the same reason)
   requestAnimationFrame(() => {
-    if (place.section.kind === 'settings') focusPane('settings')
-    else focusAny('list', 'chat', 'rail')
+    if (place.section.kind === 'settings' || place.projectSettingsOpen) focusPane('settings')
+    else focusAny('list', 'chat', 'projectNavigation', 'rail')
   })
 }
 

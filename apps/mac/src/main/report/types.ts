@@ -53,3 +53,14 @@ export interface StoredReport extends TaskReport {
   pending: string
   exitPath: string
 }
+
+/** The last readable project assessment, kept while its replacement is written. */
+export interface ProjectReport extends Omit<TaskReport, 'taskId'> {
+  projectId: string
+}
+
+export interface StoredProjectReport extends ProjectReport, Omit<StoredReport, keyof TaskReport> {
+  checkedAt: string
+  /** Only becomes revision when the new page succeeds. */
+  pendingRevision: string
+}

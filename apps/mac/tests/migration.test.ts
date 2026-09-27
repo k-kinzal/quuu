@@ -199,8 +199,8 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('29')
-    for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports']) {
+    expect(version.value).toBe('30')
+    for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
 
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('29')
+    expect(version.value).toBe('30')
     db.close()
   })
 
@@ -703,4 +703,19 @@ describe('pull request prompt migration', () => {
       expect(repo.getProject(reopened, projectId)).toMatchObject({ pullRequestPromptMode: 'custom', pullRequestFailurePrompt: 'Fix CI', pullRequestPendingPrompt: '', pullRequestConflictPrompt: 'Rebase' })
     } finally { reopened.close() }
   })
+})
+
+
+it('adds daily project reports to a v29 database without changing existing tasks', () => {
+  const old = openDatabase(path)
+  const agent = makeAgent(old, { name: 'Agent' })
+  const project = makeProject(old, { name: 'Project', targetId: agent })
+  const task = makeTask(old, project, 'Keep this task')
+  old.exec("DROP TABLE project_reports; UPDATE meta SET value = '29' WHERE key = 'schema_version'")
+  old.close()
+  const db = openDatabase(path)
+  expect(repo.getTask(db, task)?.title).toBe('Keep this task')
+  expect(repo.getProjectReport(db, project)).toBeNull()
+  expect(repo.getAppSettings(db).projectReportInstructions).toBe('')
+  db.close()
 })

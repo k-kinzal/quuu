@@ -14,7 +14,7 @@ import type { Task, TaskDependency, TaskInput, TaskPatch } from '../tasks/types.
 
 import type { SyncOutcome, SyncReceipt } from '../mobile-sync/protocol.js'
 import type { SessionMessage } from '../session/types.js'
-import type { ReportStatus, StoredReport } from '../report/types.js'
+import type { ReportStatus, StoredReport, StoredProjectReport } from '../report/types.js'
 import type { ReviewSnapshot } from '../review/types.js'
 import { b2i, i2b, newId, nowIso, parseJson } from '../util.js'
 import type { Db } from './database.js'
@@ -180,6 +180,37 @@ export function saveTaskReport(db: Db, report: StoredReport): void {
     report.startedAt,
     report.endedAt
   )
+}
+
+function toProjectReport(row: Row): StoredProjectReport {
+  const { taskId: _taskId, ...report } = toReport(row)
+  return {
+    ...report, projectId: s(row.project_id), checkedAt: s(row.checked_at),
+    pendingRevision: s(row.pending_revision)
+  }
+}
+
+export function getProjectReport(db: Db, projectId: string): StoredProjectReport | null {
+  const row = db.prepare('SELECT * FROM project_reports WHERE project_id = ?').get(projectId) as Row | undefined
+  return row ? toProjectReport(row) : null
+}
+
+export function listGeneratingProjectReports(db: Db): StoredProjectReport[] {
+  return (db.prepare("SELECT * FROM project_reports WHERE status = 'generating'").all() as Row[]).map(toProjectReport)
+}
+
+export function saveProjectReport(db: Db, report: StoredProjectReport): void {
+  db.prepare(`INSERT OR REPLACE INTO project_reports (project_id, status, cwd, revision,
+    pending_revision, checked_at, path, pending, log_path, exit_path, error, pid, started_at, ended_at)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    report.projectId, report.status, report.cwd, report.revision, report.pendingRevision,
+    report.checkedAt, report.path, report.pending, report.logPath, report.exitPath, report.error,
+    report.pid, report.startedAt, report.endedAt
+  )
+}
+
+export function markProjectReportChecked(db: Db, projectId: string, checkedAt: string): void {
+  db.prepare('UPDATE project_reports SET checked_at = ? WHERE project_id = ?').run(checkedAt, projectId)
 }
 
 export interface TaskReviewBase {
