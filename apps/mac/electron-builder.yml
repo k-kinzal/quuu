@@ -1,5 +1,8 @@
 appId: net.kinzal.quuu
 productName: Quuu
+# Packaged local builds must never opt into the Release update channel.
+extraMetadata:
+  quuuDistribution: local
 directories:
   buildResources: build
   output: release

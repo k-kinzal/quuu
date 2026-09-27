@@ -28,6 +28,7 @@
     "check": "npm run lint && npm run check:architecture && npm run api:check && npm run typecheck && npm test",
     "dist": "npm run dist -w quuu",
     "dist:dmg": "npm run dist:dmg -w quuu",
+    "dist:release": "npm run dist:release -w quuu",
     "app:restart": "npm run app:restart -w quuu",
     "icon": "bash scripts/build-icon.sh",
     "dev:fixture": "npm run dev:fixture -w quuu",
