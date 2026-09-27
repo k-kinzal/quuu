@@ -22,3 +22,25 @@ apps/mobile/ios/Local.xcconfig
 *.sqlite
 xcuserdata/
 *.xcuserstate
+
+# AI agent configuration and instructions stay local, including symlinks.
+.codex
+.claude
+.agents
+.cursor
+.gemini
+.copilot
+.opencode
+.windsurf
+.continue
+.mcp.json
+.cursorrules
+.windsurfrules
+.aider*
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+.github/copilot-instructions.md
+.github/instructions/
