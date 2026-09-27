@@ -94,6 +94,7 @@ packages/            the independent Design System
 | `apps/mac/src/main/execution/runner.ts` | agent launch, cancel, exit classification (restart resilience lives here) |
 | `apps/mac/src/main/platform/runProcess.ts` | process-group operations, reading log tails and exit codes |
 | `apps/mac/src/main/agent-adapters/` | Per-provider errors, logs, session identity and liveness translated to Quuu contracts |
+| `apps/mac/src/main/agent-adapters/limitScope.ts` / `execution/conditions.ts` (`limitHolder`) | which allowance a Limit spent - the account's, or one model's share of it (Fable on Claude) - read by each adapter from its CLI's wording, and which definition waits it out. **A limit is never keyed by CLI alone** |
 | `apps/mac/src/main/agent-adapters/limitWindow.ts` / `claude/weeklyWindow.ts` | when a Limit lifts: read out of what the CLI printed, or — for a limit on one model, which never prints one — off the week that model's share belongs to |
 | `apps/mac/src/main/nativeMenu.ts` | lets the OS draw menus the screens request. **Never draw menus inside the window** |
 | `apps/mac/src/main/contextMenu.ts` | right-click for inputs, selection, links (a base with no app vocabulary) |

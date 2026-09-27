@@ -2,8 +2,10 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { adapterFor } from '../src/main/agent-adapters/registry.js'
 import type { LogAdapter } from '../src/main/agents/cliAdapter.js'
 import * as repo from '../src/main/db/repo.js'
+import { limitHolder } from '../src/main/execution/conditions.js'
 import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, releaseSessionDirs } from './helpers.js'
@@ -207,5 +209,29 @@ describe('a Limit on the whole account', () => {
     await runOnce(db, opus)
 
     expectConfiguredGuess(db, opus, before)
+  })
+})
+
+describe('reading which allowance a limit spent', () => {
+  it('lets only Claude name one model\'s share; every other CLI reads a limit as the account\'s', () => {
+    expect(adapterFor('claude').limitScope(FABLE_LIMIT)).toEqual({ kind: 'model', model: 'Fable' })
+    for (const id of ['codex', 'cursor', 'copilot', 'grok', 'agy', 'opencode', 'stdout'] as const) {
+      expect(adapterFor(id).limitScope(FABLE_LIMIT)).toEqual({ kind: 'account' })
+    }
+  })
+
+  it('works out a moment only for one model\'s week, and only from a watched turn', () => {
+    const turn = [
+      { status: 'succeeded' as const, errorMessage: '', startedAt: new Date(Date.now() - 10 * DAY_MS).toISOString() },
+      { status: 'limited' as const, errorMessage: FABLE_LIMIT, startedAt: new Date(Date.now() - 12 * DAY_MS).toISOString() }
+    ]
+    expect(adapterFor('claude').retryAt({ kind: 'model', model: 'Fable' }, turn)).not.toBeNull()
+    expect(adapterFor('claude').retryAt({ kind: 'account' }, turn)).toBeNull()
+    expect(adapterFor('codex').retryAt({ kind: 'model', model: 'Fable' }, turn)).toBeNull()
+  })
+
+  it('leaves the definition that hit the wall holding it, whichever allowance it was', () => {
+    expect(limitHolder('fable', { kind: 'model', model: 'Fable' })).toBe('fable')
+    expect(limitHolder('opus', { kind: 'account' })).toBe('opus')
   })
 })

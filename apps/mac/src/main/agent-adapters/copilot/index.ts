@@ -1,6 +1,7 @@
 import { copilotCli } from '../../agent-clis/copilot.js'
 import { invocationFor } from '../../agent-clis/invocation.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
+import { accountWide } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { external } from './external.js'
 import { findCopilotSessionId } from './identity.js'
@@ -23,5 +24,6 @@ export const copilotAdapter: AgentAdapter = {
   createParser: (_namespace, buffer) => new CopilotSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
+  limitScope: accountWide,
   retryAt: () => null
 }

@@ -22,29 +22,10 @@
  */
 
 import type { RunOutcome } from '../../execution/types.js'
+import { claudeLimitScope } from './limitScope.js'
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
-
-/**
- * A limit on one model rather than on the account: "You've reached your **Fable** limit."
- *
- * The model's name is what tells it apart from "You've reached your usage limit", which is the
- * account's own five-hour window - a different length of wait entirely, and one that always prints
- * the moment it lifts. A model is a proper noun and those windows are not, so the capital is the
- * test, with the common nouns a message may still capitalize ruled out by name.
- */
-const MODEL_LIMIT = /reached your ([A-Z][\w.+-]*) limit/
-const NOT_A_MODEL = new Set([
-  'Usage', 'Weekly', 'Daily', 'Monthly', 'Hourly', 'Rate', 'Session', 'Account', 'Plan', 'Team',
-  'Spend', 'Credit', 'Credits', 'Organization', 'Token', 'Context'
-])
-
-/** Does that message say one model is spent, rather than the account? */
-export function isModelLimit(message: string): boolean {
-  const named = MODEL_LIMIT.exec(message)
-  return named !== null && !NOT_A_MODEL.has(named[1])
-}
 
 /** A turn of the week Quuu watched happen: out at `limited`, back by `back`. */
 interface ObservedTurn {
@@ -108,7 +89,7 @@ function lastObservedTurn(history: readonly RunOutcome[]): ObservedTurn | null {
     const at = Date.parse(run.startedAt)
     if (Number.isNaN(at)) continue
     if (run.status === 'limited') {
-      if (isModelLimit(run.errorMessage)) limited = at
+      if (spentOneModel(run)) limited = at
       continue
     }
     if (run.status !== 'succeeded' || limited === null) continue
@@ -122,8 +103,13 @@ function lastObservedTurn(history: readonly RunOutcome[]): ObservedTurn | null {
 /** Did a limit of the same shape land in the hour after that moment? */
 function limitedWithinHourAfter(history: readonly RunOutcome[], at: number): boolean {
   return history.some((run) => {
-    if (run.status !== 'limited' || !isModelLimit(run.errorMessage)) return false
+    if (run.status !== 'limited' || !spentOneModel(run)) return false
     const started = Date.parse(run.startedAt)
     return !Number.isNaN(started) && started >= at && started < at + HOUR_MS
   })
+}
+
+/** A limit on one model's share, read the same way the run that just ended was. */
+function spentOneModel(run: RunOutcome): boolean {
+  return claudeLimitScope(run.errorMessage).kind === 'model'
 }

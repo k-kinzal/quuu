@@ -7,7 +7,7 @@ import { consumeReservation, recordExecutionState } from '../tasks/execution.js'
 import { holdsSlot } from '../tasks/status.js'
 import type { Task } from '../tasks/types.js'
 import { isFollowupPending } from '../tasks/types.js'
-import { canClaimTask, consecutiveFailures, cooldownUntil, resumeMessage, retryRequirement, runDisposition, shouldRetryRun, slotAvailability } from './conditions.js'
+import { canClaimTask, consecutiveFailures, cooldownUntil, limitHolder, resumeMessage, retryRequirement, runDisposition, shouldRetryRun, slotAvailability } from './conditions.js'
 import type { Classification } from './errorClassifier.js'
 import { ExecutionRecovery } from './recovery.js'
 import type { StartParams } from './runner.js'
@@ -559,13 +559,7 @@ export class Scheduler extends EventEmitter {
         return
       }
 
-      const until = cooldownUntil(classification.kind,
-        repo.getAgent(this.db, run.agentId)?.cooldownSeconds,
-        classification.retryAt ?? this.providerRetryAt(run, classification), nowIso())
-      if (until !== null) {
-        repo.setCooldown(this.db, run.agentId, until,
-          classification.kind === 'auth' ? t('runErrorKind.auth') : classification.message || 'Limit')
-      }
+      this.coolDown(run, classification)
       const probedUntil = this.limitProbes.get(run.id)
       this.limitProbes.delete(run.id)
 
@@ -618,10 +612,24 @@ export class Scheduler extends EventEmitter {
     })
   }
 
-  /** The adapter may infer a retry time from its own provider's history. */
-  private providerRetryAt(run: Run, classification: Classification): string | null {
-    if (classification.kind !== 'limit') return null
-    return adapterFor(run.logAdapter ?? 'stdout').retryAt(classification, repo.listRunOutcomesByAgent(this.db, run.agentId))
+  /**
+   * Keep automatic claims off whoever cannot answer yet, until they can.
+   *
+   * A limit cools the definition standing in for the allowance it spent (`limitHolder`), and when
+   * the CLI never said when that is back, the adapter may work it out from the runs that spent the
+   * same allowance. A sign-in failure cools the definition that ran, the only one it says anything
+   * about.
+   */
+  private coolDown(run: Run, classification: Classification): void {
+    const adapter = adapterFor(run.logAdapter ?? 'stdout')
+    const scope = classification.kind === 'limit' ? adapter.limitScope(classification.message) : null
+    const holder = scope === null ? run.agentId : limitHolder(run.agentId, scope)
+    const retryAt = classification.retryAt ??
+      (scope === null ? null : adapter.retryAt(scope, repo.listRunOutcomesByAgent(this.db, holder)))
+    const until = cooldownUntil(classification.kind, repo.getAgent(this.db, holder)?.cooldownSeconds, retryAt, nowIso())
+    if (until === null) return
+    repo.setCooldown(this.db, holder, until,
+      classification.kind === 'auth' ? t('runErrorKind.auth') : classification.message || 'Limit')
   }
 
   /**

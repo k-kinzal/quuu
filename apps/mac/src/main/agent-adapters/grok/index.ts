@@ -2,6 +2,7 @@ import { grokCli } from '../../agent-clis/grok.js'
 import { invocationFor } from '../../agent-clis/invocation.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
 import { START_GRACE_MS, closestTo } from '../sessionLookup.js'
+import { accountWide } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { external } from './external.js'
 import {
@@ -26,5 +27,6 @@ export const grokAdapter: AgentAdapter = {
   createParser: (_namespace, buffer) => new GrokSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
+  limitScope: accountWide,
   retryAt: () => null
 }

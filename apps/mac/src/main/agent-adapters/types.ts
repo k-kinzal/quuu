@@ -7,6 +7,7 @@ import type { SessionMessage } from '../session/types.js'
 import type { SessionCandidate } from './discovery.js'
 import type { ExternalLogs } from './external.js'
 import type { AdapterLayout } from './layout.js'
+import type { LimitScope } from './limitScope.js'
 import type { ProviderLiveness } from './liveness.js'
 import type { PushResult, StoreReloadResult } from './parserUtil.js'
 import type { Classification, ClassifyInput } from './result.js'
@@ -43,5 +44,8 @@ export interface AgentAdapter {
   createParser(imageNamespace?: string, buffer?: MessageBuffer): SessionParser
   classify(input: ClassifyInput): Classification
   classifyDetached(input: { output: string; limitPatterns: string[] }): Classification
-  retryAt(classification: Classification, history: readonly RunOutcome[]): string | null
+  /** Which allowance a limit's message says was spent: the account's, or one model's share of it. */
+  limitScope(message: string): LimitScope
+  /** When that allowance is back, worked out from the runs that spent it. null when this provider cannot tell. */
+  retryAt(scope: LimitScope, history: readonly RunOutcome[]): string | null
 }

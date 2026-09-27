@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RunOutcome } from '../src/main/execution/types.js'
-import { isModelLimit, weeklyLimitLiftsAt } from '../src/main/agent-adapters/claude/weeklyWindow.js'
+import { weeklyLimitLiftsAt } from '../src/main/agent-adapters/claude/weeklyWindow.js'
+import { adapterFor } from '../src/main/agent-adapters/registry.js'
 
 /**
  * Working out when a limit on one model lifts, from the week it belongs to.
@@ -25,16 +26,18 @@ function history(...runs: RunOutcome[]): RunOutcome[] {
 }
 
 describe('telling a model limit from the account being out', () => {
+  const scope = (message: string): unknown => adapterFor('claude').limitScope(message)
+
   it('reads the model named in the message', () => {
-    expect(isModelLimit(FABLE_LIMIT)).toBe(true)
-    expect(isModelLimit("You've reached your Opus limit. Switch to another model.")).toBe(true)
+    expect(scope(FABLE_LIMIT)).toEqual({ kind: 'model', model: 'Fable' })
+    expect(scope("You've reached your Opus limit. Switch to another model.")).toEqual({ kind: 'model', model: 'Opus' })
   })
 
   it('leaves the account-wide windows alone, which name their own moment', () => {
-    expect(isModelLimit('Claude usage limit reached. Your limit will reset at 3pm')).toBe(false)
-    expect(isModelLimit("You've reached your weekly usage limit")).toBe(false)
-    expect(isModelLimit("You've hit your usage limit. Try again at Sep 19th, 2026 7:13 PM")).toBe(false)
-    expect(isModelLimit('API Error: 529 Overloaded. This is a server-side issue')).toBe(false)
+    expect(scope('Claude usage limit reached. Your limit will reset at 3pm')).toEqual({ kind: 'account' })
+    expect(scope("You've reached your weekly usage limit")).toEqual({ kind: 'account' })
+    expect(scope("You've hit your usage limit. Try again at Sep 19th, 2026 7:13 PM")).toEqual({ kind: 'account' })
+    expect(scope('API Error: 529 Overloaded. This is a server-side issue')).toEqual({ kind: 'account' })
   })
 })
 

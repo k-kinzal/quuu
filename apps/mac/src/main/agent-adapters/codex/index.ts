@@ -1,6 +1,7 @@
 import { codexCli } from '../../agent-clis/codex.js'
 import { invocationFor } from '../../agent-clis/invocation.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
+import { accountWide } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { external } from './external.js'
 import { layout } from './layout.js'
@@ -24,5 +25,6 @@ export const codexAdapter: AgentAdapter = {
   createParser: (_namespace, buffer) => new CodexSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
+  limitScope: accountWide,
   retryAt: () => null
 }

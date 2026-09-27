@@ -1,3 +1,4 @@
+import type { LimitScope } from '../agent-adapters/limitScope.js'
 import type { Project } from '../projects/types.js'
 import type { Task } from '../tasks/types.js'
 import type { Run, RunErrorKind } from './types.js'
@@ -154,6 +155,29 @@ export function slotAvailability(
   if (active >= limit) return 'busy'
   // Keeps two reserving tasks from blocking each other's free slot into a standstill.
   return active + (ownsReservation ? 0 : reserved) >= limit ? 'reserved' : 'available'
+}
+
+/**
+ * The definition that waits a limit out, and whose runs are the history of the allowance it spent.
+ *
+ * A limit spends an allowance - the account's, or one model's share of it (`LimitScope`) - but a
+ * definition has no model of its own: it is a CLI and an argument list, and the model is somewhere
+ * in the arguments. So the definition that hit the wall stands in for the allowance. That is decided
+ * here, once for each scope, so a new kind of allowance cannot arrive without someone saying who
+ * waits for it. Everything that reads a cooldown back (claiming, parking, a reset) reads it by
+ * definition too.
+ */
+export function limitHolder(agentId: string, scope: LimitScope): string {
+  switch (scope.kind) {
+    case 'model':
+      // Exact while each definition names one model. Two definitions of the same model each meet
+      // the wall, and watch the week turn, on their own
+      return agentId
+    case 'account':
+      // Narrower than the allowance: the account's other definitions are left free, and each finds
+      // out on its own run and falls back from there
+      return agentId
+  }
 }
 
 /** A misread date must not park an agent for a year. Anything beyond this is not believed. */
