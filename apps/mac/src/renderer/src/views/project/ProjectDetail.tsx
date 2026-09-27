@@ -101,12 +101,15 @@ export function ProjectDetail({
             >
               {t('projectDetail.reveal')}
             </Button>
-            <Button
-              variant="ghost" color="error"
-              onClick={() => confirmDeleteProject(project)}
-            >
-              {t('projectDetail.delete')}
-            </Button>
+            {/* Built in: the operation refuses it too, so the button would only lead to an error */}
+            {!project.builtIn && (
+              <Button
+                variant="ghost" color="error"
+                onClick={() => confirmDeleteProject(project)}
+              >
+                {t('projectDetail.delete')}
+              </Button>
+            )}
           </>
         }
       >
@@ -126,10 +129,10 @@ export function ProjectDetail({
             />
           </Field>
 
-          <Field label={t('projectDetail.directory')} width="full">
+          <Field label={t('projectDetail.directory')} width="full" hint={project.builtIn ? t('projectDetail.builtInDirectory') : undefined}>
             <Row>
               <TextInput mono value={project.path} readOnly />
-              <Button
+              {!project.builtIn && <Button
                 title={t('projectDetail.repickDirectory')}
                 onClick={() =>
                   void window.quuu.system.pickDirectory().then((path) => {
@@ -138,7 +141,7 @@ export function ProjectDetail({
                 }
               >
                 {t('projectDetail.change')}
-              </Button>
+              </Button>}
             </Row>
           </Field>
 
@@ -256,13 +259,16 @@ export function ProjectDetail({
           </Section>
         )}
 
-        <Section title={t('worktreeSettings.title')}>
-          <Field label={t('worktreeSettings.mode')} width="md">
-            <Select aria-label={t('worktreeSettings.mode')} value={project.worktreeMode}
-              onChange={(event) => update({ worktreeMode: event.target.value })}
-              options={(['inherit', 'on', 'off'] as const).map(value => ({ value, label: t(`worktreeSettings.${value}`) }))} />
-          </Field>
-        </Section>
+        {/* The built-in workspace is not a repository; its worktrees stay off */}
+        {!project.builtIn && (
+          <Section title={t('worktreeSettings.title')}>
+            <Field label={t('worktreeSettings.mode')} width="md">
+              <Select aria-label={t('worktreeSettings.mode')} value={project.worktreeMode}
+                onChange={(event) => update({ worktreeMode: event.target.value })}
+                options={(['inherit', 'on', 'off'] as const).map(value => ({ value, label: t(`worktreeSettings.${value}`) }))} />
+            </Field>
+          </Section>
+        )}
 
         <Section title={t('projectDetail.pullRequestSection')}>
           <Field label={t('projectDetail.pullRequestMode')} width="md">

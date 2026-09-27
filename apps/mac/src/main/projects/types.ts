@@ -6,6 +6,16 @@ import type { RecordSource } from '../tasks/status.js'
 // Projects
 // ---------------------------------------------------------------------------
 
+/**
+ * The fixed id of the project Quuu keeps for operating itself (`projects/builtIn.ts`). Fixed so
+ * every launch finds the same row, and so being built in never hangs on a name the human edits.
+ */
+export const QUUU_PROJECT_ID = 'prj_quuu'
+
+export function isBuiltInProject(id: string): boolean {
+  return id === QUUU_PROJECT_ID
+}
+
 export interface Project {
   taskHooks: TaskHook[]
   worktreeMode: 'inherit' | 'on' | 'off'
@@ -34,6 +44,11 @@ export interface Project {
    */
   importSince: string | null
   source: RecordSource
+  /**
+   * The project Quuu keeps for operating itself (`projects/builtIn.ts`). It cannot be deleted,
+   * and its directory is the workspace inside the app, so neither can be edited.
+   */
+  builtIn: boolean
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -96,6 +111,7 @@ export type ProjectInput = Omit<
   | 'createdAt'
   | 'updatedAt'
   | 'source'
+  | 'builtIn'
   | 'deletedAt'
   | 'importSince'
   | 'commitIdentityMode'

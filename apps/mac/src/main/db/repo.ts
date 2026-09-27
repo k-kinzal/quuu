@@ -5,7 +5,7 @@ import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Agent, AgentCooldown, AgentGroup, AgentGroupInput, AgentInput, GroupStrategy, RunTargetKind } from '../agents/types.js'
 import type { TaskRule, TaskRuleInput } from '../automation/conditions.js'
 import type { Run, RunErrorKind, RunKind, RunOutcome } from '../execution/types.js'
-import type { Project, ProjectInput } from '../projects/types.js'
+import { isBuiltInProject, type Project, type ProjectInput } from '../projects/types.js'
 import type { CommitIdentityMode } from '../settings/identity.js'
 import type { PullRequestPromptMode } from '../settings/pullRequestPrompts.js'
 import type { AppSettings } from '../settings/types.js'
@@ -259,6 +259,7 @@ function toProject(r: Row): Project {
   return {
     taskHooks: parseJson(s(r.task_hooks), []),
     id: s(r.id),
+    builtIn: isBuiltInProject(s(r.id)),
     name: s(r.name),
     path: s(r.path),
     color: s(r.color, '#4EA8DE'),

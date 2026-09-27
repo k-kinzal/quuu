@@ -1,4 +1,4 @@
-import { BrowserWindow, clipboard, dialog, shell, systemPreferences, type OpenDialogOptions } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, shell, systemPreferences, type OpenDialogOptions } from 'electron'
 import { applicationWindows } from '../windows.js'
 import { SCROLL_SWIPE_DEFAULT, scrollSwipeNavigates } from '../swipe.js'
 import { COLLAPSED_RAIL_WIDTH, WINDOW_BUTTONS_INSET, WINDOW_BUTTONS_OVERHANG } from '../windowGeometry.js'
@@ -10,6 +10,32 @@ import { closePullRequestView, hidePullRequestView, showPullRequestView } from '
 import { hideReportView, showReportView } from '../platform/reportViews.js'
 import { showDocumentView, hideDocumentView, navigateDocumentView } from '../platform/documentViews.js'
 import type { DesktopOperations } from '../api/host.js'
+import type { AppInfo } from '../../api/schemas/app.js'
+import { userDataDir } from '../appPaths.js'
+import type { AppUpdates } from './appUpdates.js'
+
+/*
+ * The updater exists only in a Release build and is loaded lazily, so it is handed in once it
+ * starts rather than imported here. Without one, this copy is a local build that never updates.
+ */
+let appUpdates: AppUpdates | null = null
+
+export function attachAppUpdates(updates: AppUpdates | null): void {
+  appUpdates = updates
+}
+
+function appInfo(): AppInfo {
+  return { version: app.getVersion(), dataDirectory: userDataDir(), updates: appUpdates?.status() ?? 'local' }
+}
+
+/** The app menu's commands. Neither needs a window, so a CLI call does not bring one forward. */
+export const appControls = {
+  info: appInfo,
+  checkForUpdates: (): AppInfo => {
+    appUpdates?.check(true)
+    return appInfo()
+  }
+}
 
 export function desktopOperations(owner: BrowserWindow): DesktopOperations {
   return {

@@ -62,7 +62,9 @@ apps/mac/src/
   client/               Generated-protocol gRPC client; imports no main implementation
   cli/                  CLI parsing, target resolution and streamed log output
 apps/mac/proto/          Generated .proto and permanent field-number registry
-skills/quuu/            Agent instructions for the installed CLI and MCP server
+skills/quuu/            Agent instructions for the installed CLI and MCP server; SKILL.md indexes
+                        use-case references/. Bundled into the app as QuuuAI's workspace
+apps/mac/quuu-ai/       QuuuAI's workspace in a checkout (links skills/); packaged as Resources/quuu-ai
 ```
 
 ```mermaid

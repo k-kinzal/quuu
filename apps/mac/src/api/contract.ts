@@ -2,6 +2,7 @@ import { HookRunSchema, TaskHookSchema } from './schemas/hooks.js'
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
 import { PromptFileSchema } from './schemas/files.js'
 import { oc } from '@orpc/contract'
+import { AppInfoSchema } from './schemas/app.js'
 import { ProjectDocumentsSchema, DocumentReadSchema, DocumentContentSchema, DocumentViewSchema } from './schemas/documents.js'
 import { z } from 'zod'
 import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./schemas/agents.js"
@@ -231,5 +232,11 @@ export const contract = {
     reveal: procedure.input(z.string()).output(z.void()),
     openExternal: procedure.input(z.string()).output(z.void()),
     copy: procedure.input(z.string()).output(z.void()),
+  },
+  /** The app menu's own commands, so a client without a window can do what the menu does. */
+  app: {
+    info: procedure.output(AppInfoSchema),
+    /** "Check for Updates…": a dialog about the result appears on the Mac, as from the menu. */
+    checkForUpdates: procedure.output(AppInfoSchema),
   },
 }

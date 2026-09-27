@@ -5,8 +5,9 @@ export function compareProjectNames(a: Project, b: Project): number {
   return compareText(a.name, b.name) || compareText(a.path, b.path) || a.id.localeCompare(b.id)
 }
 
+/** Navigation order: the built-in project heads the list, the rest follow by name. */
 export function projectsByName(projects: Project[]): Project[] {
-  return [...projects].sort(compareProjectNames)
+  return [...projects].sort((a, b) => Number(b.builtIn) - Number(a.builtIn) || compareProjectNames(a, b))
 }
 
 /** Display choices by recent use; execution priority stays with the scheduler. */

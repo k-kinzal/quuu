@@ -129,6 +129,10 @@ export const model: typeof en = {
         runProjectTask: 'プロジェクトタスクの実行',
         close: 'ターミナルの終了'
       },
+      app: {
+        info: 'アプリ情報の読み込み',
+        checkForUpdates: 'アップデートの確認'
+      },
       system: {
         windowLayout: '画面の読み込み',
         scrollSwipes: 'トラックパッド設定の読み込み',

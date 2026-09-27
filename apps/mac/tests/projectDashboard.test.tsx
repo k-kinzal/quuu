@@ -23,7 +23,7 @@ const project = ProjectSchema.parse({
   targetKind: 'agent', targetId: null, maxConcurrent: 1, enabled: true, deletedAt: null,
   importSince: null, editorApp: '', reportEnabled: true, commitIdentityMode: 'inherit', worktreeMode: 'inherit', taskHooks: [],
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
-  commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
+  commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', builtIn: false, sortOrder: 0, createdAt: '', updatedAt: ''
 })
 const get = vi.fn<() => Promise<ProjectReport | null>>()
 const generate = vi.fn(() => Promise.resolve({ ok: true }))

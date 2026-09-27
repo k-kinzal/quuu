@@ -157,6 +157,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "imported"
                 ]
               },
+              "builtIn": {
+                "kind": "boolean"
+              },
               "sortOrder": {
                 "kind": "number"
               },
@@ -247,6 +250,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "deletedAt",
               "importSince",
               "source",
+              "builtIn",
               "sortOrder",
               "createdAt",
               "updatedAt",
@@ -2285,6 +2289,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "imported"
             ]
           },
+          "builtIn": {
+            "kind": "boolean"
+          },
           "sortOrder": {
             "kind": "number"
           },
@@ -2375,6 +2382,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "deletedAt",
           "importSince",
           "source",
+          "builtIn",
           "sortOrder",
           "createdAt",
           "updatedAt",
@@ -2728,6 +2736,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "imported"
           ]
         },
+        "builtIn": {
+          "kind": "boolean"
+        },
         "sortOrder": {
           "kind": "number"
         },
@@ -2818,6 +2829,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "deletedAt",
         "importSince",
         "source",
+        "builtIn",
         "sortOrder",
         "createdAt",
         "updatedAt",
@@ -3179,6 +3191,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "imported"
           ]
         },
+        "builtIn": {
+          "kind": "boolean"
+        },
         "sortOrder": {
           "kind": "number"
         },
@@ -3269,6 +3284,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "deletedAt",
         "importSince",
         "source",
+        "builtIn",
         "sortOrder",
         "createdAt",
         "updatedAt",
@@ -13381,6 +13397,74 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     },
     "output": {
       "kind": "void"
+    }
+  },
+  "app.info": {
+    "method": "appInfo",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "version": {
+          "kind": "string"
+        },
+        "dataDirectory": {
+          "kind": "string"
+        },
+        "updates": {
+          "kind": "string",
+          "choices": [
+            "local",
+            "starting",
+            "unsigned",
+            "idle",
+            "checking",
+            "downloading",
+            "ready"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "dataDirectory",
+        "updates"
+      ]
+    }
+  },
+  "app.checkForUpdates": {
+    "method": "appCheckForUpdates",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "version": {
+          "kind": "string"
+        },
+        "dataDirectory": {
+          "kind": "string"
+        },
+        "updates": {
+          "kind": "string",
+          "choices": [
+            "local",
+            "starting",
+            "unsigned",
+            "idle",
+            "checking",
+            "downloading",
+            "ready"
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "dataDirectory",
+        "updates"
+      ]
     }
   }
 }

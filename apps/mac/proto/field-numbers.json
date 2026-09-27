@@ -46,7 +46,8 @@
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
-    "taskHooks": 28
+    "taskHooks": 28,
+    "builtIn": 29
   },
   "SnapshotResponseValueProjects": {
     "items": 1
@@ -376,7 +377,8 @@
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
-    "taskHooks": 28
+    "taskHooks": 28,
+    "builtIn": 29
   },
   "ProjectsListResponseValue": {
     "items": 1
@@ -468,7 +470,8 @@
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
-    "taskHooks": 28
+    "taskHooks": 28,
+    "builtIn": 29
   },
   "ProjectsCreateResponse": {
     "value": 1
@@ -561,7 +564,8 @@
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
-    "taskHooks": 28
+    "taskHooks": 28,
+    "builtIn": 29
   },
   "ProjectsUpdateResponse": {
     "value": 1
@@ -4500,5 +4504,23 @@
   "DocumentsNavigateRequest": {
     "value": 1
   },
-  "DocumentsNavigateResponse": {}
+  "DocumentsNavigateResponse": {},
+  "AppInfoRequest": {},
+  "AppInfoResponseValue": {
+    "version": 1,
+    "dataDirectory": 2,
+    "updates": 3
+  },
+  "AppInfoResponse": {
+    "value": 1
+  },
+  "AppCheckForUpdatesRequest": {},
+  "AppCheckForUpdatesResponseValue": {
+    "version": 1,
+    "dataDirectory": 2,
+    "updates": 3
+  },
+  "AppCheckForUpdatesResponse": {
+    "value": 1
+  }
 }

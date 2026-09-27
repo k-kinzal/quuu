@@ -36,7 +36,7 @@ const PROJECT: Project = {
   targetKind: 'agent', targetId: 'a1', maxConcurrent: 1, enabled: true, deletedAt: null,
   importSince: null, worktreeMode: 'inherit', taskHooks: [], editorApp: '', reportEnabled: false, commitIdentityMode: 'inherit',
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
-  commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0,
+  commitIdentity: { appSlug: '', botUserId: '' }, builtIn: false, source: 'user', sortOrder: 0,
   createdAt: '', updatedAt: ''
 }
 

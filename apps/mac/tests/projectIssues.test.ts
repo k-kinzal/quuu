@@ -63,7 +63,7 @@ function project(over: Partial<Project> = {}): Project {
     reportEnabled: true,
     pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
     commitIdentity: { appSlug: '', botUserId: '' },
-    source: 'user',
+    builtIn: false, source: 'user',
     sortOrder: 0,
     createdAt: '',
     updatedAt: '',

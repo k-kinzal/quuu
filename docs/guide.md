@@ -329,6 +329,28 @@ and [Squirrel static update feeds](https://github.com/Squirrel/Squirrel.Mac#upda
 The CLI uses the built-in gRPC server. See [CLI and MCP](#cli-and-mcp) for discovery,
 configuration and history analysis. The Unix socket API has been retired.
 
+## Operating Quuu from Quuu (QuuuAI)
+
+The first project in the rail is **QuuuAI**, built into Quuu and present from the first launch.
+Its tasks are requests about Quuu itself — "register ~/src/api as a project", "enable Codex and
+use it for api", "review failed runs every morning" — and the agent carries them out through the
+`quuu` CLI, the same operations the screen uses.
+
+- It runs in `Quuu.app/Contents/Resources/quuu-ai`, which ships the [quuu skill](../skills/quuu/SKILL.md)
+  and its use-case references. A fresh conversation there ends with an instruction naming that
+  skill's absolute path, so every CLI (not only those with a skill system) reads the copy that
+  matches the running app. Follow-ups go out as written.
+- Its runs find the bundled `quuu` first on `PATH`. Without Node.js, the launcher runs the CLI on
+  Quuu's own runtime.
+- It cannot be deleted, and its directory and worktree mode are fixed: the operations refuse
+  them from the screen, the CLI and MCP alike. Disable it to stop its tasks. Name, color, agent,
+  priority and concurrency are yours; it starts at project priority 0 on the default group.
+- Each launch points it at the running app's workspace, so moving or updating the app, or a
+  dev launch sharing the database, keeps it working. It starts with change reports, commit
+  identity and Pull Request prompts off: nothing it does is committed.
+- The workspace is inside the app bundle. Agents are told not to write there; a request that
+  needs code changes becomes a task in the project that holds the code.
+
 ## View and queue from iPhone
 
 Before bed, in the bath, on the move: read the answers that came back and mark them
@@ -767,7 +789,14 @@ service contract is `apps/mac/proto/quuu.proto`.
 Build the bundled CLI with `npm run build:cli`. `apps/mac/bin/quuu` launches it; the
 packaged app includes the launcher, entry point and lazy chunks in `Contents/Resources/bin`. Add
 that directory to PATH, or link the checkout launcher into a directory on PATH.
-The installed local checkout uses `~/.local/bin/quuu`.
+The installed local checkout uses `~/.local/bin/quuu`. Runs in QuuuAI get the bundled
+directory on PATH automatically.
+
+`quuu app info` reports the version, the data directory and the update state;
+`quuu app check-for-updates` does what **Quuu › Check for Updates…** does, with any dialog
+shown on the Mac. Operations that open dialogs or draw inside the window
+(`system.pickDirectory`, `report.show`, …) still need a person at the Mac; the
+[troubleshooting reference](../skills/quuu/references/troubleshooting.md) lists them.
 
 The CLI requires Node.js 22.12 or later. Commander handles subcommands, options,
 errors and `--help` / `-h` at every command level. Help reads only a generated

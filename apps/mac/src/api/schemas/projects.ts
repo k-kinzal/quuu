@@ -40,6 +40,11 @@ export const ProjectSchema = z.object({
    */
   importSince: z.union([z.string(), z.null()]),
   source: RecordSourceSchema,
+  /**
+   * The project Quuu keeps for operating itself. It cannot be deleted, and its directory is the
+   * workspace inside the app, so neither can be edited.
+   */
+  builtIn: z.boolean(),
   sortOrder: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -80,7 +85,7 @@ export type Project = z.infer<typeof ProjectSchema>
  * edits, so they are excluded (only `repo.deleteProject` and
  * `repo.reviveProject` write them).
  */
-export const ProjectInputSchema = ProjectSchema.omit({ taskHooks: true, worktreeMode: true, id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true, pullRequestFailureEnabled: true, pullRequestPendingEnabled: true, pullRequestConflictEnabled: true }).extend({
+export const ProjectInputSchema = ProjectSchema.omit({ taskHooks: true, worktreeMode: true, id: true, createdAt: true, updatedAt: true, source: true, builtIn: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true, pullRequestFailureEnabled: true, pullRequestPendingEnabled: true, pullRequestConflictEnabled: true }).extend({
   taskHooks: TaskHookSchema.array().optional(),
   worktreeMode: WorktreeModeSchema.optional(),
   priority: z.number().int().nonnegative(),

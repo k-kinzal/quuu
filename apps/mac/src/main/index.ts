@@ -14,7 +14,8 @@ import type { AppSettings } from './settings/types.js'
 import type { AppSnapshot, ToastPayload } from './snapshot.js'
 import { swipeCommand } from './swipe.js'
 import type { ServerController } from './servers/controller.js'
-import { desktopOperations } from './desktop/operations.js'
+import { appControls, attachAppUpdates, desktopOperations } from './desktop/operations.js'
+import { quuuWorkspaceDir } from './projects/builtIn.js'
 import { beginQuit, configureWindows, mainWindow, showWindow } from './windows.js'
 import { isReleaseBuild } from './updates/distribution.js'
 import type { AppUpdates } from './desktop/appUpdates.js'
@@ -159,6 +160,9 @@ if (!app.requestSingleInstanceLock()) {
     configureWindows(() => quuu?.settings.getSettings().keepRunningInBackground ?? true)
     // The Mac distributes the iPhone UI via iCloud (so it can be fixed without plugging in a device)
     quuu.setMobileWebRoot(mobileWebRoot(app.isPackaged, process.resourcesPath, __dirname))
+    // QuuuAI, the project for operating Quuu itself, runs in the workspace that ships with the app
+    quuu.setBuiltInWorkspace(quuuWorkspaceDir(app.isPackaged, process.resourcesPath, __dirname))
+    quuu.setAppControls(appControls)
     wire(quuu)
     registerIpc(quuu)
     await quuu.bootstrap()
@@ -171,6 +175,7 @@ if (!app.requestSingleInstanceLock()) {
       void import('./desktop/appUpdates.js').then(({ AppUpdates }) => {
         if (quitting) return
         updates = new AppUpdates(setUpdateMenuItem, () => app.quit())
+        attachAppUpdates(updates)
         return updates.start()
       }).catch(error => console.warn('Cannot start Quuu updates:', error))
     }

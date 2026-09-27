@@ -48,6 +48,11 @@ export const en = {
     "running": "Stop the running task before completing or removing its worktree.",
     "cannotMove": "A task with a managed worktree must stay in its original project and repository."
 },
+  project: {
+    builtInDelete: 'QuuuAI is built into Quuu and cannot be deleted. Disable it instead to stop its tasks.',
+    builtInPath: 'QuuuAI runs in the workspace that ships with Quuu. Its directory cannot be changed.',
+    builtInWorktree: 'QuuuAI’s workspace is not a Git repository, so its tasks cannot use worktrees.'
+  },
   externalLinks: {
     cannotOpen: 'This link could not be opened.',
     pathUnavailable: 'This path does not exist or cannot be accessed: {{path}}'

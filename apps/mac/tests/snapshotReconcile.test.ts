@@ -20,7 +20,7 @@ function project(id: string, name: string): Project {
     id, name, path: '/tmp', color: '#fff', priority: 2, targetKind: 'agent', targetId: null, maxConcurrent: 1,
     enabled: true, deletedAt: null, importSince: null, worktreeMode: 'inherit', taskHooks: [], editorApp: '', reportEnabled: true,
     pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
-    commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0,
+    commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, builtIn: false, source: 'user', sortOrder: 0,
     createdAt: '', updatedAt: ''
   }
 }

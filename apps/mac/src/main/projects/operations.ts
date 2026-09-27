@@ -3,6 +3,7 @@ import { t } from '../i18n/index.js'
 import { assertWorktreeIdle, discardTaskWorktree, withWorktreeOperation } from '../tasks/worktrees.js'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
+import { assertBuiltInEdit, ensureBuiltInProject } from './builtIn.js'
 import type { Project, ProjectInput } from './types.js'
 
 export class ProjectOperations {
@@ -69,8 +70,18 @@ export class ProjectOperations {
   }
 
 
+  /** The built-in project, placed at this app's workspace (`builtIn.ts`). */
+  ensureBuiltIn(workspace: string): Project {
+    const project = ensureBuiltInProject(this.db, workspace)
+    this.changed()
+    return project
+  }
+
+
   updateProject(id: string, patch: Partial<ProjectInput>): Project {
     if (patch.taskHooks) validateHooks(patch.taskHooks)
+    const current = repo.getProject(this.db, id)
+    if (current) assertBuiltInEdit(current, patch)
     if (patch.path !== undefined) {
       for (const task of repo.listTasks(this.db, true).filter(task => task.projectId === id)) assertWorktreeIdle(this.db, task.id)
     }
@@ -89,6 +100,7 @@ export class ProjectOperations {
 
 
   deleteProject(id: string): void | Promise<void> {
+    if (repo.getProject(this.db, id)?.builtIn) throw new Error(t('project.builtInDelete'))
     const tasks = repo.listTasks(this.db, true).filter(task => task.projectId === id)
     for (const task of tasks) assertWorktreeIdle(this.db, task.id)
     const remove = (): void => { repo.deleteProject(this.db, id); this.changed() }

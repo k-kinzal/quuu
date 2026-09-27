@@ -33,6 +33,8 @@ vi.mock('../src/main/bootstrap.js', () => ({
     bootstrap = vi.fn().mockResolvedValue(undefined)
     snapshot = () => ({ projects: [] })
     setMobileWebRoot = vi.fn()
+    setBuiltInWorkspace = vi.fn()
+    setAppControls = vi.fn()
   }
 }))
 vi.mock('../src/main/appPaths.js', () => ({ userDataDir: () => host.directory }))
@@ -40,7 +42,7 @@ vi.mock('../src/main/ipc/index.js', () => ({ broadcast: vi.fn(), registerIpc: vi
 vi.mock('../src/main/menus.js', () => ({ refreshMenuIfProjectsChanged: vi.fn(), send: vi.fn(), setUpdateMenuItem: host.menu }))
 vi.mock('../src/main/windows.js', () => ({ beginQuit: vi.fn(), configureWindows: vi.fn(), mainWindow: null, showWindow: host.show }))
 vi.mock('../src/main/mobile-sync/folder.js', () => ({ mobileWebRoot: () => '' }))
-vi.mock('../src/main/desktop/operations.js', () => ({ desktopOperations: vi.fn() }))
+vi.mock('../src/main/desktop/operations.js', () => ({ desktopOperations: vi.fn(), attachAppUpdates: vi.fn(), appControls: {} }))
 vi.mock('../src/main/updates/distribution.js', () => ({ isReleaseBuild: () => host.release }))
 vi.mock('../src/main/desktop/appUpdates.js', () => ({
   AppUpdates: class {

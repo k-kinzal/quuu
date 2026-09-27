@@ -103,5 +103,7 @@ export const operationNames: string[] = [
   "system.popupMenu",
   "system.reveal",
   "system.openExternal",
-  "system.copy"
+  "system.copy",
+  "app.info",
+  "app.checkForUpdates"
 ]

@@ -7,7 +7,14 @@ while [ -L "$quuu_launcher" ]; do
 done
 quuu_dir=$(CDPATH= cd -- "$(dirname -- "$quuu_launcher")" && pwd)
 if [ -f "$quuu_dir/quuu.mjs" ]; then
-  exec node "$quuu_dir/quuu.mjs" "$@"
+  if command -v node >/dev/null 2>&1; then
+    exec node "$quuu_dir/quuu.mjs" "$@"
+  fi
+  # Inside Quuu.app (Contents/Resources/bin), the app's own runtime stands in for a missing Node
+  # so agents Quuu launches can always reach it.
+  if [ -x "$quuu_dir/../../MacOS/Quuu" ]; then
+    ELECTRON_RUN_AS_NODE=1 exec "$quuu_dir/../../MacOS/Quuu" "$quuu_dir/quuu.mjs" "$@"
+  fi
 fi
 if [ -f "$quuu_dir/../out/cli/quuu.mjs" ]; then
   exec node "$quuu_dir/../out/cli/quuu.mjs" "$@"

@@ -128,6 +128,10 @@ export const model = {
         runProjectTask: 'run the project task',
         close: 'close the terminal'
       },
+      app: {
+        info: 'read the app information',
+        checkForUpdates: 'check for updates'
+      },
       system: {
         windowLayout: 'load the screen',
         scrollSwipes: 'read the trackpad settings',

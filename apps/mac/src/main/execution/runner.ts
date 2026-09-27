@@ -14,6 +14,7 @@ import { t } from '../i18n/index.js'
 import { cleanupGitHubAuth, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
 import { clearExitFile, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
+import { builtInPrompt, quuuBinDir } from '../projects/builtIn.js'
 import type { Project } from '../projects/types.js'
 import { captureReviewBaseline } from '../review/git.js'
 import { resolveLogPath } from '../session/logAdapters.js'
@@ -142,7 +143,7 @@ export class Runner extends EventEmitter {
 
       const template = kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate
       const vars: TemplateVars = {
-        prompt: message,
+        prompt: agentPrompt(project, kind, message),
         title: task.title,
         sessionId,
         projectPath: project.path,
@@ -199,7 +200,7 @@ export class Runner extends EventEmitter {
       if (repo.getRun(this.db, runId)?.status !== 'starting') return repo.getRun(this.db, runId) ?? run
       const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command,
         template: params.kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate,
-        vars: { prompt: params.messageOverride ?? (task.prompt.trim() || task.title), title: task.title,
+        vars: { prompt: agentPrompt(project, params.kind, params.messageOverride ?? (task.prompt.trim() || task.title)), title: task.title,
           sessionId, projectPath: cwd, projectName: project.name, taskId: task.id, runId } })
       args = invocation.args
       run.cwd = cwd
@@ -257,7 +258,8 @@ export class Runner extends EventEmitter {
        * History cannot be fixed afterwards, so overwriting beats being overridden.
       */
       ...commitIdentityEnv(settings, project),
-      PATH: path
+      // QuuuAI's work is done through the CLI that shipped with this app, so it comes first
+      PATH: project.builtIn ? `${quuuBinDir(project)}:${path}` : path
     }
 
     let launch = [run.command, ...args]
@@ -603,4 +605,10 @@ export class Runner extends EventEmitter {
 
 function quoteForDisplay(arg: string): string {
   return /[\s"'$`\\]/.test(arg) ? JSON.stringify(arg) : arg
+}
+
+
+/** What the agent is handed: the built-in project's fresh conversations also learn where the skill is. */
+function agentPrompt(project: Project, kind: RunKind, message: string): string {
+  return kind === 'followup' ? message : builtInPrompt(project, message)
 }

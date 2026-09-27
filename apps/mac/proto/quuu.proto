@@ -69,6 +69,7 @@ message SnapshotResponseValueProjectsItem {
   optional SnapshotResponseValueProjectsItemDeletedAt deletedAt = 8;
   optional SnapshotResponseValueProjectsItemImportSince importSince = 9;
   optional string source = 10;
+  optional bool builtIn = 29;
   optional double sortOrder = 11;
   optional string createdAt = 12;
   optional string updatedAt = 13;
@@ -1004,6 +1005,7 @@ message ProjectsListResponseValueItem {
   optional ProjectsListResponseValueItemDeletedAt deletedAt = 8;
   optional ProjectsListResponseValueItemImportSince importSince = 9;
   optional string source = 10;
+  optional bool builtIn = 29;
   optional double sortOrder = 11;
   optional string createdAt = 12;
   optional string updatedAt = 13;
@@ -1157,6 +1159,7 @@ message ProjectsCreateResponseValue {
   optional ProjectsCreateResponseValueDeletedAt deletedAt = 8;
   optional ProjectsCreateResponseValueImportSince importSince = 9;
   optional string source = 10;
+  optional bool builtIn = 29;
   optional double sortOrder = 11;
   optional string createdAt = 12;
   optional string updatedAt = 13;
@@ -1311,6 +1314,7 @@ message ProjectsUpdateResponseValue {
   optional ProjectsUpdateResponseValueDeletedAt deletedAt = 8;
   optional ProjectsUpdateResponseValueImportSince importSince = 9;
   optional string source = 10;
+  optional bool builtIn = 29;
   optional double sortOrder = 11;
   optional string createdAt = 12;
   optional string updatedAt = 13;
@@ -5998,6 +6002,34 @@ message SystemCopyResponse {
 
 }
 
+message AppInfoRequest {
+
+}
+
+message AppInfoResponseValue {
+  optional string version = 1;
+  optional string dataDirectory = 2;
+  optional string updates = 3;
+}
+
+message AppInfoResponse {
+  optional AppInfoResponseValue value = 1;
+}
+
+message AppCheckForUpdatesRequest {
+
+}
+
+message AppCheckForUpdatesResponseValue {
+  optional string version = 1;
+  optional string dataDirectory = 2;
+  optional string updates = 3;
+}
+
+message AppCheckForUpdatesResponse {
+  optional AppCheckForUpdatesResponseValue value = 1;
+}
+
 message ConnectRequest {}
 
 message ConnectResponse { string client_id = 1; }
@@ -6115,6 +6147,8 @@ service Quuu {
   rpc SystemReveal(SystemRevealRequest) returns (SystemRevealResponse);
   rpc SystemOpenExternal(SystemOpenExternalRequest) returns (SystemOpenExternalResponse);
   rpc SystemCopy(SystemCopyRequest) returns (SystemCopyResponse);
+  rpc AppInfo(AppInfoRequest) returns (AppInfoResponse);
+  rpc AppCheckForUpdates(AppCheckForUpdatesRequest) returns (AppCheckForUpdatesResponse);
   rpc Connect(ConnectRequest) returns (ConnectResponse);
   rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);
   rpc Watch(WatchRequest) returns (stream WatchResponse);

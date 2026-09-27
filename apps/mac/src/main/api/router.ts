@@ -423,6 +423,10 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
     servers: { status: os.servers.status.handler(() => app.settings.serverStatus) },
     logs: { page: os.logs.page.handler(({ input }) => history.page(input)) },
     snapshot: snapshot,
+    app: {
+      info: os.app.info.handler(() => app.appControls().info()),
+      checkForUpdates: os.app.checkForUpdates.handler(() => app.appControls().checkForUpdates()),
+    },
     system: {
       savePromptFiles: os.system.savePromptFiles.handler(({ input }) => savePromptFiles(input.map(file => ({ name: file.name, data: Buffer.from(file.data, 'base64') })))),
       windowLayout: windowLayout,

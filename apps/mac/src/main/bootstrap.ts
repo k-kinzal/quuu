@@ -1,5 +1,6 @@
 import { HookOperations } from './hooks/operations.js'
 import { EventEmitter } from 'node:events'
+import type { AppInfo } from '../api/schemas/app.js'
 import { AgentOperations } from './agents/operations.js'
 import { sessionOptions } from './agents/sessionOptions.js'
 import { AutomationOperations } from './automation/operations.js'
@@ -33,6 +34,12 @@ import type { AppSnapshot, MobileSyncStatus, ToastPayload } from './snapshot.js'
 import { TaskOperations } from './tasks/operations.js'
 import { TerminalOperations } from './terminal/operations.js'
 import { TerminalService } from './terminal/service.js'
+
+/** What the app menu knows about the running Quuu, for clients without a window. */
+export interface AppControls {
+  info(): AppInfo
+  checkForUpdates(): AppInfo
+}
 
 /** Full sync of imported sessions. Reads hundreds of logs, so it can't be shorter. */
 const IMPORT_SYNC_MS = 60_000
@@ -75,6 +82,8 @@ export class QuuuApp extends EventEmitter {
   private projectionTimer: NodeJS.Timeout | null = null
   private projectionRuns = new Map<string, string>()
   private historicalProbeAt = 0
+  private builtInWorkspace: string | null = null
+  private controls: AppControls | null = null
   constructor(dbPath?: string) {
     super()
     this.db = openDatabase(dbPath)
@@ -186,6 +195,8 @@ export class QuuuApp extends EventEmitter {
     await seedIfEmpty(this.db)
     // A CLI supported after this database was made would otherwise never appear in settings
     await offerNewAgents(this.db)
+    // After the seed, so a first launch hands QuuuAI the default group like any new project
+    if (this.builtInWorkspace) this.projects.ensureBuiltIn(this.builtInWorkspace)
     this.settings.load()
     this.hooks.start()
     this.scheduler.reconcile()
@@ -341,6 +352,24 @@ export class QuuuApp extends EventEmitter {
    * Tell sync where the UI distributed to the iPhone lives (once at startup).
    * The location logic belongs to the side that knows Electron (`index.ts`).
    */
+  /**
+   * Where the built-in QuuuAI project runs (`projects/builtIn.ts`). Set by the app before
+   * `bootstrap`; left unset (tests, fixtures) the project is not created.
+   */
+  setBuiltInWorkspace(dir: string): void {
+    this.builtInWorkspace = dir
+  }
+
+  /** The app menu's commands (version, updates), handed in by the Electron entry. */
+  setAppControls(controls: AppControls): void {
+    this.controls = controls
+  }
+
+  appControls(): AppControls {
+    if (!this.controls) throw new Error('App information is available only in the desktop app')
+    return this.controls
+  }
+
   setMobileWebRoot(root: string | null): void {
     this.mobile.setWebRoot(root)
   }

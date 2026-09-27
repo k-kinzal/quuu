@@ -50,7 +50,7 @@ const PROJECT: Project = {
   id: 'p1', name: 'Quuu', path: '/Users/me/Projects/taskd', color: '#5EABF1', priority: 2, targetKind: 'agent', targetId: 'a1',
   maxConcurrent: 2, enabled: true, deletedAt: null, importSince: null, worktreeMode: 'inherit', taskHooks: [], editorApp: '', reportEnabled: true,
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
-  commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
+  commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, builtIn: false, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
 }
 const TASK: Task = {
   id: 't1', projectId: 'p1', title: 'Rebuild it', prompt: 'Rebuild it', status: 'review', priority: 2, seq: 0, scheduledAt: null,

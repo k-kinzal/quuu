@@ -110,6 +110,7 @@ packages/            the independent Design System
 | `apps/mac/src/main/platform/editorApps.ts` | finds and opens installed IDEs / editors |
 | `apps/mac/src/main/platform/launch.ts` | the single `open(1)` path. **The reason we don't use AppleScript is documented here** |
 | `apps/mac/src/main/automation/cron.ts` | homegrown cron parser, kept only to compute the next allowed enqueue time |
+| `apps/mac/src/main/projects/builtIn.ts` | QuuuAI, the project that operates Quuu itself: kept at the app's bundled workspace on every launch, never deleted, and its fresh conversations pointed at the bundled skill |
 | `apps/mac/src/main/tasks/ordering.ts` | acquisition order and prerequisites. Consistency with display order is tested too |
 | `apps/mac/src/main/import/` | importing sessions that were launched directly |
 | `apps/mac/src/main/session/` | session attachment, indexing and tailing (provider parsers belong to adapters) |

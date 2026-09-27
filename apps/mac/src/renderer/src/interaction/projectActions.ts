@@ -37,11 +37,14 @@ export function confirmDeleteProject(project: Project): void {
  * don't change with the route you took).
  */
 export function projectStateItems(project: Project): MenuItemSpec[] {
+  const toggle: MenuItemSpec = {
+    label: project.enabled ? t('projectActions.stop') : t('projectActions.resume'),
+    onSelect: () => void window.quuu.projects.update({ id: project.id, patch: { enabled: !project.enabled } })
+  }
+  // The built-in project cannot be deleted; stopping it is how its tasks are kept from running
+  if (project.builtIn) return [toggle]
   return [
-    {
-      label: project.enabled ? t('projectActions.stop') : t('projectActions.resume'),
-      onSelect: () => void window.quuu.projects.update({ id: project.id, patch: { enabled: !project.enabled } })
-    },
+    toggle,
     {
       label: t('projectActions.delete'),
       separatorBefore: true,

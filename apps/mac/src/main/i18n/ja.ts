@@ -49,6 +49,11 @@ export const ja: typeof en = {
     "running": "Worktreeを完了または削除する前に、実行中のタスクを停止してください。",
     "cannotMove": "Worktreeを持つタスクのプロジェクトとリポジトリは変更できません。"
 },
+  project: {
+    builtInDelete: 'QuuuAIはQuuuに組み込まれているため削除できません。タスクを止めるには無効にしてください。',
+    builtInPath: 'QuuuAIはQuuuに同梱された作業ディレクトリで動きます。ディレクトリは変更できません。',
+    builtInWorktree: 'QuuuAIの作業ディレクトリはGitリポジトリではないため、Worktreeを使えません。'
+  },
   externalLinks: {
     cannotOpen: 'このリンクを開けませんでした。',
     pathUnavailable: 'このパスが存在しないか、アクセスできません: {{path}}'

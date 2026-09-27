@@ -190,6 +190,7 @@ export const views = {
     name: 'Name',
     directory: 'Directory',
     repickDirectory: 'Choose a different directory',
+    builtInDirectory: 'Built into Quuu: its tasks operate Quuu itself through the quuu CLI, from the workspace that ships with the app. It cannot be moved or deleted.',
     change: 'Change',
     editor: 'IDE / Editor',
     inheritEditor: 'Follow the app setting ({{name}})',

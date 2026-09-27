@@ -20,7 +20,7 @@ function project(id: string): Project {
     reportEnabled: true,
     pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
     commitIdentity: { appSlug: '', botUserId: '' },
-    source: 'user',
+    builtIn: false, source: 'user',
     sortOrder: 0,
     createdAt: '',
     updatedAt: ''

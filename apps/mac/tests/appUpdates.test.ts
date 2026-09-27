@@ -142,3 +142,11 @@ it('does not initialize updates when quitting during the signature check', async
   expect(mocks.feed).not.toHaveBeenCalled()
   expect(vi.getTimerCount()).toBe(0)
 })
+
+it('reports where it is to callers other than the menu', async () => {
+  expect(updates.status()).toBe('starting')
+  await updates.start()
+  expect(updates.status()).toBe('idle')
+  updates.check(true)
+  expect(updates.status()).toBe('checking')
+})

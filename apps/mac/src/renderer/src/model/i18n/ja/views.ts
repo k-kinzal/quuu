@@ -187,6 +187,7 @@ export const views: typeof en = {
     name: '名前',
     directory: 'ディレクトリ',
     repickDirectory: 'ディレクトリを選び直す',
+    builtInDirectory: 'Quuuの組み込みプロジェクトです。タスクはアプリに同梱された作業ディレクトリから quuu CLI でQuuu自体を操作します。移動や削除はできません。',
     change: '変更',
     editor: 'IDE / エディタ',
     inheritEditor: 'アプリの設定に従う（{{name}}）',

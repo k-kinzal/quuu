@@ -18,6 +18,10 @@ extraResources:
     to: bin
   - from: bin/quuu
     to: bin/quuu
+  # The built-in QuuuAI project runs here (main/projects/builtIn.ts). Its skills are the
+  # repository's own; the checkout reaches them through a symlink, the bundle holds real files.
+  - from: ../../skills
+    to: quuu-ai/skills
   # Pseudo-terminal host for the built-in terminal. Node pipes cannot handle interactive CLIs or screen size.
   - from: build/pty/quuu-pty
     to: bin/quuu-pty

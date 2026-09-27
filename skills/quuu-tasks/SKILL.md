@@ -68,4 +68,4 @@ Before changing an existing task, inspect it when the user's wording does not id
 
 An exit status of 2 from `tasks run` or `tasks send` means Quuu accepted the command but the requested immediate action could not proceed; read the JSON `run` or `result` reason before choosing a follow-up. Use `quuu --help` to find commands and `quuu tasks create --help` (or any other subcommand) for its flags. Help does not need a running app.
 
-For session analysis, recurring workflows, and all operation schemas, use [the quuu skill](../quuu/SKILL.md).
+For projects, agents, settings, automation, hooks, session analysis and every operation schema, use [the quuu skill](../quuu/SKILL.md) and its references.

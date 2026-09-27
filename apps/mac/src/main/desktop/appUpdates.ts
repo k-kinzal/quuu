@@ -5,7 +5,8 @@ import { isSignedForUpdates } from '../updates/signing.js'
 
 export const RELEASES_URL = 'https://github.com/k-kinzal/quuu/releases'
 export type UpdateMenuItem = Pick<Electron.MenuItemConstructorOptions, 'label' | 'enabled' | 'click'>
-type State = 'starting' | 'unsigned' | 'idle' | 'checking' | 'downloading' | 'ready'
+export type UpdateState = 'starting' | 'unsigned' | 'idle' | 'checking' | 'downloading' | 'ready'
+type State = UpdateState
 
 /** One updater for the lifetime of a Release app, independent of its windows. */
 export class AppUpdates {
@@ -79,6 +80,11 @@ export class AppUpdates {
     this.changeState('checking')
     try { autoUpdater.checkForUpdates() }
     catch (error) { this.failed(error instanceof Error ? error : new Error(String(error))) }
+  }
+
+  /** Where the updater is, for callers other than the menu (`quuu app info`). */
+  status(): UpdateState {
+    return this.state
   }
 
   stop(): void {
