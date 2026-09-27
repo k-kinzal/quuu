@@ -4,7 +4,7 @@ import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import type { RunNowResult } from '../ipc/types.js'
 import type { ReviewPullRequest, ReviewSnapshot } from '../review/types.js'
-import { resolvePullRequestPrompts, type PullRequestPrompts } from '../settings/pullRequestPrompts.js'
+import { hasPullRequestPrompt, renderPullRequestPrompt, resolvePullRequestPrompts, type PullRequestPrompts } from '../settings/pullRequestPrompts.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ToastPayload } from '../snapshot.js'
 import { truncate } from '../util.js'
@@ -30,30 +30,42 @@ export type PullRequestTrouble = keyof PullRequestPrompts
  * comes before a run still in progress for the same reason - the failed check is already an
  * answer. Merged and closed Pull Requests are over, whatever their last check said.
  */
-export function pullRequestTrouble(pullRequests: ReviewPullRequest[]): { kind: PullRequestTrouble; urls: string[] } | null {
+export function pullRequestTrouble(pullRequests: ReviewPullRequest[]): { kind: PullRequestTrouble; pullRequests: ReviewPullRequest[] } | null {
   const open = pullRequests.filter(pr => pr.state === 'open')
   const conflicting = open.filter(pr => pr.mergeState === 'conflicting')
-  if (conflicting.length) return { kind: 'conflict', urls: conflicting.map(pr => pr.url) }
+  if (conflicting.length) return { kind: 'conflict', pullRequests: conflicting }
   const failed = open.filter(pr => pr.check === 'failure')
-  if (failed.length) return { kind: 'failure', urls: failed.map(pr => pr.url) }
+  if (failed.length) return { kind: 'failure', pullRequests: failed }
   const running = open.filter(pr => pr.check === 'pending')
-  if (running.length) return { kind: 'pending', urls: running.map(pr => pr.url) }
+  if (running.length) return { kind: 'pending', pullRequests: running }
   return null
 }
 
-/** The instruction as the agent reads it: the person's words, then which Pull Requests they are about. */
-export function followUpMessage(prompt: string, urls: string[]): string {
-  return [prompt.trim(), ...urls].join('\n\n')
+/** What the automation needs from the rest of the app. Each is one call into the owning feature. */
+export interface PullRequestFollowUpPorts {
+  /** Resolves once the conversation of the task's latest run is indexed, so its PR receipts are filed. */
+  indexed(taskId: string): Promise<void>
+  /** A full look at Git and GitHub for the task. The projection it produces is what decides. */
+  refresh(taskId: string): Promise<ReviewSnapshot>
+  /** The same entry a person's follow-up takes. */
+  send(taskId: string, message: string): RunNowResult
+  /** Let the slot the task kept while this was decided go. */
+  release(taskId: string): void
 }
 
 /**
  * Sends a task back to its agent when the Pull Request it produced is not in order.
  *
+ * **It happens before the queue moves on.** The run's slot is kept from the moment the run ends
+ * (`shouldHold`, asked by the scheduler inside the transition) until the decision is made
+ * (`onReview`); a task sent back is a follow-up, first in line, so it takes that same slot and
+ * carries on. Deciding after the slot was free let another task start in between, and the one
+ * with the red CI waited behind it.
+ *
  * Every decision is made on a fresh look at GitHub (`ReviewOperations` emits one per full
  * projection), never on the copy a failed fetch leaves behind. The task has to be waiting in
  * review after a run that ended normally: a task a person canceled, marked done or sent
- * elsewhere is theirs, not this automation's. What is sent goes through the same entry a
- * person's follow-up does, so the agent that opened the session is the one that continues it.
+ * elsewhere is theirs, not this automation's. The prompt is sent exactly as the person wrote it.
  */
 export class PullRequestFollowUp extends EventEmitter {
   private rounds = new Map<string, number>()
@@ -61,20 +73,37 @@ export class PullRequestFollowUp extends EventEmitter {
   constructor(
     private db: Db,
     private getSettings: () => AppSettings,
-    private refresh: (taskId: string) => Promise<ReviewSnapshot>,
-    private send: (taskId: string, message: string) => RunNowResult
+    private ports: PullRequestFollowUpPorts
   ) { super() }
 
   /**
-   * A task reached review. Ask GitHub now rather than reading what the last projection saw:
-   * the run that just ended is what pushed, and the checks it started are what matter.
-   * The projection that comes back decides (`onProjected`).
+   * Should a task that just reached review keep its slot while this looks at its Pull Request?
+   * Only where some state would send it back: everywhere else the queue must not wait for GitHub.
+   */
+  shouldHold(taskId: string): boolean {
+    const task = repo.getTask(this.db, taskId)
+    const project = task ? repo.getProject(this.db, task.projectId) : null
+    return project !== null && hasPullRequestPrompt(resolvePullRequestPrompts(this.getSettings(), project))
+  }
+
+  /**
+   * A task reached review. Wait for the run's conversation to be indexed - that is where the
+   * Pull Request it opened is read from - then ask GitHub now rather than reading what the last
+   * projection saw: the run that just ended is what pushed. The projection that comes back
+   * decides (`onProjected`); the slot goes whatever happened.
    */
   async onReview(taskId: string): Promise<void> {
     try {
-      await this.refresh(taskId)
+      await this.ports.indexed(taskId)
+    } catch (error) {
+      console.warn('The finished run was not indexed before its Pull Request was read', taskId, error)
+    }
+    try {
+      await this.ports.refresh(taskId)
     } catch (error) {
       console.warn('Pull Request state could not be read after review', taskId, error)
+    } finally {
+      this.ports.release(taskId)
     }
   }
 
@@ -104,7 +133,7 @@ export class PullRequestFollowUp extends EventEmitter {
       }
       return 'left'
     }
-    const result = this.send(taskId, followUpMessage(prompt, trouble.urls))
+    const result = this.ports.send(taskId, renderPullRequestPrompt(prompt, trouble.pullRequests))
     if (!result.ok) {
       console.warn('Pull Request follow-up was not sent', taskId, result.reason)
       return 'left'

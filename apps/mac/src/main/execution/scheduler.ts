@@ -93,6 +93,20 @@ export class Scheduler extends EventEmitter {
    */
   private limitProbes = new Map<string, string | null>()
 
+  /**
+   * Slots kept for a task that just finished, while what happens next is decided (a Pull Request
+   * that sends it straight back). In memory only: a restart ends the wait, which only costs the
+   * task its turn, never a slot.
+   */
+  private slotHolds = new Map<string, repo.SlotReservation & { until: number }>()
+
+  /**
+   * Asked, inside the transition, whether a task that just reached review should keep its slot
+   * while something outside execution decides whether it goes straight back. The asker releases
+   * it (`releaseSlot`); `SLOT_HOLD_MS` releases it regardless.
+   */
+  private reviewGate: ((taskId: string) => boolean) | null = null
+
   constructor(
     private db: Db,
     private runner: Runner
@@ -180,6 +194,32 @@ export class Scheduler extends EventEmitter {
   /** Something changed, so run one tick right now. */
   kick(): void {
     void this.tick()
+  }
+
+  setReviewGate(gate: ((taskId: string) => boolean) | null): void {
+    this.reviewGate = gate
+  }
+
+  /** Keep the project's slot and the agent's lane for this task until released or `ms` passes. */
+  holdSlot(reservation: repo.SlotReservation, ms = SLOT_HOLD_MS): void {
+    this.slotHolds.set(reservation.taskId, { ...reservation, reason: 'pull-request', until: Date.now() + ms })
+  }
+
+  /** Let the slot go. The next claim runs at once, so a task sent back meanwhile is first in line. */
+  releaseSlot(taskId: string): void {
+    if (!this.slotHolds.delete(taskId) || this.stopped) return
+    this.emitStatus()
+    if (this.nextTick) clearTimeout(this.nextTick)
+    this.nextTick = setTimeout(() => { this.nextTick = null; void this.tick() }, 0)
+  }
+
+  /** The slots kept right now for tasks waiting on a decision. Expired ones are dropped here. */
+  heldSlots(): repo.SlotReservation[] {
+    const now = Date.now()
+    for (const [taskId, hold] of this.slotHolds) {
+      if (hold.until <= now) this.slotHolds.delete(taskId)
+    }
+    return [...this.slotHolds.values()].map(({ until: _until, ...reservation }) => reservation)
   }
 
   // -------------------------------------------------------------------------
@@ -339,7 +379,7 @@ export class Scheduler extends EventEmitter {
   claimNext(): Claim | null {
     return inTransaction(this.db, () => {
       const now = nowIso()
-      const reservations = repo.listSlotReservations(this.db)
+      const reservations = [...repo.listSlotReservations(this.db), ...this.heldSlots()]
       const rows = repo.readyTaskIds(this.db, now)
 
       const reasons = new Map<string, string>()
@@ -368,7 +408,8 @@ export class Scheduler extends EventEmitter {
         // A reservation means "do not give the slot to a task that has not reserved one".
         // The reserving side is not blocked by it and competes normally within the usual limit.
         // (Otherwise two tasks reserving the same slot deadlock each other and neither moves.)
-        const others = holdsSlot(pending.priority) ? [] : reservations
+        // A task never waits on the slot kept for itself: that is the slot it is meant to take.
+        const others = (holdsSlot(pending.priority) ? [] : reservations).filter((r) => r.taskId !== pending.id)
 
         // Condition 5: the project's concurrency limit (reserved slots do not count as free)
         const active = repo.countActiveRunsByProject(this.db, project.id)
@@ -377,7 +418,8 @@ export class Scheduler extends EventEmitter {
           reasons.set(
             project.id,
             active < project.maxConcurrent
-              ? t('scheduler.slotHeldByTask', { project: project.name, holder: holdLabel(heldHere) })
+              ? t(heldHere.every((r) => r.reason === 'pull-request') ? 'scheduler.slotHeldForPullRequest' : 'scheduler.slotHeldByTask',
+                { project: project.name, holder: holdLabel(heldHere) })
               : t('scheduler.concurrencyLimit', { project: project.name, max: project.maxConcurrent })
           )
           continue
@@ -493,7 +535,8 @@ export class Scheduler extends EventEmitter {
     const eligible = eligibleAgents(this.db, project, options)
     const ids = new Set((eligible.ok ? eligible.value : []).map((a) => a.id))
     const holders = others.filter((r) => r.agentId !== null && ids.has(r.agentId))
-    return t('scheduler.slotHeld', { holder: holdLabel(holders) })
+    return t(holders.length > 0 && holders.every((r) => r.reason === 'pull-request') ? 'scheduler.agentHeldForPullRequest' : 'scheduler.slotHeld',
+      { holder: holdLabel(holders) })
   }
 
   // -------------------------------------------------------------------------
@@ -539,6 +582,13 @@ export class Scheduler extends EventEmitter {
           this.notify('info', t('scheduler.sentReserved', { title: truncate(task.title, 50) }), task.id)
           break
         case 'review':
+          /*
+           * Kept before the commit, so the claim this transition triggers cannot hand the slot to
+           * another task while the gate's owner finds out whether this one goes straight back.
+           */
+          if (this.reviewGate?.(task.id)) {
+            this.holdSlot({ taskId: task.id, title: task.title, projectId: task.projectId, agentId: run.agentId })
+          }
           this.notify('success', t('scheduler.reviewToast', { title: truncate(task.title, 60) }), task.id)
           /*
            * Something is now waiting to be read. What happens next is not execution's business —
@@ -840,6 +890,14 @@ function reservedByAgent(reservations: repo.SlotReservation[]): Map<string, numb
 }
 
 /** Name the task holding the slot. Adds a count when there is more than one. */
+/**
+ * The longest a finished task keeps its slot while its Pull Request is looked at.
+ *
+ * Indexing the run's conversation and two GitHub reads take seconds; three minutes is the bound
+ * for a GitHub that does not answer, after which the queue moves on regardless.
+ */
+export const SLOT_HOLD_MS = 3 * 60 * 1000
+
 function holdLabel(reservations: repo.SlotReservation[]): string {
   const first = reservations[0]
   if (!first) return t('scheduler.anotherTask')

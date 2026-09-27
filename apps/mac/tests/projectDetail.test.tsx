@@ -45,7 +45,7 @@ function project(over: Partial<Project> & { id: string; name: string }): Project
     importSince: null,
     editorApp: '',
     reportEnabled: true,
-    pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
+    pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
     commitIdentityMode: 'inherit',
     commitIdentity: { appSlug: '', botUserId: '' },
     source: 'user',

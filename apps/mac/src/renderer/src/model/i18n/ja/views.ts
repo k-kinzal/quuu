@@ -142,12 +142,12 @@ export const views: typeof en = {
   pullRequestSettings: {
     title: 'プルリクエスト',
     promptsSection: '実行終了時にプルリクエストが整っていないとき',
-    failure: 'CI が失敗',
-    failurePlaceholder: '空欄: レビュー待ちのままにする',
-    pending: 'CI が実行中',
-    pendingPlaceholder: '空欄: レビュー待ちのままにする',
-    conflict: 'ベースブランチとコンフリクト',
-    conflictPlaceholder: '空欄: レビュー待ちのままにする'
+    failure: 'CI が失敗したとき',
+    pending: 'CI が実行中のとき',
+    conflict: 'ベースブランチとコンフリクトしたとき',
+    send: '送る',
+    promptPlaceholder: '書いたとおりに送ります',
+    variables: '書くと置き換わる変数: {{names}}'
   },
   notificationSettings: {
     title: '通知',

@@ -109,6 +109,10 @@ export const AppSettingsSchema = z.object({
   pullRequestFailurePrompt: z.string(),
   pullRequestPendingPrompt: z.string(),
   pullRequestConflictPrompt: z.string(),
+  /** Whether each of those prompts is sent. Switching one off keeps its text. */
+  pullRequestFailureEnabled: z.boolean(),
+  pullRequestPendingEnabled: z.boolean(),
+  pullRequestConflictEnabled: z.boolean(),
   theme: z.union([z.literal('dark'), z.literal('light'), z.literal('system')])
 })
 export type AppSettings = z.infer<typeof AppSettingsSchema>

@@ -61,7 +61,11 @@ export const ProjectSchema = z.object({
   /** Used only when `pullRequestPromptMode` is `custom`. Empty sends nothing for that state. */
   pullRequestFailurePrompt: z.string(),
   pullRequestPendingPrompt: z.string(),
-  pullRequestConflictPrompt: z.string()
+  pullRequestConflictPrompt: z.string(),
+  /** Whether each of this project's own prompts is sent (`custom` only). */
+  pullRequestFailureEnabled: z.boolean(),
+  pullRequestPendingEnabled: z.boolean(),
+  pullRequestConflictEnabled: z.boolean()
 })
 export type Project = z.infer<typeof ProjectSchema>
 
@@ -71,7 +75,7 @@ export type Project = z.infer<typeof ProjectSchema>
  * edits, so they are excluded (only `repo.deleteProject` and
  * `repo.reviveProject` write them).
  */
-export const ProjectInputSchema = ProjectSchema.omit({ id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true }).extend({
+export const ProjectInputSchema = ProjectSchema.omit({ id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true, pullRequestFailureEnabled: true, pullRequestPendingEnabled: true, pullRequestConflictEnabled: true }).extend({
   priority: z.number().int().nonnegative(),
   maxConcurrent: z.number().int().positive(),
   source: RecordSourceSchema.optional(),
@@ -82,6 +86,9 @@ export const ProjectInputSchema = ProjectSchema.omit({ id: true, createdAt: true
   pullRequestPromptMode: PullRequestPromptModeSchema.optional(),
   pullRequestFailurePrompt: z.string().optional(),
   pullRequestPendingPrompt: z.string().optional(),
-  pullRequestConflictPrompt: z.string().optional()
+  pullRequestConflictPrompt: z.string().optional(),
+  pullRequestFailureEnabled: z.boolean().optional(),
+  pullRequestPendingEnabled: z.boolean().optional(),
+  pullRequestConflictEnabled: z.boolean().optional()
 })
 export type ProjectInput = z.infer<typeof ProjectInputSchema>

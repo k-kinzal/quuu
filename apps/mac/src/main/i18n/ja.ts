@@ -217,6 +217,8 @@ export const ja: typeof en = {
     slotHeldByTask: '{{project}}: {{holder}}が P0 として枠を確保中',
     concurrencyLimit: '{{project}}: 同時実行上限 ({{max}})',
     slotHeld: '{{holder}}が P0 として実行枠を確保中です',
+    slotHeldForPullRequest: '{{project}}: {{holder}}がプルリクエストの確認中のため枠を確保中',
+    agentHeldForPullRequest: '{{holder}}がプルリクエストの確認中のため実行枠を確保中です',
     pickBusy: 'このタスクに指定された {{agent}} の実行枠が空くのを待っています',
     sentReserved: '予約したメッセージを送信: {{title}}',
     reviewToast: 'レビュー待ち: {{title}}',

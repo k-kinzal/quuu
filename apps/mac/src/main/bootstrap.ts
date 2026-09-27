@@ -21,9 +21,9 @@ import { ReviewOperations } from './review/operations.js'
 import { ReviewService } from './review/service.js'
 import type { ReviewSnapshot } from './review/types.js'
 import { offerNewAgents, seedIfEmpty } from './seed.js'
-import { attachActiveRuns } from './session/sessionAttach.js'
+import { attachActiveRuns, sessionReadTarget } from './session/sessionAttach.js'
 import { SessionView } from './session/view.js'
-import { SessionIndex } from './session/index.js'
+import { SessionIndex, sessionKey } from './session/index.js'
 import { workplaceDerivation } from './session/workplace.js'
 import { reviewEvidenceDerivation } from './review/evidence.js'
 import { SettingsOperations } from './settings/operations.js'
@@ -95,8 +95,12 @@ export class QuuuApp extends EventEmitter {
      * follow-up takes. It decides on full projections only, so a retained copy never speaks for
      * GitHub.
      */
-    this.pullRequestFollowUp = new PullRequestFollowUp(this.db, () => this.settings.getSettings(),
-      id => this.reviews.refresh(id), (id, message) => this.tasks.send(id, message))
+    this.pullRequestFollowUp = new PullRequestFollowUp(this.db, () => this.settings.getSettings(), {
+      indexed: id => this.indexedLatestRun(id),
+      refresh: id => this.reviews.refresh(id),
+      send: (id, message) => this.tasks.send(id, message),
+      release: id => this.scheduler.releaseSlot(id)
+    })
     this.reviews.on('projected', (taskId: string, snapshot: ReviewSnapshot) => { this.pullRequestFollowUp.onProjected(taskId, snapshot) })
     /*
      * Everything derived from a conversation is derived here, as its pages land: the commits and
@@ -141,6 +145,8 @@ export class QuuuApp extends EventEmitter {
       }
     })
 
+    // A finished task keeps its slot while its Pull Request decides whether it goes straight back
+    this.scheduler.setReviewGate(id => this.pullRequestFollowUp.shouldHold(id))
     this.scheduler.on('changed', () => this.emit('changed'))
     // Something is now waiting to be read, which is the moment a report is worth writing
     this.scheduler.on('review', (taskId: string) => { void this.reports.requestReport(taskId) })
@@ -157,6 +163,20 @@ export class QuuuApp extends EventEmitter {
     this.terminals.on('terminal', (event) => this.emit('terminal', event))
   }
 
+
+  /**
+   * Resolves once the conversation of the task's latest run is in the index. Asking for it here
+   * (first in line) is harmless when the finished-run hook already did; waiting on it is what
+   * lets the Pull Request that run opened be read off its receipts.
+   */
+  private async indexedLatestRun(taskId: string): Promise<void> {
+    const task = repo.getTask(this.db, taskId)
+    const run = task?.currentRunId ? repo.getRun(this.db, task.currentRunId) : null
+    if (!run) return
+    const target = sessionReadTarget(this.db, run)
+    this.sessions.request(run, target, true)
+    await this.sessions.ready(sessionKey(target))
+  }
 
   async bootstrap(): Promise<void> {
     await primeProcessPath()

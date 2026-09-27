@@ -86,6 +86,9 @@ CREATE TABLE IF NOT EXISTS projects (
   pull_request_failure_prompt TEXT NOT NULL DEFAULT '',
   pull_request_pending_prompt TEXT NOT NULL DEFAULT '',
   pull_request_conflict_prompt TEXT NOT NULL DEFAULT '',
+  pull_request_failure_enabled  INTEGER NOT NULL DEFAULT 0,
+  pull_request_pending_enabled  INTEGER NOT NULL DEFAULT 0,
+  pull_request_conflict_enabled INTEGER NOT NULL DEFAULT 0,
   source         TEXT NOT NULL DEFAULT 'user',
   sort_order     INTEGER NOT NULL DEFAULT 0,
   created_at     TEXT NOT NULL,
@@ -356,7 +359,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 30
+  const target = 31
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -653,6 +656,19 @@ function migrate(db: Db): void {
   }
 
   // v29 -> v30: project_reports is created by SCHEMA; existing task reports stay intact.
+
+  /*
+   * v30 -> v31: each Pull Request prompt is switched on and off apart from its text. A prompt
+   * that was already written was being sent, so it starts on; an empty one starts off.
+   */
+  if (current < 31) {
+    for (const kind of ['failure', 'pending', 'conflict']) {
+      if (hasColumn(db, 'projects', `pull_request_${kind}_enabled`)) continue
+      addColumnIfMissing(db, 'projects', `pull_request_${kind}_enabled`, 'INTEGER NOT NULL DEFAULT 0')
+      db.exec(`UPDATE projects SET pull_request_${kind}_enabled = 1 WHERE TRIM(pull_request_${kind}_prompt) <> ''`)
+    }
+  }
+
   setSchemaVersion(db, target)
 }
 

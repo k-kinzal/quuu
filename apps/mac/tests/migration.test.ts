@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('30')
+    expect(version.value).toBe('31')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('30')
+    expect(version.value).toBe('31')
     db.close()
   })
 
@@ -718,4 +718,41 @@ it('adds daily project reports to a v29 database without changing existing tasks
   expect(repo.getProjectReport(db, project)).toBeNull()
   expect(repo.getAppSettings(db).projectReportInstructions).toBe('')
   db.close()
+})
+
+
+describe('pull request prompt switches', () => {
+  it('starts a written project prompt switched on and an empty one off, and keeps the switches across reopening', () => {
+    makeV2Database()
+    const old = openDatabase(path)
+    const agentId = makeAgent(old, { name: 'Fixture' })
+    const projectId = makeProject(old, { name: 'Fixture', targetId: agentId })
+    old.close()
+    // A database from before the switches: the columns are gone, the written prompt is not
+    const raw = new DatabaseSync(path)
+    for (const kind of ['failure', 'pending', 'conflict']) raw.exec(`ALTER TABLE projects DROP COLUMN pull_request_${kind}_enabled`)
+    raw.prepare("UPDATE projects SET pull_request_failure_prompt = 'Fix CI' WHERE id = ?").run(projectId)
+    raw.prepare("UPDATE meta SET value = '30' WHERE key = 'schema_version'").run()
+    raw.close()
+    const upgraded = openDatabase(path)
+    expect(repo.getProject(upgraded, projectId)).toMatchObject({ pullRequestFailureEnabled: true, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false })
+    repo.updateProject(upgraded, projectId, { pullRequestFailureEnabled: false, pullRequestConflictEnabled: true })
+    upgraded.close()
+    const reopened = openDatabase(path)
+    try {
+      expect(repo.getProject(reopened, projectId)).toMatchObject({ pullRequestFailurePrompt: 'Fix CI', pullRequestFailureEnabled: false, pullRequestConflictEnabled: true })
+    } finally { reopened.close() }
+  })
+
+  it('carries an app prompt written before the switches over as switched on', () => {
+    makeV2Database()
+    const seed = new DatabaseSync(path)
+    seed.prepare("INSERT INTO settings (key,value) VALUES ('app',?)")
+      .run(JSON.stringify({ pullRequestFailurePrompt: 'Fix CI', pullRequestPendingPrompt: '  ' }))
+    seed.close()
+    const db = openDatabase(path)
+    try {
+      expect(repo.getAppSettings(db)).toMatchObject({ pullRequestFailureEnabled: true, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false })
+    } finally { db.close() }
+  })
 })

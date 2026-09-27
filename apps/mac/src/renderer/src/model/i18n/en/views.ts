@@ -141,12 +141,12 @@ export const views = {
   pullRequestSettings: {
     title: 'Pull Requests',
     promptsSection: 'When a run ends and its pull request is not in order',
-    failure: 'CI failed',
-    failurePlaceholder: 'Empty: leave the task in review',
-    pending: 'CI still running',
-    pendingPlaceholder: 'Empty: leave the task in review',
-    conflict: 'Conflicts with the base branch',
-    conflictPlaceholder: 'Empty: leave the task in review'
+    failure: 'When CI failed',
+    pending: 'While CI is still running',
+    conflict: 'When it conflicts with the base branch',
+    send: 'Send',
+    promptPlaceholder: 'Sent exactly as written',
+    variables: 'Filled in when written: {{names}}'
   },
   notificationSettings: {
     title: 'Notifications',

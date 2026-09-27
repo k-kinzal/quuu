@@ -70,14 +70,21 @@ export interface AppSettings {
   /**
    * What a task is told when its run ends and the Pull Request it produced is not in order.
    *
-   * Empty means nothing is sent and the task waits for a person as before. Filled in, the task
-   * goes back to its agent with this instruction instead of landing in review: once when CI has
-   * failed, once when CI is still running, once when the branch conflicts with its base. A
-   * project may answer differently (`Project.pullRequestPromptMode`).
+   * Sent exactly as written, once switched on below: `{{url}}` and the other names in
+   * `settings/pullRequestPrompts.ts` are the only parts filled in. The task goes back to its agent
+   * with it instead of landing in review - when CI has failed, when CI is still running, when the
+   * branch conflicts with its base. A project may answer differently (`Project.pullRequestPromptMode`).
    */
   pullRequestFailurePrompt: string
   pullRequestPendingPrompt: string
   pullRequestConflictPrompt: string
+  /**
+   * Whether each prompt above is sent. Separate from the text, so a prompt can be switched off
+   * without losing what was written, and a project that wants only one of the three says so.
+   */
+  pullRequestFailureEnabled: boolean
+  pullRequestPendingEnabled: boolean
+  pullRequestConflictEnabled: boolean
   theme: 'dark' | 'light' | 'system'
 }
 
@@ -102,5 +109,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   pullRequestFailurePrompt: '',
   pullRequestPendingPrompt: '',
   pullRequestConflictPrompt: '',
+  pullRequestFailureEnabled: false,
+  pullRequestPendingEnabled: false,
+  pullRequestConflictEnabled: false,
   theme: 'dark'
 }

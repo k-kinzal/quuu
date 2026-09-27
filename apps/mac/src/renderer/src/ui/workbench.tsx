@@ -1,4 +1,4 @@
-import { IconMark, StatusIndicator, useTheme, type TreeNode } from '@design-system/react'
+import { Dot, IconMark, useTheme, type TreeNode } from '@design-system/react'
 import type { FileChangeKind, PullRequestCheck } from '../../../preload/api/review.js'
 import { t } from '../model/i18n/index.js'
 import { Check, CircleAlert, Clock, ICON, Minus, TriangleAlert, iconProps } from './icons.js'
@@ -63,11 +63,12 @@ export function CheckMark({ status }: { status: PullRequestCheck }): JSX.Element
 
 /**
  * The CI of every Pull Request in one small circle, for a place too narrow for the shapes
- * above (a tab label). The word carries the meaning; the color repeats it.
+ * above (a tab label). The plain color dot, not a status mark: a full-size mark beside the
+ * label read louder than the label itself. The word carries the meaning; the color repeats it.
  */
 export function CheckDot({ status }: { status: PullRequestCheck }): JSX.Element {
   const theme = useTheme()
-  return <StatusIndicator shape="dot" color={checkColor(theme, status)} label={CHECK_LABEL[status]} />
+  return <Dot role="img" color={checkColor(theme, status)} title={CHECK_LABEL[status]} aria-label={CHECK_LABEL[status]} />
 }
 
 /** The branch no longer merges into its base. Shown beside the CI mark, since CI says nothing about it. */

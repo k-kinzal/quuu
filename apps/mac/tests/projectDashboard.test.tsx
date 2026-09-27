@@ -18,7 +18,7 @@ const project = ProjectSchema.parse({
   id: 'p1', name: 'Project', path: '/tmp/project', color: '#123456', priority: 2,
   targetKind: 'agent', targetId: null, maxConcurrent: 1, enabled: true, deletedAt: null,
   importSince: null, editorApp: '', reportEnabled: true, commitIdentityMode: 'inherit',
-  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
+  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
   commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
 })
 const get = vi.fn<() => Promise<ProjectReport | null>>()

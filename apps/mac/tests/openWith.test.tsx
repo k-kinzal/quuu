@@ -35,7 +35,7 @@ const project = (over: Partial<Project> = {}): Project => ({
   commitIdentity: { appSlug: '', botUserId: '' },
   editorApp: '',
   reportEnabled: true,
-  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
+  pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
   source: 'user',
   sortOrder: 0,
   createdAt: '',

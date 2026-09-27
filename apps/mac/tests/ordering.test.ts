@@ -56,7 +56,7 @@ const snapshot = (tasks: Task[]): AppSnapshot => ({
       commitIdentityMode: 'inherit',
       editorApp: '',
       reportEnabled: true,
-      pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '',
+      pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
       commitIdentity: { appSlug: '', botUserId: '' },
       source: 'user',
       sortOrder: 0,

@@ -278,6 +278,9 @@ function toProject(r: Row): Project {
     pullRequestFailurePrompt: s(r.pull_request_failure_prompt),
     pullRequestPendingPrompt: s(r.pull_request_pending_prompt),
     pullRequestConflictPrompt: s(r.pull_request_conflict_prompt),
+    pullRequestFailureEnabled: i2b(r.pull_request_failure_enabled),
+    pullRequestPendingEnabled: i2b(r.pull_request_pending_enabled),
+    pullRequestConflictEnabled: i2b(r.pull_request_conflict_enabled),
     source: s(r.source, 'user') as RecordSource,
     sortOrder: n(r.sort_order),
     createdAt: s(r.created_at),
@@ -705,8 +708,9 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
        max_concurrent, enabled, commit_identity_mode, commit_app_slug, commit_bot_user_id,
        commit_app_id, commit_setup_version, editor_app, report_enabled,
        pull_request_prompt_mode, pull_request_failure_prompt, pull_request_pending_prompt,
-       pull_request_conflict_prompt, source, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       pull_request_conflict_prompt, pull_request_failure_enabled, pull_request_pending_enabled,
+       pull_request_conflict_enabled, source, sort_order, created_at, updated_at)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     id,
     input.name,
@@ -728,6 +732,9 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
     input.pullRequestFailurePrompt ?? '',
     input.pullRequestPendingPrompt ?? '',
     input.pullRequestConflictPrompt ?? '',
+    b2i(input.pullRequestFailureEnabled ?? false),
+    b2i(input.pullRequestPendingEnabled ?? false),
+    b2i(input.pullRequestConflictEnabled ?? false),
     input.source ?? 'user',
     input.sortOrder ?? 0,
     ts,
@@ -745,7 +752,8 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
        max_concurrent=?, enabled=?, commit_identity_mode=?, commit_app_slug=?,
        commit_bot_user_id=?, commit_app_id=?, commit_setup_version=?, editor_app=?,
        report_enabled=?, pull_request_prompt_mode=?, pull_request_failure_prompt=?,
-       pull_request_pending_prompt=?, pull_request_conflict_prompt=?, sort_order=?, updated_at=?
+       pull_request_pending_prompt=?, pull_request_conflict_prompt=?, pull_request_failure_enabled=?,
+       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?
      WHERE id=?`
   ).run(
     next.name,
@@ -767,6 +775,9 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     next.pullRequestFailurePrompt ?? '',
     next.pullRequestPendingPrompt ?? '',
     next.pullRequestConflictPrompt ?? '',
+    b2i(next.pullRequestFailureEnabled ?? false),
+    b2i(next.pullRequestPendingEnabled ?? false),
+    b2i(next.pullRequestConflictEnabled ?? false),
     next.sortOrder,
     nowIso(),
     id
@@ -1085,6 +1096,11 @@ export interface SlotReservation {
   projectId: string
   /** The agent to keep free. null when it cannot be decided (only the project slot is reserved). */
   agentId: string | null
+  /**
+   * Why the slot is kept. Absent for a P0 task; `pull-request` while a task that just finished
+   * waits to hear whether its Pull Request sends it straight back (`Scheduler.holdSlot`).
+   */
+  reason?: 'pull-request'
 }
 
 /**
@@ -1563,6 +1579,13 @@ export function getAppSettings(db: Db): AppSettings {
       ...(saved.reportTargetId === undefined && saved.reportAgentId
         ? { reportTargetKind: 'agent' as const, reportTargetId: saved.reportAgentId }
         : {}),
+      /*
+       * Before each Pull Request prompt had its own switch, a written prompt was a sent prompt.
+       * Carried over as on, so updating does not quietly stop what was working.
+       */
+      ...(saved.pullRequestFailureEnabled === undefined ? { pullRequestFailureEnabled: Boolean(saved.pullRequestFailurePrompt?.trim()) } : {}),
+      ...(saved.pullRequestPendingEnabled === undefined ? { pullRequestPendingEnabled: Boolean(saved.pullRequestPendingPrompt?.trim()) } : {}),
+      ...(saved.pullRequestConflictEnabled === undefined ? { pullRequestConflictEnabled: Boolean(saved.pullRequestConflictPrompt?.trim()) } : {}),
       // Merge the nested object with the defaults too, not just the top level. Old versions have no appId / setupVersion.
       commitIdentity: {
         ...DEFAULT_SETTINGS.commitIdentity,

@@ -71,6 +71,11 @@ export interface Project {
   pullRequestFailurePrompt: string
   pullRequestPendingPrompt: string
   pullRequestConflictPrompt: string
+
+  /** Whether each of the three above is sent (`custom` only). Switching one off keeps its text. */
+  pullRequestFailureEnabled: boolean
+  pullRequestPendingEnabled: boolean
+  pullRequestConflictEnabled: boolean
 }
 
 
@@ -98,6 +103,9 @@ export type ProjectInput = Omit<
   | 'pullRequestFailurePrompt'
   | 'pullRequestPendingPrompt'
   | 'pullRequestConflictPrompt'
+  | 'pullRequestFailureEnabled'
+  | 'pullRequestPendingEnabled'
+  | 'pullRequestConflictEnabled'
 > & {
   source?: RecordSource
   commitIdentityMode?: CommitIdentityMode
@@ -108,4 +116,7 @@ export type ProjectInput = Omit<
   pullRequestFailurePrompt?: string
   pullRequestPendingPrompt?: string
   pullRequestConflictPrompt?: string
+  pullRequestFailureEnabled?: boolean
+  pullRequestPendingEnabled?: boolean
+  pullRequestConflictEnabled?: boolean
 }

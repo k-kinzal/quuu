@@ -17,10 +17,10 @@ import {
   Section,
   Select,
   SwatchGroup,
-  TextArea,
   TextInput
 } from '@design-system/react'
 import { CommitIdentityPanel, CommitIdentityReadout } from '../../components/CommitIdentity.js'
+import { PullRequestPromptFields } from '../../components/PullRequestPromptFields.js'
 import { pane } from '../../interaction/focus.js'
 import { confirmDeleteProject } from '../../interaction/projectActions.js'
 import { usePreview } from '../../interaction/usePreview.js'
@@ -267,35 +267,7 @@ export function ProjectDetail({
             />
           </Field>
           {project.pullRequestPromptMode === 'custom' && (
-            <>
-              <Field label={t('pullRequestSettings.failure')} width="full">
-                <TextArea
-                  key={`${project.id}-failure`}
-                  rows={3}
-                  placeholder={t('pullRequestSettings.failurePlaceholder')}
-                  defaultValue={project.pullRequestFailurePrompt}
-                  onChange={(e) => update({ pullRequestFailurePrompt: e.target.value })}
-                />
-              </Field>
-              <Field label={t('pullRequestSettings.pending')} width="full">
-                <TextArea
-                  key={`${project.id}-pending`}
-                  rows={3}
-                  placeholder={t('pullRequestSettings.pendingPlaceholder')}
-                  defaultValue={project.pullRequestPendingPrompt}
-                  onChange={(e) => update({ pullRequestPendingPrompt: e.target.value })}
-                />
-              </Field>
-              <Field label={t('pullRequestSettings.conflict')} width="full">
-                <TextArea
-                  key={`${project.id}-conflict`}
-                  rows={3}
-                  placeholder={t('pullRequestSettings.conflictPlaceholder')}
-                  defaultValue={project.pullRequestConflictPrompt}
-                  onChange={(e) => update({ pullRequestConflictPrompt: e.target.value })}
-                />
-              </Field>
-            </>
+            <PullRequestPromptFields id={project.id} values={project} controlled={false} onChange={update} />
           )}
         </Section>
 

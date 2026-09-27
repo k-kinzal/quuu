@@ -216,6 +216,8 @@ export const en = {
     slotHeldByTask: '{{project}}: {{holder}} is holding the slot as P0',
     concurrencyLimit: '{{project}}: concurrency limit ({{max}})',
     slotHeld: '{{holder}} is holding the run slot as P0',
+    slotHeldForPullRequest: '{{project}}: {{holder}} is keeping the slot while its pull request is checked',
+    agentHeldForPullRequest: '{{holder}} is keeping the run slot while its pull request is checked',
     pickBusy: 'Waiting for {{agent}}, the agent this task is set to',
     sentReserved: 'Sent the reserved message: {{title}}',
     reviewToast: 'Review: {{title}}',
