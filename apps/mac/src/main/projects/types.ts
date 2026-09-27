@@ -6,6 +6,7 @@ import type { RecordSource } from '../tasks/status.js'
 // ---------------------------------------------------------------------------
 
 export interface Project {
+  worktreeMode: 'inherit' | 'on' | 'off'
   id: string
   name: string
   /** Lower comes first. */
@@ -97,6 +98,7 @@ export type ProjectInput = Omit<
   | 'importSince'
   | 'commitIdentityMode'
   | 'commitIdentity'
+  | 'worktreeMode'
   | 'editorApp'
   | 'reportEnabled'
   | 'pullRequestPromptMode'
@@ -107,6 +109,7 @@ export type ProjectInput = Omit<
   | 'pullRequestPendingEnabled'
   | 'pullRequestConflictEnabled'
 > & {
+  worktreeMode?: Project['worktreeMode']
   source?: RecordSource
   commitIdentityMode?: CommitIdentityMode
   commitIdentity?: CommitIdentity

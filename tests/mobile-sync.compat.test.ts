@@ -37,7 +37,7 @@ describe('communication between a Mac and an iPhone shipped at different times',
     for (const version of [1, 2]) expect(macReadIntent(fixture(`intent-v${version}`))).toEqual({ ok: true, value: JSON.parse(fixture(`intent-v${version}`)) as unknown })
   })
 
-  it('the iPhone reads what the Mac actually exported, and the Mac applies the phone request and returns a receipt', () => {
+  it('the iPhone reads what the Mac actually exported, and the Mac applies the phone request and returns a receipt', async () => {
     const project = app.projects.createProject({ name: '確認', path: directory })
     const task = app.tasks.createTask({ projectId: project.id, title: '読む', prompt: '**本文**', status: 'held' })
     new SyncExporter(app.db).export(folder, false)
@@ -50,14 +50,14 @@ describe('communication between a Mac and an iPhone shipped at different times',
     expect(macReadIntent(body)).toEqual({ ok: true, value: intent })
     folder.write(`${LAYOUT.intents}/${intentFileName(intent.seq, intent.id)}`, body)
     const importer = new SyncImporter(app.db)
-    expect(importer.sync(folder, app.tasks).applied).toBe(1)
+    expect((await importer.sync(folder, app.tasks)).applied).toBe(1)
     expect(app.tasks.getTask(task.id)?.title).toBe('変更済み')
     const receipts = parseReceipts(folder.read(LAYOUT.receipts)!)
     expect(receipts.ok && receipts.value.entries[0].outcome).toBe('applied')
-    expect(importer.sync(folder, app.tasks).applied).toBe(0)
+    expect((await importer.sync(folder, app.tasks)).applied).toBe(0)
   })
 
-  it('rolls back a change and its notification when it fails midway, then records only the rejected receipt', () => {
+  it('rolls back a change and its notification when it fails midway, then records only the rejected receipt', async () => {
     const project = app.projects.createProject({ name: '確認', path: directory })
     const task = app.tasks.createTask({ projectId: project.id, title: '元の名前' })
     let notifications = 0
@@ -66,13 +66,13 @@ describe('communication between a Mac and an iPhone shipped at different times',
     app.tasks.updateTask = (id, patch) => { original(id, patch); throw new Error('failure midway through saving') }
     const intent = makeIntent({ id: 'failed-edit', device: 'phone', seq: 1, createdAt: '2026-09-06', baseRev: 1, op: { kind: 'task.edit', taskId: task.id, title: '残ってはいけない' }, expect: null })
     folder.write(`${LAYOUT.intents}/${intentFileName(intent.seq, intent.id)}`, JSON.stringify(intent))
-    expect(new SyncImporter(app.db).sync(folder, app.tasks).conflicts).toHaveLength(1)
+    expect((await new SyncImporter(app.db).sync(folder, app.tasks)).conflicts).toHaveLength(1)
     expect(app.tasks.getTask(task.id)?.title).toBe('元の名前')
     expect(notifications).toBe(0)
     expect(repo.appliedIntentIds(app.db).has(intent.id)).toBe(true)
   })
 
-  it('a failed post-save notification does not turn an applied result into a rejection, and a resend does not apply it twice', () => {
+  it('a failed post-save notification does not turn an applied result into a rejection, and a resend does not apply it twice', async () => {
     const project = app.projects.createProject({ name: '確認', path: directory })
     const task = app.tasks.createTask({ projectId: project.id, title: '元の名前' })
     app.on('changed', () => { throw new Error('the notification target went away') })
@@ -81,11 +81,11 @@ describe('communication between a Mac and an iPhone shipped at different times',
     const warning = vi.spyOn(console, 'error').mockImplementation(() => { })
     try {
       const importer = new SyncImporter(app.db)
-      expect(importer.sync(folder, app.tasks).applied).toBe(1)
+      expect((await importer.sync(folder, app.tasks)).applied).toBe(1)
       expect(app.tasks.getTask(task.id)?.title).toBe('保存済み')
       const receipts = parseReceipts(folder.read(LAYOUT.receipts)!)
       expect(receipts.ok && receipts.value.entries[0].outcome).toBe('applied')
-      expect(importer.sync(folder, app.tasks).applied).toBe(0)
+      expect((await importer.sync(folder, app.tasks)).applied).toBe(0)
     } finally { warning.mockRestore() }
   })
 

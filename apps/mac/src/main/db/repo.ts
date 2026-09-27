@@ -272,6 +272,7 @@ function toProject(r: Row): Project {
       appId: s(r.commit_app_id),
       setupVersion: n(r.commit_setup_version)
     },
+    worktreeMode: s(r.worktree_mode, 'inherit') as Project['worktreeMode'],
     editorApp: s(r.editor_app),
     reportEnabled: i2b(r.report_enabled),
     pullRequestPromptMode: s(r.pull_request_prompt_mode, 'inherit') as PullRequestPromptMode,
@@ -709,8 +710,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
        commit_app_id, commit_setup_version, editor_app, report_enabled,
        pull_request_prompt_mode, pull_request_failure_prompt, pull_request_pending_prompt,
        pull_request_conflict_prompt, pull_request_failure_enabled, pull_request_pending_enabled,
-       pull_request_conflict_enabled, source, sort_order, created_at, updated_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     id,
     input.name,
@@ -738,7 +739,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
     input.source ?? 'user',
     input.sortOrder ?? 0,
     ts,
-    ts
+    ts,
+    input.worktreeMode ?? 'inherit'
   )
   return getProject(db, id)!
 }
@@ -753,7 +755,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
        commit_bot_user_id=?, commit_app_id=?, commit_setup_version=?, editor_app=?,
        report_enabled=?, pull_request_prompt_mode=?, pull_request_failure_prompt=?,
        pull_request_pending_prompt=?, pull_request_conflict_prompt=?, pull_request_failure_enabled=?,
-       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?
+       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?
      WHERE id=?`
   ).run(
     next.name,
@@ -780,6 +782,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     b2i(next.pullRequestConflictEnabled ?? false),
     next.sortOrder,
     nowIso(),
+    next.worktreeMode,
     id
   )
   return getProject(db, id)!
@@ -1776,4 +1779,40 @@ export function findImportedRun(db: Db, key: string): { runId: string; taskId: s
 export function managedSessionIds(db: Db): Set<string> {
   const rows = db.prepare("SELECT session_id FROM runs WHERE source = 'user'").all() as { session_id: string }[]
   return new Set(rows.map(row => row.session_id))
+}
+
+
+/** A task keeps ownership independently of runs and later project setting changes. */
+export interface TaskWorktree {
+  taskId: string
+  repository: string
+  path: string
+  cwd: string
+  branch: string
+  defaultBranch: string
+  state: 'creating' | 'active' | 'integrated' | 'removed'
+  integratedHead: string | null
+}
+
+export function getTaskWorktree(db: Db, taskId: string): TaskWorktree | null {
+  const row = db.prepare('SELECT * FROM task_worktrees WHERE task_id = ?').get(taskId) as Row | undefined
+  return row ? { taskId, repository: s(row.repository), path: s(row.path), cwd: s(row.cwd),
+    branch: s(row.branch), defaultBranch: s(row.default_branch), state: s(row.state) as TaskWorktree['state'],
+    integratedHead: sn(row.integrated_head) } : null
+}
+
+export function saveTaskWorktree(db: Db, tree: TaskWorktree): void {
+  db.prepare(`INSERT INTO task_worktrees (task_id, repository, path, cwd, branch, default_branch, state, integrated_head)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(task_id) DO UPDATE SET repository=excluded.repository,
+    path=excluded.path, cwd=excluded.cwd, branch=excluded.branch, default_branch=excluded.default_branch,
+    state=excluded.state, integrated_head=excluded.integrated_head`)
+    .run(tree.taskId, tree.repository, tree.path, tree.cwd, tree.branch, tree.defaultBranch, tree.state, tree.integratedHead)
+}
+
+export function setRunWorkspace(db: Db, runId: string, cwd: string, args: string[]): void {
+  db.prepare('UPDATE runs SET cwd=?, args=? WHERE id=?').run(cwd, JSON.stringify(args), runId)
+}
+
+export function clearTaskReviewBase(db: Db, taskId: string): void {
+  db.prepare('DELETE FROM task_review_bases WHERE task_id=?').run(taskId)
 }

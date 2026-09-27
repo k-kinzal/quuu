@@ -1,3 +1,4 @@
+import { assertWorktreeIdle, ensureTaskWorktree } from '../tasks/worktrees.js'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { afterCommit, inTransaction } from '../db/database.js'
 import { recordExecutionState } from '../tasks/execution.js'
@@ -122,6 +123,7 @@ export class Runner extends EventEmitter {
 
   prepare(params: StartParams): Run {
     if (this.stopped) throw new Error('the run manager has shut down')
+    assertWorktreeIdle(this.db, params.task.id)
     return inTransaction(this.db, () => {
       const { task, project, agent, groupId, kind, fallbackFromRunId } = params
       /*
@@ -187,23 +189,41 @@ export class Runner extends EventEmitter {
     const run = prepared ?? this.prepare(params)
     const runId = run.id
     const sessionId = run.sessionId
-    const args = run.args
+    let args = run.args
     const stdoutLog = run.stdoutLogPath
     const exitFile = runExitPath(runId)
     if (this.stopped) return run
-    if (!existsSync(project.path)) {
-      this.fail(run, 'spawn', t('run.projectDirMissing', { path: project.path }))
+    try {
+      const cwd = await ensureTaskWorktree(this.db, task, project, runId)
+      if (this.stopped) return run
+      if (repo.getRun(this.db, runId)?.status !== 'starting') return repo.getRun(this.db, runId) ?? run
+      const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command,
+        template: params.kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate,
+        vars: { prompt: params.messageOverride ?? (task.prompt.trim() || task.title), title: task.title,
+          sessionId, projectPath: cwd, projectName: project.name, taskId: task.id, runId } })
+      args = invocation.args
+      run.cwd = cwd
+      run.args = args
+      repo.setRunWorkspace(this.db, runId, cwd, args)
+    } catch (error) {
+      if (this.stopped) return run
+      if (repo.getRun(this.db, runId)?.status !== 'starting') return repo.getRun(this.db, runId) ?? run
+      this.fail(run, 'spawn', error instanceof Error ? error.message : String(error))
+      return repo.getRun(this.db, runId)!
+    }
+    if (!existsSync(run.cwd)) {
+      this.fail(run, 'spawn', t('run.projectDirMissing', { path: run.cwd }))
       return repo.getRun(this.db, runId)!
     }
 
     if (!repo.getTaskReviewBase(this.db, task.id)) {
       try {
-        const baseline = await captureReviewBaseline(project.path, task.id, run.startedAt)
+        const baseline = await captureReviewBaseline(run.cwd, task.id, run.startedAt)
         if (this.stopped) return run
         if (!repo.getTask(this.db, task.id)) return run
         repo.insertTaskReviewBase(this.db, {
           taskId: task.id,
-          cwd: project.path,
+          cwd: run.cwd,
           ...baseline
         })
       } catch {
@@ -213,7 +233,7 @@ export class Runner extends EventEmitter {
         if (!repo.getTask(this.db, task.id)) return run
         repo.insertTaskReviewBase(this.db, {
           taskId: task.id,
-          cwd: project.path,
+          cwd: run.cwd,
           startedAt: run.startedAt,
           baseHead: null,
           baseTree: null
@@ -244,7 +264,7 @@ export class Runner extends EventEmitter {
     let githubAuthDir: string | null = null
     let githubAuthEnv: NodeJS.ProcessEnv
     try {
-      const prepared = prepareGitHubAuthEnvironment(identity, project.path, path, baseEnv)
+      const prepared = prepareGitHubAuthEnvironment(identity, run.cwd, path, baseEnv)
       githubAuthDir = prepared.dir
       githubAuthEnv = prepared.env
       if (prepared.launch) launch = [...prepared.launch, ...launch]
@@ -287,7 +307,7 @@ export class Runner extends EventEmitter {
     try {
       writeSync(
         logFd,
-        `# Quuu run ${runId}\n# ${nowIso()}\n# cwd: ${project.path}\n# cmd: ${run.command} ${args
+        `# Quuu run ${runId}\n# ${nowIso()}\n# cwd: ${run.cwd}\n# cmd: ${run.command} ${args
           .map(quoteForDisplay)
           .join(' ')}\n\n`
       )
@@ -298,7 +318,7 @@ export class Runner extends EventEmitter {
     let child: ChildProcess
     try {
       child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', ...launch], {
-        cwd: project.path,
+        cwd: run.cwd,
         env,
         stdio: ['ignore', logFd, logFd],
         // Its own process group, so a signal that kills Quuu (a terminal Ctrl-C, say)
@@ -329,7 +349,7 @@ export class Runner extends EventEmitter {
     // picks its own session ID. The ID we recorded does not exist, so the real one is picked back up.
     const adapter = run.logAdapter ?? agent.logAdapter
     if (!argsCarrySessionId(args, sessionId) && canRecoverSessionId(adapter)) {
-      this.startSessionAdoption(runId, task.id, project.path, adapter)
+      this.startSessionAdoption(runId, task.id, run.cwd, adapter)
     }
 
     child.on('error', (err) => {

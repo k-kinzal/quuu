@@ -1,6 +1,10 @@
 import type { views as en } from '../en/views.js'
 
 export const views: typeof en = {
+  worktreeSettings: {
+    title: 'Worktree', enabled: '新しいタスクを個別のGit Worktreeで実行', mode: 'タスクの作業ディレクトリ',
+    inherit: 'グローバル設定に従う', on: 'Worktreeを使用', off: 'プロジェクトのディレクトリを使用'
+  },
   settingsShell: {
     connections: '外部接続',
     title: '設定',

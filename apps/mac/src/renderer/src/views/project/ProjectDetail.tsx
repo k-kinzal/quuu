@@ -254,6 +254,14 @@ export function ProjectDetail({
           </Section>
         )}
 
+        <Section title={t('worktreeSettings.title')}>
+          <Field label={t('worktreeSettings.mode')} width="md">
+            <Select aria-label={t('worktreeSettings.mode')} value={project.worktreeMode}
+              onChange={(event) => update({ worktreeMode: event.target.value })}
+              options={(['inherit', 'on', 'off'] as const).map(value => ({ value, label: t(`worktreeSettings.${value}`) }))} />
+          </Field>
+        </Section>
+
         <Section title={t('projectDetail.pullRequestSection')}>
           <Field label={t('projectDetail.pullRequestMode')} width="md">
             <Select

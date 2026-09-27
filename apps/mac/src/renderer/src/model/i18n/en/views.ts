@@ -1,5 +1,13 @@
 /** Copy for the settings and project screens (SettingsShell, settings/, project/, CommitIdentity). */
 export const views = {
+  worktreeSettings: {
+    "title": "Worktrees",
+    "enabled": "Run new tasks in separate Git worktrees",
+    "mode": "Task working directory",
+    "inherit": "Follow global settings",
+    "on": "Use a worktree",
+    "off": "Use the project directory"
+},
   settingsShell: {
     connections: 'Connections',
     title: 'Settings',

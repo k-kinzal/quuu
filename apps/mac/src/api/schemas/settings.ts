@@ -47,6 +47,7 @@ export const PullRequestPromptModeSchema = z.union([z.literal('inherit'), z.lite
 export type PullRequestPromptMode = z.infer<typeof PullRequestPromptModeSchema>
 
 export const AppSettingsSchema = z.object({
+  worktreeEnabled: z.boolean(),
   httpEnabled: z.boolean(),
   httpPort: z.number().int().min(0).max(65535),
   mcpEnabled: z.boolean(),

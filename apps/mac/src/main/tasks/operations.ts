@@ -1,6 +1,9 @@
+import { isProcessAlive } from '../platform/runProcess.js'
+import { setTimeout as delay } from 'node:timers/promises'
+import { assertWorktreeIdle, completeTaskWorktree, discardTaskWorktree, withWorktreeOperation } from './worktrees.js'
 import type { Agent } from '../agents/types.js'
 import type { Db } from '../db/database.js'
-import { afterCommit, inTransaction } from '../db/database.js'
+import { afterCommit, inTransaction, PostCommitError } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { SessionOwner } from '../execution/agentResolver.js'
 import { eligibleAgents, sessionOwner, sessionOwnerLabel, taskLineage } from '../execution/agentResolver.js'
@@ -59,6 +62,7 @@ export class TaskOperations {
 
 
   updateTask(id: string, raw: TaskPatch): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
       const patch = normalizeSchedule(raw)
       if (
@@ -73,6 +77,10 @@ export class TaskOperations {
       }
       const before = assertTaskExists(repo.getTask(this.db, id), id)
       assertEditable(before, patch)
+      const worktree = repo.getTaskWorktree(this.db, id)
+      if (patch.projectId && patch.projectId !== before.projectId && worktree && worktree.state !== 'removed') {
+        throw new Error(t('worktree.cannotMove'))
+      }
       const task = repo.patchTask(this.db, id, patch)
       this.changed()
       // Leaving P0 lets go of the slot it was keeping; entering P0 puts it at the front of the
@@ -85,7 +93,9 @@ export class TaskOperations {
 
 
   enqueueTask(id: string): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
+      this.prepareCompletedWorkspace(id)
       const task = repo.setTaskStatus(this.db, id, 'queued')
       this.changed()
       this.wake()
@@ -96,6 +106,7 @@ export class TaskOperations {
 
 
   unqueueTask(id: string): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
       const task = repo.setTaskStatus(this.db, id, 'draft')
       this.changed()
@@ -114,6 +125,7 @@ export class TaskOperations {
    * `queued`, so moving it here is enough to take it out of execution.
    */
   holdTask(id: string): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
       const current = repo.getTask(this.db, id)
       if (!current) throw new Error(`task not found: ${id}`)
@@ -137,6 +149,8 @@ export class TaskOperations {
    * the button does nothing.
    */
   async runNow(id: string): Promise<RunNowResult> {
+    assertWorktreeIdle(this.db, id)
+    inTransaction(this.db, () => this.prepareCompletedWorkspace(id))
     const task = repo.getTask(this.db, id)
     const project = task ? repo.getProject(this.db, task.projectId) : null
     if (task && project && task.status !== 'running') this.detachDeadSession(task, project)
@@ -148,24 +162,44 @@ export class TaskOperations {
 
 
   /** Done. Only humans pass through here. */
-  markDone(id: string): Task {
-    return inTransaction(this.db, () => {
-      const task = repo.setTaskStatus(this.db, id, 'done', {
-        pendingMessage: '',
-        doneAt: nowIso()
-      })
+  markDone(id: string, committed?: () => void): Task | Promise<Task> {
+    assertWorktreeIdle(this.db, id)
+    const current = assertTaskExists(repo.getTask(this.db, id), id)
+    if (current.status === 'running' || repo.listRunsByTask(this.db, id).some(run => run.status === 'running' || run.status === 'starting')) {
+      throw new Error(t('worktree.running'))
+    }
+    const finish = (): Task => inTransaction(this.db, () => {
+      const task = repo.setTaskStatus(this.db, id, 'done', { pendingMessage: '', doneAt: nowIso() })
+      committed?.()
       this.changed()
-      // Completion also frees any reserved slot. Get whatever was waiting moving right away
       this.wake()
       return task
-
+    })
+    if (!repo.getTaskWorktree(this.db, id)) return finish()
+    return withWorktreeOperation(this.db, id, async () => {
+      try {
+        await completeTaskWorktree(this.db, current)
+        return finish()
+      } catch (error) {
+        if (error instanceof PostCommitError) throw error
+        if (this.db.isOpen && repo.getTask(this.db, id)) {
+          inTransaction(this.db, () => {
+            repo.setTaskStatus(this.db, id, 'review', { doneAt: null })
+            const note = error instanceof Error ? error.message : String(error)
+            const previous = repo.getTask(this.db, id)!.reviewNote
+            repo.patchTask(this.db, id, { reviewNote: previous.includes(note) ? previous : joinMessages(previous, note) })
+            this.changed()
+          })
+        }
+        throw error
+      }
     })
   }
 
-
-
   reopen(id: string): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
+      this.prepareCompletedWorkspace(id)
       const task = repo.setTaskStatus(this.db, id, 'review', { doneAt: null })
       this.changed()
       return task
@@ -176,7 +210,9 @@ export class TaskOperations {
 
   /** Send back. Stacks a follow-up message and re-queues. */
   sendBack(id: string, note: string): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
+      const completedWorkspace = this.prepareCompletedWorkspace(id)
       const message = note.trim()
       const current = repo.getTask(this.db, id)
       if (!current) throw new Error(`task not found: ${id}`)
@@ -184,7 +220,10 @@ export class TaskOperations {
       // If the session can't be continued, there is nothing to send back to. Fold into the prompt and run fresh
       const project = repo.getProject(this.db, current.projectId)
       const detached = project ? this.detachDeadSession(current, project, message) : null
-      if (!detached && message.length > 0) repo.setPendingMessage(this.db, id, message)
+      if (!detached && message.length > 0) {
+        if (completedWorkspace) repo.patchTask(this.db, id, { prompt: joinMessages(current.prompt, message) })
+        else repo.setPendingMessage(this.db, id, message)
+      }
 
       const task = repo.setTaskStatus(this.db, id, 'queued')
       this.changed()
@@ -196,6 +235,7 @@ export class TaskOperations {
 
 
   cancelTask(id: string): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
       const task = repo.getTask(this.db, id)
       if (!task) throw new Error(`task not found: ${id}`)
@@ -213,22 +253,35 @@ export class TaskOperations {
   }
 
 
-  deleteTask(id: string): void {
-    return inTransaction(this.db, () => {
-      const active = repo
-        .listRunsByTask(this.db, id)
-        .filter((r) => r.status === 'running' || r.status === 'starting')
-      for (const run of active) this.cancel(run.id)
-      // repo.deleteTask drops dependencies of waiting tasks in both directions (nothing stays stuck)
+  deleteTask(id: string): void | Promise<void> {
+    assertWorktreeIdle(this.db, id)
+    const remove = (): void => inTransaction(this.db, () => {
       repo.deleteTask(this.db, id)
       this.changed()
       this.wake()
-
+    })
+    const active = repo.listRunsByTask(this.db, id).filter(run => run.status === 'running' || run.status === 'starting')
+    if (!repo.getTaskWorktree(this.db, id)) return inTransaction(this.db, () => {
+      for (const run of active) this.cancel(run.id)
+      remove()
+    })
+    return withWorktreeOperation(this.db, id, async () => {
+      for (const run of active) this.cancel(run.id)
+      // The runner cancels the whole process group. Wait for its exit before removing cwd.
+      const deadline = Date.now() + 15_000
+      while (repo.listRunsByTask(this.db, id).some(run => run.status === 'running' || run.status === 'starting') ||
+        active.some(run => run.pid !== null && isProcessAlive(run.pid))) {
+        if (Date.now() >= deadline) throw new Error(t('worktree.running'))
+        await delay(50)
+        if (!this.db.isOpen) throw new Error('Quuu shut down during task deletion')
+      }
+      await discardTaskWorktree(this.db, id)
+      remove()
     })
   }
 
-
   archiveTask(id: string, archived: boolean): Task {
+    assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
       const task = repo.setTaskArchived(this.db, id, archived)
       this.changed()
@@ -248,8 +301,10 @@ export class TaskOperations {
    * - Session exists: stacked as a follow-up for a continued run (send back)
    */
   send(taskId: string, message: string): RunNowResult {
+    assertWorktreeIdle(this.db, taskId)
     return inTransaction(this.db, () => {
       const text = message.trim()
+      this.prepareCompletedWorkspace(taskId)
 
       const task = repo.getTask(this.db, taskId)
       if (!task) return { ok: false, reason: t('tasks.notFound') }
@@ -307,6 +362,7 @@ export class TaskOperations {
   /** Canceling a reservation. Deciding not to send is a human act too, so it gets an explicit entry. */
   /** A late-arriving follow-up also lands in the same reservation field, merged with the current content. */
   reserveMessage(taskId: string, message: string): Task {
+    assertWorktreeIdle(this.db, taskId)
     return inTransaction(this.db, () => {
       const task = assertTaskExists(repo.getTask(this.db, taskId), taskId)
       const result = repo.setReservedMessage(this.db, taskId, joinMessages(task.reservedMessage, message))
@@ -316,6 +372,7 @@ export class TaskOperations {
   }
 
   clearReservation(taskId: string): Task {
+    assertWorktreeIdle(this.db, taskId)
     return inTransaction(this.db, () => {
       const task = repo.setReservedMessage(this.db, taskId, '')
       this.changed()
@@ -324,6 +381,18 @@ export class TaskOperations {
     })
   }
 
+
+  /** A completed workspace has been removed; explicit new work needs a fresh session. */
+  private prepareCompletedWorkspace(id: string): boolean {
+    if (repo.getTaskWorktree(this.db, id)?.state !== 'removed') return false
+    const task = repo.getTask(this.db, id)
+    if (task?.sessionId) {
+      if (task.pendingMessage.trim()) repo.patchTask(this.db, id, { prompt: joinMessages(task.prompt, task.pendingMessage) })
+      repo.clearTaskSession(this.db, id)
+    }
+    repo.clearTaskReviewBase(this.db, id)
+    return true
+  }
 
   /**
    * Who opened the session. **Re-attach to reality before reading.**

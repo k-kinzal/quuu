@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('31')
+    expect(version.value).toBe('32')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('31')
+    expect(version.value).toBe('32')
     db.close()
   })
 
@@ -755,4 +755,19 @@ describe('pull request prompt switches', () => {
       expect(repo.getAppSettings(db)).toMatchObject({ pullRequestFailureEnabled: true, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false })
     } finally { db.close() }
   })
+})
+
+it('upgrades existing projects to inherited, disabled-by-default worktrees without moving any tasks', () => {
+  const previous = openDatabase(path)
+  const agentId = makeAgent(previous, { name: 'migration agent' })
+  const projectId = makeProject(previous, { name: 'existing', targetId: agentId })
+  const taskId = makeTask(previous, projectId, 'existing task')
+  previous.exec("DROP TABLE task_worktrees; ALTER TABLE projects DROP COLUMN worktree_mode; UPDATE meta SET value = '31' WHERE key = 'schema_version'")
+  previous.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getProject(upgraded, projectId)?.worktreeMode).toBe('inherit')
+  expect(repo.getAppSettings(upgraded).worktreeEnabled).toBe(false)
+  expect(repo.getTaskWorktree(upgraded, taskId)).toBeNull()
+  expect(repo.getTask(upgraded, taskId)?.status).toBe('queued')
+  upgraded.close()
 })

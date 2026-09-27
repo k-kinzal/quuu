@@ -45,7 +45,7 @@ function project(): Project {
     maxConcurrent: 1,
     enabled: true,
     deletedAt: null,
-    importSince: null,
+    importSince: null, worktreeMode: 'inherit',
     commitIdentityMode: 'off',
     commitIdentity: { appSlug: '', botUserId: '' },
     editorApp: '',

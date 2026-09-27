@@ -3,6 +3,8 @@ import type { CommitIdentity } from './identity.js'
 import { EMPTY_COMMIT_IDENTITY } from './identity.js'
 
 export interface AppSettings {
+  /** Isolate new tasks in a Git worktree unless the project overrides it. */
+  worktreeEnabled: boolean
   httpEnabled: boolean
   httpPort: number
   mcpEnabled: boolean
@@ -93,6 +95,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  worktreeEnabled: false,
   httpEnabled: true,
   httpPort: 0,
   mcpEnabled: true,

@@ -20,6 +20,14 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "items": {
             "kind": "object",
             "fields": {
+              "worktreeMode": {
+                "kind": "string",
+                "choices": [
+                  "inherit",
+                  "on",
+                  "off"
+                ]
+              },
               "id": {
                 "kind": "string"
               },
@@ -160,6 +168,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               }
             },
             "required": [
+              "worktreeMode",
               "id",
               "name",
               "priority",
@@ -1024,6 +1033,14 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "items": {
         "kind": "object",
         "fields": {
+          "worktreeMode": {
+            "kind": "string",
+            "choices": [
+              "inherit",
+              "on",
+              "off"
+            ]
+          },
           "id": {
             "kind": "string"
           },
@@ -1164,6 +1181,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           }
         },
         "required": [
+          "worktreeMode",
           "id",
           "name",
           "priority",
@@ -1237,6 +1255,14 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         },
         "color": {
           "kind": "string"
+        },
+        "worktreeMode": {
+          "kind": "string",
+          "choices": [
+            "inherit",
+            "on",
+            "off"
+          ]
         },
         "source": {
           "kind": "string",
@@ -1315,6 +1341,14 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "worktreeMode": {
+          "kind": "string",
+          "choices": [
+            "inherit",
+            "on",
+            "off"
+          ]
+        },
         "id": {
           "kind": "string"
         },
@@ -1455,6 +1489,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "worktreeMode",
         "id",
         "name",
         "priority",
@@ -1533,6 +1568,14 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             },
             "color": {
               "kind": "string"
+            },
+            "worktreeMode": {
+              "kind": "string",
+              "choices": [
+                "inherit",
+                "on",
+                "off"
+              ]
             },
             "source": {
               "kind": "string",
@@ -1614,6 +1657,14 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "worktreeMode": {
+          "kind": "string",
+          "choices": [
+            "inherit",
+            "on",
+            "off"
+          ]
+        },
         "id": {
           "kind": "string"
         },
@@ -1754,6 +1805,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "worktreeMode",
         "id",
         "name",
         "priority",
@@ -8354,6 +8406,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "worktreeEnabled": {
+          "kind": "boolean"
+        },
         "httpEnabled": {
           "kind": "boolean"
         },
@@ -8467,6 +8522,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "worktreeEnabled",
         "httpEnabled",
         "httpPort",
         "mcpEnabled",
@@ -8506,6 +8562,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "worktreeEnabled": {
+          "kind": "boolean"
+        },
         "httpEnabled": {
           "kind": "boolean"
         },
@@ -8619,6 +8678,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "worktreeEnabled",
         "httpEnabled",
         "httpPort",
         "mcpEnabled",
@@ -8655,6 +8715,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "input": {
       "kind": "object",
       "fields": {
+        "worktreeEnabled": {
+          "kind": "boolean"
+        },
         "httpEnabled": {
           "kind": "boolean"
         },
@@ -8772,6 +8835,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "worktreeEnabled": {
+          "kind": "boolean"
+        },
         "httpEnabled": {
           "kind": "boolean"
         },
@@ -8885,6 +8951,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "worktreeEnabled",
         "httpEnabled",
         "httpPort",
         "mcpEnabled",

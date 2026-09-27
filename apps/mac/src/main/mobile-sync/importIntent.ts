@@ -45,7 +45,7 @@ export interface IntentTarget {
   updateTask(id: string, patch: TaskPatch): Task
   enqueueTask(id: string): Task
   holdTask(id: string): Task
-  markDone(id: string): Task
+  markDone(id: string, committed?: () => void): Task | Promise<Task>
   sendBack(id: string, note: string): Task
   archiveTask(id: string, archived: boolean): Task
   reserveMessage(id: string, message: string): Task
@@ -70,7 +70,7 @@ export class SyncImporter {
     this.db = db
   }
 
-  sync(folder: SyncFolder, target: IntentTarget): ImportResult {
+  async sync(folder: SyncFolder, target: IntentTarget): Promise<ImportResult> {
     const names = folder.list(LAYOUT.intents).filter((n) => n.endsWith('.json'))
     if (names.length === 0) return EMPTY
 
@@ -106,7 +106,9 @@ export class SyncImporter {
       let receipt: SyncReceipt
       let committed: SyncReceipt | null = null
       try {
-        receipt = inTransaction(this.db, () => {
+        receipt = intent.op.kind === 'task.done'
+          ? await this.applyDone(intent, target, value => { committed = value })
+          : inTransaction(this.db, () => {
           committed = this.apply(intent, target, repo.runCountsByTask(this.db))
           return committed
         })
@@ -116,6 +118,7 @@ export class SyncImporter {
           receipt = committed
           console.error('[mobile-sync] post-commit notification failed', error)
         } else {
+          if (!this.db.isOpen) throw error
           const reason = error instanceof Error ? error.message : String(error)
           repo.markIntentApplied(this.db, intent, 'conflict', reason)
           receipt = { intentId: intent.id, device: intent.device, seq: intent.seq, taskId: intent.op.taskId, at: nowIso(), outcome: 'conflict', reason }
@@ -139,6 +142,22 @@ export class SyncImporter {
 
     this.writeReceipts(folder)
     return result
+  }
+
+  private async applyDone(intent: SyncIntent, target: IntentTarget, committed: (receipt: SyncReceipt) => void): Promise<SyncReceipt> {
+    const task = repo.getTask(this.db, intent.op.taskId)
+    const decision = decideIntent(intent, task ? currentOf(task, repo.runCountsByTask(this.db)) : null)
+    const receipt: SyncReceipt = { intentId: intent.id, device: intent.device, seq: intent.seq,
+      taskId: intent.op.taskId, at: nowIso(), outcome: decision.outcome, reason: decision.reason }
+    const record = (): void => {
+      repo.markIntentApplied(this.db, intent, decision.outcome, decision.reason)
+      committed(receipt)
+    }
+    if (decision.outcome === 'applied') {
+      // Git runs outside the DB transaction. Approval and its receipt commit together afterwards.
+      await target.markDone(intent.op.taskId, record)
+    } else record()
+    return receipt
   }
 
   private apply(
@@ -217,8 +236,7 @@ export class SyncImporter {
         target.holdTask(op.taskId)
         return
       case 'task.done':
-        target.markDone(op.taskId)
-        return
+        throw new Error('approval must use the asynchronous completion path')
       case 'task.sendBack':
         if (deferred) {
           // Running. Hand it to the "send when it finishes" Quuu already has

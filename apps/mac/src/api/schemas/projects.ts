@@ -7,7 +7,10 @@ import { RecordSourceSchema } from './tasks.js'
 // Projects
 // ---------------------------------------------------------------------------
 
+const WorktreeModeSchema = z.enum(['inherit', 'on', 'off'])
+
 export const ProjectSchema = z.object({
+  worktreeMode: WorktreeModeSchema,
   id: z.string(),
   name: z.string(),
   /** Smaller wins. */
@@ -75,7 +78,8 @@ export type Project = z.infer<typeof ProjectSchema>
  * edits, so they are excluded (only `repo.deleteProject` and
  * `repo.reviveProject` write them).
  */
-export const ProjectInputSchema = ProjectSchema.omit({ id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true, pullRequestFailureEnabled: true, pullRequestPendingEnabled: true, pullRequestConflictEnabled: true }).extend({
+export const ProjectInputSchema = ProjectSchema.omit({ worktreeMode: true, id: true, createdAt: true, updatedAt: true, source: true, deletedAt: true, importSince: true, commitIdentityMode: true, commitIdentity: true, editorApp: true, reportEnabled: true, pullRequestPromptMode: true, pullRequestFailurePrompt: true, pullRequestPendingPrompt: true, pullRequestConflictPrompt: true, pullRequestFailureEnabled: true, pullRequestPendingEnabled: true, pullRequestConflictEnabled: true }).extend({
+  worktreeMode: WorktreeModeSchema.optional(),
   priority: z.number().int().nonnegative(),
   maxConcurrent: z.number().int().positive(),
   source: RecordSourceSchema.optional(),

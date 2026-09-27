@@ -1,6 +1,22 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  worktree: {
+    moved: 'エージェントが別のWorktreeに移動しています。変更をタスクの管理対象Worktreeに取り込んでから完了してください。',
+    "busy": "タスクのWorktreeを準備または終了処理中です。処理後に再試行してください。",
+    "gitFailed": "Git操作に失敗しました。",
+    "defaultUnknown": "デフォルトブランチを特定できません。origin/HEADをリポジトリのデフォルトブランチに設定してください。",
+    "missing": "タスクの作業ディレクトリが見つかりません: {{path}}",
+    "wrongRepository": "保存されたディレクトリは、このリポジトリのリンクされたWorktreeではありません。",
+    "dirty": "タスクを完了する前に、{{path}}の変更をコミットまたは破棄してください。",
+    "inProgress": "タスクを完了する前に、{{path}}で進行中のGit操作を終了してください。",
+    "prUnavailable": "Pull Requestのマージ状態を確認できませんでした: {{reason}}",
+    "mergeFailed": "{{branch}}に取り込めませんでした。タスクのWorktreeで競合を解消してから、もう一度完了してください。\n{{reason}}",
+    "baseChanged": "完了処理中にデフォルトブランチが変更されました。再試行してください。",
+    "headChanged": "完了処理中にタスクのブランチが変更されました。変更をレビューして再試行してください。",
+    "running": "Worktreeを完了または削除する前に、実行中のタスクを停止してください。",
+    "cannotMove": "Worktreeを持つタスクのプロジェクトとリポジトリは変更できません。"
+},
   externalLinks: {
     cannotOpen: 'このリンクを開けませんでした。',
     pathUnavailable: 'このパスが存在しないか、アクセスできません: {{path}}'

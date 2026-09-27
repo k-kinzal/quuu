@@ -750,3 +750,37 @@ Task log output is paged and streamed. Run IDs and message IDs accompany evidenc
 so an analysis can cite the original task instead of reporting untraceable advice.
 Recurring rules enqueue ordinary tasks; those agents can use the same CLI to
 inspect a project and create follow-up work.
+
+## Task worktrees
+
+**Settings > General > Worktrees** enables isolation for new tasks. It starts off.
+Each project's settings can follow that choice, enable worktrees, or use the project
+directory. Settings changes apply to tasks that have not started; existing conversations
+keep their working directory.
+
+The first run creates a `quuu/…` branch from the local default branch and a linked
+worktree under the app data directory's `worktrees/`. Git's `origin/HEAD` identifies
+the default branch; local `main` / `master`, or a sole branch in a local-only repository,
+are fallbacks. Projects registered below the repository root keep that relative
+subdirectory. A repository with no initial commit cannot create a worktree.
+
+Follow-ups, retries, failures, review, and app restarts retain that same worktree.
+The task's review, terminal and editor open there. Changing settings does not remove
+existing worktrees. The task cannot move to another project while it owns one.
+
+- **Done:** if GitHub confirms a merged PR for the task's exact current branch and
+  commit, remove the worktree. Otherwise merge into the local default branch, then
+  remove it. Quuu does not push the default branch. Later commits after a merged PR
+  still need integration. If GitHub cannot be checked and the head is not already in the local default branch, completion waits for a retry.
+- **Merge failure:** leave the task in Review and retain its worktree. Conflicts do
+  not modify the default checkout. Resolve them in the task worktree and try Done
+  again. Commit or discard uncommitted files and finish in-progress Git operations
+  before completion; local default-branch changes are not overwritten.
+- **Archive:** retain the worktree and its changes without merging or deleting them.
+- **Delete:** stop the task and discard its worktree, including uncommitted files,
+  without merging. Deleting a project does the same for its tasks, including archives.
+
+Quuu removes its own temporary branch when safe. Branches created separately by the
+agent are retained. Reopening a completed task creates a fresh workspace on its next
+run and starts a fresh conversation. Completion from iPhone, CLI and MCP uses the
+same integration checks as the Mac.

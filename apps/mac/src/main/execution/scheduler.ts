@@ -1,3 +1,4 @@
+import { assertWorktreeIdle } from '../tasks/worktrees.js'
 import { EventEmitter } from 'node:events'
 import { isManagedAgent } from '../agents/types.js'
 import type { Project } from '../projects/types.js'
@@ -726,6 +727,9 @@ export class Scheduler extends EventEmitter {
    * result, so nothing else starts on the strength of the request.
    */
   async runNow(taskId: string): Promise<{ ok: boolean; reason?: string }> {
+    try { assertWorktreeIdle(this.db, taskId) } catch (error) {
+      return { ok: false, reason: error instanceof Error ? error.message : String(error) }
+    }
     const prepared = inTransaction(this.db, () => {
       const task = repo.getTask(this.db, taskId)
       if (!task) return { ok: false, reason: t('tasks.notFound') }

@@ -43,30 +43,16 @@ export class WorkspaceOperations {
       if (!run) return null
       const task = repo.getTask(this.db, run.taskId)
       const project = task ? repo.getProject(this.db, task.projectId) : null
-      return run.cwd.length > 0 ? { dir: this.workplaceOf(run, project), project } : null
+      return run.cwd.length > 0 ? { dir: runWorkingDirectory(this.db, run, project), project } : null
     }
     const task = repo.getTask(this.db, target.id)
     if (!task) return null
     const project = repo.getProject(this.db, task.projectId)
+    const tree = repo.getTaskWorktree(this.db, task.id)
+    if (tree?.state === 'removed') return { dir: project?.path ?? tree.repository, project }
     const run = repo.listRunsByTask(this.db, task.id)[0]
-    const dir = run && run.cwd.length > 0 ? this.workplaceOf(run, project) : project?.path || ''
+    const dir = run && run.cwd.length > 0 ? runWorkingDirectory(this.db, run, project) : tree?.cwd ?? project?.path ?? ''
     return dir.length > 0 ? { dir, project } : null
-  }
-
-
-  /**
-   * Where that run's agent worked: the worktree it moved into, otherwise where it was launched.
-   *
-   * Read off what the session index derived (`session/workplace.ts`), never off the log itself:
-   * the index has already read the whole session, in the CLI's own format, through its adapter.
-   */
-  private workplaceOf(run: Run, project: Project | null): string {
-    const target = structuredSessionTarget(this.db, run)
-    return agentWorkplace({
-      dirs: target ? recordedWorkingDirs(this.db, sessionKey(target)) : [],
-      launchDir: run.cwd,
-      projectDir: project?.path ?? run.cwd
-    })
   }
 
 
@@ -189,4 +175,15 @@ async function attempt(run: () => Promise<void>): Promise<OpenResult> {
   } catch (err) {
     return { ok: false, reason: err instanceof Error ? err.message : String(err) }
   }
+}
+
+
+/** Follow the indexed session when the agent moved into another checkout of this repository. */
+export function runWorkingDirectory(db: Db, run: Run, project: Project | null): string {
+  const target = structuredSessionTarget(db, run)
+  return agentWorkplace({
+    dirs: target ? recordedWorkingDirs(db, sessionKey(target)) : [],
+    launchDir: run.cwd,
+    projectDir: project?.path ?? run.cwd
+  })
 }

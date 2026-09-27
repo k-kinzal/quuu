@@ -311,7 +311,7 @@ describe('choosing a preceding task while writing a new task', () => {
     const archived = app.tasks.createTask({ projectId, title: 'Archived preparation', status: 'draft' })
     app.tasks.archiveTask(archived.id, true)
     const done = app.tasks.createTask({ projectId, title: 'Finished preparation', status: 'draft' })
-    app.tasks.markDone(done.id)
+    await app.tasks.markDone(done.id)
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer fixedProjectId={projectId} /></ThemeProvider>)
     const input = screen.getByPlaceholderText<HTMLTextAreaElement>('Task title...')
     fireEvent.change(input, { target: { value: '一覧から追加する' } })

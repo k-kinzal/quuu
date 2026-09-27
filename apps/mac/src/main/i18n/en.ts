@@ -1,5 +1,21 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  worktree: {
+    moved: 'The agent moved to a different worktree. Bring its changes back to the managed task worktree before completing.',
+    "busy": "The task’s worktree is being prepared or finalized. Try again when it finishes.",
+    "gitFailed": "The Git operation failed.",
+    "defaultUnknown": "Cannot identify the default branch. Set origin/HEAD to the repository’s default branch.",
+    "missing": "The task’s working directory is missing: {{path}}",
+    "wrongRepository": "The saved task directory is not a linked worktree of this repository.",
+    "dirty": "Commit or discard changes in {{path}} before completing this task.",
+    "inProgress": "Finish the Git operation in {{path}} before completing this task.",
+    "prUnavailable": "Could not verify whether the Pull Request was merged: {{reason}}",
+    "mergeFailed": "Could not merge into {{branch}}. Resolve the conflicts in the task worktree, then complete the task again.\n{{reason}}",
+    "baseChanged": "The default branch changed during completion. Try again.",
+    "headChanged": "The task branch changed during completion. Review the new changes and try again.",
+    "running": "Stop the running task before completing or removing its worktree.",
+    "cannotMove": "A task with a managed worktree must stay in its original project and repository."
+},
   externalLinks: {
     cannotOpen: 'This link could not be opened.',
     pathUnavailable: 'This path does not exist or cannot be accessed: {{path}}'

@@ -1,9 +1,11 @@
+import { t } from '../i18n/index.js'
+import { assertWorktreeIdle, discardTaskWorktree, withWorktreeOperation } from '../tasks/worktrees.js'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { Project, ProjectInput } from './types.js'
 
 export class ProjectOperations {
-  constructor(private db: Db, private changed: () => void, private wake: () => void) { }
+  constructor(private db: Db, private changed: () => void, private wake: () => void, private removeTask?: (id: string) => void | Promise<void>) { }
 
 
   // -------------------------------------------------------------------------
@@ -32,6 +34,7 @@ export class ProjectOperations {
     }
 
     const project = repo.insertProject(this.db, {
+      ...input,
       name: input.name,
       path: input.path,
       color: input.color ?? '#4EA8DE',
@@ -65,6 +68,16 @@ export class ProjectOperations {
 
 
   updateProject(id: string, patch: Partial<ProjectInput>): Project {
+    if (patch.path !== undefined) {
+      for (const task of repo.listTasks(this.db, true).filter(task => task.projectId === id)) assertWorktreeIdle(this.db, task.id)
+    }
+    if (patch.path !== undefined && patch.path !== repo.getProject(this.db, id)?.path &&
+      repo.listTasks(this.db, true).some(task => {
+        const tree = task.projectId === id ? repo.getTaskWorktree(this.db, task.id) : null
+        return tree !== null && tree.state !== 'removed'
+      })) {
+      throw new Error(t('worktree.cannotMove'))
+    }
     const project = repo.updateProject(this.db, id, patch)
     this.changed()
     this.wake()
@@ -72,8 +85,25 @@ export class ProjectOperations {
   }
 
 
-  deleteProject(id: string): void {
-    repo.deleteProject(this.db, id)
-    this.changed()
+  deleteProject(id: string): void | Promise<void> {
+    const tasks = repo.listTasks(this.db, true).filter(task => task.projectId === id)
+    for (const task of tasks) assertWorktreeIdle(this.db, task.id)
+    const remove = (): void => { repo.deleteProject(this.db, id); this.changed() }
+    if (!tasks.some(task => repo.getTaskWorktree(this.db, task.id))) return remove()
+    const enabled = repo.getProject(this.db, id)?.enabled ?? false
+    repo.updateProject(this.db, id, { enabled: false })
+    return (async () => {
+      try {
+        for (const task of tasks) {
+          if (this.removeTask) await this.removeTask(task.id)
+          else await withWorktreeOperation(this.db, task.id, () => discardTaskWorktree(this.db, task.id))
+        }
+        repo.updateProject(this.db, id, { enabled })
+        remove()
+      } catch (error) {
+        if (this.db.isOpen) { repo.updateProject(this.db, id, { enabled }); this.changed(); this.wake() }
+        throw error
+      }
+    })()
   }
 }

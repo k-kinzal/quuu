@@ -36,6 +36,7 @@ message SnapshotResponseValueProjectsItemCommitIdentity {
 }
 
 message SnapshotResponseValueProjectsItem {
+  optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
   optional double priority = 3;
@@ -470,6 +471,7 @@ message ProjectsListResponseValueItemCommitIdentity {
 }
 
 message ProjectsListResponseValueItem {
+  optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
   optional double priority = 3;
@@ -530,6 +532,7 @@ message ProjectsCreateRequestValue {
   optional double sortOrder = 7;
   optional string path = 8;
   optional string color = 9;
+  optional string worktreeMode = 22;
   optional string source = 10;
   optional string commitIdentityMode = 11;
   optional ProjectsCreateRequestValueCommitIdentity commitIdentity = 12;
@@ -577,6 +580,7 @@ message ProjectsCreateResponseValueCommitIdentity {
 }
 
 message ProjectsCreateResponseValue {
+  optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
   optional double priority = 3;
@@ -633,6 +637,7 @@ message ProjectsUpdateRequestValuePatch {
   optional double sortOrder = 7;
   optional string path = 8;
   optional string color = 9;
+  optional string worktreeMode = 22;
   optional string source = 10;
   optional string commitIdentityMode = 11;
   optional ProjectsUpdateRequestValuePatchCommitIdentity commitIdentity = 12;
@@ -685,6 +690,7 @@ message ProjectsUpdateResponseValueCommitIdentity {
 }
 
 message ProjectsUpdateResponseValue {
+  optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
   optional double priority = 3;
@@ -3846,6 +3852,7 @@ message SettingsSetIdentityResponseValueCommitIdentity {
 }
 
 message SettingsSetIdentityResponseValue {
+  optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
   optional bool mcpEnabled = 27;
@@ -3892,6 +3899,7 @@ message SettingsGetResponseValueCommitIdentity {
 }
 
 message SettingsGetResponseValue {
+  optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
   optional bool mcpEnabled = 27;
@@ -3934,6 +3942,7 @@ message SettingsSetRequestValueCommitIdentity {
 }
 
 message SettingsSetRequestValue {
+  optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
   optional bool mcpEnabled = 27;
@@ -3976,6 +3985,7 @@ message SettingsSetResponseValueCommitIdentity {
 }
 
 message SettingsSetResponseValue {
+  optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
   optional bool mcpEnabled = 27;

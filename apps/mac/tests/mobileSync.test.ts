@@ -88,9 +88,11 @@ function targetOf(
       calls.push(`hold:${id}`)
       return repo.setTaskStatus(db, id, 'held')
     },
-    markDone(id) {
+    markDone(id, committed) {
       calls.push(`done:${id}`)
-      return repo.setTaskStatus(db, id, 'done')
+      const task = repo.setTaskStatus(db, id, 'done')
+      committed?.()
+      return task
     },
     sendBack(id, note) {
       calls.push(`sendBack:${id}`)
@@ -298,7 +300,7 @@ describe('export', () => {
 })
 
 describe('import', () => {
-  it('a task created on the iPhone keeps the id the device assigned', () => {
+  it('a task created on the iPhone keeps the id the device assigned', async () => {
     const target = targetOf(db)
     putIntent(
       intent({
@@ -313,13 +315,13 @@ describe('import', () => {
         }
       })
     )
-    const result = new SyncImporter(db).sync(folder, target)
+    const result = (await new SyncImporter(db).sync(folder, target))
     expect(result.applied).toBe(1)
     expect(repo.getTask(db, 'phone-1')?.title).toBe('思いついたこと')
     expect(target.calls).toEqual(['create:phone-1'])
   })
 
-  it('a task added as held goes to held, not into the queue', () => {
+  it('a task added as held goes to held, not into the queue', async () => {
     const target = targetOf(db)
     putIntent(
       intent({
@@ -337,13 +339,13 @@ describe('import', () => {
       })
     )
 
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
 
     expect(repo.getTask(db, 'phone-held')?.status).toBe('held')
     expect(target.calls).toEqual(['create:phone-held'])
   })
 
-  it('a task added as run-now goes straight to manual run, skipping the queue', () => {
+  it('a task added as run-now goes straight to manual run, skipping the queue', async () => {
     const target = targetOf(db)
     putIntent(
       intent({
@@ -361,7 +363,7 @@ describe('import', () => {
       })
     )
 
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
 
     expect(repo.getTask(db, 'phone-now')?.status).toBe('running')
     expect(target.calls).toEqual(['create:phone-now', 'runNow:phone-now'])
@@ -385,7 +387,7 @@ describe('import', () => {
       })
     )
 
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
 
     await vi.waitFor(() => expect(repo.getTask(db, 'phone-now-queued')?.status).toBe('queued'))
     expect(target.calls).toEqual([
@@ -395,48 +397,48 @@ describe('import', () => {
     ])
   })
 
-  it('the same intent arriving twice is not applied twice', () => {
+  it('the same intent arriving twice is not applied twice', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'review')
     putIntent(intent({ op: { kind: 'task.done', taskId } }))
 
     const importer = new SyncImporter(db)
-    expect(importer.sync(folder, target).applied).toBe(1)
+    expect((await importer.sync(folder, target)).applied).toBe(1)
     // the file stays behind (cleanup is the iPhone's job)
-    expect(importer.sync(folder, target).applied).toBe(0)
+    expect((await importer.sync(folder, target)).applied).toBe(0)
     expect(target.calls).toEqual([`done:${taskId}`])
   })
 
-  it('while an intent file remains, the receipt is rewritten even if already applied', () => {
+  it('while an intent file remains, the receipt is rewritten even if already applied', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'review')
     putIntent(intent({ op: { kind: 'task.done', taskId } }))
 
     const importer = new SyncImporter(db)
-    expect(importer.sync(folder, target).applied).toBe(1)
+    expect((await importer.sync(folder, target)).applied).toBe(1)
     writeFileSync(join(dir, LAYOUT.receipts), '古い受領書', 'utf8')
 
-    expect(importer.sync(folder, target).applied).toBe(0)
+    expect((await importer.sync(folder, target)).applied).toBe(0)
     const receipts = parseReceipts(readFileSync(join(dir, LAYOUT.receipts), 'utf8'))
     expect(receipts.ok && receipts.value.entries[0].taskId).toBe(taskId)
     expect(target.calls).toEqual([`done:${taskId}`])
   })
 
-  it('reorders to press order before applying (iCloud does not guarantee arrival order)', () => {
+  it('reorders to press order before applying (iCloud does not guarantee arrival order)', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること', 2, 'draft')
     // deliberately drop the later one in first
     putIntent(intent({ seq: 2, id: 'i-b', op: { kind: 'task.unqueue', taskId } }))
     putIntent(intent({ seq: 1, id: 'i-a', op: { kind: 'task.enqueue', taskId } }))
 
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
     expect(target.calls).toEqual([`enqueue:${taskId}`, `hold:${taskId}`])
     expect(repo.getTask(db, taskId)?.status).toBe('held')
   })
 
-  it('if it ran again after being read, do not mark done, and write the reason to the receipt', () => {
+  it('if it ran again after being read, do not mark done, and write the reason to the receipt', async () => {
     const target = targetOf(db)
     const agentId = makeAgent(db, { name: 'B' })
     const taskId = makeTask(db, projectId, 'やること')
@@ -451,7 +453,7 @@ describe('import', () => {
         expect: { status: 'review', updatedAt: '2026-08-23T09:00:00.000Z', runSeq: 1 }
       })
     )
-    const result = new SyncImporter(db).sync(folder, target)
+    const result = (await new SyncImporter(db).sync(folder, target))
     expect(result.applied).toBe(0)
     expect(result.conflicts).toHaveLength(1)
     expect(result.conflicts[0].reason).toContain('run again')
@@ -461,31 +463,31 @@ describe('import', () => {
     expect(receipts.ok && receipts.value.entries[0].outcome).toBe('conflict')
   })
 
-  it('a follow-up arriving mid-run is held as "send when it finishes" (not silently dropped)', () => {
+  it('a follow-up arriving mid-run is held as "send when it finishes" (not silently dropped)', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'running')
     putIntent(intent({ op: { kind: 'task.sendBack', taskId, message: 'あとで足す' } }))
 
-    const result = new SyncImporter(db).sync(folder, target)
+    const result = (await new SyncImporter(db).sync(folder, target))
     expect(result.deferred).toBe(1)
     expect(repo.getTask(db, taskId)?.reservedMessage).toBe('あとで足す')
     // no regular operation that touches a running task gets called
     expect(target.calls).toEqual([])
   })
 
-  it('a second held message is appended, not overwritten', () => {
+  it('a second held message is appended, not overwritten', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'running')
     putIntent(intent({ seq: 1, id: 'a', op: { kind: 'task.sendBack', taskId, message: '1 通目' } }))
     putIntent(intent({ seq: 2, id: 'b', op: { kind: 'task.sendBack', taskId, message: '2 通目' } }))
 
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
     expect(repo.getTask(db, taskId)?.reservedMessage).toBe('1 通目\n\n2 通目')
   })
 
-  it('a broken file does not stop the other intents from applying', () => {
+  it('a broken file does not stop the other intents from applying', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'review')
@@ -493,39 +495,39 @@ describe('import', () => {
     writeFileSync(join(dir, LAYOUT.intents, '000000000001-broken.json'), '{ "half', 'utf8')
     putIntent(intent({ seq: 2, id: 'ok', op: { kind: 'task.done', taskId } }))
 
-    const result = new SyncImporter(db).sync(folder, target)
+    const result = (await new SyncImporter(db).sync(folder, target))
     expect(result.applied).toBe(1)
     expect(result.unreadable).toBe(1)
   })
 
-  it('applying goes through the regular operations — side effects that wake the scheduler are not lost', () => {
+  it('applying goes through the regular operations — side effects that wake the scheduler are not lost', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること', 2, 'draft')
     putIntent(intent({ op: { kind: 'task.enqueue', taskId } }))
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
     expect(target.calls).toEqual([`enqueue:${taskId}`])
   })
 
-  it('the receipt never lists the same row twice (handled records are re-read from the DB)', () => {
+  it('the receipt never lists the same row twice (handled records are re-read from the DB)', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'review')
     putIntent(intent({ op: { kind: 'task.done', taskId } }))
 
-    new SyncImporter(db).sync(folder, target)
+    await new SyncImporter(db).sync(folder, target)
     const receipts = parseReceipts(readFileSync(join(dir, LAYOUT.receipts), 'utf8'))
     expect(receipts.ok && receipts.value.entries).toHaveLength(1)
   })
 
-  it('conflicts are recorded too, so the same decision is not repeated every cycle', () => {
+  it('conflicts are recorded too, so the same decision is not repeated every cycle', async () => {
     const target = targetOf(db)
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskStatus(db, taskId, 'running')
     putIntent(intent({ op: { kind: 'task.done', taskId } }))
 
     const importer = new SyncImporter(db)
-    expect(importer.sync(folder, target).conflicts).toHaveLength(1)
-    expect(importer.sync(folder, target).conflicts).toHaveLength(0)
+    expect((await importer.sync(folder, target)).conflicts).toHaveLength(1)
+    expect((await importer.sync(folder, target)).conflicts).toHaveLength(0)
   })
 })
 

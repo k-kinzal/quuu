@@ -30,7 +30,7 @@ const project = (over: Partial<Project> = {}): Project => ({
   maxConcurrent: 1,
   enabled: true,
   deletedAt: null,
-  importSince: null,
+  importSince: null, worktreeMode: 'inherit',
   commitIdentityMode: 'inherit',
   commitIdentity: { appSlug: '', botUserId: '' },
   editorApp: '',

@@ -48,7 +48,7 @@ const page = (first: number, last: number): SessionSnapshot => ({
 
 const PROJECT: Project = {
   id: 'p1', name: 'Quuu', path: '/Users/me/Projects/taskd', color: '#5EABF1', priority: 2, targetKind: 'agent', targetId: 'a1',
-  maxConcurrent: 2, enabled: true, deletedAt: null, importSince: null, editorApp: '', reportEnabled: true,
+  maxConcurrent: 2, enabled: true, deletedAt: null, importSince: null, worktreeMode: 'inherit', editorApp: '', reportEnabled: true,
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
   commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
 }

@@ -474,7 +474,7 @@ describe('the workbench display state', () => {
       maxConcurrent: 1,
       enabled: true,
       deletedAt: null,
-      importSince: null,
+      importSince: null, worktreeMode: 'inherit',
       commitIdentityMode: 'inherit',
       commitIdentity: { appSlug: '', botUserId: '' },
       editorApp: '',

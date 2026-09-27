@@ -54,6 +54,7 @@ export class MobileSync {
   private lastExportAt = ''
   private lastImportAt = ''
   private error = ''
+  private importing = false
   private schedulerRunning = false
 
   constructor(
@@ -96,10 +97,10 @@ export class MobileSync {
       this.exportNow()
     }, EXPORT_HEARTBEAT_MS)
     this.heartbeat.unref?.()
-    this.poll = setInterval(() => this.importNow(), IMPORT_POLL_MS)
+    this.poll = setInterval(() => { void this.importNow() }, IMPORT_POLL_MS)
     this.poll.unref?.()
     // Right after startup, first clear the intents left while we were away
-    this.initialImport = setTimeout(() => this.importNow(), 1_500)
+    this.initialImport = setTimeout(() => { void this.importNow() }, 1_500)
     this.initialImport.unref?.()
   }
 
@@ -154,10 +155,12 @@ export class MobileSync {
   }
 
   /** Import now. */
-  importNow(): void {
-    if (!this.enabled || !this.folder) return
+  async importNow(): Promise<void> {
+    if (!this.enabled || !this.folder || this.importing) return
+    this.importing = true
     try {
-      const result = this.importer.sync(this.folder, this.target)
+      const result = await this.importer.sync(this.folder, this.target)
+      if (!this.enabled) return
       this.lastImportAt = nowIso()
       this.error = ''
       if (result.applied > 0 || result.deferred > 0 || result.conflicts.length > 0) {
@@ -167,7 +170,7 @@ export class MobileSync {
       }
     } catch (e) {
       this.error = e instanceof Error ? e.message : String(e)
-    }
+    } finally { this.importing = false }
   }
 
   status(): MobileSyncStatus {

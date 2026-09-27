@@ -361,7 +361,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 31
+  const target = 32
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -669,6 +669,20 @@ function migrate(db: Db): void {
       addColumnIfMissing(db, 'projects', `pull_request_${kind}_enabled`, 'INTEGER NOT NULL DEFAULT 0')
       db.exec(`UPDATE projects SET pull_request_${kind}_enabled = 1 WHERE TRIM(pull_request_${kind}_prompt) <> ''`)
     }
+  }
+
+  if (current < 32) {
+    addColumnIfMissing(db, 'projects', 'worktree_mode', "TEXT NOT NULL DEFAULT 'inherit'")
+    db.exec(`CREATE TABLE IF NOT EXISTS task_worktrees (
+      task_id TEXT PRIMARY KEY REFERENCES tasks(id) ON DELETE CASCADE,
+      repository TEXT NOT NULL,
+      path TEXT NOT NULL,
+      cwd TEXT NOT NULL,
+      branch TEXT NOT NULL,
+      default_branch TEXT NOT NULL,
+      state TEXT NOT NULL,
+      integrated_head TEXT
+    )`)
   }
 
   setSchemaVersion(db, target)

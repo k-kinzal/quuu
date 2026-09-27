@@ -83,7 +83,7 @@ export class QuuuApp extends EventEmitter {
     this.terminals = new TerminalService()
     this.settings = new SettingsOperations(this.db)
     this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast))
-    this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
+    this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), id => this.tasks.deleteTask(id))
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.workspace = new WorkspaceOperations(this.db, () => this.settings.getSettings())
@@ -324,8 +324,8 @@ export class QuuuApp extends EventEmitter {
 
 
   /** Sync now (button on the settings pane). Runs one round trip of export and import. */
-  syncMobileNow(): MobileSyncStatus {
-    this.mobile.importNow()
+  async syncMobileNow(): Promise<MobileSyncStatus> {
+    await this.mobile.importNow()
     this.mobile.exportNow()
     return this.mobile.status()
   }

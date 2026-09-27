@@ -58,6 +58,11 @@ export function GeneralSettings(): JSX.Element {
         </Field>
       </Section>
 
+      <Section title={t('worktreeSettings.title')}>
+        <Checkbox label={t('worktreeSettings.enabled')} checked={settings.worktreeEnabled}
+          onChange={(value: boolean) => void setSettings({ worktreeEnabled: value })} />
+      </Section>
+
       <Section title={t('generalSettings.importSection')}>
         <Checkbox
           label={t('generalSettings.importExternal')}

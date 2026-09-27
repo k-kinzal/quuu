@@ -44,7 +44,8 @@
     "pullRequestConflictPrompt": 23,
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
-    "pullRequestConflictEnabled": 26
+    "pullRequestConflictEnabled": 26,
+    "worktreeMode": 27
   },
   "SnapshotResponseValueProjects": {
     "items": 1
@@ -371,7 +372,8 @@
     "pullRequestConflictPrompt": 23,
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
-    "pullRequestConflictEnabled": 26
+    "pullRequestConflictEnabled": 26,
+    "worktreeMode": 27
   },
   "ProjectsListResponseValue": {
     "items": 1
@@ -410,7 +412,8 @@
     "pullRequestConflictPrompt": 18,
     "pullRequestFailureEnabled": 19,
     "pullRequestPendingEnabled": 20,
-    "pullRequestConflictEnabled": 21
+    "pullRequestConflictEnabled": 21,
+    "worktreeMode": 22
   },
   "ProjectsCreateRequest": {
     "value": 1
@@ -459,7 +462,8 @@
     "pullRequestConflictPrompt": 23,
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
-    "pullRequestConflictEnabled": 26
+    "pullRequestConflictEnabled": 26,
+    "worktreeMode": 27
   },
   "ProjectsCreateResponse": {
     "value": 1
@@ -495,7 +499,8 @@
     "pullRequestConflictPrompt": 18,
     "pullRequestFailureEnabled": 19,
     "pullRequestPendingEnabled": 20,
-    "pullRequestConflictEnabled": 21
+    "pullRequestConflictEnabled": 21,
+    "worktreeMode": 22
   },
   "ProjectsUpdateRequestValue": {
     "id": 1,
@@ -548,7 +553,8 @@
     "pullRequestConflictPrompt": 23,
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
-    "pullRequestConflictEnabled": 26
+    "pullRequestConflictEnabled": 26,
+    "worktreeMode": 27
   },
   "ProjectsUpdateResponse": {
     "value": 1
@@ -2824,7 +2830,8 @@
     "httpEnabled": 25,
     "httpPort": 26,
     "mcpEnabled": 27,
-    "mcpPort": 28
+    "mcpPort": 28,
+    "worktreeEnabled": 29
   },
   "SettingsSetIdentityResponse": {
     "value": 1
@@ -2864,7 +2871,8 @@
     "httpEnabled": 25,
     "httpPort": 26,
     "mcpEnabled": 27,
-    "mcpPort": 28
+    "mcpPort": 28,
+    "worktreeEnabled": 29
   },
   "SettingsGetResponse": {
     "value": 1
@@ -2903,7 +2911,8 @@
     "httpEnabled": 25,
     "httpPort": 26,
     "mcpEnabled": 27,
-    "mcpPort": 28
+    "mcpPort": 28,
+    "worktreeEnabled": 29
   },
   "SettingsSetRequest": {
     "value": 1
@@ -2942,7 +2951,8 @@
     "httpEnabled": 25,
     "httpPort": 26,
     "mcpEnabled": 27,
-    "mcpPort": 28
+    "mcpPort": 28,
+    "worktreeEnabled": 29
   },
   "SettingsSetResponse": {
     "value": 1

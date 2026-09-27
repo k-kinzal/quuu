@@ -52,7 +52,7 @@ const snapshot = (tasks: Task[]): AppSnapshot => ({
       maxConcurrent: 1,
       enabled: true,
       deletedAt: null,
-      importSince: null,
+      importSince: null, worktreeMode: 'inherit',
       commitIdentityMode: 'inherit',
       editorApp: '',
       reportEnabled: true,
