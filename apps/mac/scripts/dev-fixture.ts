@@ -1522,7 +1522,7 @@ const reportPage = join(reportHome, 'rpt_fixture.html')
 mkdirSync(reportHome, { recursive: true })
 writeReportAssets()
 writeFileSync(reportPage, `<!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><title>変更の意図</title>
+<html lang="ja" data-dd-paper="a4" data-dd-print-urls="sources"><head><meta charset="utf-8"><title>変更の意図</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"></head><body>
 <svg class="draw-defs" aria-hidden="true" focusable="false"><defs>
@@ -1562,7 +1562,7 @@ writeFileSync(reportPage, `<!doctype html>
   <section class="sec" aria-labelledby="section-2">
     <div class="label"><h2 id="section-2">02 / 作業と独立</h2></div>
     <div class="field">
-      <p class="lead">レポートの生成を待たず、次の作業へ進める。</p>
+      <p class="lead">レポートの生成を待たず、次の作業へ進める。<a class="cite" href="#source-1">1</a></p>
       <figure class="plate plate-full plate-unnumbered" id="figure-runs">
         <div class="draw-wrap"><svg class="draw" style="--dd-draw-width: 640px" viewBox="0 0 640 176"
           role="img" aria-label="作業がレビューに届くと、別の実行でレポートを生成する。次の作業も並行して進められる。">
@@ -1584,6 +1584,30 @@ writeFileSync(reportPage, `<!doctype html>
       <figure><h3>根拠を残す</h3><p>図の説明には、検証条件と分かっていない点も添える。</p></figure>
     </div>
     <p class="caveat">レポートは判断の材料。作業を完了にするのは人です。</p>
+  </section>
+  <section class="sec" aria-labelledby="section-3">
+    <div class="label"><h2 id="section-3">03 / 経緯</h2></div>
+    <div class="field">
+      <p class="lead">最初の依頼から、追加の修正を経て今の形になった。</p>
+      <ol class="timeline">
+        <li class="timeline-item"><span class="timeline-time">1 回目の実行</span><p class="timeline-title">レポートをレビュー到達時に生成</p>
+          <p class="timeline-description">作業の実行枠を使ったため、次の作業が待たされた。<a class="cite" href="#source-2">2</a></p></li>
+        <li class="timeline-item tone-blue"><span class="timeline-time">追加の依頼</span><p class="timeline-title">生成を別の実行に分けた</p>
+          <p class="timeline-description">作業とレポート生成が並行して進むようになった。<a class="cite" href="#source-1">1</a></p></li>
+        <li class="timeline-item is-open"><span class="timeline-time">未確認</span><p class="timeline-title">大きなリポジトリでの所要時間は未計測</p>
+          <p class="timeline-description">検証用のサンプルでは確かめていない。</p></li>
+      </ol>
+    </div>
+  </section>
+  <section class="sec" aria-labelledby="sources">
+    <div class="label"><h2 id="sources">出典</h2></div>
+    <div class="field">
+      <ol class="sources">
+        <li id="source-1"><a href="https://example.com/quuu/pull/1">レポート生成を作業の実行枠から分ける</a>
+          <span class="source-meta">Pull Request · 検証用のサンプル</span></li>
+        <li id="source-2">実行ログ logs/run_fixture.jsonl<span class="source-meta">セッションログ · 1 回目の実行</span></li>
+      </ol>
+    </div>
   </section>
 </article>
 </body></html>
@@ -1610,10 +1634,15 @@ const projectReportHome = join(dir, 'reports', projects[0].id)
 mkdirSync(projectReportHome, { recursive: true })
 const projectReportPage = join(projectReportHome, 'rpt_project_fixture.html')
 writeFileSync(projectReportPage, `<!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="ja" data-dd-paper="a4" data-dd-print-urls="sources"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"><title>Quuu のプロジェクトレポート</title></head>
 <body><article class="sheet"><p class="eyebrow">プロジェクトレポート / QUUU</p><h1>Quuuは、AIへの作業依頼と実行結果を管理するMacアプリ</h1>
 <p class="stand">複数の開発プロジェクトでAIを使う人が、依頼をまとめて登録し、実行後の会話やコードの変更を確認できます。</p>
+<div class="hero"><div class="figures">
+<figure><h3>誰が使うか</h3><p>いくつものプロジェクトで、AIに作業を任せている開発者。</p></figure>
+<figure><h3>何を扱うか</h3><p>AIへの依頼、その実行、会話の記録とコードの変更。</p></figure>
+<figure><h3>何が得られるか</h3><p>空いたAIへの割り振りを任せ、人は結果の判断に集中できる。</p></figure>
+</div></div>
 <figure class="plate plate-full plate-unnumbered" id="project-overview">
 <ol class="flow tone-blue">
 <li><span class="flow-mark">01</span><strong class="flow-name">作業を登録</strong><span class="flow-detail">人がプロジェクトを選び、AIへの依頼を書く。</span></li>

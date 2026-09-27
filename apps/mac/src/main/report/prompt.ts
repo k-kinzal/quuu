@@ -1,4 +1,4 @@
-import { REPORT_ASSET_HREF, REPORT_STYLE_FILE } from './assets.js'
+import { REPORT_ASSET_HREF, REPORT_STYLE_FILE, REPORT_STYLE_VERSION } from './assets.js'
 import { t } from '../i18n/index.js'
 import type { Run } from '../execution/types.js'
 import type { ReviewRevision } from '../review/types.js'
@@ -44,7 +44,7 @@ const COMPONENTS: Array<[string, string]> = [
   ['sheet', 'the report layout. One <article class="sheet"> wraps everything on a 12-column grid.'],
   ['eyebrow', 'the small line above the title.'],
   ['stand', 'the one sentence under the title.'],
-  ['hero', 'what the page leads with. Either .was/.mid/.now side by side, or one <svg>.'],
+  ['hero', 'what the page leads with. Either .was/.mid/.now side by side, one <svg>, or one .figures holding three short answers where a before/after would be wrong.'],
   ['was / now', 'the two sides of the hero. Each holds .cap, .fig, .unit.'],
   ['mid', 'the gap between them; put an arrow <svg> in it.'],
   ['cap / fig / unit', 'a hero side: its label, a number, what the number counts.'],
@@ -59,6 +59,8 @@ const COMPONENTS: Array<[string, string]> = [
   ['plate-unnumbered / plate-label / plate-source / ref', 'use .plate-unnumbered with an explicit .plate-label in the caption for unique figure numbers across sections; .plate-source gives evidence or conditions, and .ref links to a figure.'],
   ['compare / compare-title', 'before/after or other parallel evidence. Each side has a heading; it stacks when narrow.'],
   ['flow / flow-mark / flow-name / flow-detail', 'a CSS-only ordered process: <ol class="flow"> with <li> children containing a mark, name and detail.'],
+  ['timeline / timeline-item / timeline-time / timeline-title / timeline-description', 'a chronology in the section body: <ol class="timeline"> of items with when, what happened and supporting context. Add is-open to an unfinished or unconfirmed item and say so in its title.'],
+  ['cite / sources / source-meta', 'a numbered citation after a claim, <a class="cite" href="#source-1">1</a>, and the <ol class="sources"> that lists each source once: an <li id="source-1"> with its title and a .source-meta line for kind, date or identifier.'],
   ['rail / sidenote', 'notes beside a section: .rail holds .label and .sidenote, followed by the section’s .field.'],
   ['caveat', 'something the reader would be wrong to assume still holds.'],
   ['note', 'a plain paragraph in the section body.'],
@@ -198,7 +200,7 @@ function reportDocumentInstructions(kind: 'task' | 'project'): string[] {
         <div class="now"><span class="cap">AFTER</span><span class="claim">...</span><span class="unit">...</span></div>
       </div>`
   return [
-    `Assets — document-design (doc-ui) v1.0.0, bundled locally:
+    `Assets — document-design (doc-ui) ${REPORT_STYLE_VERSION}, bundled locally:
 - ${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE} — the unmodified page stylesheet. Link this relative path.
 
 Use its report layout, components and --dd-* tokens. Do not fetch CSS, fonts or other assets,
@@ -210,12 +212,12 @@ The local CSS file is readable if you need to inspect additional static componen
 The page is a static document. It cannot reach the network and does not run script - a fetched
 font or a <script> renders as nothing. Use semantic HTML, CSS-only figures and inline SVG;
 omit controls that need document-design.js, such as tabs, filters, copy or theme buttons.`,
-    `Components the stylesheet draws (document-design v1.0.0):
+    `Components the stylesheet draws (document-design ${REPORT_STYLE_VERSION}):
 ${COMPONENTS.map(([name, what]) => `- .${name} — ${what}`).join('\n')}`,
     `Structure:
 
     <!doctype html>
-    <html lang="..."><head><meta charset="utf-8">
+    <html lang="..." data-dd-paper="a4" data-dd-print-urls="sources"><head><meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>...</title>
     <link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"></head><body>
@@ -244,12 +246,20 @@ ${opening}
       </section>
       <section class="sec" aria-labelledby="section-2">
         <div class="label"><h2 id="section-2">02 / ...</h2></div>
-        <div class="field"><p class="lead">...</p></div>
+        <div class="field"><p class="lead">...<a class="cite" href="#source-1">1</a></p></div>
         <div class="figures">
           <figure><h3>...</h3><p>...</p></figure>
           <figure><h3>...</h3><p>...</p></figure>
         </div>
         <p class="caveat">...</p>
+      </section>
+      <section class="sec" aria-labelledby="sources">
+        <div class="label"><h2 id="sources">...</h2></div>
+        <div class="field">
+          <ol class="sources">
+            <li id="source-1">...<span class="source-meta">...</span></li>
+          </ol>
+        </div>
       </section>
     </article>
     </body></html>
@@ -264,15 +274,22 @@ uses it for typography. Write figure labels in that language and number them acr
 document. Use .plate-unnumbered with .plate-label because automatic counters can restart inside
 separate .field containers. Let headings wrap naturally instead of inserting layout <br>s.
 Leave the theme automatic so the stylesheet follows the app's light/dark appearance.
+Keep data-dd-paper="a4" and data-dd-print-urls="sources" on <html>: a printed copy gets A4
+margins and page numbers, and each web address is printed once, in the sources list.
 ${kind === 'project'
-    ? 'The project hero is the title, explanation and overview figure above; it does not need the .hero comparison component. Do not use .was/.mid/.now or a progress number as the project introduction.'
+    ? 'The project hero is the title, explanation and overview figure above; it does not need the .was/.mid/.now comparison. When three short answers introduce the project better, put them in .hero > .figures between the stand and the overview. Do not use .was/.mid/.now or a progress number as the project introduction.'
     : `**Use .fig only when a number is the point of the change.** Most changes have none worth
 showing, and a page that leads with a count nobody asked about has spent its largest type on
 the least interesting true thing about the work - put a short phrase in .claim instead, or
 drop .was/.mid/.now and lead with a drawing.`}
-Prefer .flow for a sequence and .compare for parallel evidence. When the relationship needs
-a custom drawing, put <svg class="draw" style="--dd-draw-width: 640px" viewBox="0 0 640 240"
-role="img" aria-label="..."> inside .draw-wrap inside a .plate. Match the width to its viewBox;
+Prefer .flow for a sequence and .compare for parallel evidence. Use .timeline only when the
+order of events explains the result, such as ${kind === 'project' ? 'milestones' : 'runs, follow-ups and reverted work'}; never mark an
+unconfirmed step complete. When a claim rests on a specific pull request, commit, document or
+log, cite it with .cite and list it once in a closing .sources section, numbered in the order the
+list shows. Link only http(s) addresses; name local files, logs and commit ids as text.
+When the relationship needs a custom drawing, put <svg class="draw"
+style="--dd-draw-width: 640px" viewBox="0 0 640 240" role="img" aria-label="...">
+inside .draw-wrap inside a .plate. Match the width to its viewBox;
 keep SVG text in .draw-* roles so narrow screens scroll the figure instead of shrinking labels.
 Use .draw-box, .draw-line and .draw-arrow for marks; define dd-arrow once per page as above.
 Use \`var(--dd-fg) var(--dd-fg-muted) var(--dd-border-strong) var(--dd-accent) var(--dd-warn)\`

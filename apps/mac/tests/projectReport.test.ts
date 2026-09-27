@@ -197,7 +197,7 @@ describe('daily project reports', () => {
     await ops.checkDaily()
     const launch = vi.mocked(spawnReport).mock.calls[0][0]
     expect(launch.args.join(' ')).toContain('Evaluate accessibility goals')
-    expect(launch.args.join(' ')).toContain('../assets/document-design-v1.0.0.css')
+    expect(launch.args.join(' ')).toContain('../assets/document-design-v1.1.0.css')
     expect(launch.env.QUUU_TASK_ID).toBeUndefined()
     const prompt = projectReportPrompt({ cwd: work, title: 'Project', page: '/tmp/page.html', instructions: '' })
     expect(prompt).toContain('AGENTS.md, README.md')

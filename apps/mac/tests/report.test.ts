@@ -9,7 +9,7 @@ import { settleReport } from '../src/main/report/generator.js'
 import { ReportOperations, alreadyReported } from '../src/main/report/operations.js'
 import type { StoredReport } from '../src/main/report/types.js'
 import type { Project } from '../src/main/projects/types.js'
-import { REPORT_ASSETS, REPORT_STYLE_FILE, writeReportAssets } from '../src/main/report/assets.js'
+import { REPORT_ASSETS, REPORT_NOTICE_FILE, REPORT_STYLE_FILE, writeReportAssets } from '../src/main/report/assets.js'
 import { reportPrompt } from '../src/main/report/prompt.js'
 import { captureReviewBaseline, snapshotWorktree } from '../src/main/review/git.js'
 import type { ReviewSnapshot } from '../src/main/review/types.js'
@@ -626,12 +626,17 @@ describe('the shared assets', () => {
     writeReportAssets()
     const assets = join(data, 'reports', REPORT_ASSETS)
     const stylesheet = join(assets, REPORT_STYLE_FILE)
-    const bundled = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url))
+    const bundled = readFileSync(new URL('../src/main/report/vendor/document-design/v1.1.0/document-design.css', import.meta.url))
     expect(readFileSync(stylesheet).equals(bundled)).toBe(true)
+    expect(readFileSync(join(assets, REPORT_NOTICE_FILE), 'utf8')).toContain('MIT License')
+    // Reports written against v1.0.0 keep linking to its file, so it stays as they left it
+    const previous = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url))
+    writeFileSync(join(assets, 'document-design-v1.0.0.css'), previous)
     writeFileSync(join(assets, 'report.css'), 'legacy report styles')
     writeFileSync(stylesheet, 'damaged')
     writeReportAssets()
     expect(readFileSync(stylesheet).equals(bundled)).toBe(true)
+    expect(readFileSync(join(assets, 'document-design-v1.0.0.css')).equals(previous)).toBe(true)
     expect(readFileSync(join(assets, 'report.css'), 'utf8')).toBe('legacy report styles')
   })
 
@@ -746,9 +751,9 @@ describe('what the generator is told', () => {
     expect(text).toContain(REPORT_STYLE_FILE)
     expect(text).toContain('Components the stylesheet draws')
     expect(text).toContain('Structure:')
-    expect(text).toContain('document-design (doc-ui) v1.0.0, bundled locally')
+    expect(text).toContain('document-design (doc-ui) v1.1.0, bundled locally')
     expect(text).toContain('<article class="sheet">')
-    expect(text).toContain('href="../assets/document-design-v1.0.0.css"')
+    expect(text).toContain('href="../assets/document-design-v1.1.0.css"')
   })
 
   it('says the page is static, so nothing is written against a CDN or a script', () => {
