@@ -188,7 +188,14 @@ export const workbench: typeof en = {
     }
   },
   footer: {
+    slotRunning: '{{name}} — 実行中',
     slotReserved: '{{name}}（確保中）',
+    slotLimit: '{{name}} — Limit {{time}} 復帰',
+    slotFree: '{{name}} — 空き',
+    agentRunning: '{{name}}: {{active}} / {{total}} 実行中',
+    agentReserved: '{{reserved}} 確保中',
+    agentLimit: 'Limit {{time}} 復帰',
+    agentSeparator: '、',
     limitUntil: '{{names}} Limit {{time}} 復帰',
     paused: 'スケジューラは一時停止中',
     pause: 'スケジューラを一時停止',

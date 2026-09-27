@@ -17,6 +17,7 @@ import { useMemo } from 'react'
 import { contextMenu } from '../interaction/menu.js'
 import { clockOrDate } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
+import { slotCells, slotSummary } from '../model/slotGauge.js'
 import { useStore } from '../state/store.js'
 import { CirclePause, CirclePlay, ICON, Lock, TriangleAlert, iconProps } from '../ui/icons.js'
 
@@ -37,23 +38,15 @@ export function Footer(): JSX.Element {
   const status = snapshot?.scheduler
   const slots = useMemo<GaugeCell[]>(() => {
     if (!status) return []
-    const cells: GaugeCell[] = []
-    for (const agent of status.agents) {
-      if (!agent.enabled) continue
-      for (let i = 0; i < agent.concurrency; i++) {
-        // Fill in the order running → reserved → free. Reserved is "a slot that's free but won't be handed out"
-        if (i < agent.active) {
-          cells.push({ kind: 'filled', title: agent.agentName })
-        } else if (i < agent.active + agent.reserved) {
-          cells.push({ kind: 'outlined', title: t('footer.slotReserved', { name: agent.agentName }) })
-        } else if (agent.cooldownUntil) {
-          cells.push({ kind: 'filled', color: theme.palette.warning.main, title: agent.agentName })
-        } else {
-          cells.push({ kind: 'empty', title: agent.agentName })
-        }
-      }
-    }
-    return cells
+    return slotCells(status.agents).map(({ state, title }) =>
+      state === 'running'
+        ? { kind: 'filled', title }
+        : state === 'reserved'
+          ? { kind: 'outlined', title }
+          : state === 'limit'
+            ? { kind: 'filled', color: theme.palette.warning.main, title }
+            : { kind: 'empty', title }
+    )
   }, [status, theme])
 
   if (!status) return <AppShellFooter {...motionRegion('footer', 'left')} />
@@ -98,7 +91,7 @@ export function Footer(): JSX.Element {
       }}
     >
       <StatusBarOverflow>
-        <StatusBarItem title={t('footer.slotsTitle')}>
+        <StatusBarItem title={slotSummary(status.agents)}>
           <Text tone="tertiary">{t('footer.running')}</Text>
           <Counter>{status.activeRuns}</Counter>
           <Text tone="tertiary">/ {status.totalSlots}</Text>

@@ -187,7 +187,14 @@ export const workbench = {
     }
   },
   footer: {
+    slotRunning: '{{name}} — running',
     slotReserved: '{{name}} (reserved)',
+    slotLimit: '{{name}} — Limit, back at {{time}}',
+    slotFree: '{{name}} — free',
+    agentRunning: '{{name}}: {{active}} / {{total}} running',
+    agentReserved: '{{reserved}} reserved',
+    agentLimit: 'Limit, back at {{time}}',
+    agentSeparator: ', ',
     limitUntil: '{{names}} Limit, back at {{time}}',
     paused: 'Scheduler is paused',
     pause: 'Pause Scheduler',
