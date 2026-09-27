@@ -33,6 +33,10 @@ npm run app:restart        # 4. rebuild and relaunch. Verify on the real screen
   **a sign the concurrency-1 premise has broken**, not something you may delete yourself.
 - No `git push` (only when asked).
 - Never rewrite history. Fix by adding commits.
+- Install Gitleaks (`brew install gitleaks`) and enable the secret checks with
+  `npm run hooks:install` (`npm install` also does this). Commit/push hooks reject
+  detected secrets and scanner failures. Fix the finding; do not bypass the guard.
+  See [the guide](guide.md#secret-checks-before-commits-and-pushes).
 
 ## When work comes back, fix forward
 

@@ -57,7 +57,8 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 ## Development
 
 ```sh
-npm install
+brew install gitleaks # secret checks for Git commits and pushes
+npm install          # also enables the repository's Git hooks
 npm run dev          # start for development (with HMR)
 npm run lint         # ESLint (type-aware)
 npm run typecheck    # type check
@@ -80,6 +81,34 @@ npm run ios:install  # build onto a connected iPhone (needs Local.xcconfig → s
 
 The rules for letting agents work on this repository start in
 [AGENTS.md](../AGENTS.md).
+
+### Secret checks before commits and pushes
+
+`npm install` / `npm ci` configures this checkout's `core.hooksPath` to `.githooks`.
+For an existing checkout, run `brew install gitleaks` and `npm run hooks:install`.
+The installer stops if existing hooks need to be integrated; it does not overwrite them.
+No npm hook manager is required. Hooks also find Homebrew in GUI/agent environments.
+
+- `pre-commit` scans the staged diff, including partially staged files.
+- `pre-push` scans every outgoing ref's commit range, including intermediate and merge
+  commits. Removing a secret in a later commit does not remove it from that history.
+  New branches/tags, or remote tips missing locally, scan the entire reachable history.
+  Ref deletion needs no scan. Tags pointing to non-commit objects are rejected.
+- Findings and scanner failures block the operation. Diagnostics redact secret values.
+  Gitleaks must be installed; an unavailable scanner never silently passes.
+
+Rules extend Gitleaks' built-in defaults in `.gitleaks.toml`. Investigate a finding
+before adding a narrowly scoped exception; do not exclude whole source or test trees.
+Remove secrets from the staged changes or unpublished history before retrying. If a real
+credential was exposed, revoke/rotate it too. Repository history must not be rewritten
+without the owner's instruction (see [working.md](working.md)).
+
+`npm run secrets:scan` manually scans all local refs for periodic inspection.
+Keep the existing periodic checks: local hooks are an accident guard, and Git allows
+them to be bypassed with `--no-verify` or a changed hook configuration. They do not
+enforce a server-side policy or detect every possible kind of secret.
+See [Gitleaks](https://github.com/gitleaks/gitleaks) and
+[Git's hook documentation](https://git-scm.com/docs/githooks) for the underlying behavior.
 
 ### Repository structure
 

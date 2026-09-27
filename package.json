@@ -11,6 +11,9 @@
     "packages/*"
   ],
   "scripts": {
+    "prepare": "npm run hooks:install",
+    "hooks:install": "sh scripts/install-git-hooks.sh",
+    "secrets:scan": "sh scripts/scan-secrets.sh --log-opts='--all --full-history --diff-merges=separate'",
     "dev": "npm run dev -w quuu",
     "start": "npm run start -w quuu",
     "build": "npm run build -w quuu",

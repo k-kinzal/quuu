@@ -28,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install Gitleaks for hook integration tests
+        run: brew install gitleaks
+
       - name: Lint
         run: npm run lint
 
