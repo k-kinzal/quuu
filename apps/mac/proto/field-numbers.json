@@ -4541,6 +4541,433 @@
     "variant1": 1,
     "variant2": 2
   },
+  "RunsByTaskResponseValueItemRunnerId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkStatusRequest": {},
+  "NetworkStatusResponseValueHostAddresses": {
+    "items": 1
+  },
+  "NetworkStatusResponseValueHostError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkStatusResponseValueHostPairingVariant1": {
+    "code": 1,
+    "expiresAt": 2
+  },
+  "NetworkStatusResponseValueHostPairing": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkStatusResponseValueHostDevicesItem": {
+    "id": 1,
+    "name": 2,
+    "pairedAt": 3
+  },
+  "NetworkStatusResponseValueHostDevices": {
+    "items": 1
+  },
+  "NetworkStatusResponseValueHost": {
+    "enabled": 1,
+    "port": 2,
+    "name": 3,
+    "addresses": 4,
+    "error": 5,
+    "pairing": 6,
+    "devices": 7
+  },
+  "NetworkStatusResponseValueSatelliteHostVariant1": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkStatusResponseValueSatelliteHost": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkStatusResponseValueSatelliteError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkStatusResponseValueSatelliteDiscoveredItem": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkStatusResponseValueSatelliteDiscovered": {
+    "items": 1
+  },
+  "NetworkStatusResponseValueSatellite": {
+    "enabled": 1,
+    "host": 2,
+    "state": 3,
+    "error": 4,
+    "discovered": 5
+  },
+  "NetworkStatusResponseValue": {
+    "host": 1,
+    "satellite": 2
+  },
+  "NetworkStatusResponse": {
+    "value": 1
+  },
+  "NetworkConfigureRequestValue": {
+    "hostEnabled": 1,
+    "hostPort": 2,
+    "satelliteEnabled": 3
+  },
+  "NetworkConfigureRequest": {
+    "value": 1
+  },
+  "NetworkConfigureResponseValueHostAddresses": {
+    "items": 1
+  },
+  "NetworkConfigureResponseValueHostError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkConfigureResponseValueHostPairingVariant1": {
+    "code": 1,
+    "expiresAt": 2
+  },
+  "NetworkConfigureResponseValueHostPairing": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkConfigureResponseValueHostDevicesItem": {
+    "id": 1,
+    "name": 2,
+    "pairedAt": 3
+  },
+  "NetworkConfigureResponseValueHostDevices": {
+    "items": 1
+  },
+  "NetworkConfigureResponseValueHost": {
+    "enabled": 1,
+    "port": 2,
+    "name": 3,
+    "addresses": 4,
+    "error": 5,
+    "pairing": 6,
+    "devices": 7
+  },
+  "NetworkConfigureResponseValueSatelliteHostVariant1": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkConfigureResponseValueSatelliteHost": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkConfigureResponseValueSatelliteError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkConfigureResponseValueSatelliteDiscoveredItem": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkConfigureResponseValueSatelliteDiscovered": {
+    "items": 1
+  },
+  "NetworkConfigureResponseValueSatellite": {
+    "enabled": 1,
+    "host": 2,
+    "state": 3,
+    "error": 4,
+    "discovered": 5
+  },
+  "NetworkConfigureResponseValue": {
+    "host": 1,
+    "satellite": 2
+  },
+  "NetworkConfigureResponse": {
+    "value": 1
+  },
+  "NetworkOpenPairingRequest": {},
+  "NetworkOpenPairingResponseValueHostAddresses": {
+    "items": 1
+  },
+  "NetworkOpenPairingResponseValueHostError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkOpenPairingResponseValueHostPairingVariant1": {
+    "code": 1,
+    "expiresAt": 2
+  },
+  "NetworkOpenPairingResponseValueHostPairing": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkOpenPairingResponseValueHostDevicesItem": {
+    "id": 1,
+    "name": 2,
+    "pairedAt": 3
+  },
+  "NetworkOpenPairingResponseValueHostDevices": {
+    "items": 1
+  },
+  "NetworkOpenPairingResponseValueHost": {
+    "enabled": 1,
+    "port": 2,
+    "name": 3,
+    "addresses": 4,
+    "error": 5,
+    "pairing": 6,
+    "devices": 7
+  },
+  "NetworkOpenPairingResponseValueSatelliteHostVariant1": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkOpenPairingResponseValueSatelliteHost": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkOpenPairingResponseValueSatelliteError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkOpenPairingResponseValueSatelliteDiscoveredItem": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkOpenPairingResponseValueSatelliteDiscovered": {
+    "items": 1
+  },
+  "NetworkOpenPairingResponseValueSatellite": {
+    "enabled": 1,
+    "host": 2,
+    "state": 3,
+    "error": 4,
+    "discovered": 5
+  },
+  "NetworkOpenPairingResponseValue": {
+    "host": 1,
+    "satellite": 2
+  },
+  "NetworkOpenPairingResponse": {
+    "value": 1
+  },
+  "NetworkRemoveDeviceRequest": {
+    "value": 1
+  },
+  "NetworkRemoveDeviceResponseValueHostAddresses": {
+    "items": 1
+  },
+  "NetworkRemoveDeviceResponseValueHostError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkRemoveDeviceResponseValueHostPairingVariant1": {
+    "code": 1,
+    "expiresAt": 2
+  },
+  "NetworkRemoveDeviceResponseValueHostPairing": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkRemoveDeviceResponseValueHostDevicesItem": {
+    "id": 1,
+    "name": 2,
+    "pairedAt": 3
+  },
+  "NetworkRemoveDeviceResponseValueHostDevices": {
+    "items": 1
+  },
+  "NetworkRemoveDeviceResponseValueHost": {
+    "enabled": 1,
+    "port": 2,
+    "name": 3,
+    "addresses": 4,
+    "error": 5,
+    "pairing": 6,
+    "devices": 7
+  },
+  "NetworkRemoveDeviceResponseValueSatelliteHostVariant1": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkRemoveDeviceResponseValueSatelliteHost": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkRemoveDeviceResponseValueSatelliteError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkRemoveDeviceResponseValueSatelliteDiscoveredItem": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkRemoveDeviceResponseValueSatelliteDiscovered": {
+    "items": 1
+  },
+  "NetworkRemoveDeviceResponseValueSatellite": {
+    "enabled": 1,
+    "host": 2,
+    "state": 3,
+    "error": 4,
+    "discovered": 5
+  },
+  "NetworkRemoveDeviceResponseValue": {
+    "host": 1,
+    "satellite": 2
+  },
+  "NetworkRemoveDeviceResponse": {
+    "value": 1
+  },
+  "NetworkPairRequestValue": {
+    "address": 1,
+    "code": 2
+  },
+  "NetworkPairRequest": {
+    "value": 1
+  },
+  "NetworkPairResponseValueHostAddresses": {
+    "items": 1
+  },
+  "NetworkPairResponseValueHostError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkPairResponseValueHostPairingVariant1": {
+    "code": 1,
+    "expiresAt": 2
+  },
+  "NetworkPairResponseValueHostPairing": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkPairResponseValueHostDevicesItem": {
+    "id": 1,
+    "name": 2,
+    "pairedAt": 3
+  },
+  "NetworkPairResponseValueHostDevices": {
+    "items": 1
+  },
+  "NetworkPairResponseValueHost": {
+    "enabled": 1,
+    "port": 2,
+    "name": 3,
+    "addresses": 4,
+    "error": 5,
+    "pairing": 6,
+    "devices": 7
+  },
+  "NetworkPairResponseValueSatelliteHostVariant1": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkPairResponseValueSatelliteHost": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkPairResponseValueSatelliteError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkPairResponseValueSatelliteDiscoveredItem": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkPairResponseValueSatelliteDiscovered": {
+    "items": 1
+  },
+  "NetworkPairResponseValueSatellite": {
+    "enabled": 1,
+    "host": 2,
+    "state": 3,
+    "error": 4,
+    "discovered": 5
+  },
+  "NetworkPairResponseValue": {
+    "host": 1,
+    "satellite": 2
+  },
+  "NetworkPairResponse": {
+    "value": 1
+  },
+  "NetworkUnpairRequest": {},
+  "NetworkUnpairResponseValueHostAddresses": {
+    "items": 1
+  },
+  "NetworkUnpairResponseValueHostError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkUnpairResponseValueHostPairingVariant1": {
+    "code": 1,
+    "expiresAt": 2
+  },
+  "NetworkUnpairResponseValueHostPairing": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkUnpairResponseValueHostDevicesItem": {
+    "id": 1,
+    "name": 2,
+    "pairedAt": 3
+  },
+  "NetworkUnpairResponseValueHostDevices": {
+    "items": 1
+  },
+  "NetworkUnpairResponseValueHost": {
+    "enabled": 1,
+    "port": 2,
+    "name": 3,
+    "addresses": 4,
+    "error": 5,
+    "pairing": 6,
+    "devices": 7
+  },
+  "NetworkUnpairResponseValueSatelliteHostVariant1": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkUnpairResponseValueSatelliteHost": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkUnpairResponseValueSatelliteError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "NetworkUnpairResponseValueSatelliteDiscoveredItem": {
+    "id": 1,
+    "name": 2,
+    "address": 3
+  },
+  "NetworkUnpairResponseValueSatelliteDiscovered": {
+    "items": 1
+  },
+  "NetworkUnpairResponseValueSatellite": {
+    "enabled": 1,
+    "host": 2,
+    "state": 3,
+    "error": 4,
+    "discovered": 5
+  },
+  "NetworkUnpairResponseValue": {
+    "host": 1,
+    "satellite": 2
+  },
+  "NetworkUnpairResponse": {
+    "value": 1
+  },
   "RunnersStatusRequest": {},
   "RunnersStatusResponseValueUrls": {
     "items": 1
@@ -4639,9 +5066,5 @@
   "RunnersRevokeRequest": {
     "value": 1
   },
-  "RunnersRevokeResponse": {},
-  "RunsByTaskResponseValueItemRunnerId": {
-    "variant1": 1,
-    "variant2": 2
-  }
+  "RunnersRevokeResponse": {}
 }

@@ -146,7 +146,8 @@ handles this lifecycle and exposes both generated protobuf RPCs and a typed
 ## Listener and resource lifetime
 
 Settings independently control HTTP and MCP enablement and ports. Port zero picks
-an available port. Both listeners bind to `127.0.0.1`. Startup loads network SDKs
+an available port. Both listeners bind to `127.0.0.1`. The one listener that binds
+every interface is a host's network listener (below). Startup loads network SDKs
 after showing the first window. Binding failures are shown in Settings and do not
 stop the scheduler, IPC or window. Changing a listener releases its callers;
 turning one off does not turn the other off. A settings response is returned before
@@ -164,6 +165,26 @@ behind instead of buffering indefinitely.
 App shutdown stops listeners and caller resources before closing SQLite. Detached
 agent processes, their log descriptors and exit-file recovery remain unchanged.
 Restart still re-adopts running agents.
+
+## Hosts and satellites
+
+A satellite's window operates another computer's Quuu through the operation
+contract. `main/settings/network.ts` owns the role and credentials (`network.json`,
+never the app settings, which a satellite's window reads from its host). The host's
+network listener is the same gRPC server with a different admission: each paired
+computer's own bearer credential, plus an unauthenticated `Pair` RPC that trades
+the code shown on the host for that credential. A host announces itself by UDP
+broadcast (`servers/lan.ts`); discovery only suggests an address, and every
+operation still authenticates.
+
+`servers/satellite.ts` probes the paired host and opens one host caller per
+window, so views and terminals stay owned per window on the host too. The operation
+reception forwards through `OperationHost.forwardFor`: `satelliteRoute` answers
+desktop, app and network operations locally, refuses operations that would open
+the host's files on a screen, and sends everything else to the host. While the
+windows show the host, local snapshot, settings, scheduler and toast pushes are
+withheld and the host's `Watch` events are delivered instead. Switching sides
+reloads the windows rather than reconciling two data sets in the renderer.
 
 ## History analysis and performance
 

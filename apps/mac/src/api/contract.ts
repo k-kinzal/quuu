@@ -14,6 +14,7 @@ import { ProjectInputSchema, ProjectSchema } from "./schemas/projects.js"
 import { ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
 import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewSnapshotSchema } from "./schemas/review.js"
 import { SessionMessageSchema, SessionSnapshotSchema } from "./schemas/session.js"
+import { NetworkConfigSchema, NetworkPairSchema, NetworkStatusSchema } from "./schemas/network.js"
 import { ServerStatusSchema, AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./schemas/settings.js"
 import { AppSnapshotSchema, MobileSyncStatusSchema } from "./schemas/snapshot.js"
 import { TaskInputSchema, TaskPatchSchema, TaskSchema } from "./schemas/tasks.js"
@@ -141,6 +142,19 @@ export const contract = {
     resume: procedure.output(SchedulerStatusSchema),
   },
   servers: { status: procedure.output(ServerStatusSchema) },
+  /**
+   * This computer's place among the Quuu on its network. Always answered by the Quuu that
+   * receives it: a satellite's window configures the satellite, never its host.
+   */
+  network: {
+    status: procedure.output(NetworkStatusSchema),
+    configure: procedure.input(NetworkConfigSchema.strict()).output(NetworkStatusSchema),
+    /** Shows a short-lived code another computer enters to pair with this host. */
+    openPairing: procedure.output(NetworkStatusSchema),
+    removeDevice: procedure.input(z.string()).output(NetworkStatusSchema),
+    pair: procedure.input(NetworkPairSchema.strict()).output(NetworkStatusSchema),
+    unpair: procedure.output(NetworkStatusSchema),
+  },
   settings: {
     previewIdentity: procedure.input(z.object({
       identity: CommitIdentitySchema,

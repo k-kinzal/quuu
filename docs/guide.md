@@ -396,6 +396,38 @@ read" cannot occur.
 - What you tap shows on screen immediately (marked as pending). Once imported, it is
   replaced by the real thing
 
+## Use Quuu from several computers
+
+One Quuu is the **host**; the others are its **satellites**. While a satellite can reach its
+host, its window shows the host's projects, tasks, conversations and settings, and everything
+done in it goes through the host's operations — the same API the CLI and MCP use. Agents run on
+the host. This is a second window onto one Quuu, not a Runner that executes work elsewhere.
+
+1. On the host: **Settings › Multiple Computers › Host**, turn on "Let other computers on this
+   network use this Quuu" (port 47810 by default), then **Pair a Computer**. A six-digit code
+   appears for five minutes.
+2. On the other computer: turn on **Use a Host**. Hosts announcing themselves on the network are
+   listed; choose one (or type `address:port`), enter the code and **Pair**.
+
+- The window switches by **reloading** when the host starts or stops answering (two missed
+  checks, three seconds apart). With the host gone, the satellite shows its own data again;
+  its own scheduler and tasks keep running throughout. The footer shows `Host: <name>` while the
+  window shows a host.
+- **Multiple Computers stays each computer's own.** It is never forwarded, so a satellite
+  configures itself even while it shows the host. So are dialogs, menus, the clipboard, links
+  and the Pull Request view. Opening an editor, Finder, an external terminal, a report or a
+  document preview acts on files that live on the host, so a satellite refuses them with a
+  reason instead of popping them up on the host's screen. The built-in terminal works: it is
+  a shell on the host.
+- Removing a paired computer on the host ends its access immediately.
+- Hosts announce themselves by UDP broadcast on port 47811; the host listens on every interface
+  at its port. Allow both through the firewall. macOS asks for Local Network access once.
+- The connection is **not encrypted**. Pairing codes and credentials protect who may connect,
+  not what can be read on the wire. Host only on a network you trust.
+- Host and satellite are exclusive: turning one on turns the other off.
+- `network.json` in the data directory (mode 0600) holds the role, the host's paired
+  computers (credentials stored as digests only) and the satellite's credential.
+
 ## Importing directly launched sessions
 
 Sessions started by launching an AI CLI directly from the terminal are picked up and

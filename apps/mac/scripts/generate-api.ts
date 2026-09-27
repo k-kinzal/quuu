@@ -91,6 +91,9 @@ for (const operation of operations()) {
 // Events and caller lifecycle are transport concerns. Every operation above comes from the app contract.
 messages.push('message ConnectRequest {}', 'message ConnectResponse { string client_id = 1; }', 'message DisconnectRequest {}', 'message DisconnectResponse {}', 'message WatchRequest {}', 'message WatchResponse { string name = 1; google.protobuf.Value payload = 2; }')
 methods.push('  rpc Connect(ConnectRequest) returns (ConnectResponse);', '  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);', '  rpc Watch(WatchRequest) returns (stream WatchResponse);')
+// A computer being paired has no credential yet; only a host's network listener answers this.
+messages.push('message PairRequest { string code = 1; string device_name = 2; }', 'message PairResponse { string token = 1; string host_id = 2; string host_name = 3; }')
+methods.push('  rpc Pair(PairRequest) returns (PairResponse);')
 write(join(protoDir, 'quuu.proto'), `// Generated from src/api/contract.ts. Run npm run api:generate.\nsyntax = "proto3";\npackage quuu.v1;\nimport "google/protobuf/struct.proto";\n\n${messages.join('\n\n')}\n\nservice Quuu {\n${methods.join('\n')}\n}\n`)
 write(numbersPath, JSON.stringify(numbers, null, 2) + '\n')
 write(join(generated, 'wire.ts'), `// Generated from the operation contract.\nimport type { WireShape } from '../wire.js'\nexport const wire: Record<string, { method: string; input: WireShape; output: WireShape }> = ${JSON.stringify(definitions, null, 2)}\n`)

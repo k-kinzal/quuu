@@ -13,7 +13,7 @@ export type Section =
   | { kind: 'project'; id: string }
   | { kind: 'settings' }
 
-export type SettingsCategory = 'hooks' | 'connections' | 'general' | 'agents' | 'report' | 'pullRequests' | 'notifications' | 'mobile' | 'appearance'
+export type SettingsCategory = 'hooks' | 'connections' | 'network' | 'general' | 'agents' | 'report' | 'pullRequests' | 'notifications' | 'mobile' | 'appearance'
 
 export function sameSection(a: Section, b: Section): boolean {
   if (a.kind !== b.kind) return false

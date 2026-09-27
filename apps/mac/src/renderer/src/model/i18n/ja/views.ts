@@ -37,6 +37,7 @@ export const views: typeof en = {
     inherit: 'グローバル設定に従う', on: 'Worktreeを使用', off: 'プロジェクトのディレクトリを使用'
   },
   settingsShell: {
+    network: '複数のPC',
     connections: '外部接続',
     title: '設定',
     general: '一般',
@@ -45,6 +46,32 @@ export const views: typeof en = {
     pullRequests: 'プルリクエスト',
     notifications: '通知',
     appearance: '外観'
+  },
+  networkSettings: {
+    title: '複数のPC',
+    host: '母艦',
+    enableHost: 'このネットワークの他のPCからこの Quuu を使えるようにする',
+    port: 'ポート', apply: '適用', starting: '起動中…', unavailable: '接続できません',
+    pair: 'PCをペアリング',
+    pairingHint: '{{time}} までに相手のPCで入力',
+    devices: 'ペアリング済みのPC',
+    remove: '削除',
+    removeConfirm: '「{{name}}」を削除しますか？',
+    removeDetail: 'そのPCはすぐに接続できなくなります。再接続するにはもう一度ペアリングしてください。',
+    hostHint: 'エージェントはこのPCで実行・通信は暗号化なし（信頼できるネットワーク専用）',
+    satellite: '母艦を使う',
+    enableSatellite: '母艦がネットワークにいる間は母艦を表示・操作する',
+    connected: '{{name}}（{{address}}）を表示中',
+    searching: '{{name}} を探しています…',
+    unpaired: '母艦とペアリングしていません',
+    off: 'オフ',
+    unpair: '母艦の登録を解除',
+    discovered: 'このネットワークの母艦',
+    choose: '選択',
+    address: '母艦のアドレス',
+    code: 'ペアリングコード',
+    pairWithHost: 'ペアリング',
+    satelliteHint: 'このPCのタスクは動き続け、母艦がいなくなると表示が戻る'
   },
   connectionSettings: {
     title: '外部接続', http: 'HTTP / gRPC', mcp: 'MCP',

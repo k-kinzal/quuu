@@ -212,7 +212,9 @@ export const workbench: typeof en = {
     holdsTitle: 'P0 が確保中の実行枠（完了まで、この枠はほかのタスクに渡らない）',
     holds: 'P0',
     stateRunning: '稼働中',
-    statePaused: '一時停止'
+    statePaused: '一時停止',
+    host: '母艦: {{name}}',
+    hostTitle: 'このウインドウは {{name}} の Quuu を表示・操作しています'
   },
   rail: {
     showMenu: 'メニューを開く (⌘⌥1)',

@@ -40,6 +40,7 @@ export const views = {
     "off": "Use the project directory"
 },
   settingsShell: {
+    network: 'Multiple Computers',
     connections: 'Connections',
     title: 'Settings',
     general: 'General',
@@ -48,6 +49,32 @@ export const views = {
     pullRequests: 'Pull Requests',
     notifications: 'Notifications',
     appearance: 'Appearance'
+  },
+  networkSettings: {
+    title: 'Multiple Computers',
+    host: 'Host',
+    enableHost: 'Let other computers on this network use this Quuu',
+    port: 'Port', apply: 'Apply', starting: 'Starting…', unavailable: 'Unavailable',
+    pair: 'Pair a Computer',
+    pairingHint: 'Enter on the other computer by {{time}}',
+    devices: 'Paired computers',
+    remove: 'Remove',
+    removeConfirm: 'Remove "{{name}}"?',
+    removeDetail: 'That computer loses access right away. Pair it again to reconnect it.',
+    hostHint: 'Agents run here · Unencrypted: trusted networks only',
+    satellite: 'Use a Host',
+    enableSatellite: 'Show and operate the host while it is on this network',
+    connected: 'Showing {{name}} ({{address}})',
+    searching: 'Looking for {{name}}…',
+    unpaired: 'Not paired with a host',
+    off: 'Off',
+    unpair: 'Forget Host',
+    discovered: 'Hosts on this network',
+    choose: 'Choose',
+    address: 'Host address',
+    code: 'Pairing code',
+    pairWithHost: 'Pair',
+    satelliteHint: 'This computer\'s own tasks keep running and return when the host leaves'
   },
   connectionSettings: {
     title: 'Connections', http: 'HTTP / gRPC', mcp: 'MCP',

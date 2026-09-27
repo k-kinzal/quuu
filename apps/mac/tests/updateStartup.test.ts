@@ -11,7 +11,8 @@ const host = vi.hoisted(() => ({
   start: vi.fn(), stop: vi.fn(), install: vi.fn(),
   initialized: vi.fn(),
   close: vi.fn(),
-  settings: { serverStatus: {}, on: vi.fn(), getSettings: () => ({ theme: 'system', httpEnabled: false, mcpEnabled: false }) }
+  settings: { serverStatus: {}, on: vi.fn(), getSettings: () => ({ theme: 'system', httpEnabled: false, mcpEnabled: false }) },
+  network: { on: vi.fn(), setPairer: vi.fn(), hosting: () => null, status: () => ({ satellite: { enabled: false } }) }
 }))
 vi.mock('electron', () => ({
   app: {
@@ -26,6 +27,7 @@ vi.mock('electron', () => ({
 vi.mock('../src/main/bootstrap.js', () => ({
   QuuuApp: class {
     settings = host.settings
+    network = host.network
     db = { close: host.close }
     on = vi.fn()
     removeAllListeners = vi.fn()
@@ -38,7 +40,7 @@ vi.mock('../src/main/bootstrap.js', () => ({
   }
 }))
 vi.mock('../src/main/appPaths.js', () => ({ userDataDir: () => host.directory }))
-vi.mock('../src/main/ipc/index.js', () => ({ broadcast: vi.fn(), registerIpc: vi.fn() }))
+vi.mock('../src/main/ipc/index.js', () => ({ broadcast: vi.fn(), registerIpc: vi.fn(), followHost: vi.fn(), showingHost: () => false }))
 vi.mock('../src/main/menus.js', () => ({ refreshMenuIfProjectsChanged: vi.fn(), send: vi.fn(), setUpdateMenuItem: host.menu }))
 vi.mock('../src/main/windows.js', () => ({ beginQuit: vi.fn(), configureWindows: vi.fn(), mainWindow: null, showWindow: host.show }))
 vi.mock('../src/main/mobile-sync/folder.js', () => ({ mobileWebRoot: () => '' }))

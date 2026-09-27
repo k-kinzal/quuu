@@ -1,4 +1,4 @@
-import { app, nativeImage, nativeTheme, Notification } from 'electron'
+import { app, BrowserWindow, nativeImage, nativeTheme, Notification } from 'electron'
 import { dirname, join } from 'node:path'
 import { unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -7,7 +7,7 @@ import { userDataDir } from './appPaths.js'
 import { QuuuApp } from './bootstrap.js'
 import type { SchedulerStatus } from './execution/status.js'
 import { initMainI18n, t } from './i18n/index.js'
-import { broadcast, registerIpc } from './ipc/index.js'
+import { broadcast, followHost, registerIpc, showingHost } from './ipc/index.js'
 import { refreshMenuIfProjectsChanged, send, setUpdateMenuItem } from './menus.js'
 import { mobileWebRoot } from './mobile-sync/folder.js'
 import type { AppSettings } from './settings/types.js'
@@ -43,9 +43,10 @@ const RESOURCES = app.isPackaged
 
 function wire(instance: QuuuApp): void {
   applyAppearance(instance.settings.getSettings().theme)
+  // While the windows show a host, what changes here stays off their screens: they show the host's.
   instance.on('settings', (settings: AppSettings) => {
     applyAppearance(settings.theme)
-    broadcast(EVENTS.settings, settings)
+    if (!showingHost()) broadcast(EVENTS.settings, settings)
   })
 
   const pushSnapshot = (): void => {
@@ -54,7 +55,7 @@ function wire(instance: QuuuApp): void {
     broadcastTimer = setTimeout(() => {
       broadcastTimer = null
       const snapshot: AppSnapshot = instance.snapshot()
-      broadcast(EVENTS.snapshot, snapshot)
+      if (!showingHost()) broadcast(EVENTS.snapshot, snapshot)
       // Reflect additions/removals in "Go › Projects" (rebuild only when the list changed)
       refreshMenuIfProjectsChanged(quuu?.snapshot().projects ?? [])
     }, 80)
@@ -63,13 +64,13 @@ function wire(instance: QuuuApp): void {
   instance.on('changed', pushSnapshot)
 
   instance.on('status', (status: SchedulerStatus) => {
-    broadcast(EVENTS.schedulerStatus, status)
+    if (!showingHost()) broadcast(EVENTS.schedulerStatus, status)
   })
 
 
 
   instance.on('notify', (toast: ToastPayload) => {
-    broadcast(EVENTS.toast, toast)
+    if (!showingHost()) broadcast(EVENTS.toast, toast)
     notifyNative(instance, toast)
   })
 }
@@ -186,8 +187,11 @@ if (!app.requestSingleInstanceLock()) {
     // Loading network SDKs follows the first window and is skipped while both listeners are off.
     const instance = quuu
     let startingServers = false
+    // Pairing asks another computer's host for a credential; the network client loads only then.
+    instance.network.setPairer(async (address, code, name) => (await import('./servers/satellite.js')).pair(address, code, name))
+    const networked = (): boolean => instance.network.hosting() !== null || instance.network.status().satellite.enabled
     const startServers = (settings: AppSettings): void => {
-      if (servers || startingServers || quitting || (!settings.httpEnabled && !settings.mcpEnabled)) return
+      if (servers || startingServers || quitting || (!settings.httpEnabled && !settings.mcpEnabled && !networked())) return
       startingServers = true
       void import('./servers/controller.js').then(async ({ ServerController }) => {
         if (quitting) return
@@ -196,10 +200,18 @@ if (!app.requestSingleInstanceLock()) {
           if (!mainWindow) throw new Error('Cannot open the desktop window')
           return desktopOperations(mainWindow)
         })
+        const controller = servers
+        controller.on('satellite', (connected: boolean) => {
+          followHost(connected ? controller.satellite : null)
+          // Every screen starts over from the side it now shows; nothing of the other side lingers.
+          if (!quitting) for (const window of BrowserWindow.getAllWindows()) if (!window.isDestroyed()) window.webContents.reload()
+        })
         await servers.configure(instance.settings.getSettings())
+        await servers.configureNetwork()
       }).catch(error => console.error('Cannot start Quuu servers:', error)).finally(() => { startingServers = false })
     }
     instance.settings.on('changed', startServers)
+    instance.network.on('changed', () => startServers(instance.settings.getSettings()))
     startServers(instance.settings.getSettings())
 
     app.on('activate', () => showWindow())
@@ -222,6 +234,7 @@ if (!app.requestSingleInstanceLock()) {
     updates?.stop()
     void (async () => {
       // Stop listeners and caller-owned resources before closing SQLite.
+      followHost(null)
       await servers?.stop()
       servers = null
       const instance = quuu

@@ -45,6 +45,14 @@ a free port each launch. `quuu servers status` shows what is listening and bindi
 **Turning `httpEnabled` off disconnects this CLI**; only the desktop app (or MCP, if on) can turn
 it back on. Do it only when asked, and last.
 
+## Multiple computers
+
+`quuu network status` shows whether this Quuu hosts other computers (`host`) or follows a host
+(`satellite`). Pairing needs a person at both computers — the host shows a code
+(`network open-pairing`) that is typed into the other one — so start it only when asked.
+`network remove-device ID` ends a paired computer's access. These settings always act on the Quuu
+that receives them.
+
 ## App information and updates
 
 ```sh

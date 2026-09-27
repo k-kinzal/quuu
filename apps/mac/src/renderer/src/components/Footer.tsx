@@ -13,13 +13,15 @@ import {
   useTheme,
   type GaugeCell
 } from '@design-system/react'
+import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { contextMenu } from '../interaction/menu.js'
 import { clockOrDate } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
 import { slotCells, slotSummary } from '../model/slotGauge.js'
+import { queryClient } from '../state/queryClient.js'
 import { useStore } from '../state/store.js'
-import { CirclePause, CirclePlay, ICON, Lock, TriangleAlert, iconProps } from '../ui/icons.js'
+import { CirclePause, CirclePlay, ICON, Lock, Monitor, TriangleAlert, iconProps } from '../ui/icons.js'
 
 /**
  * A strip for monitoring.
@@ -33,7 +35,11 @@ export function Footer(): JSX.Element {
   const setSection = useStore((s) => s.setSection)
   const openTask = useStore((s) => s.openTask)
   const applyScheduler = useStore((s) => s.applyScheduler)
+  const setSettingsCategory = useStore((s) => s.setSettingsCategory)
   const theme = useTheme()
+  // Read once per load: switching between a host and this computer reloads the window.
+  const network = useQuery({ queryKey: ['network.status', 'footer'], queryFn: () => window.quuu.network.status(), staleTime: Infinity, retry: false, networkMode: 'always' }, queryClient)
+  const host = network.data?.satellite.state === 'connected' ? network.data.satellite.host : null
 
   const status = snapshot?.scheduler
   const slots = useMemo<GaugeCell[]>(() => {
@@ -135,6 +141,16 @@ export function Footer(): JSX.Element {
         )}
 
         <Spacer />
+
+        {host && (
+          <StatusBarItem
+            title={t('footer.hostTitle', { name: host.name })}
+            onClick={() => { setSection({ kind: 'settings' }); setSettingsCategory('network') }}
+          >
+            <Monitor size={ICON.sm} {...iconProps} />
+            <Text tone="tertiary">{t('footer.host', { name: host.name })}</Text>
+          </StatusBarItem>
+        )}
 
         {warning && (
           <StatusBarNotice title={status.warnings.join('\n') || warning}>

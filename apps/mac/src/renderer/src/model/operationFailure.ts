@@ -17,6 +17,7 @@ const labels: OperationLabels<QuuuApi> = {
   runs: { byTask: t('operationFailure.op.runs.byTask'), cancel: t('operationFailure.op.runs.cancel') },
   logs: { page: t('operationFailure.op.session.loadMore') },
   servers: { status: t('operationFailure.op.settings.get') },
+  network: { status: t('networkSettings.title'), configure: t('networkSettings.title'), openPairing: t('networkSettings.pair'), removeDevice: t('networkSettings.remove'), pair: t('networkSettings.pairWithHost'), unpair: t('networkSettings.unpair') },
   session: { close: t('operationFailure.op.session.close'), load: t('operationFailure.op.session.load'), loadMore: t('operationFailure.op.session.loadMore'), image: t('operationFailure.op.session.image') },
   scheduler: { status: t('operationFailure.op.scheduler.status'), pause: t('operationFailure.op.scheduler.pause'), resume: t('operationFailure.op.scheduler.resume') },
   settings: { previewIdentity: t('operationFailure.op.settings.previewIdentity'), setIdentity: t('operationFailure.op.settings.setIdentity'), get: t('operationFailure.op.settings.get'), set: t('operationFailure.op.settings.set'), lookupBotUser: t('operationFailure.op.settings.lookupBotUser'), createGitHubApp: t('operationFailure.op.settings.createGitHubApp'), cancelGitHubApp: t('operationFailure.op.settings.cancelGitHubApp') },

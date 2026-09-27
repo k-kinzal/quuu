@@ -1,6 +1,8 @@
 import { RunnerOperations } from './runners/operations.js'
 import { HookOperations } from './hooks/operations.js'
 import { EventEmitter } from 'node:events'
+import { dirname } from 'node:path'
+import { dbPath as defaultDbPath } from './appPaths.js'
 import type { AppInfo } from '../api/schemas/app.js'
 import { AgentOperations } from './agents/operations.js'
 import { sessionOptions } from './agents/sessionOptions.js'
@@ -30,6 +32,7 @@ import { SessionIndex, sessionKey } from './session/index.js'
 import { workplaceDerivation } from './session/workplace.js'
 import { reviewEvidenceDerivation } from './review/evidence.js'
 import { SettingsOperations } from './settings/operations.js'
+import { NetworkOperations } from './settings/network.js'
 import type { AppSettings } from './settings/types.js'
 import type { AppSnapshot, MobileSyncStatus, ToastPayload } from './snapshot.js'
 import { TaskOperations } from './tasks/operations.js'
@@ -79,6 +82,7 @@ export class QuuuApp extends EventEmitter {
   readonly agents: AgentOperations
   readonly workspace: WorkspaceOperations
   readonly settings: SettingsOperations
+  readonly network: NetworkOperations
   private sessionViews = new Set<SessionView>()
   readonly sessions: SessionIndex
   private projectionTimer: NodeJS.Timeout | null = null
@@ -96,6 +100,8 @@ export class QuuuApp extends EventEmitter {
     this.review = new ReviewService()
     this.terminals = new TerminalService()
     this.settings = new SettingsOperations(this.db)
+    // Beside the database it describes, so a verification instance never hosts as production
+    this.network = new NetworkOperations(dirname(dbPath ?? defaultDbPath()))
     this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast), { beforeComplete: task => this.hooks.beforeComplete(task), beforeDelete: id => this.hooks.beforeDelete(id) })
     this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), id => this.tasks.deleteTask(id))
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))

@@ -211,7 +211,9 @@ export const workbench = {
     holdsTitle: 'Slots kept by P0 tasks (until done, they are not given to other tasks)',
     holds: 'P0',
     stateRunning: 'Running',
-    statePaused: 'Paused'
+    statePaused: 'Paused',
+    host: 'Host: {{name}}',
+    hostTitle: 'This window shows and operates the Quuu on {{name}}'
   },
   rail: {
     showMenu: 'Show Menu (⌘⌥1)',

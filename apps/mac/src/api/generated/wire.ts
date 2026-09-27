@@ -10076,6 +10076,1134 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "network.status": {
+    "method": "networkStatus",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "host": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "port": {
+              "kind": "number"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "addresses": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "pairing": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "code": {
+                      "kind": "string"
+                    },
+                    "expiresAt": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "devices": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "pairedAt": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "pairedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "port",
+            "name",
+            "addresses",
+            "error",
+            "pairing",
+            "devices"
+          ]
+        },
+        "satellite": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "host": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "address": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "state": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "unpaired",
+                "searching",
+                "connected"
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "discovered": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "address": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "host",
+            "state",
+            "error",
+            "discovered"
+          ]
+        }
+      },
+      "required": [
+        "host",
+        "satellite"
+      ]
+    }
+  },
+  "network.configure": {
+    "method": "networkConfigure",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "hostEnabled": {
+          "kind": "boolean"
+        },
+        "hostPort": {
+          "kind": "number"
+        },
+        "satelliteEnabled": {
+          "kind": "boolean"
+        }
+      },
+      "required": []
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "host": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "port": {
+              "kind": "number"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "addresses": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "pairing": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "code": {
+                      "kind": "string"
+                    },
+                    "expiresAt": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "devices": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "pairedAt": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "pairedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "port",
+            "name",
+            "addresses",
+            "error",
+            "pairing",
+            "devices"
+          ]
+        },
+        "satellite": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "host": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "address": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "state": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "unpaired",
+                "searching",
+                "connected"
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "discovered": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "address": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "host",
+            "state",
+            "error",
+            "discovered"
+          ]
+        }
+      },
+      "required": [
+        "host",
+        "satellite"
+      ]
+    }
+  },
+  "network.openPairing": {
+    "method": "networkOpenPairing",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "host": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "port": {
+              "kind": "number"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "addresses": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "pairing": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "code": {
+                      "kind": "string"
+                    },
+                    "expiresAt": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "devices": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "pairedAt": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "pairedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "port",
+            "name",
+            "addresses",
+            "error",
+            "pairing",
+            "devices"
+          ]
+        },
+        "satellite": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "host": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "address": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "state": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "unpaired",
+                "searching",
+                "connected"
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "discovered": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "address": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "host",
+            "state",
+            "error",
+            "discovered"
+          ]
+        }
+      },
+      "required": [
+        "host",
+        "satellite"
+      ]
+    }
+  },
+  "network.removeDevice": {
+    "method": "networkRemoveDevice",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "host": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "port": {
+              "kind": "number"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "addresses": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "pairing": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "code": {
+                      "kind": "string"
+                    },
+                    "expiresAt": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "devices": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "pairedAt": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "pairedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "port",
+            "name",
+            "addresses",
+            "error",
+            "pairing",
+            "devices"
+          ]
+        },
+        "satellite": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "host": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "address": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "state": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "unpaired",
+                "searching",
+                "connected"
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "discovered": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "address": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "host",
+            "state",
+            "error",
+            "discovered"
+          ]
+        }
+      },
+      "required": [
+        "host",
+        "satellite"
+      ]
+    }
+  },
+  "network.pair": {
+    "method": "networkPair",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "address": {
+          "kind": "string"
+        },
+        "code": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "address",
+        "code"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "host": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "port": {
+              "kind": "number"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "addresses": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "pairing": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "code": {
+                      "kind": "string"
+                    },
+                    "expiresAt": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "devices": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "pairedAt": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "pairedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "port",
+            "name",
+            "addresses",
+            "error",
+            "pairing",
+            "devices"
+          ]
+        },
+        "satellite": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "host": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "address": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "state": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "unpaired",
+                "searching",
+                "connected"
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "discovered": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "address": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "host",
+            "state",
+            "error",
+            "discovered"
+          ]
+        }
+      },
+      "required": [
+        "host",
+        "satellite"
+      ]
+    }
+  },
+  "network.unpair": {
+    "method": "networkUnpair",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "host": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "port": {
+              "kind": "number"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "addresses": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "pairing": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "code": {
+                      "kind": "string"
+                    },
+                    "expiresAt": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "expiresAt"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "devices": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "pairedAt": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "pairedAt"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "port",
+            "name",
+            "addresses",
+            "error",
+            "pairing",
+            "devices"
+          ]
+        },
+        "satellite": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "host": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "address": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "address"
+                  ]
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "state": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "unpaired",
+                "searching",
+                "connected"
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "discovered": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "address": {
+                    "kind": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "address"
+                ]
+              }
+            }
+          },
+          "required": [
+            "enabled",
+            "host",
+            "state",
+            "error",
+            "discovered"
+          ]
+        }
+      },
+      "required": [
+        "host",
+        "satellite"
+      ]
+    }
+  },
   "settings.previewIdentity": {
     "method": "settingsPreviewIdentity",
     "input": {

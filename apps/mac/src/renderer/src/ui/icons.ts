@@ -16,7 +16,7 @@ export {
   FileSearch, FileText, FolderGit2, FolderOpen, FolderTree, Gauge, GitCommitHorizontal, GitPullRequest, GripVertical, Hash,
   // Navigation
   Inbox, Layers, ListChecks, ListFilter, ListTree, Lock,
-  LockOpen, Maximize2, MessageSquareText, Minus, MoreHorizontal, Palette, PanelLeftClose,
+  LockOpen, Maximize2, MessageSquareText, Minus, Monitor, MoreHorizontal, Palette, PanelLeftClose,
   PanelLeftOpen, PanelRightClose,
   Paperclip,
   Pin, Play,

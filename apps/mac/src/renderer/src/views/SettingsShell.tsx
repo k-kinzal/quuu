@@ -1,12 +1,13 @@
 import { HookSettings } from './settings/HookSettings.js'
 import { ConnectionSettings } from './settings/ConnectionSettings.js'
+import { NetworkSettings } from './settings/NetworkSettings.js'
 import { MenuNav, MenuNavItem, MenuNavTitle, Panel, Row } from '@design-system/react'
 import { moveWithinList, pane } from '../interaction/focus.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import type { SettingsCategory } from '../state/store.js'
 import { useStore } from '../state/store.js'
-import { Bell, Bot, GitPullRequest, ICON, Palette, ScrollText, SlidersHorizontal, Smartphone, iconProps } from '../ui/icons.js'
+import { Bell, Bot, GitPullRequest, ICON, Monitor, Palette, ScrollText, SlidersHorizontal, Smartphone, iconProps } from '../ui/icons.js'
 import { AgentSettings } from './settings/AgentSettings.js'
 import { AppearanceSettings } from './settings/AppearanceSettings.js'
 import { GeneralSettings } from './settings/GeneralSettings.js'
@@ -27,6 +28,7 @@ const CATEGORIES: Array<{
     { id: 'pullRequests', label: t('settingsShell.pullRequests'), icon: <GitPullRequest size={ICON.md} {...iconProps} /> },
     { id: 'notifications', label: t('settingsShell.notifications'), icon: <Bell size={ICON.md} {...iconProps} /> },
     { id: 'mobile', label: 'iPhone', icon: <Smartphone size={ICON.md} {...iconProps} /> },
+    { id: 'network', label: t('settingsShell.network'), icon: <Monitor size={ICON.md} {...iconProps} /> },
     { id: 'connections', label: t('settingsShell.connections'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
     { id: 'appearance', label: t('settingsShell.appearance'), icon: <Palette size={ICON.md} {...iconProps} /> }
   ]
@@ -69,6 +71,7 @@ export function SettingsShell(): JSX.Element {
 
       <Panel surface="canvas" grow scroll {...pane('settings', { tab: true })} aria-label={t('settingsShell.title')}>
         {category === 'connections' && <ConnectionSettings />}
+        {category === 'network' && <NetworkSettings />}
         {category === 'general' && <GeneralSettings />}
         {category === 'agents' && <AgentSettings />}
         {category === 'hooks' && <HookSettings />}

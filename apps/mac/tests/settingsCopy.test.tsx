@@ -17,6 +17,8 @@ import { GeneralSettings } from '../src/renderer/src/views/settings/GeneralSetti
 import { HookSettings } from '../src/renderer/src/views/settings/HookSettings.js'
 import { NotificationSettings } from '../src/renderer/src/views/settings/NotificationSettings.js'
 import { PullRequestSettings } from '../src/renderer/src/views/settings/PullRequestSettings.js'
+import { NetworkSettings } from '../src/renderer/src/views/settings/NetworkSettings.js'
+import { queryClient } from '../src/renderer/src/state/queryClient.js'
 
 /**
  * The **amount of text** on a settings surface (rule G-2).
@@ -40,6 +42,11 @@ beforeAll(() => {
     })) }
   })
   Object.defineProperty(window, 'quuu', { configurable: true, writable: true, value: client })
+  // Every state that carries copy at once: hosting with a code and a paired computer, and hosts to pair with.
+  queryClient.setQueryData(['network.status'], {
+    host: { enabled: true, port: 47810, name: 'Studio', addresses: ['10.0.0.9:47810'], error: null, pairing: { code: '482913', expiresAt: new Date().toISOString() }, devices: [{ id: 'd1', name: 'Laptop', pairedAt: new Date().toISOString() }] },
+    satellite: { enabled: true, host: null, state: 'unpaired', error: null, discovered: [{ id: 'h1', name: 'Studio', address: '10.0.0.2:47810' }] }
+  })
   window.matchMedia = (query: string) => ({
     matches: false,
     media: query,
@@ -99,6 +106,7 @@ const VIEWS: Array<[string, () => JSX.Element]> = [
   ['notifications', NotificationSettings],
   ['appearance', AppearanceSettings],
   ['connections', ConnectionSettings],
+  ['multiple computers', NetworkSettings],
   ['agents', AgentSettings],
   ['lifecycle hooks', HookSettings],
   ['pull requests', PullRequestSettings],

@@ -426,6 +426,15 @@ If you delete the whole folder, it can be recreated from Quuu's settings on the 
     projectTaskNotFound: 'Project task not found'
   },
 
+  network: {
+    pairingClosed: 'Pairing is not open on the host. Open pairing in its Settings › Multiple Computers and try again.',
+    wrongCode: 'That code does not match the one the host shows.',
+    unreachable: 'Could not reach a Quuu host at {{address}}.',
+    badAddress: 'Enter the host as an address and port, for example 192.168.1.20:47810.',
+    notPaired: 'This computer has not been paired with this host.',
+    onHost: 'This opens on the host computer, so it is not available while this window shows the host.'
+  },
+
   ipc: {
     operationFailed: 'The operation could not be completed'
   },

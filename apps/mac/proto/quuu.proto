@@ -4559,6 +4559,581 @@ message ServersStatusResponse {
   optional ServersStatusResponseValue value = 1;
 }
 
+message NetworkStatusRequest {
+
+}
+
+message NetworkStatusResponseValueHostAddresses {
+  repeated string items = 1;
+}
+
+message NetworkStatusResponseValueHostError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkStatusResponseValueHostPairingVariant1 {
+  optional string code = 1;
+  optional string expiresAt = 2;
+}
+
+message NetworkStatusResponseValueHostPairing {
+  oneof kind {
+  NetworkStatusResponseValueHostPairingVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkStatusResponseValueHostDevicesItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string pairedAt = 3;
+}
+
+message NetworkStatusResponseValueHostDevices {
+  repeated NetworkStatusResponseValueHostDevicesItem items = 1;
+}
+
+message NetworkStatusResponseValueHost {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional string name = 3;
+  optional NetworkStatusResponseValueHostAddresses addresses = 4;
+  optional NetworkStatusResponseValueHostError error = 5;
+  optional NetworkStatusResponseValueHostPairing pairing = 6;
+  optional NetworkStatusResponseValueHostDevices devices = 7;
+}
+
+message NetworkStatusResponseValueSatelliteHostVariant1 {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkStatusResponseValueSatelliteHost {
+  oneof kind {
+  NetworkStatusResponseValueSatelliteHostVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkStatusResponseValueSatelliteError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkStatusResponseValueSatelliteDiscoveredItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkStatusResponseValueSatelliteDiscovered {
+  repeated NetworkStatusResponseValueSatelliteDiscoveredItem items = 1;
+}
+
+message NetworkStatusResponseValueSatellite {
+  optional bool enabled = 1;
+  optional NetworkStatusResponseValueSatelliteHost host = 2;
+  optional string state = 3;
+  optional NetworkStatusResponseValueSatelliteError error = 4;
+  optional NetworkStatusResponseValueSatelliteDiscovered discovered = 5;
+}
+
+message NetworkStatusResponseValue {
+  optional NetworkStatusResponseValueHost host = 1;
+  optional NetworkStatusResponseValueSatellite satellite = 2;
+}
+
+message NetworkStatusResponse {
+  optional NetworkStatusResponseValue value = 1;
+}
+
+message NetworkConfigureRequestValue {
+  optional bool hostEnabled = 1;
+  optional double hostPort = 2;
+  optional bool satelliteEnabled = 3;
+}
+
+message NetworkConfigureRequest {
+  optional NetworkConfigureRequestValue value = 1;
+}
+
+message NetworkConfigureResponseValueHostAddresses {
+  repeated string items = 1;
+}
+
+message NetworkConfigureResponseValueHostError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkConfigureResponseValueHostPairingVariant1 {
+  optional string code = 1;
+  optional string expiresAt = 2;
+}
+
+message NetworkConfigureResponseValueHostPairing {
+  oneof kind {
+  NetworkConfigureResponseValueHostPairingVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkConfigureResponseValueHostDevicesItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string pairedAt = 3;
+}
+
+message NetworkConfigureResponseValueHostDevices {
+  repeated NetworkConfigureResponseValueHostDevicesItem items = 1;
+}
+
+message NetworkConfigureResponseValueHost {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional string name = 3;
+  optional NetworkConfigureResponseValueHostAddresses addresses = 4;
+  optional NetworkConfigureResponseValueHostError error = 5;
+  optional NetworkConfigureResponseValueHostPairing pairing = 6;
+  optional NetworkConfigureResponseValueHostDevices devices = 7;
+}
+
+message NetworkConfigureResponseValueSatelliteHostVariant1 {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkConfigureResponseValueSatelliteHost {
+  oneof kind {
+  NetworkConfigureResponseValueSatelliteHostVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkConfigureResponseValueSatelliteError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkConfigureResponseValueSatelliteDiscoveredItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkConfigureResponseValueSatelliteDiscovered {
+  repeated NetworkConfigureResponseValueSatelliteDiscoveredItem items = 1;
+}
+
+message NetworkConfigureResponseValueSatellite {
+  optional bool enabled = 1;
+  optional NetworkConfigureResponseValueSatelliteHost host = 2;
+  optional string state = 3;
+  optional NetworkConfigureResponseValueSatelliteError error = 4;
+  optional NetworkConfigureResponseValueSatelliteDiscovered discovered = 5;
+}
+
+message NetworkConfigureResponseValue {
+  optional NetworkConfigureResponseValueHost host = 1;
+  optional NetworkConfigureResponseValueSatellite satellite = 2;
+}
+
+message NetworkConfigureResponse {
+  optional NetworkConfigureResponseValue value = 1;
+}
+
+message NetworkOpenPairingRequest {
+
+}
+
+message NetworkOpenPairingResponseValueHostAddresses {
+  repeated string items = 1;
+}
+
+message NetworkOpenPairingResponseValueHostError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkOpenPairingResponseValueHostPairingVariant1 {
+  optional string code = 1;
+  optional string expiresAt = 2;
+}
+
+message NetworkOpenPairingResponseValueHostPairing {
+  oneof kind {
+  NetworkOpenPairingResponseValueHostPairingVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkOpenPairingResponseValueHostDevicesItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string pairedAt = 3;
+}
+
+message NetworkOpenPairingResponseValueHostDevices {
+  repeated NetworkOpenPairingResponseValueHostDevicesItem items = 1;
+}
+
+message NetworkOpenPairingResponseValueHost {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional string name = 3;
+  optional NetworkOpenPairingResponseValueHostAddresses addresses = 4;
+  optional NetworkOpenPairingResponseValueHostError error = 5;
+  optional NetworkOpenPairingResponseValueHostPairing pairing = 6;
+  optional NetworkOpenPairingResponseValueHostDevices devices = 7;
+}
+
+message NetworkOpenPairingResponseValueSatelliteHostVariant1 {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkOpenPairingResponseValueSatelliteHost {
+  oneof kind {
+  NetworkOpenPairingResponseValueSatelliteHostVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkOpenPairingResponseValueSatelliteError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkOpenPairingResponseValueSatelliteDiscoveredItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkOpenPairingResponseValueSatelliteDiscovered {
+  repeated NetworkOpenPairingResponseValueSatelliteDiscoveredItem items = 1;
+}
+
+message NetworkOpenPairingResponseValueSatellite {
+  optional bool enabled = 1;
+  optional NetworkOpenPairingResponseValueSatelliteHost host = 2;
+  optional string state = 3;
+  optional NetworkOpenPairingResponseValueSatelliteError error = 4;
+  optional NetworkOpenPairingResponseValueSatelliteDiscovered discovered = 5;
+}
+
+message NetworkOpenPairingResponseValue {
+  optional NetworkOpenPairingResponseValueHost host = 1;
+  optional NetworkOpenPairingResponseValueSatellite satellite = 2;
+}
+
+message NetworkOpenPairingResponse {
+  optional NetworkOpenPairingResponseValue value = 1;
+}
+
+message NetworkRemoveDeviceRequest {
+  optional string value = 1;
+}
+
+message NetworkRemoveDeviceResponseValueHostAddresses {
+  repeated string items = 1;
+}
+
+message NetworkRemoveDeviceResponseValueHostError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkRemoveDeviceResponseValueHostPairingVariant1 {
+  optional string code = 1;
+  optional string expiresAt = 2;
+}
+
+message NetworkRemoveDeviceResponseValueHostPairing {
+  oneof kind {
+  NetworkRemoveDeviceResponseValueHostPairingVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkRemoveDeviceResponseValueHostDevicesItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string pairedAt = 3;
+}
+
+message NetworkRemoveDeviceResponseValueHostDevices {
+  repeated NetworkRemoveDeviceResponseValueHostDevicesItem items = 1;
+}
+
+message NetworkRemoveDeviceResponseValueHost {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional string name = 3;
+  optional NetworkRemoveDeviceResponseValueHostAddresses addresses = 4;
+  optional NetworkRemoveDeviceResponseValueHostError error = 5;
+  optional NetworkRemoveDeviceResponseValueHostPairing pairing = 6;
+  optional NetworkRemoveDeviceResponseValueHostDevices devices = 7;
+}
+
+message NetworkRemoveDeviceResponseValueSatelliteHostVariant1 {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkRemoveDeviceResponseValueSatelliteHost {
+  oneof kind {
+  NetworkRemoveDeviceResponseValueSatelliteHostVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkRemoveDeviceResponseValueSatelliteError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkRemoveDeviceResponseValueSatelliteDiscoveredItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkRemoveDeviceResponseValueSatelliteDiscovered {
+  repeated NetworkRemoveDeviceResponseValueSatelliteDiscoveredItem items = 1;
+}
+
+message NetworkRemoveDeviceResponseValueSatellite {
+  optional bool enabled = 1;
+  optional NetworkRemoveDeviceResponseValueSatelliteHost host = 2;
+  optional string state = 3;
+  optional NetworkRemoveDeviceResponseValueSatelliteError error = 4;
+  optional NetworkRemoveDeviceResponseValueSatelliteDiscovered discovered = 5;
+}
+
+message NetworkRemoveDeviceResponseValue {
+  optional NetworkRemoveDeviceResponseValueHost host = 1;
+  optional NetworkRemoveDeviceResponseValueSatellite satellite = 2;
+}
+
+message NetworkRemoveDeviceResponse {
+  optional NetworkRemoveDeviceResponseValue value = 1;
+}
+
+message NetworkPairRequestValue {
+  optional string address = 1;
+  optional string code = 2;
+}
+
+message NetworkPairRequest {
+  optional NetworkPairRequestValue value = 1;
+}
+
+message NetworkPairResponseValueHostAddresses {
+  repeated string items = 1;
+}
+
+message NetworkPairResponseValueHostError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkPairResponseValueHostPairingVariant1 {
+  optional string code = 1;
+  optional string expiresAt = 2;
+}
+
+message NetworkPairResponseValueHostPairing {
+  oneof kind {
+  NetworkPairResponseValueHostPairingVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkPairResponseValueHostDevicesItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string pairedAt = 3;
+}
+
+message NetworkPairResponseValueHostDevices {
+  repeated NetworkPairResponseValueHostDevicesItem items = 1;
+}
+
+message NetworkPairResponseValueHost {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional string name = 3;
+  optional NetworkPairResponseValueHostAddresses addresses = 4;
+  optional NetworkPairResponseValueHostError error = 5;
+  optional NetworkPairResponseValueHostPairing pairing = 6;
+  optional NetworkPairResponseValueHostDevices devices = 7;
+}
+
+message NetworkPairResponseValueSatelliteHostVariant1 {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkPairResponseValueSatelliteHost {
+  oneof kind {
+  NetworkPairResponseValueSatelliteHostVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkPairResponseValueSatelliteError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkPairResponseValueSatelliteDiscoveredItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkPairResponseValueSatelliteDiscovered {
+  repeated NetworkPairResponseValueSatelliteDiscoveredItem items = 1;
+}
+
+message NetworkPairResponseValueSatellite {
+  optional bool enabled = 1;
+  optional NetworkPairResponseValueSatelliteHost host = 2;
+  optional string state = 3;
+  optional NetworkPairResponseValueSatelliteError error = 4;
+  optional NetworkPairResponseValueSatelliteDiscovered discovered = 5;
+}
+
+message NetworkPairResponseValue {
+  optional NetworkPairResponseValueHost host = 1;
+  optional NetworkPairResponseValueSatellite satellite = 2;
+}
+
+message NetworkPairResponse {
+  optional NetworkPairResponseValue value = 1;
+}
+
+message NetworkUnpairRequest {
+
+}
+
+message NetworkUnpairResponseValueHostAddresses {
+  repeated string items = 1;
+}
+
+message NetworkUnpairResponseValueHostError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkUnpairResponseValueHostPairingVariant1 {
+  optional string code = 1;
+  optional string expiresAt = 2;
+}
+
+message NetworkUnpairResponseValueHostPairing {
+  oneof kind {
+  NetworkUnpairResponseValueHostPairingVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkUnpairResponseValueHostDevicesItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string pairedAt = 3;
+}
+
+message NetworkUnpairResponseValueHostDevices {
+  repeated NetworkUnpairResponseValueHostDevicesItem items = 1;
+}
+
+message NetworkUnpairResponseValueHost {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional string name = 3;
+  optional NetworkUnpairResponseValueHostAddresses addresses = 4;
+  optional NetworkUnpairResponseValueHostError error = 5;
+  optional NetworkUnpairResponseValueHostPairing pairing = 6;
+  optional NetworkUnpairResponseValueHostDevices devices = 7;
+}
+
+message NetworkUnpairResponseValueSatelliteHostVariant1 {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkUnpairResponseValueSatelliteHost {
+  oneof kind {
+  NetworkUnpairResponseValueSatelliteHostVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkUnpairResponseValueSatelliteError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message NetworkUnpairResponseValueSatelliteDiscoveredItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string address = 3;
+}
+
+message NetworkUnpairResponseValueSatelliteDiscovered {
+  repeated NetworkUnpairResponseValueSatelliteDiscoveredItem items = 1;
+}
+
+message NetworkUnpairResponseValueSatellite {
+  optional bool enabled = 1;
+  optional NetworkUnpairResponseValueSatelliteHost host = 2;
+  optional string state = 3;
+  optional NetworkUnpairResponseValueSatelliteError error = 4;
+  optional NetworkUnpairResponseValueSatelliteDiscovered discovered = 5;
+}
+
+message NetworkUnpairResponseValue {
+  optional NetworkUnpairResponseValueHost host = 1;
+  optional NetworkUnpairResponseValueSatellite satellite = 2;
+}
+
+message NetworkUnpairResponse {
+  optional NetworkUnpairResponseValue value = 1;
+}
+
 message SettingsPreviewIdentityRequestValueIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -6198,6 +6773,10 @@ message WatchRequest {}
 
 message WatchResponse { string name = 1; google.protobuf.Value payload = 2; }
 
+message PairRequest { string code = 1; string device_name = 2; }
+
+message PairResponse { string token = 1; string host_id = 2; string host_name = 3; }
+
 service Quuu {
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
   rpc RunnersStatus(RunnersStatusRequest) returns (RunnersStatusResponse);
@@ -6262,6 +6841,12 @@ service Quuu {
   rpc SchedulerPause(SchedulerPauseRequest) returns (SchedulerPauseResponse);
   rpc SchedulerResume(SchedulerResumeRequest) returns (SchedulerResumeResponse);
   rpc ServersStatus(ServersStatusRequest) returns (ServersStatusResponse);
+  rpc NetworkStatus(NetworkStatusRequest) returns (NetworkStatusResponse);
+  rpc NetworkConfigure(NetworkConfigureRequest) returns (NetworkConfigureResponse);
+  rpc NetworkOpenPairing(NetworkOpenPairingRequest) returns (NetworkOpenPairingResponse);
+  rpc NetworkRemoveDevice(NetworkRemoveDeviceRequest) returns (NetworkRemoveDeviceResponse);
+  rpc NetworkPair(NetworkPairRequest) returns (NetworkPairResponse);
+  rpc NetworkUnpair(NetworkUnpairRequest) returns (NetworkUnpairResponse);
   rpc SettingsPreviewIdentity(SettingsPreviewIdentityRequest) returns (SettingsPreviewIdentityResponse);
   rpc SettingsSetIdentity(SettingsSetIdentityRequest) returns (SettingsSetIdentityResponse);
   rpc SettingsGet(SettingsGetRequest) returns (SettingsGetResponse);
@@ -6312,4 +6897,5 @@ service Quuu {
   rpc Connect(ConnectRequest) returns (ConnectResponse);
   rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);
   rpc Watch(WatchRequest) returns (stream WatchResponse);
+  rpc Pair(PairRequest) returns (PairResponse);
 }

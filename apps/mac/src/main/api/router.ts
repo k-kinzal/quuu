@@ -9,7 +9,7 @@ import type { QuuuApp } from '../bootstrap.js'
 import type { SessionView } from '../session/view.js'
 import { savePromptFiles } from '../platform/promptFiles.js'
 import { t } from '../i18n/index.js'
-import type { OperationHost } from './host.js'
+import { satelliteRoute, type OperationHost } from './host.js'
 
 interface DocumentRequest {
   generation: number
@@ -17,9 +17,17 @@ interface DocumentRequest {
 }
 
 export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<Owner>) {
-  const os = implement(contract).$context<{ owner: Owner }>().use(async ({ context, next, path }) => {
+  const os = implement(contract).$context<{ owner: Owner }>().use(async ({ context, next, path }, input, output) => {
     host.authorize(context.owner)
-    try { return await next() } catch (error) {
+    try {
+      const forward = host.forwardFor?.(context.owner)
+      if (forward) {
+        const name = path.join('.'), route = satelliteRoute(name)
+        if (route === 'unavailable') throw new Error(t('network.onHost'))
+        if (route === 'host') return output(await forward.call(name, input))
+      }
+      return await next()
+    } catch (error) {
       console.error('Operation failed', path.join('.'), error)
       if (error instanceof ORPCError) throw error
       throw new ORPCError('OPERATION_FAILED', { message: t('ipc.operationFailed'), data: { reason: error instanceof Error ? error.message : String(error) }, cause: error })
@@ -426,6 +434,14 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       retry: os.hooks.retry.handler(({ input }) => app.hooks.retry(input))
     },
     servers: { status: os.servers.status.handler(() => app.settings.serverStatus) },
+    network: {
+      status: os.network.status.handler(() => app.network.status()),
+      configure: os.network.configure.handler(({ input }) => app.network.configure(input)),
+      openPairing: os.network.openPairing.handler(() => app.network.openPairing()),
+      removeDevice: os.network.removeDevice.handler(({ input }) => app.network.removeDevice(input)),
+      pair: os.network.pair.handler(({ input }) => app.network.pair(input.address, input.code)),
+      unpair: os.network.unpair.handler(() => app.network.unpair()),
+    },
     logs: { page: os.logs.page.handler(({ input }) => history.page(input)) },
     runners: {
       status: os.runners.status.handler(() => app.runners.status()),

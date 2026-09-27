@@ -51,7 +51,9 @@ mac:
   extendInfo:
     LSUIElement: false
     NSAppleEventsUsageDescription: Used by Quuu to perform terminal operations.
-    NSLocalNetworkUsageDescription: Used by Quuu to connect to your other computers on the local network.
+    # macOS asks before an app reaches its local network: a host announces itself and serves
+    # its paired computers, and a satellite listens for and connects to its host.
+    NSLocalNetworkUsageDescription: Used by Quuu to find and connect to the Quuu on your other computers.
     # Icon name inside build/Assets.car (= the name of build/icon.icon)
     CFBundleIconName: icon
 dmg:

@@ -17,9 +17,35 @@ export type DesktopOperations = LocalCalls<Omit<QuuuApi['system'], 'savePromptFi
     navigateDocument(direction: 'back' | 'forward' | 'reload'): void
   }
 
+/** The host a satellite's window is showing. Its operations are answered there. */
+export interface ForwardedOperations {
+  call(name: string, input: unknown): Promise<unknown>
+}
+
+/*
+ * What a satellite answers itself. Its window operates the host through the same operations, except
+ * what acts on this computer's own screen, and this computer's own place in the network.
+ */
+const ANSWERED_HERE = new Set([
+  'system.windowLayout', 'system.scrollSwipes', 'system.pickDirectory', 'system.pickApplication', 'system.confirm',
+  'system.popupMenu', 'system.openExternal', 'system.copy',
+  'settings.lookupBotUser', 'settings.createGitHubApp', 'settings.cancelGitHubApp',
+  'review.openPullRequest', 'review.hidePullRequest', 'review.closePullRequest',
+  'documents.hide', 'documents.navigate', 'report.hide'
+])
+/** Operations that open the host's files on a screen. Forwarded, they would appear on the host's screen instead. */
+const ON_HOST_SCREEN = new Set(['open.terminal', 'open.resume', 'open.editor', 'open.reveal', 'system.reveal', 'report.show', 'report.projectShow', 'documents.show'])
+
+export function satelliteRoute(name: string): 'here' | 'host' | 'unavailable' {
+  if (ANSWERED_HERE.has(name) || name.startsWith('network.') || name.startsWith('app.')) return 'here'
+  return ON_HOST_SCREEN.has(name) ? 'unavailable' : 'host'
+}
+
 /** A caller owns its views and terminals, regardless of the transport that admitted it. */
 export interface OperationHost<Owner> {
   authorize(owner: Owner): void
+  /** The host that answers this owner's operations while this Quuu is its satellite; absent or null otherwise. */
+  forwardFor?(owner: Owner): ForwardedOperations | null
   releaseWithOwner(owner: Owner, cleanup: () => void): () => void
   sendEvent<K extends keyof EventPayloads>(owner: Owner, event: K, payload: EventPayloads[K]): void
   desktopFor(owner: Owner): DesktopOperations

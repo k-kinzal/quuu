@@ -46,7 +46,7 @@ afterEach(async () => {
 describe('the generated gRPC API', () => {
   it('provides an RPC for every desktop operation and protects discovery credentials', () => {
     expect(Object.keys(wire).sort()).toEqual(operations().map(operation => operation.name).sort())
-    expect(Quuu.methods.filter(method => !['connect', 'disconnect', 'watch'].includes(method.localName)).map(method => method.localName).sort()).toEqual(Object.values(wire).map(mapping => mapping.method).sort())
+    expect(Quuu.methods.filter(method => !['connect', 'disconnect', 'watch', 'pair'].includes(method.localName)).map(method => method.localName).sort()).toEqual(Object.values(wire).map(mapping => mapping.method).sort())
     expect(statSync(servers.connectionFile).mode & 0o777).toBe(0o600)
     expect(statSync(join(dir, 'server-token')).mode & 0o777).toBe(0o600)
   })
