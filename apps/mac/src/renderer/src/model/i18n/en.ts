@@ -1,3 +1,4 @@
+import { hooks } from './en/hooks.js'
 import { labels } from './en/labels.js'
 import { model } from './en/model.js'
 import { conversation } from './en/conversation.js'
@@ -11,6 +12,7 @@ import { views } from './en/views.js'
  * after the component or model that owns the copy.
  */
 export const en = {
+  ...hooks,
   ...labels,
   ...model,
   ...conversation,

@@ -1,3 +1,4 @@
+import type { TaskHook } from '../hooks/types.js'
 import type { RunTargetKind } from '../agents/types.js'
 import type { RecordSource } from '../tasks/status.js'
 
@@ -6,6 +7,7 @@ import type { RecordSource } from '../tasks/status.js'
 // ---------------------------------------------------------------------------
 
 export interface Project {
+  taskHooks: TaskHook[]
   worktreeMode: 'inherit' | 'on' | 'off'
   id: string
   name: string
@@ -98,7 +100,7 @@ export type ProjectInput = Omit<
   | 'importSince'
   | 'commitIdentityMode'
   | 'commitIdentity'
-  | 'worktreeMode'
+  | 'taskHooks' | 'worktreeMode'
   | 'editorApp'
   | 'reportEnabled'
   | 'pullRequestPromptMode'
@@ -109,6 +111,7 @@ export type ProjectInput = Omit<
   | 'pullRequestPendingEnabled'
   | 'pullRequestConflictEnabled'
 > & {
+  taskHooks?: TaskHook[]
   worktreeMode?: Project['worktreeMode']
   source?: RecordSource
   commitIdentityMode?: CommitIdentityMode

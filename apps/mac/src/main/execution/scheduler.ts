@@ -392,6 +392,10 @@ export class Scheduler extends EventEmitter {
 
         const pending = repo.getTask(this.db, row.task_id)
         if (!pending || !canClaimTask(pending, project, now)) continue
+        if (repo.hasPendingHooks(this.db, project.id)) {
+          reasons.set(`hook:${pending.id}`, t('hooks.busy'))
+          continue
+        }
 
         // Condition 4: blocker conditions (ordering). Skip if even one is left
         const blockers = repo.unsatisfiedBlockers(this.db, pending)
@@ -738,6 +742,7 @@ export class Scheduler extends EventEmitter {
       const project = repo.getProject(this.db, task.projectId)
       if (!project) return { ok: false, reason: t('tasks.projectNotFound') }
       if (!project.enabled) return { ok: false, reason: t('scheduler.projectDisabled') }
+      if (repo.hasPendingHooks(this.db, project.id)) return { ok: false, reason: t('hooks.busy') }
 
       // Even a manual run does not break another task's reservation (a human decided that too).
       // The reserving side is not blocked by it (same rule as claimNext).

@@ -190,3 +190,21 @@ regressions continue to run.
 Screen checks use the fixture app described in [verification.md](verification.md).
 No verification writes to production tasks. Finish in the order check, commit,
 app restart and screen inspection.
+
+## Lifecycle hooks
+
+`main/hooks` owns field inheritance, queued auxiliary executions and the built-in
+report dispatch. Persistence emits lifecycle facts through a registered recorder;
+configured work is inserted in the same transaction, while launch and notifications
+wait for commit. `hook_runs` retains immutable inputs and working directories even
+after task deletion. `hook_pending_reports` preserves the built-in review request
+until custom hooks finish. Reports retain their separate artifact contract and do
+not occupy task capacity.
+
+Auxiliary runs never enter `runs`, change task lineage, or advance task state.
+The scheduler respects pending hooks per project, and completion waits for its
+before-complete hooks before integrating a managed worktree. Detached shell wrappers
+leave a pid and exit file for restart recovery; an ambiguous start is not replayed.
+Conversation previews use the provider adapters through `session/auxiliary` and keep
+raw command output bounded. Import excludes auxiliary sessions so they do not become
+new tasks that recursively launch hooks.

@@ -7,6 +7,27 @@ message SnapshotRequest {
 
 }
 
+message SnapshotResponseValueProjectsItemTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueProjectsItemTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional SnapshotResponseValueProjectsItemTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message SnapshotResponseValueProjectsItemTaskHooks {
+  repeated SnapshotResponseValueProjectsItemTaskHooksItem items = 1;
+}
+
 message SnapshotResponseValueProjectsItemTargetId {
   oneof kind {
   string variant1 = 1;
@@ -36,6 +57,7 @@ message SnapshotResponseValueProjectsItemCommitIdentity {
 }
 
 message SnapshotResponseValueProjectsItem {
+  optional SnapshotResponseValueProjectsItemTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
@@ -438,8 +460,406 @@ message SnapshotResponse {
   optional SnapshotResponseValue value = 1;
 }
 
+message HooksResolveRequestValue {
+  optional string projectId = 1;
+}
+
+message HooksResolveRequest {
+  optional HooksResolveRequestValue value = 1;
+}
+
+message HooksResolveResponseValueItemEvents {
+  repeated string items = 1;
+}
+
+message HooksResolveResponseValueItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional HooksResolveResponseValueItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message HooksResolveResponseValue {
+  repeated HooksResolveResponseValueItem items = 1;
+}
+
+message HooksResolveResponse {
+  optional HooksResolveResponseValue value = 1;
+}
+
+message HooksListRequestValue {
+  optional string taskId = 1;
+  optional string projectId = 2;
+  optional double limit = 3;
+}
+
+message HooksListRequest {
+  optional HooksListRequestValue value = 1;
+}
+
+message HooksListResponseValueItemAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksListResponseValueItemStartedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksListResponseValueItemEndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksListResponseValueItemExitCode {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksListResponseValueItem {
+  optional string id = 1;
+  optional string taskId = 2;
+  optional string taskTitle = 3;
+  optional string projectId = 4;
+  optional string hookId = 5;
+  optional string name = 6;
+  optional string event = 7;
+  optional string kind = 8;
+  optional string status = 9;
+  optional string cwd = 10;
+  optional string input = 11;
+  optional HooksListResponseValueItemAgentId agentId = 12;
+  optional string createdAt = 13;
+  optional HooksListResponseValueItemStartedAt startedAt = 14;
+  optional HooksListResponseValueItemEndedAt endedAt = 15;
+  optional HooksListResponseValueItemExitCode exitCode = 16;
+  optional string error = 17;
+  optional string logPath = 18;
+}
+
+message HooksListResponseValue {
+  repeated HooksListResponseValueItem items = 1;
+}
+
+message HooksListResponse {
+  optional HooksListResponseValue value = 1;
+}
+
+message HooksLogRequest {
+  optional string value = 1;
+}
+
+message HooksLogResponseValueRunAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueRunStartedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueRunEndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueRunExitCode {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueRun {
+  optional string id = 1;
+  optional string taskId = 2;
+  optional string taskTitle = 3;
+  optional string projectId = 4;
+  optional string hookId = 5;
+  optional string name = 6;
+  optional string event = 7;
+  optional string kind = 8;
+  optional string status = 9;
+  optional string cwd = 10;
+  optional string input = 11;
+  optional HooksLogResponseValueRunAgentId agentId = 12;
+  optional string createdAt = 13;
+  optional HooksLogResponseValueRunStartedAt startedAt = 14;
+  optional HooksLogResponseValueRunEndedAt endedAt = 15;
+  optional HooksLogResponseValueRunExitCode exitCode = 16;
+  optional string error = 17;
+  optional string logPath = 18;
+}
+
+message HooksLogResponseValueMessagesItemTimestamp {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant1 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant2 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlanItem {
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText text = 1;
+  optional string status = 2;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlan {
+  repeated HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlanItem items = 1;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolTarget {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolResult {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItem {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth width = 4;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight height = 5;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImages {
+  repeated HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItem items = 1;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3Tool {
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlan plan = 1;
+  optional string id = 2;
+  optional string name = 3;
+  optional google.protobuf.Value input = 4;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolTarget target = 5;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolResult result = 6;
+  optional bool isError = 7;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImages images = 8;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant3 {
+  optional string kind = 1;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant3Tool tool = 2;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant4ImageWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant4ImageHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant4Image {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant4ImageWidth width = 4;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant4ImageHeight height = 5;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItemVariant4 {
+  optional string kind = 1;
+  optional HooksLogResponseValueMessagesItemBlocksItemVariant4Image image = 2;
+}
+
+message HooksLogResponseValueMessagesItemBlocksItem {
+  oneof kind {
+  HooksLogResponseValueMessagesItemBlocksItemVariant1 variant1 = 1;
+  HooksLogResponseValueMessagesItemBlocksItemVariant2 variant2 = 2;
+  HooksLogResponseValueMessagesItemBlocksItemVariant3 variant3 = 3;
+  HooksLogResponseValueMessagesItemBlocksItemVariant4 variant4 = 4;
+  }
+}
+
+message HooksLogResponseValueMessagesItemBlocks {
+  repeated HooksLogResponseValueMessagesItemBlocksItem items = 1;
+}
+
+message HooksLogResponseValueMessagesItemModel {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksLogResponseValueMessagesItem {
+  optional string id = 1;
+  optional string role = 2;
+  optional bool isSidechain = 3;
+  optional HooksLogResponseValueMessagesItemTimestamp timestamp = 4;
+  optional HooksLogResponseValueMessagesItemBlocks blocks = 5;
+  optional HooksLogResponseValueMessagesItemModel model = 6;
+}
+
+message HooksLogResponseValueMessages {
+  repeated HooksLogResponseValueMessagesItem items = 1;
+}
+
+message HooksLogResponseValue {
+  optional HooksLogResponseValueRun run = 1;
+  optional string output = 2;
+  optional HooksLogResponseValueMessages messages = 3;
+}
+
+message HooksLogResponse {
+  optional HooksLogResponseValue value = 1;
+}
+
+message HooksCancelRequest {
+  optional string value = 1;
+}
+
+message HooksCancelResponse {
+
+}
+
+message HooksRetryRequest {
+  optional string value = 1;
+}
+
+message HooksRetryResponseValueAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksRetryResponseValueStartedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksRetryResponseValueEndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksRetryResponseValueExitCode {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksRetryResponseValue {
+  optional string id = 1;
+  optional string taskId = 2;
+  optional string taskTitle = 3;
+  optional string projectId = 4;
+  optional string hookId = 5;
+  optional string name = 6;
+  optional string event = 7;
+  optional string kind = 8;
+  optional string status = 9;
+  optional string cwd = 10;
+  optional string input = 11;
+  optional HooksRetryResponseValueAgentId agentId = 12;
+  optional string createdAt = 13;
+  optional HooksRetryResponseValueStartedAt startedAt = 14;
+  optional HooksRetryResponseValueEndedAt endedAt = 15;
+  optional HooksRetryResponseValueExitCode exitCode = 16;
+  optional string error = 17;
+  optional string logPath = 18;
+}
+
+message HooksRetryResponse {
+  optional HooksRetryResponseValue value = 1;
+}
+
 message ProjectsListRequest {
 
+}
+
+message ProjectsListResponseValueItemTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message ProjectsListResponseValueItemTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional ProjectsListResponseValueItemTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message ProjectsListResponseValueItemTaskHooks {
+  repeated ProjectsListResponseValueItemTaskHooksItem items = 1;
 }
 
 message ProjectsListResponseValueItemTargetId {
@@ -471,6 +891,7 @@ message ProjectsListResponseValueItemCommitIdentity {
 }
 
 message ProjectsListResponseValueItem {
+  optional ProjectsListResponseValueItemTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
@@ -515,6 +936,27 @@ message ProjectsCreateRequestValueTargetId {
   }
 }
 
+message ProjectsCreateRequestValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message ProjectsCreateRequestValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional ProjectsCreateRequestValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message ProjectsCreateRequestValueTaskHooks {
+  repeated ProjectsCreateRequestValueTaskHooksItem items = 1;
+}
+
 message ProjectsCreateRequestValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -532,6 +974,7 @@ message ProjectsCreateRequestValue {
   optional double sortOrder = 7;
   optional string path = 8;
   optional string color = 9;
+  optional ProjectsCreateRequestValueTaskHooks taskHooks = 23;
   optional string worktreeMode = 22;
   optional string source = 10;
   optional string commitIdentityMode = 11;
@@ -549,6 +992,27 @@ message ProjectsCreateRequestValue {
 
 message ProjectsCreateRequest {
   optional ProjectsCreateRequestValue value = 1;
+}
+
+message ProjectsCreateResponseValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message ProjectsCreateResponseValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional ProjectsCreateResponseValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message ProjectsCreateResponseValueTaskHooks {
+  repeated ProjectsCreateResponseValueTaskHooksItem items = 1;
 }
 
 message ProjectsCreateResponseValueTargetId {
@@ -580,6 +1044,7 @@ message ProjectsCreateResponseValueCommitIdentity {
 }
 
 message ProjectsCreateResponseValue {
+  optional ProjectsCreateResponseValueTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
@@ -620,6 +1085,27 @@ message ProjectsUpdateRequestValuePatchTargetId {
   }
 }
 
+message ProjectsUpdateRequestValuePatchTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message ProjectsUpdateRequestValuePatchTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional ProjectsUpdateRequestValuePatchTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message ProjectsUpdateRequestValuePatchTaskHooks {
+  repeated ProjectsUpdateRequestValuePatchTaskHooksItem items = 1;
+}
+
 message ProjectsUpdateRequestValuePatchCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -637,6 +1123,7 @@ message ProjectsUpdateRequestValuePatch {
   optional double sortOrder = 7;
   optional string path = 8;
   optional string color = 9;
+  optional ProjectsUpdateRequestValuePatchTaskHooks taskHooks = 23;
   optional string worktreeMode = 22;
   optional string source = 10;
   optional string commitIdentityMode = 11;
@@ -659,6 +1146,27 @@ message ProjectsUpdateRequestValue {
 
 message ProjectsUpdateRequest {
   optional ProjectsUpdateRequestValue value = 1;
+}
+
+message ProjectsUpdateResponseValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message ProjectsUpdateResponseValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional ProjectsUpdateResponseValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message ProjectsUpdateResponseValueTaskHooks {
+  repeated ProjectsUpdateResponseValueTaskHooksItem items = 1;
 }
 
 message ProjectsUpdateResponseValueTargetId {
@@ -690,6 +1198,7 @@ message ProjectsUpdateResponseValueCommitIdentity {
 }
 
 message ProjectsUpdateResponseValue {
+  optional ProjectsUpdateResponseValueTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
   optional string name = 2;
@@ -3844,6 +4353,27 @@ message SettingsSetIdentityRequest {
   optional SettingsSetIdentityRequestValue value = 1;
 }
 
+message SettingsSetIdentityResponseValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional SettingsSetIdentityResponseValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message SettingsSetIdentityResponseValueTaskHooks {
+  repeated SettingsSetIdentityResponseValueTaskHooksItem items = 1;
+}
+
 message SettingsSetIdentityResponseValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -3852,6 +4382,7 @@ message SettingsSetIdentityResponseValueCommitIdentity {
 }
 
 message SettingsSetIdentityResponseValue {
+  optional SettingsSetIdentityResponseValueTaskHooks taskHooks = 30;
   optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
@@ -3891,6 +4422,27 @@ message SettingsGetRequest {
 
 }
 
+message SettingsGetResponseValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional SettingsGetResponseValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message SettingsGetResponseValueTaskHooks {
+  repeated SettingsGetResponseValueTaskHooksItem items = 1;
+}
+
 message SettingsGetResponseValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -3899,6 +4451,7 @@ message SettingsGetResponseValueCommitIdentity {
 }
 
 message SettingsGetResponseValue {
+  optional SettingsGetResponseValueTaskHooks taskHooks = 30;
   optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
@@ -3934,6 +4487,27 @@ message SettingsGetResponse {
   optional SettingsGetResponseValue value = 1;
 }
 
+message SettingsSetRequestValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional SettingsSetRequestValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message SettingsSetRequestValueTaskHooks {
+  repeated SettingsSetRequestValueTaskHooksItem items = 1;
+}
+
 message SettingsSetRequestValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -3942,6 +4516,7 @@ message SettingsSetRequestValueCommitIdentity {
 }
 
 message SettingsSetRequestValue {
+  optional SettingsSetRequestValueTaskHooks taskHooks = 30;
   optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
@@ -3977,6 +4552,27 @@ message SettingsSetRequest {
   optional SettingsSetRequestValue value = 1;
 }
 
+message SettingsSetResponseValueTaskHooksItemEvents {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueTaskHooksItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional bool enabled = 3;
+  optional SettingsSetResponseValueTaskHooksItemEvents events = 4;
+  optional string kind = 5;
+  optional string targetKind = 6;
+  optional string targetId = 7;
+  optional string prompt = 8;
+  optional string command = 9;
+  optional double timeoutSeconds = 10;
+}
+
+message SettingsSetResponseValueTaskHooks {
+  repeated SettingsSetResponseValueTaskHooksItem items = 1;
+}
+
 message SettingsSetResponseValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -3985,6 +4581,7 @@ message SettingsSetResponseValueCommitIdentity {
 }
 
 message SettingsSetResponseValue {
+  optional SettingsSetResponseValueTaskHooks taskHooks = 30;
   optional bool worktreeEnabled = 29;
   optional bool httpEnabled = 25;
   optional double httpPort = 26;
@@ -5314,6 +5911,11 @@ message WatchResponse { string name = 1; google.protobuf.Value payload = 2; }
 
 service Quuu {
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  rpc HooksResolve(HooksResolveRequest) returns (HooksResolveResponse);
+  rpc HooksList(HooksListRequest) returns (HooksListResponse);
+  rpc HooksLog(HooksLogRequest) returns (HooksLogResponse);
+  rpc HooksCancel(HooksCancelRequest) returns (HooksCancelResponse);
+  rpc HooksRetry(HooksRetryRequest) returns (HooksRetryResponse);
   rpc ProjectsList(ProjectsListRequest) returns (ProjectsListResponse);
   rpc ProjectsCreate(ProjectsCreateRequest) returns (ProjectsCreateResponse);
   rpc ProjectsUpdate(ProjectsUpdateRequest) returns (ProjectsUpdateResponse);

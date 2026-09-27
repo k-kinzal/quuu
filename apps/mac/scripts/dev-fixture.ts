@@ -1,3 +1,4 @@
+import { HOOK_DEFAULTS } from '../src/main/hooks/config.js'
 /**
  * Fake data for looking at the screen.
  *
@@ -1646,6 +1647,25 @@ if (process.env.QUUU_FIXTURE_UX === '1') {
   for (const [i, name] of ['zebra', 'alpha', 'Beta', 'project-10', 'project-2', '日本語資料', ...Array.from({ length: 18 }, (_, i) => `library-${i + 1}`)].entries()) {
     repo.insertProject(db, { ...project, name, path: join(dir, 'projects', name), sortOrder: i + 20 })
   }
+}
+
+// Auxiliary work uses only local shell commands; no real agent traffic in this fixture.
+if (process.env.QUUU_FIXTURE_HOOKS === '1') {
+  const cwd = join(dir, 'hooks-workspace')
+  mkdirSync(cwd, { recursive: true })
+  const agent = repo.insertAgent(db, { ...opus, name: 'Hook verification', command: '/bin/echo', logAdapter: 'stdout', argsTemplate: ['{{prompt}}'] })
+  const definition = { id: 'fixture-commit', name: 'Auto commit', enabled: false, targetId: agent.id, prompt: 'Inspect the changes and create a commit. {{diff}} stays literal.' }
+  repo.saveAppSettings(db, { ...repo.getAppSettings(db), taskHooks: [definition] })
+  const project = repo.insertProject(db, { ...projects[0], name: 'Lifecycle hooks', path: cwd, targetKind: 'agent', targetId: agent.id,
+    taskHooks: [{ id: definition.id, enabled: true, events: ['stopped', 'beforeComplete'] }] })
+  const task = repo.insertTask(db, { projectId: project.id, title: 'Inspect lifecycle hook execution', prompt: 'Review the hook history below.', status: 'review' })
+  const logPath = join(dir, 'fixture-hook.log')
+  writeFileSync(logPath, 'Inspected the working directory. No changes to commit.\n')
+  repo.saveHookRun(db, { id: 'fixture-hook', taskId: task.id, taskTitle: task.title, projectId: project.id,
+    hookId: definition.id, name: definition.name, event: 'stopped', kind: 'agent', status: 'succeeded', cwd,
+    input: definition.prompt, agentId: agent.id, createdAt: iso(2), startedAt: iso(2), endedAt: iso(1), exitCode: 0,
+    error: '', logPath, definition: { ...HOOK_DEFAULTS, ...definition }, project, pid: null,
+    exitPath: logPath + '.exit', authDir: null, sessionId: 'fixture-hook-session', logAdapter: 'stdout', limitPatterns: [] })
 }
 
 console.log(`fixture: ${dir}`)

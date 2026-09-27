@@ -57,7 +57,7 @@ function project(over: Partial<Project> = {}): Project {
     maxConcurrent: 1,
     enabled: true,
     deletedAt: null,
-    importSince: null, worktreeMode: 'inherit',
+    importSince: null, worktreeMode: 'inherit', taskHooks: [],
     commitIdentityMode: 'inherit',
     editorApp: '',
     reportEnabled: true,

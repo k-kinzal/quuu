@@ -1,3 +1,4 @@
+import { HookOperations } from './hooks/operations.js'
 import { EventEmitter } from 'node:events'
 import { AgentOperations } from './agents/operations.js'
 import { sessionOptions } from './agents/sessionOptions.js'
@@ -53,6 +54,7 @@ export class QuuuApp extends EventEmitter {
   readonly importer: SessionImporter
   readonly mobile: MobileSync
   readonly reviews: ReviewOperations
+  readonly hooks: HookOperations
   readonly reports: ReportOperations
   readonly projectReports: ProjectReportOperations
   readonly pullRequestFollowUp: PullRequestFollowUp
@@ -82,11 +84,12 @@ export class QuuuApp extends EventEmitter {
     this.review = new ReviewService()
     this.terminals = new TerminalService()
     this.settings = new SettingsOperations(this.db)
-    this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast))
+    this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast), { beforeComplete: task => this.hooks.beforeComplete(task), beforeDelete: id => this.hooks.beforeDelete(id) })
     this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), id => this.tasks.deleteTask(id))
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.workspace = new WorkspaceOperations(this.db, () => this.settings.getSettings())
+    this.hooks = new HookOperations(this.db, () => this.changed(), id => this.workspace.workingDir({ kind: 'task', id })?.dir ?? null)
     this.reviews = new ReviewOperations(this.db, () => this.settings.getSettings(), this.review, id => this.workspace.workbenchPlace(id))
     this.projectReports = new ProjectReportOperations(this.db, () => this.settings.getSettings())
     this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id))
@@ -148,8 +151,8 @@ export class QuuuApp extends EventEmitter {
     // A finished task keeps its slot while its Pull Request decides whether it goes straight back
     this.scheduler.setReviewGate(id => this.pullRequestFollowUp.shouldHold(id))
     this.scheduler.on('changed', () => this.emit('changed'))
-    // Something is now waiting to be read, which is the moment a report is worth writing
-    this.scheduler.on('review', (taskId: string) => { void this.reports.requestReport(taskId) })
+    // The built-in report waits for custom hooks; its durable request survives app restarts.
+    this.hooks.setReportHook(taskId => this.reports.requestReport(taskId))
     // ...and the moment to ask GitHub whether the Pull Request it left is in order
     this.scheduler.on('review', (taskId: string) => { void this.pullRequestFollowUp.onReview(taskId) })
     this.scheduler.on('status', () => {
@@ -184,6 +187,7 @@ export class QuuuApp extends EventEmitter {
     // A CLI supported after this database was made would otherwise never appear in settings
     await offerNewAgents(this.db)
     this.settings.load()
+    this.hooks.start()
     this.scheduler.reconcile()
     // Right after startup, re-bind the logs of re-adopted Runs to their actual sessions
     this.attachSessions()
@@ -275,6 +279,7 @@ export class QuuuApp extends EventEmitter {
     if (this.projectionTimer) clearInterval(this.projectionTimer)
     this.sessions.stop()
     this.reviews.stop()
+    this.hooks.stop()
     this.reports.stop()
     this.projectReports.stop()
     if (this.initialImport) clearTimeout(this.initialImport)

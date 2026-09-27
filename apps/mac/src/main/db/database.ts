@@ -361,7 +361,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 32
+  const target = 33
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -683,6 +683,21 @@ function migrate(db: Db): void {
       state TEXT NOT NULL,
       integrated_head TEXT
     )`)
+  }
+
+  if (current < 33) {
+    addColumnIfMissing(db, 'projects', 'task_hooks', "TEXT NOT NULL DEFAULT '[]'")
+    db.exec(`CREATE TABLE IF NOT EXISTS hook_runs (
+      seq INTEGER PRIMARY KEY AUTOINCREMENT,
+      id TEXT NOT NULL UNIQUE,
+      task_id TEXT NOT NULL,
+      project_id TEXT NOT NULL,
+      status TEXT NOT NULL,
+      data TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS hook_runs_task ON hook_runs(task_id, seq);
+    CREATE INDEX IF NOT EXISTS hook_runs_active ON hook_runs(status, project_id);
+    CREATE TABLE IF NOT EXISTS hook_pending_reports (task_id TEXT PRIMARY KEY);`)
   }
 
   setSchemaVersion(db, target)

@@ -1,6 +1,11 @@
 // Generated from the operation contract.
 export const operationNames: string[] = [
   "snapshot",
+  "hooks.resolve",
+  "hooks.list",
+  "hooks.log",
+  "hooks.cancel",
+  "hooks.retry",
   "projects.list",
   "projects.create",
   "projects.update",

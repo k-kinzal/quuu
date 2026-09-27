@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('32')
+    expect(version.value).toBe('33')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('32')
+    expect(version.value).toBe('33')
     db.close()
   })
 
@@ -770,4 +770,24 @@ it('upgrades existing projects to inherited, disabled-by-default worktrees witho
   expect(repo.getTaskWorktree(upgraded, taskId)).toBeNull()
   expect(repo.getTask(upgraded, taskId)?.status).toBe('queued')
   upgraded.close()
+})
+
+
+it('adds lifecycle hooks without enabling work and preserves project overrides across restart', () => {
+  const old = openDatabase(path)
+  const agentId = makeAgent(old, { name: 'hook migration' })
+  const projectId = makeProject(old, { name: 'existing', targetId: agentId })
+  const taskId = makeTask(old, projectId, 'existing task')
+  old.exec("DROP TABLE hook_runs; ALTER TABLE projects DROP COLUMN task_hooks; UPDATE meta SET value = '32' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getAppSettings(upgraded).taskHooks).toEqual([])
+  expect(repo.getProject(upgraded, projectId)?.taskHooks).toEqual([])
+  expect(repo.listHookRuns(upgraded)).toEqual([])
+  expect(repo.getTask(upgraded, taskId)?.status).toBe('queued')
+  repo.updateProject(upgraded, projectId, { taskHooks: [{ id: 'commit', events: ['stopped'], enabled: true }] })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.getProject(reopened, projectId)?.taskHooks).toEqual([{ id: 'commit', events: ['stopped'], enabled: true }])
+  reopened.close()
 })

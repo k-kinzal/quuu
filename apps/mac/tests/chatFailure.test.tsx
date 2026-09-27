@@ -26,7 +26,7 @@ const STARTED = '2026-09-19T08:03:21.988Z'
 
 const PROJECT: Project = {
   id: 'p1', name: 'Quuu', path: '/tmp', color: '#5EABF1', priority: 2, targetKind: 'agent', targetId: 'a1',
-  maxConcurrent: 2, enabled: true, deletedAt: null, importSince: null, worktreeMode: 'inherit', editorApp: '', reportEnabled: true,
+  maxConcurrent: 2, enabled: true, deletedAt: null, importSince: null, worktreeMode: 'inherit', taskHooks: [], editorApp: '', reportEnabled: true,
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
   commitIdentityMode: 'inherit', commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
 }

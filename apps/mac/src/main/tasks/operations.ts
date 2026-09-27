@@ -18,7 +18,7 @@ import { assertCreation, assertEditable, assertHoldable, assertTaskExists, norma
 import type { Task, TaskInput, TaskPatch } from './types.js'
 
 export class TaskOperations {
-  constructor(private db: Db, private changed: () => void, private wake: () => void, private run: (id: string) => Promise<RunNowResult>, private cancel: (id: string) => void, private notify: (toast: ToastPayload) => void) {
+  constructor(private db: Db, private changed: () => void, private wake: () => void, private run: (id: string) => Promise<RunNowResult>, private cancel: (id: string) => void, private notify: (toast: ToastPayload) => void, private hooks?: { beforeComplete: (task: Task) => Promise<void>; beforeDelete: (id: string) => Promise<void> }) {
     this.changed = () => afterCommit(db, changed)
     this.wake = () => afterCommit(db, wake)
     this.notify = (toast) => afterCommit(db, () => notify(toast))
@@ -175,9 +175,11 @@ export class TaskOperations {
       this.wake()
       return task
     })
-    if (!repo.getTaskWorktree(this.db, id)) return finish()
+    if (current.status === 'done') return current
+    if (!this.hooks && !repo.getTaskWorktree(this.db, id)) return finish()
     return withWorktreeOperation(this.db, id, async () => {
       try {
+        await this.hooks?.beforeComplete(current)
         await completeTaskWorktree(this.db, current)
         return finish()
       } catch (error) {
@@ -261,7 +263,7 @@ export class TaskOperations {
       this.wake()
     })
     const active = repo.listRunsByTask(this.db, id).filter(run => run.status === 'running' || run.status === 'starting')
-    if (!repo.getTaskWorktree(this.db, id)) return inTransaction(this.db, () => {
+    if (!this.hooks && !repo.getTaskWorktree(this.db, id)) return inTransaction(this.db, () => {
       for (const run of active) this.cancel(run.id)
       remove()
     })
@@ -275,6 +277,7 @@ export class TaskOperations {
         await delay(50)
         if (!this.db.isOpen) throw new Error('Quuu shut down during task deletion')
       }
+      await this.hooks?.beforeDelete(id)
       await discardTaskWorktree(this.db, id)
       remove()
     })

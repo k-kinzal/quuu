@@ -1,3 +1,4 @@
+import { HookHistory } from './HookHistory.js'
 import { Alert, Button, ContentInset, Text } from '@design-system/react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
@@ -282,6 +283,7 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             </ContentInset>
           )}
 
+          {latest && <ContentInset space="section"><HookHistory taskId={task.id} active={active} /></ContentInset>}
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
           {!session?.hasNewer && next && <PendingTurn task={task} next={next} />}
         </ChatScroll>

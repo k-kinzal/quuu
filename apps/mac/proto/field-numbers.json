@@ -45,7 +45,8 @@
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
-    "worktreeMode": 27
+    "worktreeMode": 27,
+    "taskHooks": 28
   },
   "SnapshotResponseValueProjects": {
     "items": 1
@@ -373,7 +374,8 @@
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
-    "worktreeMode": 27
+    "worktreeMode": 27,
+    "taskHooks": 28
   },
   "ProjectsListResponseValue": {
     "items": 1
@@ -413,7 +415,8 @@
     "pullRequestFailureEnabled": 19,
     "pullRequestPendingEnabled": 20,
     "pullRequestConflictEnabled": 21,
-    "worktreeMode": 22
+    "worktreeMode": 22,
+    "taskHooks": 23
   },
   "ProjectsCreateRequest": {
     "value": 1
@@ -463,7 +466,8 @@
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
-    "worktreeMode": 27
+    "worktreeMode": 27,
+    "taskHooks": 28
   },
   "ProjectsCreateResponse": {
     "value": 1
@@ -500,7 +504,8 @@
     "pullRequestFailureEnabled": 19,
     "pullRequestPendingEnabled": 20,
     "pullRequestConflictEnabled": 21,
-    "worktreeMode": 22
+    "worktreeMode": 22,
+    "taskHooks": 23
   },
   "ProjectsUpdateRequestValue": {
     "id": 1,
@@ -554,7 +559,8 @@
     "pullRequestFailureEnabled": 24,
     "pullRequestPendingEnabled": 25,
     "pullRequestConflictEnabled": 26,
-    "worktreeMode": 27
+    "worktreeMode": 27,
+    "taskHooks": 28
   },
   "ProjectsUpdateResponse": {
     "value": 1
@@ -2831,7 +2837,8 @@
     "httpPort": 26,
     "mcpEnabled": 27,
     "mcpPort": 28,
-    "worktreeEnabled": 29
+    "worktreeEnabled": 29,
+    "taskHooks": 30
   },
   "SettingsSetIdentityResponse": {
     "value": 1
@@ -2872,7 +2879,8 @@
     "httpPort": 26,
     "mcpEnabled": 27,
     "mcpPort": 28,
-    "worktreeEnabled": 29
+    "worktreeEnabled": 29,
+    "taskHooks": 30
   },
   "SettingsGetResponse": {
     "value": 1
@@ -2912,7 +2920,8 @@
     "httpPort": 26,
     "mcpEnabled": 27,
     "mcpPort": 28,
-    "worktreeEnabled": 29
+    "worktreeEnabled": 29,
+    "taskHooks": 30
   },
   "SettingsSetRequest": {
     "value": 1
@@ -2952,7 +2961,8 @@
     "httpPort": 26,
     "mcpEnabled": 27,
     "mcpPort": 28,
-    "worktreeEnabled": 29
+    "worktreeEnabled": 29,
+    "taskHooks": 30
   },
   "SettingsSetResponse": {
     "value": 1
@@ -3958,5 +3968,461 @@
   },
   "ServersStatusResponse": {
     "value": 1
+  },
+  "SnapshotResponseValueProjectsItemTaskHooksItemEvents": {
+    "items": 1
+  },
+  "SnapshotResponseValueProjectsItemTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "SnapshotResponseValueProjectsItemTaskHooks": {
+    "items": 1
+  },
+  "HooksListRequestValue": {
+    "taskId": 1,
+    "projectId": 2,
+    "limit": 3
+  },
+  "HooksListRequest": {
+    "value": 1
+  },
+  "HooksListResponseValueItemAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksListResponseValueItemStartedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksListResponseValueItemEndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksListResponseValueItemExitCode": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksListResponseValueItem": {
+    "id": 1,
+    "taskId": 2,
+    "taskTitle": 3,
+    "projectId": 4,
+    "hookId": 5,
+    "name": 6,
+    "event": 7,
+    "kind": 8,
+    "status": 9,
+    "cwd": 10,
+    "input": 11,
+    "agentId": 12,
+    "createdAt": 13,
+    "startedAt": 14,
+    "endedAt": 15,
+    "exitCode": 16,
+    "error": 17,
+    "logPath": 18
+  },
+  "HooksListResponseValue": {
+    "items": 1
+  },
+  "HooksListResponse": {
+    "value": 1
+  },
+  "HooksLogRequest": {
+    "value": 1
+  },
+  "HooksLogResponseValueRunAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueRunStartedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueRunEndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueRunExitCode": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueRun": {
+    "id": 1,
+    "taskId": 2,
+    "taskTitle": 3,
+    "projectId": 4,
+    "hookId": 5,
+    "name": 6,
+    "event": 7,
+    "kind": 8,
+    "status": 9,
+    "cwd": 10,
+    "input": 11,
+    "agentId": 12,
+    "createdAt": 13,
+    "startedAt": 14,
+    "endedAt": 15,
+    "exitCode": 16,
+    "error": 17,
+    "logPath": 18
+  },
+  "HooksLogResponseValue": {
+    "run": 1,
+    "output": 2,
+    "messages": 3
+  },
+  "HooksLogResponse": {
+    "value": 1
+  },
+  "HooksCancelRequest": {
+    "value": 1
+  },
+  "HooksCancelResponse": {},
+  "HooksRetryRequest": {
+    "value": 1
+  },
+  "HooksRetryResponseValueAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksRetryResponseValueStartedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksRetryResponseValueEndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksRetryResponseValueExitCode": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksRetryResponseValue": {
+    "id": 1,
+    "taskId": 2,
+    "taskTitle": 3,
+    "projectId": 4,
+    "hookId": 5,
+    "name": 6,
+    "event": 7,
+    "kind": 8,
+    "status": 9,
+    "cwd": 10,
+    "input": 11,
+    "agentId": 12,
+    "createdAt": 13,
+    "startedAt": 14,
+    "endedAt": 15,
+    "exitCode": 16,
+    "error": 17,
+    "logPath": 18
+  },
+  "HooksRetryResponse": {
+    "value": 1
+  },
+  "ProjectsListResponseValueItemTaskHooksItemEvents": {
+    "items": 1
+  },
+  "ProjectsListResponseValueItemTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "ProjectsListResponseValueItemTaskHooks": {
+    "items": 1
+  },
+  "ProjectsCreateRequestValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "ProjectsCreateRequestValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "ProjectsCreateRequestValueTaskHooks": {
+    "items": 1
+  },
+  "ProjectsCreateResponseValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "ProjectsCreateResponseValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "ProjectsCreateResponseValueTaskHooks": {
+    "items": 1
+  },
+  "ProjectsUpdateRequestValuePatchTaskHooksItemEvents": {
+    "items": 1
+  },
+  "ProjectsUpdateRequestValuePatchTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "ProjectsUpdateRequestValuePatchTaskHooks": {
+    "items": 1
+  },
+  "ProjectsUpdateResponseValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "ProjectsUpdateResponseValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "ProjectsUpdateResponseValueTaskHooks": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "SettingsSetIdentityResponseValueTaskHooks": {
+    "items": 1
+  },
+  "SettingsGetResponseValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "SettingsGetResponseValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "SettingsGetResponseValueTaskHooks": {
+    "items": 1
+  },
+  "SettingsSetRequestValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "SettingsSetRequestValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "SettingsSetRequestValueTaskHooks": {
+    "items": 1
+  },
+  "SettingsSetResponseValueTaskHooksItemEvents": {
+    "items": 1
+  },
+  "SettingsSetResponseValueTaskHooksItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "SettingsSetResponseValueTaskHooks": {
+    "items": 1
+  },
+  "HooksResolveRequestValue": {
+    "projectId": 1
+  },
+  "HooksResolveRequest": {
+    "value": 1
+  },
+  "HooksResolveResponseValueItemEvents": {
+    "items": 1
+  },
+  "HooksResolveResponseValueItem": {
+    "id": 1,
+    "name": 2,
+    "enabled": 3,
+    "events": 4,
+    "kind": 5,
+    "targetKind": 6,
+    "targetId": 7,
+    "prompt": 8,
+    "command": 9,
+    "timeoutSeconds": 10
+  },
+  "HooksResolveResponseValue": {
+    "items": 1
+  },
+  "HooksResolveResponse": {
+    "value": 1
+  },
+  "HooksLogResponseValueMessagesItemTimestamp": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant1": {
+    "kind": 1,
+    "text": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant2": {
+    "kind": 1,
+    "text": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlanItem": {
+    "text": 1,
+    "status": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolPlan": {
+    "items": 1
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolTarget": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolResult": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImagesItem": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3ToolImages": {
+    "items": 1
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3Tool": {
+    "plan": 1,
+    "id": 2,
+    "name": 3,
+    "input": 4,
+    "target": 5,
+    "result": 6,
+    "isError": 7,
+    "images": 8
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant3": {
+    "kind": 1,
+    "tool": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant4ImageWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant4ImageHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant4Image": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "HooksLogResponseValueMessagesItemBlocksItemVariant4": {
+    "kind": 1,
+    "image": 2
+  },
+  "HooksLogResponseValueMessagesItemBlocksItem": {
+    "variant1": 1,
+    "variant2": 2,
+    "variant3": 3,
+    "variant4": 4
+  },
+  "HooksLogResponseValueMessagesItemBlocks": {
+    "items": 1
+  },
+  "HooksLogResponseValueMessagesItemModel": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksLogResponseValueMessagesItem": {
+    "id": 1,
+    "role": 2,
+    "isSidechain": 3,
+    "timestamp": 4,
+    "blocks": 5,
+    "model": 6
+  },
+  "HooksLogResponseValueMessages": {
+    "items": 1
   }
 }

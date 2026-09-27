@@ -1,3 +1,4 @@
+import { HookSettings } from './settings/HookSettings.js'
 import { ConnectionSettings } from './settings/ConnectionSettings.js'
 import { MenuNav, MenuNavItem, MenuNavTitle, Panel, Row } from '@design-system/react'
 import { moveWithinList, pane } from '../interaction/focus.js'
@@ -21,6 +22,7 @@ const CATEGORIES: Array<{
 }> = [
     { id: 'general', label: t('settingsShell.general'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
     { id: 'agents', label: t('settingsShell.agents'), icon: <Bot size={ICON.md} {...iconProps} /> },
+    { id: 'hooks', label: t('hooks.title'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
     { id: 'report', label: t('settingsShell.report'), icon: <ScrollText size={ICON.md} {...iconProps} /> },
     { id: 'pullRequests', label: t('settingsShell.pullRequests'), icon: <GitPullRequest size={ICON.md} {...iconProps} /> },
     { id: 'notifications', label: t('settingsShell.notifications'), icon: <Bell size={ICON.md} {...iconProps} /> },
@@ -69,6 +71,7 @@ export function SettingsShell(): JSX.Element {
         {category === 'connections' && <ConnectionSettings />}
         {category === 'general' && <GeneralSettings />}
         {category === 'agents' && <AgentSettings />}
+        {category === 'hooks' && <HookSettings />}
         {category === 'report' && <ReportSettings />}
         {category === 'pullRequests' && <PullRequestSettings />}
         {category === 'notifications' && <NotificationSettings />}

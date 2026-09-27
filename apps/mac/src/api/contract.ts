@@ -1,3 +1,4 @@
+import { HookRunSchema, TaskHookSchema } from './schemas/hooks.js'
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
 import { PromptFileSchema } from './schemas/files.js'
 import { oc } from '@orpc/contract'
@@ -9,7 +10,7 @@ import { RunSchema, SchedulerStatusSchema } from "./schemas/execution.js"
 import { ProjectInputSchema, ProjectSchema } from "./schemas/projects.js"
 import { ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
 import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewSnapshotSchema } from "./schemas/review.js"
-import { SessionSnapshotSchema } from "./schemas/session.js"
+import { SessionMessageSchema, SessionSnapshotSchema } from "./schemas/session.js"
 import { ServerStatusSchema, AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./schemas/settings.js"
 import { AppSnapshotSchema, MobileSyncStatusSchema } from "./schemas/snapshot.js"
 import { TaskInputSchema, TaskPatchSchema, TaskSchema } from "./schemas/tasks.js"
@@ -20,6 +21,13 @@ const procedure = oc.errors({ OPERATION_FAILED: { data: z.object({ reason: z.str
 /** The public contract implemented by both Electron ends and by test mocks. */
 export const contract = {
   snapshot: procedure.output(AppSnapshotSchema),
+  hooks: {
+    resolve: procedure.input(z.object({ projectId: z.string().optional() })).output(TaskHookSchema.required().array()),
+    list: procedure.input(z.object({ taskId: z.string().optional(), projectId: z.string().optional(), limit: z.number().int().min(1).max(200).optional() })).output(HookRunSchema.array()),
+    log: procedure.input(z.string()).output(z.object({ run: HookRunSchema, output: z.string(), messages: SessionMessageSchema.array() })),
+    cancel: procedure.input(z.string()).output(z.void()),
+    retry: procedure.input(z.string()).output(HookRunSchema)
+  },
   projects: {
     list: procedure.output(ProjectSchema.array()),
     create: procedure.input(ProjectInputSchema.partial().extend({

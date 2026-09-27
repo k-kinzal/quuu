@@ -17,7 +17,7 @@ import { ReportSettings } from '../src/renderer/src/views/settings/ReportSetting
 const project = ProjectSchema.parse({
   id: 'p1', name: 'Project', path: '/tmp/project', color: '#123456', priority: 2,
   targetKind: 'agent', targetId: null, maxConcurrent: 1, enabled: true, deletedAt: null,
-  importSince: null, editorApp: '', reportEnabled: true, commitIdentityMode: 'inherit', worktreeMode: 'inherit',
+  importSince: null, editorApp: '', reportEnabled: true, commitIdentityMode: 'inherit', worktreeMode: 'inherit', taskHooks: [],
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
   commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', sortOrder: 0, createdAt: '', updatedAt: ''
 })

@@ -1,3 +1,4 @@
+import { validateHooks } from '../hooks/config.js'
 import { t } from '../i18n/index.js'
 import { assertWorktreeIdle, discardTaskWorktree, withWorktreeOperation } from '../tasks/worktrees.js'
 import type { Db } from '../db/database.js'
@@ -18,6 +19,7 @@ export class ProjectOperations {
 
 
   createProject(input: Partial<ProjectInput> & { name: string; path: string }): Project {
+    validateHooks(input.taskHooks ?? [])
     const existing = repo.listProjects(this.db)
 
     /*
@@ -68,6 +70,7 @@ export class ProjectOperations {
 
 
   updateProject(id: string, patch: Partial<ProjectInput>): Project {
+    if (patch.taskHooks) validateHooks(patch.taskHooks)
     if (patch.path !== undefined) {
       for (const task of repo.listTasks(this.db, true).filter(task => task.projectId === id)) assertWorktreeIdle(this.db, task.id)
     }

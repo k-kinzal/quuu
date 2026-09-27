@@ -14,6 +14,7 @@ import { AgentSettings } from '../src/renderer/src/views/settings/AgentSettings.
 import { AppearanceSettings } from '../src/renderer/src/views/settings/AppearanceSettings.js'
 import { ConnectionSettings } from '../src/renderer/src/views/settings/ConnectionSettings.js'
 import { GeneralSettings } from '../src/renderer/src/views/settings/GeneralSettings.js'
+import { HookSettings } from '../src/renderer/src/views/settings/HookSettings.js'
 import { NotificationSettings } from '../src/renderer/src/views/settings/NotificationSettings.js'
 import { PullRequestSettings } from '../src/renderer/src/views/settings/PullRequestSettings.js'
 
@@ -62,7 +63,7 @@ const PROJECT: Project = {
   maxConcurrent: 2,
   enabled: true,
   deletedAt: null,
-  importSince: null, worktreeMode: 'inherit',
+  importSince: null, worktreeMode: 'inherit', taskHooks: [],
   editorApp: '',
   reportEnabled: true,
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,
@@ -99,6 +100,7 @@ const VIEWS: Array<[string, () => JSX.Element]> = [
   ['appearance', AppearanceSettings],
   ['connections', ConnectionSettings],
   ['agents', AgentSettings],
+  ['lifecycle hooks', HookSettings],
   ['pull requests', PullRequestSettings],
   // A project's configuration is a surface of the same rank (rule F: settings placed in the entity's context)
   ['project', () => <ProjectDetail project={PROJECT} onBack={() => { }} />],

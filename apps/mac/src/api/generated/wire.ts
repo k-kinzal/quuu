@@ -20,6 +20,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "items": {
             "kind": "object",
             "fields": {
+              "taskHooks": {
+                "kind": "array",
+                "items": {
+                  "kind": "object",
+                  "fields": {
+                    "id": {
+                      "kind": "string"
+                    },
+                    "name": {
+                      "kind": "string"
+                    },
+                    "enabled": {
+                      "kind": "boolean"
+                    },
+                    "events": {
+                      "kind": "array",
+                      "items": {
+                        "kind": "string",
+                        "choices": [
+                          "created",
+                          "queued",
+                          "held",
+                          "started",
+                          "stopped",
+                          "review",
+                          "failed",
+                          "beforeComplete",
+                          "completed",
+                          "reopened",
+                          "archived",
+                          "restored",
+                          "deleted"
+                        ]
+                      }
+                    },
+                    "kind": {
+                      "kind": "string",
+                      "choices": [
+                        "agent",
+                        "command"
+                      ]
+                    },
+                    "targetKind": {
+                      "kind": "string",
+                      "choices": [
+                        "agent",
+                        "group"
+                      ]
+                    },
+                    "targetId": {
+                      "kind": "string"
+                    },
+                    "prompt": {
+                      "kind": "string"
+                    },
+                    "command": {
+                      "kind": "string"
+                    },
+                    "timeoutSeconds": {
+                      "kind": "number"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ]
+                }
+              },
               "worktreeMode": {
                 "kind": "string",
                 "choices": [
@@ -168,6 +235,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               }
             },
             "required": [
+              "taskHooks",
               "worktreeMode",
               "id",
               "name",
@@ -1023,6 +1091,852 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "hooks.resolve": {
+    "method": "hooksResolve",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "projectId": {
+          "kind": "string"
+        }
+      },
+      "required": []
+    },
+    "output": {
+      "kind": "array",
+      "items": {
+        "kind": "object",
+        "fields": {
+          "id": {
+            "kind": "string"
+          },
+          "name": {
+            "kind": "string"
+          },
+          "enabled": {
+            "kind": "boolean"
+          },
+          "events": {
+            "kind": "array",
+            "items": {
+              "kind": "string",
+              "choices": [
+                "created",
+                "queued",
+                "held",
+                "started",
+                "stopped",
+                "review",
+                "failed",
+                "beforeComplete",
+                "completed",
+                "reopened",
+                "archived",
+                "restored",
+                "deleted"
+              ]
+            }
+          },
+          "kind": {
+            "kind": "string",
+            "choices": [
+              "agent",
+              "command"
+            ]
+          },
+          "targetKind": {
+            "kind": "string",
+            "choices": [
+              "agent",
+              "group"
+            ]
+          },
+          "targetId": {
+            "kind": "string"
+          },
+          "prompt": {
+            "kind": "string"
+          },
+          "command": {
+            "kind": "string"
+          },
+          "timeoutSeconds": {
+            "kind": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "enabled",
+          "events",
+          "kind",
+          "targetKind",
+          "targetId",
+          "prompt",
+          "command",
+          "timeoutSeconds"
+        ]
+      }
+    }
+  },
+  "hooks.list": {
+    "method": "hooksList",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        },
+        "projectId": {
+          "kind": "string"
+        },
+        "limit": {
+          "kind": "number"
+        }
+      },
+      "required": []
+    },
+    "output": {
+      "kind": "array",
+      "items": {
+        "kind": "object",
+        "fields": {
+          "id": {
+            "kind": "string"
+          },
+          "taskId": {
+            "kind": "string"
+          },
+          "taskTitle": {
+            "kind": "string"
+          },
+          "projectId": {
+            "kind": "string"
+          },
+          "hookId": {
+            "kind": "string"
+          },
+          "name": {
+            "kind": "string"
+          },
+          "event": {
+            "kind": "string",
+            "choices": [
+              "created",
+              "queued",
+              "held",
+              "started",
+              "stopped",
+              "review",
+              "failed",
+              "beforeComplete",
+              "completed",
+              "reopened",
+              "archived",
+              "restored",
+              "deleted"
+            ]
+          },
+          "kind": {
+            "kind": "string",
+            "choices": [
+              "agent",
+              "command"
+            ]
+          },
+          "status": {
+            "kind": "string",
+            "choices": [
+              "queued",
+              "starting",
+              "running",
+              "succeeded",
+              "failed",
+              "canceled"
+            ]
+          },
+          "cwd": {
+            "kind": "string"
+          },
+          "input": {
+            "kind": "string"
+          },
+          "agentId": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "kind": "string"
+          },
+          "startedAt": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "null"
+              }
+            ]
+          },
+          "endedAt": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "null"
+              }
+            ]
+          },
+          "exitCode": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "number"
+              },
+              {
+                "kind": "null"
+              }
+            ]
+          },
+          "error": {
+            "kind": "string"
+          },
+          "logPath": {
+            "kind": "string"
+          }
+        },
+        "required": [
+          "id",
+          "taskId",
+          "taskTitle",
+          "projectId",
+          "hookId",
+          "name",
+          "event",
+          "kind",
+          "status",
+          "cwd",
+          "input",
+          "agentId",
+          "createdAt",
+          "startedAt",
+          "endedAt",
+          "exitCode",
+          "error",
+          "logPath"
+        ]
+      }
+    }
+  },
+  "hooks.log": {
+    "method": "hooksLog",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "run": {
+          "kind": "object",
+          "fields": {
+            "id": {
+              "kind": "string"
+            },
+            "taskId": {
+              "kind": "string"
+            },
+            "taskTitle": {
+              "kind": "string"
+            },
+            "projectId": {
+              "kind": "string"
+            },
+            "hookId": {
+              "kind": "string"
+            },
+            "name": {
+              "kind": "string"
+            },
+            "event": {
+              "kind": "string",
+              "choices": [
+                "created",
+                "queued",
+                "held",
+                "started",
+                "stopped",
+                "review",
+                "failed",
+                "beforeComplete",
+                "completed",
+                "reopened",
+                "archived",
+                "restored",
+                "deleted"
+              ]
+            },
+            "kind": {
+              "kind": "string",
+              "choices": [
+                "agent",
+                "command"
+              ]
+            },
+            "status": {
+              "kind": "string",
+              "choices": [
+                "queued",
+                "starting",
+                "running",
+                "succeeded",
+                "failed",
+                "canceled"
+              ]
+            },
+            "cwd": {
+              "kind": "string"
+            },
+            "input": {
+              "kind": "string"
+            },
+            "agentId": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "createdAt": {
+              "kind": "string"
+            },
+            "startedAt": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "endedAt": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "exitCode": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "number"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "error": {
+              "kind": "string"
+            },
+            "logPath": {
+              "kind": "string"
+            }
+          },
+          "required": [
+            "id",
+            "taskId",
+            "taskTitle",
+            "projectId",
+            "hookId",
+            "name",
+            "event",
+            "kind",
+            "status",
+            "cwd",
+            "input",
+            "agentId",
+            "createdAt",
+            "startedAt",
+            "endedAt",
+            "exitCode",
+            "error",
+            "logPath"
+          ]
+        },
+        "output": {
+          "kind": "string"
+        },
+        "messages": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "role": {
+                "kind": "string",
+                "choices": [
+                  "user",
+                  "assistant",
+                  "system"
+                ]
+              },
+              "isSidechain": {
+                "kind": "boolean"
+              },
+              "timestamp": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
+              "blocks": {
+                "kind": "array",
+                "items": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "text"
+                          ]
+                        },
+                        "text": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "text"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "thinking"
+                          ]
+                        },
+                        "text": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "text"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "tool"
+                          ]
+                        },
+                        "tool": {
+                          "kind": "object",
+                          "fields": {
+                            "plan": {
+                              "kind": "array",
+                              "items": {
+                                "kind": "object",
+                                "fields": {
+                                  "text": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "string"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  },
+                                  "status": {
+                                    "kind": "string"
+                                  }
+                                },
+                                "required": [
+                                  "text",
+                                  "status"
+                                ]
+                              }
+                            },
+                            "id": {
+                              "kind": "string"
+                            },
+                            "name": {
+                              "kind": "string"
+                            },
+                            "input": {
+                              "kind": "value"
+                            },
+                            "target": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "string"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "result": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "string"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "isError": {
+                              "kind": "boolean"
+                            },
+                            "images": {
+                              "kind": "array",
+                              "items": {
+                                "kind": "object",
+                                "fields": {
+                                  "id": {
+                                    "kind": "string"
+                                  },
+                                  "mediaType": {
+                                    "kind": "string"
+                                  },
+                                  "byteSize": {
+                                    "kind": "number"
+                                  },
+                                  "width": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "number"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  },
+                                  "height": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "number"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "mediaType",
+                                  "byteSize",
+                                  "width",
+                                  "height"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "input",
+                            "target",
+                            "result",
+                            "isError",
+                            "images"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "tool"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "image"
+                          ]
+                        },
+                        "image": {
+                          "kind": "object",
+                          "fields": {
+                            "id": {
+                              "kind": "string"
+                            },
+                            "mediaType": {
+                              "kind": "string"
+                            },
+                            "byteSize": {
+                              "kind": "number"
+                            },
+                            "width": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "number"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "height": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "number"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "mediaType",
+                            "byteSize",
+                            "width",
+                            "height"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "image"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "model": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "isSidechain",
+              "timestamp",
+              "blocks",
+              "model"
+            ]
+          }
+        }
+      },
+      "required": [
+        "run",
+        "output",
+        "messages"
+      ]
+    }
+  },
+  "hooks.cancel": {
+    "method": "hooksCancel",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "void"
+    }
+  },
+  "hooks.retry": {
+    "method": "hooksRetry",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "id": {
+          "kind": "string"
+        },
+        "taskId": {
+          "kind": "string"
+        },
+        "taskTitle": {
+          "kind": "string"
+        },
+        "projectId": {
+          "kind": "string"
+        },
+        "hookId": {
+          "kind": "string"
+        },
+        "name": {
+          "kind": "string"
+        },
+        "event": {
+          "kind": "string",
+          "choices": [
+            "created",
+            "queued",
+            "held",
+            "started",
+            "stopped",
+            "review",
+            "failed",
+            "beforeComplete",
+            "completed",
+            "reopened",
+            "archived",
+            "restored",
+            "deleted"
+          ]
+        },
+        "kind": {
+          "kind": "string",
+          "choices": [
+            "agent",
+            "command"
+          ]
+        },
+        "status": {
+          "kind": "string",
+          "choices": [
+            "queued",
+            "starting",
+            "running",
+            "succeeded",
+            "failed",
+            "canceled"
+          ]
+        },
+        "cwd": {
+          "kind": "string"
+        },
+        "input": {
+          "kind": "string"
+        },
+        "agentId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "createdAt": {
+          "kind": "string"
+        },
+        "startedAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "endedAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "exitCode": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "number"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "error": {
+          "kind": "string"
+        },
+        "logPath": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "id",
+        "taskId",
+        "taskTitle",
+        "projectId",
+        "hookId",
+        "name",
+        "event",
+        "kind",
+        "status",
+        "cwd",
+        "input",
+        "agentId",
+        "createdAt",
+        "startedAt",
+        "endedAt",
+        "exitCode",
+        "error",
+        "logPath"
+      ]
+    }
+  },
   "projects.list": {
     "method": "projectsList",
     "input": {
@@ -1033,6 +1947,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "items": {
         "kind": "object",
         "fields": {
+          "taskHooks": {
+            "kind": "array",
+            "items": {
+              "kind": "object",
+              "fields": {
+                "id": {
+                  "kind": "string"
+                },
+                "name": {
+                  "kind": "string"
+                },
+                "enabled": {
+                  "kind": "boolean"
+                },
+                "events": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "string",
+                    "choices": [
+                      "created",
+                      "queued",
+                      "held",
+                      "started",
+                      "stopped",
+                      "review",
+                      "failed",
+                      "beforeComplete",
+                      "completed",
+                      "reopened",
+                      "archived",
+                      "restored",
+                      "deleted"
+                    ]
+                  }
+                },
+                "kind": {
+                  "kind": "string",
+                  "choices": [
+                    "agent",
+                    "command"
+                  ]
+                },
+                "targetKind": {
+                  "kind": "string",
+                  "choices": [
+                    "agent",
+                    "group"
+                  ]
+                },
+                "targetId": {
+                  "kind": "string"
+                },
+                "prompt": {
+                  "kind": "string"
+                },
+                "command": {
+                  "kind": "string"
+                },
+                "timeoutSeconds": {
+                  "kind": "number"
+                }
+              },
+              "required": [
+                "id"
+              ]
+            }
+          },
           "worktreeMode": {
             "kind": "string",
             "choices": [
@@ -1181,6 +2162,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           }
         },
         "required": [
+          "taskHooks",
           "worktreeMode",
           "id",
           "name",
@@ -1255,6 +2237,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         },
         "color": {
           "kind": "string"
+        },
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
         },
         "worktreeMode": {
           "kind": "string",
@@ -1341,6 +2390,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
         "worktreeMode": {
           "kind": "string",
           "choices": [
@@ -1489,6 +2605,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "taskHooks",
         "worktreeMode",
         "id",
         "name",
@@ -1568,6 +2685,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             },
             "color": {
               "kind": "string"
+            },
+            "taskHooks": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "id": {
+                    "kind": "string"
+                  },
+                  "name": {
+                    "kind": "string"
+                  },
+                  "enabled": {
+                    "kind": "boolean"
+                  },
+                  "events": {
+                    "kind": "array",
+                    "items": {
+                      "kind": "string",
+                      "choices": [
+                        "created",
+                        "queued",
+                        "held",
+                        "started",
+                        "stopped",
+                        "review",
+                        "failed",
+                        "beforeComplete",
+                        "completed",
+                        "reopened",
+                        "archived",
+                        "restored",
+                        "deleted"
+                      ]
+                    }
+                  },
+                  "kind": {
+                    "kind": "string",
+                    "choices": [
+                      "agent",
+                      "command"
+                    ]
+                  },
+                  "targetKind": {
+                    "kind": "string",
+                    "choices": [
+                      "agent",
+                      "group"
+                    ]
+                  },
+                  "targetId": {
+                    "kind": "string"
+                  },
+                  "prompt": {
+                    "kind": "string"
+                  },
+                  "command": {
+                    "kind": "string"
+                  },
+                  "timeoutSeconds": {
+                    "kind": "number"
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
             },
             "worktreeMode": {
               "kind": "string",
@@ -1657,6 +2841,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
         "worktreeMode": {
           "kind": "string",
           "choices": [
@@ -1805,6 +3056,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "taskHooks",
         "worktreeMode",
         "id",
         "name",
@@ -8406,6 +9658,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
         "worktreeEnabled": {
           "kind": "boolean"
         },
@@ -8522,6 +9841,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "taskHooks",
         "worktreeEnabled",
         "httpEnabled",
         "httpPort",
@@ -8562,6 +9882,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
         "worktreeEnabled": {
           "kind": "boolean"
         },
@@ -8678,6 +10065,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "taskHooks",
         "worktreeEnabled",
         "httpEnabled",
         "httpPort",
@@ -8715,6 +10103,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "input": {
       "kind": "object",
       "fields": {
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
         "worktreeEnabled": {
           "kind": "boolean"
         },
@@ -8835,6 +10290,73 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "taskHooks": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "enabled": {
+                "kind": "boolean"
+              },
+              "events": {
+                "kind": "array",
+                "items": {
+                  "kind": "string",
+                  "choices": [
+                    "created",
+                    "queued",
+                    "held",
+                    "started",
+                    "stopped",
+                    "review",
+                    "failed",
+                    "beforeComplete",
+                    "completed",
+                    "reopened",
+                    "archived",
+                    "restored",
+                    "deleted"
+                  ]
+                }
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "command"
+                ]
+              },
+              "targetKind": {
+                "kind": "string",
+                "choices": [
+                  "agent",
+                  "group"
+                ]
+              },
+              "targetId": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "command": {
+                "kind": "string"
+              },
+              "timeoutSeconds": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
         "worktreeEnabled": {
           "kind": "boolean"
         },
@@ -8951,6 +10473,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         }
       },
       "required": [
+        "taskHooks",
         "worktreeEnabled",
         "httpEnabled",
         "httpPort",

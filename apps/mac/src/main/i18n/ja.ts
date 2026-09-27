@@ -1,6 +1,18 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  hooks: {
+    "invalidIds": "フックIDは一意で、system: から始めることはできません。",
+    "busy": "ライフサイクルフックの終了を待っています。",
+    "canceled": "フックを停止しました。",
+    "interrupted": "フックの実行結果を確認できませんでした。自動で再実行はしていません。",
+    "completionFailed": "完了前フック「{{name}}」に失敗しました: {{reason}}",
+    "timeout": "フックがタイムアウトしました。",
+    "exit": "終了コード {{code}} で終了しました。",
+    "emptyInput": "フックのプロンプトまたはコマンドを指定してください。",
+    "noAgent": "このフックを実行できる有効なAIが設定されていません。",
+    "notFound": "フックの実行が見つかりません。"
+  },
   worktree: {
     moved: 'エージェントが別のWorktreeに移動しています。変更をタスクの管理対象Worktreeに取り込んでから完了してください。',
     "busy": "タスクのWorktreeを準備または終了処理中です。処理後に再試行してください。",

@@ -1,8 +1,10 @@
+import type { TaskHook } from '../hooks/types.js'
 import type { RunTargetKind } from '../agents/types.js'
 import type { CommitIdentity } from './identity.js'
 import { EMPTY_COMMIT_IDENTITY } from './identity.js'
 
 export interface AppSettings {
+  taskHooks: TaskHook[]
   /** Isolate new tasks in a Git worktree unless the project overrides it. */
   worktreeEnabled: boolean
   httpEnabled: boolean
@@ -95,6 +97,7 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  taskHooks: [],
   worktreeEnabled: false,
   httpEnabled: true,
   httpPort: 0,

@@ -46,7 +46,7 @@ const PROJECT: Project = {
   maxConcurrent: 2,
   enabled: true,
   deletedAt: null,
-  importSince: null, worktreeMode: 'inherit',
+  importSince: null, worktreeMode: 'inherit', taskHooks: [],
   editorApp: '',
   reportEnabled: true,
   pullRequestPromptMode: 'inherit', pullRequestFailurePrompt: '', pullRequestPendingPrompt: '', pullRequestConflictPrompt: '', pullRequestFailureEnabled: false, pullRequestPendingEnabled: false, pullRequestConflictEnabled: false,

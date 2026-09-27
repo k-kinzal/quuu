@@ -6,6 +6,9 @@ import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { makeAgent, makeProject, makeTask, memoryDb } from './helpers.js'
 
+// This verifies scheduler notifications, independent of the developer's login-shell startup time.
+vi.mock('../src/main/platform/shellEnv.js', () => ({ resolveLoginPath: () => Promise.resolve(process.env.PATH ?? '/usr/bin:/bin') }))
+
 let workdir: string
 
 beforeEach(() => {

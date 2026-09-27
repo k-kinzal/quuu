@@ -1,3 +1,4 @@
+import { HookEditor } from '../../components/HookEditor.js'
 import type { Project } from '../../../../api/schemas/projects.js'
 import { userAgents } from '../../model/agents.js'
 import { COMMIT_IDENTITY_MODES } from '../../model/identityOptions.js'
@@ -244,6 +245,7 @@ export function ProjectDetail({
           appears before the feature exists reads as a way to turn the feature on, and pressing
           it would do nothing
         */}
+        <HookEditor project={project} />
         {settings.reportEnabled && (
           <Section title={t('projectDetail.reportSection')}>
             <Checkbox

@@ -1,3 +1,4 @@
+import { hooks } from './ja/hooks.js'
 import { labels } from './ja/labels.js'
 import { model } from './ja/model.js'
 import { conversation } from './ja/conversation.js'
@@ -8,6 +9,7 @@ import type { en } from './en.js'
 
 // Typed against the English tree so a missing or extra Japanese key fails typecheck.
 export const ja: typeof en = {
+  ...hooks,
   ...labels,
   ...model,
   ...conversation,

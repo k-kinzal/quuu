@@ -1,5 +1,17 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  hooks: {
+    "invalidIds": "Hook IDs must be unique and cannot use the system: prefix.",
+    "busy": "Waiting for lifecycle hooks to finish.",
+    "canceled": "Hook canceled.",
+    "interrupted": "Quuu could not confirm the hook result. It was not replayed.",
+    "completionFailed": "Completion hook “{{name}}” failed: {{reason}}",
+    "timeout": "Hook timed out.",
+    "exit": "Command exited with code {{code}}.",
+    "emptyInput": "Set a prompt or command for this hook.",
+    "noAgent": "No enabled agent is configured for this hook.",
+    "notFound": "Hook execution not found."
+  },
   worktree: {
     moved: 'The agent moved to a different worktree. Bring its changes back to the managed task worktree before completing.',
     "busy": "The task’s worktree is being prepared or finalized. Try again when it finishes.",

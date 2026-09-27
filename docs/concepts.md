@@ -23,6 +23,7 @@ structural uniformity. There is no DDD or Clean Architecture layer template.
 | Session history | Stateless bounded reads and search of the durable index. `main/session/history` | CLI analysis can scan old runs without disturbing a person's selected conversation. |
 | Automation rule | Conditions and instructions that enqueue ordinary tasks. `main/automation` | Belongs to a project. Time, idle and duplicate gates combine; no parallel task execution mechanism. |
 | Review | Evidence about commits, files and PRs, plus actions on that evidence. `main/review` | Derived from indexed sessions and Git/GitHub observations. Human approval remains a task operation. |
+| Lifecycle hook | Configurable auxiliary AI or command run on a task event. `main/hooks` | Inherits each setting independently from global to project; separate history and sessions; before-completion hooks finish before worktree integration. |
 | Report | A separately generated explanation of task changes or project progress. `main/report` | Has its own writer and artifacts; does not take a task's execution slot or change its state. |
 | Terminal | A caller's interactive shell and its lifetime. `main/terminal` | Uses the task's observed working directory. Another caller cannot drive it. |
 | Settings | App preferences and identity, including external listener configuration. `main/settings` | Stored independently of window lifetime. Listener status records actual binding success or failure. |

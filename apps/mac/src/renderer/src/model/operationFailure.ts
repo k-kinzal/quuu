@@ -5,6 +5,7 @@ import { t } from './i18n/index.js'
 type OperationLabels<T> = { [K in keyof T]: T[K] extends (...args: never[]) => unknown ? string : OperationLabels<T[K]> }
 /** The View owns the wording. Adding an operation to the contract means deciding how its failure is told. */
 const labels: OperationLabels<QuuuApi> = {
+  hooks: { resolve: t('hooks.title'), list: t('hooks.history'), log: t('hooks.openLog'), cancel: t('hooks.cancel'), retry: t('hooks.retry') },
   snapshot: t('operationFailure.op.snapshot'),
   projects: { list: t('operationFailure.op.projects.list'), create: t('operationFailure.op.projects.create'), update: t('operationFailure.op.projects.update'), remove: t('operationFailure.op.projects.remove') },
   tasks: { list: t('operationFailure.op.snapshot'), get: t('operationFailure.op.snapshot'), create: t('operationFailure.op.tasks.create'), update: t('operationFailure.op.tasks.update'), enqueue: t('operationFailure.op.tasks.enqueue'), unqueue: t('operationFailure.op.tasks.unqueue'), hold: t('operationFailure.op.tasks.hold'), runNow: t('operationFailure.op.tasks.runNow'), markDone: t('operationFailure.op.tasks.markDone'), reopen: t('operationFailure.op.tasks.reopen'), sendBack: t('operationFailure.op.tasks.sendBack'), cancel: t('operationFailure.op.tasks.cancel'), remove: t('operationFailure.op.tasks.remove'), archive: t('operationFailure.op.tasks.archive'), send: t('operationFailure.op.tasks.send'), clearReserved: t('operationFailure.op.tasks.clearReserved') },

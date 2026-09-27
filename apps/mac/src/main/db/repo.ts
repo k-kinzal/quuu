@@ -1,3 +1,6 @@
+import type { HookEvent } from '../hooks/types.js'
+import type { StoredHookRun } from '../hooks/stored.js'
+import { inTransaction } from './database.js'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Agent, AgentCooldown, AgentGroup, AgentGroupInput, AgentInput, GroupStrategy, RunTargetKind } from '../agents/types.js'
 import type { TaskRule, TaskRuleInput } from '../automation/conditions.js'
@@ -254,6 +257,7 @@ function toAgent(r: Row): Agent {
 
 function toProject(r: Row): Project {
   return {
+    taskHooks: parseJson(s(r.task_hooks), []),
     id: s(r.id),
     name: s(r.name),
     path: s(r.path),
@@ -463,7 +467,8 @@ export function countActiveRunsByAgent(db: Db, agentId: string): number {
       `SELECT COUNT(*) AS c FROM runs WHERE agent_id = ? AND status IN (${activePlaceholders})`
     )
     .get(agentId, ...ACTIVE_RUN_STATUSES) as Row
-  return n(r.c)
+  const hooks = db.prepare("SELECT COUNT(*) AS c FROM hook_runs WHERE status IN ('starting', 'running') AND json_extract(data, '$.agentId') = ?").get(agentId) as Row
+  return n(r.c) + n(hooks.c)
 }
 
 /**
@@ -710,8 +715,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
        commit_app_id, commit_setup_version, editor_app, report_enabled,
        pull_request_prompt_mode, pull_request_failure_prompt, pull_request_pending_prompt,
        pull_request_conflict_prompt, pull_request_failure_enabled, pull_request_pending_enabled,
-       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode, task_hooks)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     id,
     input.name,
@@ -740,7 +745,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
     input.sortOrder ?? 0,
     ts,
     ts,
-    input.worktreeMode ?? 'inherit'
+    input.worktreeMode ?? 'inherit',
+    JSON.stringify(input.taskHooks ?? [])
   )
   return getProject(db, id)!
 }
@@ -755,7 +761,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
        commit_bot_user_id=?, commit_app_id=?, commit_setup_version=?, editor_app=?,
        report_enabled=?, pull_request_prompt_mode=?, pull_request_failure_prompt=?,
        pull_request_pending_prompt=?, pull_request_conflict_prompt=?, pull_request_failure_enabled=?,
-       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?
+       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?, task_hooks=?
      WHERE id=?`
   ).run(
     next.name,
@@ -783,6 +789,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     next.sortOrder,
     nowIso(),
     next.worktreeMode,
+    JSON.stringify(next.taskHooks),
     id
   )
   return getProject(db, id)!
@@ -905,34 +912,41 @@ function nextSeq(db: Db): number {
 }
 
 export function insertTask(db: Db, input: TaskInput, id = newId('tsk')): Task {
-  const ts = nowIso()
-  db.prepare(
-    `INSERT INTO tasks (id, project_id, title, prompt, status, priority, seq, scheduled_at,
-       current_run_id, session_id, agent_override_id, pending_message, reserved_message,
-       review_note, source, rule_id, external_key, archived, created_at, updated_at, done_at)
-     VALUES (?,?,?,?,?,?,?,?,NULL,NULL,?,'','','',?,?,?,0,?,?,NULL)`
-  ).run(
-    id,
-    input.projectId,
-    input.title,
-    input.prompt ?? '',
-    input.status ?? 'draft',
-    input.priority ?? 2,
-    nextSeq(db),
-    input.scheduledAt ?? null,
-    input.agentOverrideId ?? null,
-    input.source ?? 'user',
-    input.ruleId ?? null,
-    input.externalKey ?? null,
-    ts,
-    ts
-  )
-  // Wire dependencies inside the same call that creates the task. Adding them later with a patch
-  // leaves a gap where the scheduler claims the `queued` task and runs the one meant to wait
-  if (input.dependsOn && input.dependsOn.length > 0) {
-    replaceDependencies(db, id, input.dependsOn)
-  }
-  return getTask(db, id)!
+  return inTransaction(db, () => {
+    const ts = nowIso()
+    db.prepare(
+      `INSERT INTO tasks (id, project_id, title, prompt, status, priority, seq, scheduled_at,
+         current_run_id, session_id, agent_override_id, pending_message, reserved_message,
+         review_note, source, rule_id, external_key, archived, created_at, updated_at, done_at)
+       VALUES (?,?,?,?,?,?,?,?,NULL,NULL,?,'','','',?,?,?,0,?,?,NULL)`
+    ).run(
+      id,
+      input.projectId,
+      input.title,
+      input.prompt ?? '',
+      input.status ?? 'draft',
+      input.priority ?? 2,
+      nextSeq(db),
+      input.scheduledAt ?? null,
+      input.agentOverrideId ?? null,
+      input.source ?? 'user',
+      input.ruleId ?? null,
+      input.externalKey ?? null,
+      ts,
+      ts
+    )
+    // Wire dependencies inside the same call that creates the task. Adding them later with a patch
+    // leaves a gap where the scheduler claims the `queued` task and runs the one meant to wait
+    if (input.dependsOn && input.dependsOn.length > 0) {
+      replaceDependencies(db, id, input.dependsOn)
+    }
+    const task = getTask(db, id)!
+    if (task.source !== 'imported') {
+      lifecycle(db, task, 'created')
+      if (task.status === 'queued') lifecycle(db, task, 'queued')
+    }
+    return task
+  })
 }
 
 export function patchTask(db: Db, id: string, patch: TaskPatch): Task {
@@ -969,20 +983,29 @@ export function setTaskStatus(
     doneAt?: string | null
   } = {}
 ): Task {
-  const cur = getTask(db, id)
-  if (!cur) throw new Error(`task not found: ${id}`)
-  const currentRunId =
-    extra.currentRunId === undefined ? cur.currentRunId : extra.currentRunId
-  const sessionId = extra.sessionId === undefined ? cur.sessionId : extra.sessionId
-  const pendingMessage =
-    extra.pendingMessage === undefined ? cur.pendingMessage : extra.pendingMessage
-  const doneAt =
-    extra.doneAt === undefined ? (status === 'done' ? nowIso() : cur.doneAt) : extra.doneAt
-  db.prepare(
-    `UPDATE tasks SET status=?, current_run_id=?, session_id=?, pending_message=?,
-       done_at=?, updated_at=? WHERE id=?`
-  ).run(status, currentRunId, sessionId, pendingMessage, doneAt, nowIso(), id)
-  return getTask(db, id)!
+  return inTransaction(db, () => {
+    const cur = getTask(db, id)
+    if (!cur) throw new Error(`task not found: ${id}`)
+    const currentRunId =
+      extra.currentRunId === undefined ? cur.currentRunId : extra.currentRunId
+    const sessionId = extra.sessionId === undefined ? cur.sessionId : extra.sessionId
+    const pendingMessage =
+      extra.pendingMessage === undefined ? cur.pendingMessage : extra.pendingMessage
+    const doneAt =
+      extra.doneAt === undefined ? (status === 'done' ? nowIso() : cur.doneAt) : extra.doneAt
+    db.prepare(
+      `UPDATE tasks SET status=?, current_run_id=?, session_id=?, pending_message=?,
+         done_at=?, updated_at=? WHERE id=?`
+    ).run(status, currentRunId, sessionId, pendingMessage, doneAt, nowIso(), id)
+    const task = getTask(db, id)!
+    if (cur.status !== status) {
+      if (cur.status === 'done') lifecycle(db, task, 'reopened')
+      const events: Partial<Record<TaskStatus, HookEvent>> = { queued: 'queued', held: 'held', review: 'review', failed: 'failed', done: 'completed' }
+      const event = events[status]
+      if (event) lifecycle(db, task, event)
+    }
+    return task
+  })
 }
 
 /**
@@ -1051,20 +1074,31 @@ export function setReservedMessage(db: Db, id: string, message: string): Task {
 }
 
 export function setTaskArchived(db: Db, id: string, archived: boolean): Task {
-  db.prepare('UPDATE tasks SET archived=?, updated_at=? WHERE id=?').run(
-    b2i(archived),
-    nowIso(),
-    id
-  )
-  return getTask(db, id)!
+  return inTransaction(db, () => {
+    const before = getTask(db, id)
+
+    db.prepare('UPDATE tasks SET archived=?, updated_at=? WHERE id=?').run(
+      b2i(archived),
+      nowIso(),
+      id
+    )
+    const task = getTask(db, id)!
+    if (before && before.archived !== archived) lifecycle(db, task, archived ? 'archived' : 'restored')
+    return task
+  })
 }
 
 export function deleteTask(db: Db, id: string): void {
-  db.prepare('DELETE FROM runs WHERE task_id = ?').run(id)
-  db.prepare('DELETE FROM task_review_bases WHERE task_id = ?').run(id)
-  // Drop dependency edges in both directions, so a task that was waiting never stalls forever.
-  db.prepare('DELETE FROM task_dependencies WHERE task_id = ? OR depends_on_id = ?').run(id, id)
-  db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  return inTransaction(db, () => {
+    const task = getTask(db, id)
+    if (task) lifecycle(db, task, 'deleted')
+
+    db.prepare('DELETE FROM runs WHERE task_id = ?').run(id)
+    db.prepare('DELETE FROM task_review_bases WHERE task_id = ?').run(id)
+    // Drop dependency edges in both directions, so a task that was waiting never stalls forever.
+    db.prepare('DELETE FROM task_dependencies WHERE task_id = ? OR depends_on_id = ?').run(id, id)
+    db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+  })
 }
 
 export function countTasksByStatus(db: Db, status: TaskStatus): number {
@@ -1376,24 +1410,32 @@ export function updateRun(
     >
   >
 ): Run {
-  const cur = getRun(db, id)
-  if (!cur) throw new Error(`run not found: ${id}`)
-  const next = { ...cur, ...Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)) }
-  db.prepare(
-    `UPDATE runs SET status=?, pid=?, exit_code=?, error_kind=?, error_message=?,
-       session_id=?, session_log_path=?, ended_at=? WHERE id=?`
-  ).run(
-    next.status,
-    next.pid ?? null,
-    next.exitCode ?? null,
-    next.errorKind ?? null,
-    next.errorMessage,
-    next.sessionId,
-    next.sessionLogPath ?? null,
-    next.endedAt ?? null,
-    id
-  )
-  return getRun(db, id)!
+  return inTransaction(db, () => {
+    const cur = getRun(db, id)
+    if (!cur) throw new Error(`run not found: ${id}`)
+    const next = { ...cur, ...Object.fromEntries(Object.entries(patch).filter(([, value]) => value !== undefined)) }
+    db.prepare(
+      `UPDATE runs SET status=?, pid=?, exit_code=?, error_kind=?, error_message=?,
+         session_id=?, session_log_path=?, ended_at=? WHERE id=?`
+    ).run(
+      next.status,
+      next.pid ?? null,
+      next.exitCode ?? null,
+      next.errorKind ?? null,
+      next.errorMessage,
+      next.sessionId,
+      next.sessionLogPath ?? null,
+      next.endedAt ?? null,
+      id
+    )
+    const run = getRun(db, id)!
+    const task = getTask(db, run.taskId)
+    if (task && cur.status !== run.status) {
+      if (run.status === 'running' && run.source !== 'imported') lifecycle(db, task, 'started', run)
+      if (ACTIVE_RUN_STATUSES.includes(cur.status) && !ACTIVE_RUN_STATUSES.includes(run.status)) lifecycle(db, task, 'stopped', run)
+    }
+    return run
+  })
 }
 
 /**
@@ -1777,7 +1819,7 @@ export function findImportedRun(db: Db, key: string): { runId: string; taskId: s
 }
 
 export function managedSessionIds(db: Db): Set<string> {
-  const rows = db.prepare("SELECT session_id FROM runs WHERE source = 'user'").all() as { session_id: string }[]
+  const rows = db.prepare("SELECT session_id FROM runs WHERE source = 'user' UNION SELECT json_extract(data, '$.sessionId') AS session_id FROM hook_runs WHERE json_extract(data, '$.kind') = 'agent'").all() as { session_id: string }[]
   return new Set(rows.map(row => row.session_id))
 }
 
@@ -1815,4 +1857,56 @@ export function setRunWorkspace(db: Db, runId: string, cwd: string, args: string
 
 export function clearTaskReviewBase(db: Db, taskId: string): void {
   db.prepare('DELETE FROM task_review_bases WHERE task_id=?').run(taskId)
+}
+
+/** The feature records configured work in the same transaction as its triggering fact. */
+type LifecycleRecorder = (task: Task, event: HookEvent, run?: Run) => void
+const lifecycleRecorders = new WeakMap<Db, LifecycleRecorder>()
+export function setLifecycleRecorder(db: Db, recorder: LifecycleRecorder | null): void {
+  if (recorder) lifecycleRecorders.set(db, recorder)
+  else lifecycleRecorders.delete(db)
+}
+function lifecycle(db: Db, task: Task, event: HookEvent, run?: Run): void {
+  lifecycleRecorders.get(db)?.(task, event, run)
+}
+
+export function saveHookRun(db: Db, run: StoredHookRun): void {
+  db.prepare(`INSERT INTO hook_runs (id, task_id, project_id, status, data) VALUES (?,?,?,?,?)
+    ON CONFLICT(id) DO UPDATE SET status=excluded.status, data=excluded.data`)
+    .run(run.id, run.taskId, run.projectId, run.status, JSON.stringify(run))
+}
+export function getHookRun(db: Db, id: string): StoredHookRun | null {
+  const row = db.prepare('SELECT data FROM hook_runs WHERE id = ?').get(id) as Row | undefined
+  return row ? JSON.parse(s(row.data)) as StoredHookRun : null
+}
+export function listHookRuns(db: Db, query: { taskId?: string; projectId?: string; active?: boolean; before?: number; limit?: number } = {}): StoredHookRun[] {
+  const where: string[] = []
+  const params: Array<string | number> = []
+  if (query.taskId) { where.push('task_id = ?'); params.push(query.taskId) }
+  if (query.projectId) { where.push('project_id = ?'); params.push(query.projectId) }
+  if (query.active) where.push("status IN ('queued', 'starting', 'running')")
+  if (query.before) { where.push('seq < ?'); params.push(query.before) }
+  return (db.prepare(`SELECT data FROM hook_runs ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY seq ${query.active ? 'ASC' : 'DESC'} LIMIT ?`)
+    .all(...params, query.limit ?? (query.active ? -1 : 100)) as Row[]).map(row => JSON.parse(s(row.data)) as StoredHookRun)
+}
+export function hasPendingHooks(db: Db, projectId: string): boolean {
+  return Boolean(db.prepare("SELECT 1 FROM hook_runs WHERE project_id = ? AND status IN ('queued', 'starting', 'running') LIMIT 1").get(projectId))
+}
+
+
+/** Hook sessions are auxiliary work even for providers that choose their own session IDs. */
+export function hasOwnHookCovering(db: Db, cwd: string, atIso: string): boolean {
+  return Boolean(db.prepare(`SELECT 1 FROM hook_runs WHERE json_extract(data, '$.cwd') = ? AND json_extract(data, '$.startedAt') <= ?
+    AND COALESCE(json_extract(data, '$.endedAt'), '9999') >= ? LIMIT 1`).get(cwd, atIso, atIso))
+}
+
+
+export function queueHookReport(db: Db, taskId: string): void {
+  db.prepare('INSERT OR IGNORE INTO hook_pending_reports (task_id) VALUES (?)').run(taskId)
+}
+export function pendingHookReports(db: Db): string[] {
+  return (db.prepare('SELECT task_id FROM hook_pending_reports').all() as Row[]).map(row => s(row.task_id))
+}
+export function removeHookReport(db: Db, taskId: string): void {
+  db.prepare('DELETE FROM hook_pending_reports WHERE task_id = ?').run(taskId)
 }

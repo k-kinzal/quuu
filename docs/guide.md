@@ -784,3 +784,55 @@ Quuu removes its own temporary branch when safe. Branches created separately by 
 agent are retained. Reopening a completed task creates a fresh workspace on its next
 run and starts a fresh conversation. Completion from iPhone, CLI and MCP uses the
 same integration checks as the Mac.
+
+## Task lifecycle hooks
+
+**Settings > Lifecycle hooks** defines reusable hooks. Project settings show the same
+hooks and let each field inherit or override independently. A global hook may contain
+only an AI/group and prompt while remaining disabled. A project can enable it and
+select its events without copying the AI or prompt. Explicit off, an empty selection,
+and empty text override inherited values; resetting overrides follows global changes again.
+Project-only hooks are supported too.
+
+Actions are a fresh AI session or a shell command (`/bin/sh -c`). Prompts are sent
+literally: Quuu inserts no diff, task text, or template variables into the prompt.
+Commands receive `QUUU_TASK_ID`, `QUUU_PROJECT`, `QUUU_RUN_ID`, `QUUU_HOOK_ID`, and
+`QUUU_HOOK_EVENT` as environment variables. Both run in the task's observed working
+directory, including a managed worktree, with the project's commit identity.
+The commit preset starts disabled; select its AI before enabling it.
+
+Events include creation, queueing, holding, agent start/stop, review, failure,
+before completion, completion, reopening, archiving, restoring, and deletion.
+Agent stop includes success, cancellation, failures and limits, so a retry can cause
+another stop event. Initial historical imports do not replay creation events.
+A transition to the same state does not fire again.
+
+- **Before completion** runs before worktree integration. Its failure keeps the task
+  in Review. Use it when a commit must exist before the human's Done action finishes.
+- **Completed** runs after Done and worktree integration, in the project directory
+  when the managed worktree has been removed.
+- **Deleted** runs after task deletion, in the project directory. Existing hooks are
+  stopped before a task's worktree is discarded. Their history survives deletion.
+- Hooks execute in definition order, one at a time per project. Except for the
+  explicit Agent started event, they wait for active task runs in that project.
+  New task runs wait for outstanding hooks. Hook agents respect their concurrency and
+  cooldown; reports retain their existing independent capacity. Hook failures are recorded; they do not
+  automatically repeat a command or mark a task Done.
+
+The chat shows hook status, literal instructions and output. Supported stream-based
+AI logs use the existing conversation renderer; commands and other logs show their
+raw output. The preview is bounded to the latest 64 KiB; Open full log opens the
+saved output. Stop and Run again are explicit actions. Settings retains the latest
+100 executions, including deleted tasks. The `hooks.list`, `hooks.log`, `hooks.resolve`,
+`hooks.cancel`, and `hooks.retry` operations are also available through CLI and MCP.
+
+Detached hooks survive app restarts. Queued definitions are snapshots of the settings
+at the event, and their execution records are saved with that transition. Unknown
+interrupted starts fail visibly instead of being replayed. Timeouts apply across
+restarts too.
+
+Task reports are a built-in review hook. Their request waits for custom hooks and
+survives restart; their agent, output contract, revision deduplication, and report
+settings remain owned by Quuu. Project assessments keep their daily schedule. The
+hook settings show this built-in behavior without exposing its system prompt or
+trigger as an editable custom hook.

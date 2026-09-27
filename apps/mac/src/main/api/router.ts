@@ -401,6 +401,13 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   })
   const history = new SessionHistory(app.db, app.sessions)
   return os.router({
+    hooks: {
+      resolve: os.hooks.resolve.handler(({ input }) => app.hooks.resolve(input.projectId)),
+      list: os.hooks.list.handler(({ input }) => app.hooks.list(input)),
+      log: os.hooks.log.handler(({ input }) => app.hooks.log(input)),
+      cancel: os.hooks.cancel.handler(({ input }) => app.hooks.cancel(input)),
+      retry: os.hooks.retry.handler(({ input }) => app.hooks.retry(input))
+    },
     servers: { status: os.servers.status.handler(() => app.settings.serverStatus) },
     logs: { page: os.logs.page.handler(({ input }) => history.page(input)) },
     snapshot: snapshot,

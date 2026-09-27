@@ -128,6 +128,7 @@ export class SessionImporter {
        * as a task nobody asked for — appearing, confusingly, while other work is running.
        */
       if (repo.hasOwnReportCovering(this.db, session.cwd, session.startedAt)) continue
+      if (repo.hasOwnHookCovering(this.db, session.cwd, session.startedAt)) continue
 
       const project = this.resolveProject(session, settings, result)
       if (!project) continue

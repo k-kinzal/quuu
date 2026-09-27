@@ -83,8 +83,8 @@ describe('every t() call names copy that exists', () => {
     })
 
     it(`${area.name}: every group built from a template literal exists`, () => {
-      const groups = [...flatten(area.resources)].map((key) => key.split('.')[0])
-      const missing = [...templateGroups(area.dir)].filter((group) => !groups.includes(group))
+      const defined = [...flatten(area.resources)]
+      const missing = [...templateGroups(area.dir)].filter((group) => !defined.some(key => key.startsWith(`${group}.`)))
 
       expect(missing).toEqual([])
     })
