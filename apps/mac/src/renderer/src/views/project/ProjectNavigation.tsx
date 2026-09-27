@@ -17,7 +17,7 @@ export function ProjectNavigation({ project }: { project: Project }): JSX.Elemen
     if (dashboard && !canReport) openDashboard(false)
   }, [canReport, dashboard, openDashboard])
   return (
-    <SideNav collapsed {...pane('projectNavigation')} aria-label={t('projectDashboard.navigation')}>
+    <SideNav collapsed surface="transparent" bordered={false} {...pane('projectNavigation')} aria-label={t('projectDashboard.navigation')}>
       <SideNavTop collapsed draggable />
       <NavSection>
         {canReport && <NavItem collapsed label={t('projectDashboard.title')}

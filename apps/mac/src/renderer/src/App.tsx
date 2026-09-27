@@ -4,6 +4,7 @@ import {
   AppShellBody,
   AppShellMain,
   EmptyState,
+  GlassPanel,
   MotionLayout,
   Panel,
   ThemeProvider,
@@ -378,9 +379,9 @@ function Shell(): JSX.Element {
           contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}`}
         >
           <LeftMenu showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen} />
+          {project && <GlassPanel><ProjectNavigation project={project} /></GlassPanel>}
           <AppShellMain windowHeader>
             <AppShellBody>
-              {project && <ProjectNavigation project={project} />}
               {isSettings ? (
                 <SettingsShell />
               ) : projectSettingsOpen && project ? (

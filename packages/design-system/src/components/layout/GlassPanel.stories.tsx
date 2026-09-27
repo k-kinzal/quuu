@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { ChevronRight, Inbox, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react'
+import { ChevronRight, Inbox, LayoutDashboard, ListChecks, PanelLeftClose, PanelLeftOpen, Settings } from 'lucide-react'
 import { paneProfiles } from '../../layoutSpec.js'
 import { IconButton } from '../inputs/Button.js'
 import { Text } from '../data-display/Text.js'
@@ -15,7 +15,7 @@ import { Spacer } from './Stack.js'
 const meta: Meta = { title: 'Layout/GlassPanel', parameters: { layout: 'fullscreen' } }
 export default meta
 
-function Example({ collapsed = false, hidden = false, plain = false }: { collapsed?: boolean; hidden?: boolean; plain?: boolean }): JSX.Element {
+function Example({ collapsed = false, hidden = false, plain = false, secondaryNav = false }: { collapsed?: boolean; hidden?: boolean; plain?: boolean; secondaryNav?: boolean }): JSX.Element {
   const [railCollapsed, setRailCollapsed] = useState(collapsed)
   const [listHidden, setListHidden] = useState(hidden)
   const [railWidth, setRailWidth] = useState(paneProfiles.navigation.initial)
@@ -58,6 +58,18 @@ function Example({ collapsed = false, hidden = false, plain = false }: { collaps
               </>
             )}
           </GlassPanel>
+          {secondaryNav && (
+            <GlassPanel>
+              <SideNav collapsed surface="transparent" bordered={false} aria-label="Section navigation">
+                <SideNavTop collapsed draggable />
+                <NavSection>
+                  <NavItem collapsed icon={<LayoutDashboard size={16} />} label="Overview" />
+                  <NavItem collapsed icon={<ListChecks size={16} />} label="Items" active />
+                  <NavItem collapsed icon={<Settings size={16} />} label="Settings" />
+                </NavSection>
+              </SideNav>
+            </GlassPanel>
+          )}
           <AppShellMain windowHeader>
             <Panel grow surface="canvas" windowHeader>
               <PanelHeader startInset={railCollapsed && listHidden ? 20 : undefined}><Text weight="bold">Contents</Text><WindowDragArea /></PanelHeader>
@@ -75,3 +87,4 @@ export const Expanded: StoryObj = { render: () => <Example /> }
 export const PlainBackdrop: StoryObj = { render: () => <Example plain /> }
 export const CollapsedNavigation: StoryObj = { render: () => <Example collapsed /> }
 export const CollapsedBoth: StoryObj = { render: () => <Example collapsed hidden /> }
+export const SecondaryNavigation: StoryObj = { render: () => <Example secondaryNav hidden /> }
