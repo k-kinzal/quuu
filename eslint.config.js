@@ -23,7 +23,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/build/**',
       '**/*.tsbuildinfo',
-      'apps/mac/src/api/generated/**' // Compiler output is verified by api:check and TypeScript.
+      'apps/mac/src/api/generated/**', // Compiler output is verified by api:check and TypeScript.
+      'site/**' // The static product page is plain browser JS outside every tsconfig.
     ]
   },
 
