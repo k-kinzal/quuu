@@ -60,6 +60,7 @@ enforce them live in [architecture.md](architecture.md) and
 - IPC is oRPC + Zod; in-flight/success/failure state uses TanStack Query (adopted at the
   user's direction). Do not hand-roll contract/client/mock mappings or transport.
 - Protocol implementations use `@connectrpc/connect-node`, `@bufbuild/protobuf`, and the official MCP SDK; code generation uses Buf and Protobuf-ES. These implement the requested gRPC/Protobuf/MCP protocols.
+- CLI parsing and help use Commander; output queries use JMESPath and tables use cli-table3. Keep these standard syntaxes in their libraries rather than rebuilding parsers.
 - Do not add unrelated dependencies. No native modules (SQLite is `node:sqlite`).
   **The exception is conversation rendering** (`react-markdown` / `remark-*` / `shiki` /
   `mermaid`): notation, grammar, and diagrams are detailed specs where a homegrown

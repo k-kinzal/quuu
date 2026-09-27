@@ -7,6 +7,9 @@ export default defineConfig({
     target: 'node22',
     outDir: 'out/cli',
     lib: { entry: resolve(import.meta.dirname, 'src/cli/main.mjs'), formats: ['es'], fileName: () => 'quuu.mjs' },
-    rollupOptions: { external: [...builtinModules, ...builtinModules.map(name => `node:${name}`)] },
+    rollupOptions: {
+      external: [...builtinModules, ...builtinModules.map(name => `node:${name}`)],
+      output: { chunkFileNames: 'chunks/[name]-[hash].mjs' },
+    },
   },
 })

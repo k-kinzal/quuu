@@ -208,6 +208,7 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | `QUUU_USER_DATA` | Overrides the data directory (default: `~/Library/Application Support/taskd`) |
 | `QUUU_CONNECTION_FILE` | Overrides CLI discovery (`$QUUU_USER_DATA/connections.json` by default) |
 | `QUUU_URL` / `QUUU_TOKEN` | Explicit gRPC URL and bearer token; set both |
+| `QUUU_OUTPUT` | CLI output default: `auto`, `json`, or `table`; `--output` takes precedence |
 | `QUUU_CLAUDE_PROJECTS_DIR` | Root of Claude Code session logs (default: `~/.claude/projects`) |
 | `QUUU_CLAUDE_SESSIONS_DIR` | Pid files Claude Code keeps only while running (default: `~/.claude/sessions`) |
 | `QUUU_CODEX_SESSIONS_DIR` | Root of Codex session logs (default: `~/.codex/sessions`) |
@@ -697,9 +698,45 @@ port zero selects an available port at each start. The generated gRPC
 service contract is `apps/mac/proto/quuu.proto`.
 
 Build the bundled CLI with `npm run build:cli`. `apps/mac/bin/quuu` launches it; the
-packaged app includes the launcher and bundle in `Contents/Resources/bin`. Add
+packaged app includes the launcher, entry point and lazy chunks in `Contents/Resources/bin`. Add
 that directory to PATH, or link the checkout launcher into a directory on PATH.
 The installed local checkout uses `~/.local/bin/quuu`.
+
+The CLI requires Node.js 22.12 or later. Commander handles subcommands, options,
+errors and `--help` / `-h` at every command level. Help reads only a generated
+operation-name catalog; it does not initialize gRPC, load schemas or contact Quuu.
+
+Output is readable tables/details in a human terminal, and JSON when stdout is
+redirected/piped or an AI environment is detected (`QUUU_RUN_ID`, `CODEX_THREAD_ID`,
+`CODEX_CI`, `CLAUDECODE`, `CURSOR_AGENT`). Nonempty markers other than `0` / `false`
+count as AI execution, including PTYs. An unrecognized AI using a PTY can specify
+`--output json`. Precedence is `--output` / `-o`, then `QUUU_OUTPUT`, then automatic
+selection. Explicit `--output table` works in pipes too. Existing JSON shapes are
+preserved. `--json` remains the operation **input** flag; use `--output json` for output.
+
+All one-shot commands, including lists and generic `call`, accept `--query` in
+[JMESPath](https://jmespath.org/tutorial.html) syntax, following the convention used
+by [Azure CLI](https://learn.microsoft.com/cli/azure/query-azure-cli) and AWS CLI.
+It supports field projection, filters, sorting and aggregates without shelling out.
+The query runs against the complete JSON result before formatting. For shortcuts,
+use `projects` / `tasks` as the root; `agents list`, `groups list`, `rules list` and
+`call projects.list` return arrays. `tasks list` collects all matching pages first;
+`call tasks.list` preserves API paging. Server filters (`--project`, `--status`)
+are applied before the local output query. Empty selections remain `[]`, and missing
+fields become `null` in JSON. Syntax errors fail before executing the operation.
+
+```sh
+quuu projects list --help
+quuu projects list --query 'projects[].{name:name,path:path}'
+quuu projects list --query 'sort_by(projects, &name)[].{id:id,name:name}' -o table
+quuu tasks list --query 'tasks[?status==`review`].{id:id,title:title}'
+quuu tasks list --query 'length(tasks)' -o json
+quuu agents list --query '[?enabled].{id:id,name:name}'
+```
+
+Use single quotes around expressions to protect JMESPath backticks and `&` from
+the shell. Log exports, `watch`, and `stream` always emit JSONL and reject `--query`
+and `--output table`; use `call logs.page --query ...` for a queryable history page.
 
 ```sh
 quuu tasks list --project /path/to/project --include-archived

@@ -88,6 +88,11 @@ Electron desktop composition. The operation reception has no Electron imports;
 its host supplies desktop capabilities and caller lifetime. Servers have no direct
 DB or task-operation imports. CLI requests go through `client/`.
 
+CLI help uses Commander and a generated list of operation names. The schema,
+gRPC client, query engine and table formatter load only when an action needs them.
+The packaged CLI includes its lazy chunks beside the entry point. `api:check`
+keeps the lightweight command tree in sync with the operation contract.
+
 All these directions, package manifests, cross-app imports and cycles are checked.
 The existing provider-integration and Design System boundaries remain enforced.
 

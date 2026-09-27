@@ -14,10 +14,37 @@ CLI and HTTP clients**. Never change its SQLite database directly.
 ```sh
 quuu api
 quuu describe rules.create
-quuu projects list
+quuu projects list --query 'projects[].{id:id,name:name,path:path}'
 quuu tasks list --project /absolute/project/path --include-archived
 quuu tasks get TASK_ID
 ```
+
+Use `quuu RESOURCE ACTION --help` for command flags; help works without the app.
+Output defaults to JSON for AI agents and non-TTY stdout, and a readable table in
+a human terminal. `--output json|table|auto` overrides `QUUU_OUTPUT`, which
+overrides automatic selection. For scripts that require JSON, set `--output json`.
+`--json` supplies operation **input**, not the output format.
+
+One-shot commands, including every list, accept `--query` using
+[JMESPath](https://jmespath.org/tutorial.html), as in AWS/Azure CLI. It runs on the
+complete JSON result before formatting. Preserve the root: shortcuts return
+`{projects:[...]}` / `{tasks:[...]}`, while `agents list`, `groups list`, `rules list`
+and generic project-list calls return arrays. `tasks list` fetches all matching
+pages before applying the query; generic `call tasks.list` returns one API page.
+
+```sh
+quuu projects list --query 'sort_by(projects, &name)[].{id:id,name:name}'
+quuu tasks list --query 'tasks[?status==`review`].{id:id,title:title}'
+quuu agents list --query '[?enabled].{id:id,name:name}'
+quuu tasks list --query 'length(tasks)'
+```
+
+Quote expressions with shell single quotes so backtick JSON literals and `&`
+reach JMESPath unchanged. Queries can project fields, filter, sort, and return
+scalars; unmatched fields produce JSON `null`, and empty selections produce `[]`.
+`--project` / `--status` filter tasks on the server before the output query.
+JSONL commands (`tasks logs`, `stream`, `watch`) keep their streaming format and
+reject `--query` and `--output table`.
 
 Projects accept an exact ID, name, or path. Task shortcuts accept an ID or unique
 prefix. Generic operations use full IDs and their declared JSON schema:

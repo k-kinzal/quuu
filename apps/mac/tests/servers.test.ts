@@ -17,7 +17,7 @@ import { operations } from '../src/api/catalog.js'
 import { Quuu } from '../src/api/generated/quuu_pb.js'
 import { wire } from '../src/api/generated/wire.js'
 import { EVENTS } from '../src/api/channels.js'
-import { isolateSessionDirs, makeAgent, occupy } from './helpers.js'
+import { isolateSessionDirs, makeAgent, makeTask, occupy } from './helpers.js'
 import * as repo from '../src/main/db/repo.js'
 
 const execute = promisify(execFile)
@@ -107,6 +107,62 @@ describe('the generated gRPC API', () => {
     const listed = await execute(cli, ['tasks', 'list', '--project', dir], { env })
     expect((JSON.parse(listed.stdout) as { tasks: unknown[] }).tasks).toHaveLength(1)
   })
+  it('queries lists with JMESPath before rendering JSON or tables and preserves generic operation shapes', async () => {
+    const project = app.projects.createProject({ name: '日本語 project', path: dir })
+    makeAgent(app.db, { name: 'CLI agent', enabled: true })
+    const env = { ...process.env, QUUU_CONNECTION_FILE: servers.connectionFile, QUUU_OUTPUT: 'json' }
+    const selected = await execute(cli, ['projects', 'list', '--query', 'projects[?name==`日本語 project`].{name:name,path:path}'], { env })
+    expect(JSON.parse(selected.stdout)).toEqual([{ name: project.name, path: dir }])
+    const table = await execute(cli, ['projects', 'list', '--output', 'table', '--query', 'projects[].{name:name,path:path}'], { env })
+    expect(table.stdout).toContain('NAME')
+    expect(table.stdout).toContain('日本語 project')
+    expect(table.stdout).not.toContain(project.id)
+    const generic = await execute(cli, ['call', 'projects.list', '--query', '[].name'], { env })
+    expect(JSON.parse(generic.stdout)).toEqual([project.name])
+    const agents = await execute(cli, ['agents', 'list', '--query', '[?enabled].name'], { env })
+    expect(JSON.parse(agents.stdout)).toContain('CLI agent')
+    for (const resource of ['groups', 'rules']) {
+      const empty = await execute(cli, [resource, 'list', '--query', 'length(@)'], { env })
+      expect(JSON.parse(empty.stdout)).toBe(0)
+    }
+    const noMatch = await execute(cli, ['projects', 'list', '--query', 'projects[?name==`absent`]'], { env })
+    expect(JSON.parse(noMatch.stdout)).toEqual([])
+    const missing = await execute(cli, ['projects', 'list', '--query', 'missing'], { env })
+    expect(JSON.parse(missing.stdout)).toBeNull()
+  }, 15_000)
+
+  it('applies sorting and aggregates to all task pages after server filters', async () => {
+    const project = app.projects.createProject({ name: 'paging', path: dir })
+    for (let index = 0; index < 205; index++) makeTask(app.db, project.id, `task ${String(index).padStart(3, '0')}`)
+    makeTask(app.db, project.id, 'excluded', 2, 'draft')
+    const env = { ...process.env, QUUU_CONNECTION_FILE: servers.connectionFile, QUUU_OUTPUT: 'json' }
+    const result = await execute(cli, ['tasks', 'list', '--project', project.id, '--status', 'queued', '--query', '{count:length(tasks),last:sort_by(tasks, &title)[-1].title}'], { env })
+    expect(JSON.parse(result.stdout)).toEqual({ count: 205, last: 'task 204' })
+    const page = await execute(cli, ['tasks', 'list', '--json', '{"limit":1}', '--query', '{count:length(tasks),next:next}'], { env })
+    expect(JSON.parse(page.stdout)).toHaveProperty('count', 1)
+    expect(JSON.parse(page.stdout)).toHaveProperty('next', expect.any(Number))
+  }, 15_000)
+
+  it('validates queries before mutations and preserves JSON file and stdin inputs', async () => {
+    const env = { ...process.env, QUUU_CONNECTION_FILE: servers.connectionFile, QUUU_OUTPUT: 'json' }
+    await expect(execute(cli, ['call', 'projects.create', JSON.stringify({ name: 'must not exist', path: dir }), '--query', '['], { env }))
+      .rejects.toHaveProperty('stderr', expect.stringContaining('Invalid --query'))
+    expect(app.projects.listProjects()).toHaveLength(0)
+    const file = join(dir, 'project.json')
+    writeFileSync(file, JSON.stringify({ name: 'file input', path: dir }))
+    const created = await execute(cli, ['projects', 'create', '--json', `@${file}`], { env })
+    const project = JSON.parse(created.stdout) as { id: string }
+    const child = spawn(cli, ['tasks', 'create', '--project', project.id, '--title=-literal', '--status', 'held', '--prompt-file', '-'], { env })
+    let stdout = '', stderr = ''
+    child.stdout.on('data', (data: Buffer) => { stdout += data.toString() })
+    child.stderr.on('data', (data: Buffer) => { stderr += data.toString() })
+    const exited = once(child, 'exit')
+    child.stdin.end('A multiline instruction\nwith $ and `quotes`.')
+    expect((await exited)[0]).toBe(0)
+    expect(stderr).toBe('')
+    expect(JSON.parse(stdout)).toMatchObject({ task: { title: '-literal', prompt: 'A multiline instruction\nwith $ and `quotes`.', status: 'held' } })
+  }, 15_000)
+
   it('reads durable session history in bounded pages without taking over a live conversation', async () => {
     const project = app.projects.createProject({ name: 'logs', path: dir })
     const agentId = makeAgent(app.db, { name: 'test', logAdapter: 'stdout' })

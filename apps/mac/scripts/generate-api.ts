@@ -74,6 +74,8 @@ function shape(schema: Schema, name: string): { type: string; shape: WireShape }
 }
 const definitions: Record<string, { method: string; input: WireShape; output: WireShape }> = {}
 const methods: string[] = []
+// Help must enumerate the complete API without initializing schemas or network SDKs.
+write(join(generated, 'operations.ts'), `// Generated from the operation contract.\nexport const operationNames: string[] = ${JSON.stringify(operations().map(operation => operation.name), null, 2)}\n`)
 for (const operation of operations()) {
   const method = operation.name.split('.').map(part => part[0].toUpperCase() + part.slice(1)).join('')
   const sides = (['input', 'output'] as const).map(side => {
