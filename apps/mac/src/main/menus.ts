@@ -6,6 +6,12 @@ import { sendEvent } from './ipc/events.js'
 import type { AppCommand, CommandPayload } from './desktop/types.js'
 import { PRIORITY_LABEL } from './menuLabels.js'
 import { beginQuit, mainWindow, showWindow } from './windows.js'
+import type { UpdateMenuItem } from './desktop/appUpdates.js'
+let updateMenuItem: UpdateMenuItem | null = null
+export function setUpdateMenuItem(item: UpdateMenuItem): void {
+  updateMenuItem = item
+  buildMenu()
+}
 let currentProjects: { id: string; name: string }[] = []
 export function send(command: AppCommand, extra?: Omit<CommandPayload, 'command'>): void {
   showWindow()
@@ -65,6 +71,7 @@ function buildMenu(): void {
       label: 'Quuu',
       submenu: [
         { role: 'about', label: t('menu.about') },
+        ...(updateMenuItem ? [updateMenuItem] : []),
         { type: 'separator' },
         { label: t('menu.settings'), accelerator: 'Cmd+,', click: () => send('view.settings') },
         { type: 'separator' },

@@ -68,6 +68,7 @@ npm run check        # lint + architecture check + typecheck + tests (run before
 npm run build        # typecheck + bundle
 npm run dist         # build the .app into apps/mac/release/
 npm run dist:dmg     # build the dmg
+npm run dist:release # build Release-marked dmg + zip for both Mac architectures
 npm run app:restart  # quit → rebuild the .app → relaunch
 npm run icon         # regenerate the icon artifacts (only after redrawing)
 npm run storybook    # visual check of the design system
@@ -241,10 +242,10 @@ because the tests build `quuu-pty` with `xcrun`.
 ## Releases
 
 GitHub Actions ([release.yml](../.github/workflows/release.yml)) builds the Mac app and
-puts dmgs (arm64 / x64) on the Release you published. Publish a GitHub Release (the tag
+puts dmgs, update ZIPs and JSON feeds (arm64 / x64) on the Release you published. Publish a GitHub Release (the tag
 is created with it). The tag is the release date, `YYYY.MM.DD`, with no `v` prefix. The
-workflow stamps `apps/mac/package.json` with that tag as the version for the build, then
-rewrites the Release by attaching the dmgs. The version in git is not consulted. Title
+workflow stamps `apps/mac/package.json` with its numeric version (for example,
+`2026.09.27` becomes `2026.9.27`), then attaches the artifacts. The version in git is not consulted. Title
 and notes stay as you wrote them.
 
 ```sh
@@ -256,6 +257,8 @@ The GitHub Releases UI does the same. Publishing the Release is the trigger — 
 push by itself does not ship. A tag in any other shape (`v0.1.0`, `2026.9.26`) fails the
 workflow before building, so nothing is attached. One release per day: to ship again the
 same day, delete that day's Release and tag first, then publish again.
+Rebuilding the same date replaces the downloads but does not update existing
+installations automatically; automatic updates require a newer dated Release.
 
 - **Signing defaults to ad-hoc (unofficial distribution).** Whoever downloads it has to
   get past Gatekeeper once — if opening is refused, use "Open Anyway" in
@@ -269,6 +272,38 @@ same day, delete that day's Release and tag first, then publish again.
   signing team goes into the gitignored `apps/mobile/ios/Local.xcconfig` as your own
   Team ID (if it's missing, the script explains how to create it; a free Personal Team
   is fine, but its profile expires after 7 days, so reinstall periodically)
+
+### Automatic Mac updates
+
+Certificate-signed Release builds use Electron's built-in `autoUpdater` (Squirrel.Mac).
+They check GitHub's latest stable Release 30 seconds after launch and every six hours,
+download updates in the background, and apply them on the next app launch. **Quuu >
+Check for Updates…** checks immediately. After a download, **Restart to Update** first
+stops servers and closes SQLite through the normal shutdown path; running agents
+remain detached and are re-adopted after restart. **Later** keeps the app open.
+
+The Release workflow uses `electron-builder.release.yml` to mark the bundle as
+`github-release`; `npm run dev`, `dist`, `dist:dmg`, and `app:restart` remain local
+builds and never initialize the updater or contact the update feed. Moving a local
+bundle into Applications does not enable updates. `dist:release` explicitly opts
+into the Release channel and is intended for the release workflow.
+
+Each architecture uses its own `RELEASES-<arch>.json` and ZIP. Feeds are attached only
+after both ZIPs are uploaded. Squirrel compares numeric versions, rejects downgrades,
+and verifies that an update matches the installed app's code signature. Prereleases
+are excluded by GitHub's latest stable Release endpoint.
+
+macOS requires a certificate signature for automatic replacement; an ad-hoc signature
+cannot authenticate a later build. Keep the existing `CSC_LINK` and `CSC_KEY_PASSWORD`
+Secrets configured with a consistent signing identity for Release builds. This change
+does not provision certificates or change Secrets. Ad-hoc Releases remain available
+as manual downloads and publish empty update feeds. Their update menu explains the
+requirement and offers to open Releases. Existing versions without this feature need
+one manual installation of a signed Release first. Install into Applications before
+updating; a mounted DMG is read-only.
+
+References: [Electron autoUpdater](https://www.electronjs.org/docs/latest/api/auto-updater)
+and [Squirrel static update feeds](https://github.com/Squirrel/Squirrel.Mac#update-file-json-format).
 
 ## Operating tasks from the CLI
 

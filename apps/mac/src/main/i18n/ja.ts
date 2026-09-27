@@ -1,6 +1,20 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  updates: {
+    check: 'アップデートを確認…',
+    checking: 'アップデートを確認中…',
+    downloading: 'アップデートをダウンロード中…',
+    restart: '再起動してアップデート',
+    current: '自動更新できる新しいバージョンはありません。',
+    unsigned: 'この配布版は自動更新できません。GitHub Releasesから証明書で署名された配布版をインストールすると、自動更新が利用できます。',
+    failed: 'アップデートを確認またはダウンロードできませんでした。Quuuをアプリケーションフォルダに置いて後で再試行するか、最新の配布版をダウンロードしてください。',
+    ready: 'アップデートの準備ができました。',
+    readyDetail: '今すぐ再起動するか、次回の起動時に更新を適用できます。再起動中も実行中のエージェントは継続します。',
+    releases: 'Releasesを開く',
+    close: '閉じる',
+    later: 'あとで'
+  },
   hooks: {
     "invalidIds": "フックIDは一意で、system: から始めることはできません。",
     "busy": "ライフサイクルフックの終了を待っています。",

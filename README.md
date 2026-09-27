@@ -41,6 +41,10 @@ The optional iPhone companion requires iOS 18+, iCloud Drive, and a local Xcode 
 Enable an agent in **Settings → Agents** and select it for your project to start
 queueing work.
 
+Certificate-signed Releases check for updates automatically. Downloaded updates apply
+on the next launch, or through **Quuu → Restart to Update**. Local builds are excluded.
+Ad-hoc builds require a manual download; see [automatic updates](docs/guide.md#automatic-mac-updates).
+
 See the [guide](docs/guide.md) for configuration, development, and iPhone installation.
 
 ## License

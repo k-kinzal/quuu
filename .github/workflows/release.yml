@@ -1,6 +1,6 @@
-# Build the Mac app and put a dmg on Releases.
+# Build the Mac app and publish installers and automatic-update feeds on Releases.
 #
-# - Runs when a GitHub Release is published; attaches (or replaces) the dmg on that Release
+# - Runs when a GitHub Release is published; attaches the dmg, zip and feeds to that Release
 # - workflow_dispatch creates no Release; it only verifies the build passes and inspects artifacts
 # - Signing defaults to ad-hoc (unsigned distribution). To use an Apple Developer
 #   Program certificate, put CSC_LINK (base64 of the .p12) and CSC_KEY_PASSWORD in
@@ -37,23 +37,16 @@ jobs:
       # The quality gate runs on push via ci.yml. This job only packages.
 
       # The Release tag is the version, dated as YYYY.MM.DD (e.g. 2026.09.26). Stamp it
-      # onto apps/mac/package.json so the dmg name and the built app match what was
-      # published; git's version is ignored. Not semver on purpose: electron-builder only
-      # needs semver for Windows, and macOS takes dotted integers as-is.
+      # onto apps/mac/package.json without leading zeroes so app and feed versions match.
       - name: Stamp version from Release tag
         if: github.event_name == 'release'
         env:
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          case "$TAG" in
-            [0-9][0-9][0-9][0-9].[0-9][0-9].[0-9][0-9]) ;;
-            *) echo "tag ${TAG} is not YYYY.MM.DD" >&2; exit 1 ;;
-          esac
-          npm pkg set "version=${TAG}" -w quuu
+          npx vite-node -c vitest.config.ts apps/mac/scripts/release-manifest.ts --stamp
 
-      # --publish never lives in the dist:dmg script. Passing it here as
-      # `npm run dist:dmg -- --publish never` lets npm eat --publish.
-      - name: Build (arm64 / x64 dmg)
+      # --publish never lives in the script; assets are uploaded after all builds finish.
+      - name: Build (arm64 / x64 dmg and zip)
         env:
           # No certificate here, so stop the keychain search (afterPack's ad-hoc signing covers it).
           # With CSC_LINK / CSC_KEY_PASSWORD in Secrets, electron-builder signs properly
@@ -66,20 +59,30 @@ jobs:
           if [ -z "${CSC_LINK:-}" ]; then
             unset CSC_LINK CSC_KEY_PASSWORD
           fi
-          npm run dist:dmg
+          npm run dist:release
 
-      - name: Attach dmg to Release
+      - name: Generate automatic-update feeds
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: npx vite-node -c vitest.config.ts apps/mac/scripts/release-manifest.ts --write
+
+      - name: Attach installers, then update feeds to Release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          gh release upload "$TAG" apps/mac/release/Quuu-*.dmg --clobber
+          gh release upload "$TAG" apps/mac/release/Quuu-*.dmg apps/mac/release/Quuu-*.zip --clobber
+          # Publishing feeds last prevents clients from requesting a not-yet-uploaded ZIP.
+          gh release upload "$TAG" apps/mac/release/RELEASES-*.json --clobber
 
       # Manual runs create no Release; just keep the outputs as workflow Artifacts
       - name: Upload artifacts
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
-          name: dmg
-          path: apps/mac/release/Quuu-*.dmg
+          name: mac-release
+          path: |
+            apps/mac/release/Quuu-*.dmg
+            apps/mac/release/Quuu-*.zip

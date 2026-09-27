@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { isReleaseBuild } from '../src/main/updates/distribution.js'
+import { hasUpdateSignature } from '../src/main/updates/signing.js'
 
 let directory: string
 beforeEach(() => { directory = mkdtempSync(join(tmpdir(), 'quuu-distribution-')) })
@@ -28,4 +29,10 @@ it.each([
 
 it('disables updates when bundle metadata cannot be read', () => {
   expect(isReleaseBuild(true, 'darwin', directory)).toBe(false)
+})
+
+it('requires a certificate signature that can authenticate a later build', () => {
+  expect(hasUpdateSignature('Signature=adhoc\nTeamIdentifier=not set\n')).toBe(false)
+  expect(hasUpdateSignature('code object is not signed at all')).toBe(false)
+  expect(hasUpdateSignature('Authority=Developer ID Application: Example\nAuthority=Apple Root CA\n')).toBe(true)
 })

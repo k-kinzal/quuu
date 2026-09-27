@@ -8,7 +8,7 @@ import { QuuuApp } from './bootstrap.js'
 import type { SchedulerStatus } from './execution/status.js'
 import { initMainI18n, t } from './i18n/index.js'
 import { broadcast, registerIpc } from './ipc/index.js'
-import { refreshMenuIfProjectsChanged, send } from './menus.js'
+import { refreshMenuIfProjectsChanged, send, setUpdateMenuItem } from './menus.js'
 import { mobileWebRoot } from './mobile-sync/folder.js'
 import type { AppSettings } from './settings/types.js'
 import type { AppSnapshot, ToastPayload } from './snapshot.js'
@@ -16,11 +16,14 @@ import { swipeCommand } from './swipe.js'
 import type { ServerController } from './servers/controller.js'
 import { desktopOperations } from './desktop/operations.js'
 import { beginQuit, configureWindows, mainWindow, showWindow } from './windows.js'
+import { isReleaseBuild } from './updates/distribution.js'
+import type { AppUpdates } from './desktop/appUpdates.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 let quuu: QuuuApp | null = null
 let servers: ServerController | null = null
+let updates: AppUpdates | null = null
 let quitting = false
 let shutdownComplete = false
 let broadcastTimer: NodeJS.Timeout | null = null
@@ -164,6 +167,14 @@ if (!app.requestSingleInstanceLock()) {
     refreshMenuIfProjectsChanged(quuu?.snapshot().projects ?? [])
     showWindow()
 
+    if (isReleaseBuild(app.isPackaged, process.platform, app.getAppPath())) {
+      void import('./desktop/appUpdates.js').then(({ AppUpdates }) => {
+        if (quitting) return
+        updates = new AppUpdates(setUpdateMenuItem, () => app.quit())
+        return updates.start()
+      }).catch(error => console.warn('Cannot start Quuu updates:', error))
+    }
+
     // Loading network SDKs follows the first window and is skipped while both listeners are off.
     const instance = quuu
     let startingServers = false
@@ -200,6 +211,7 @@ if (!app.requestSingleInstanceLock()) {
     event.preventDefault()
     if (quitting) return
     quitting = true
+    updates?.stop()
     void (async () => {
       // Stop listeners and caller-owned resources before closing SQLite.
       await servers?.stop()
@@ -214,7 +226,9 @@ if (!app.requestSingleInstanceLock()) {
     })().catch(error => console.error('Quuu shutdown:', error)).finally(() => {
       shutdownComplete = true
       // Finish the canceled native quit event before requesting a fresh quit.
-      setImmediate(() => app.quit())
+      setImmediate(() => {
+        if (!updates?.installAfterShutdown()) app.quit()
+      })
     })
   })
 

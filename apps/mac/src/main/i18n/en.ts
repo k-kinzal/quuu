@@ -1,5 +1,19 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  updates: {
+    check: 'Check for Updates…',
+    checking: 'Checking for Updates…',
+    downloading: 'Downloading Update…',
+    restart: 'Restart to Update',
+    current: 'No newer automatic update is available.',
+    unsigned: 'This copy cannot update automatically. Install a certificate-signed release from GitHub Releases to enable automatic updates.',
+    failed: 'The update could not be checked or downloaded. Install Quuu in Applications and try again later, or download the latest release.',
+    ready: 'An update is ready to install.',
+    readyDetail: 'Restart now, or the update will be applied the next time you open the app. Running agents continue during the restart.',
+    releases: 'Open Releases',
+    close: 'Close',
+    later: 'Later'
+  },
   hooks: {
     "invalidIds": "Hook IDs must be unique and cannot use the system: prefix.",
     "busy": "Waiting for lifecycle hooks to finish.",
