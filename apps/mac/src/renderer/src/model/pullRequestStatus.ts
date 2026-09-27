@@ -1,4 +1,4 @@
-import type { PullRequestCheck, ReviewPullRequest } from '../../../preload/api/review.js'
+import type { PullRequestCheck, ReviewPullRequest } from '../../../api/schemas/review.js'
 
 /**
  * The CI of a task's Pull Requests read as one: red if any failed, yellow if any is still

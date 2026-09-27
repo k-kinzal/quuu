@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ThemeProvider } from '@design-system/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import type { Task } from '../src/preload/api/tasks.js'
+import type { Task } from '../src/api/schemas/tasks.js'
 import { TaskWorkspace } from '../src/renderer/src/components/TaskWorkspace.js'
 import { NO_FILTERS } from '../src/renderer/src/model/table.js'
 import { useStore } from '../src/renderer/src/state/store.js'

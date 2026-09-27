@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import type { ReviewPullRequest } from '../src/preload/api/review.js'
+import type { ReviewPullRequest } from '../src/api/schemas/review.js'
 import { overallCheck } from '../src/renderer/src/model/pullRequestStatus.js'
 
 function pull(over: Partial<ReviewPullRequest>): ReviewPullRequest {

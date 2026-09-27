@@ -1,5 +1,5 @@
 import { Dot, IconMark, useTheme, type TreeNode } from '@design-system/react'
-import type { FileChangeKind, PullRequestCheck } from '../../../preload/api/review.js'
+import type { FileChangeKind, PullRequestCheck } from '../../../api/schemas/review.js'
 import { t } from '../model/i18n/index.js'
 import { Check, CircleAlert, Clock, ICON, Minus, TriangleAlert, iconProps } from './icons.js'
 

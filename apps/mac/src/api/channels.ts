@@ -5,6 +5,7 @@ export const RPC_CLIENT = 'quuu:rpc:client'
 /** Push channels from main to renderer. */
 export const EVENTS = {
   snapshot: 'quuu:evt:snapshot',
+  settings: 'quuu:evt:settings',
   sessionAppended: 'quuu:evt:sessionAppended',
   schedulerStatus: 'quuu:evt:schedulerStatus',
   toast: 'quuu:evt:toast',

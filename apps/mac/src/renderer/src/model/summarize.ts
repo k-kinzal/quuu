@@ -1,4 +1,4 @@
-import type { SessionBlock, SessionImage, SessionMessage, SessionRole, ToolCall } from '../../../preload/api/session.js'
+import type { SessionBlock, SessionImage, SessionMessage, SessionRole, ToolCall } from '../../../api/schemas/session.js'
 
 /**
  * Turn the session log into a readable shape.

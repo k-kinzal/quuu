@@ -13,7 +13,7 @@ import {
   type TerminalViewSize
 } from '@design-system/react'
 import { useCallback, useId, useEffect, useRef, useState } from 'react'
-import type { TerminalEvent, TerminalSession } from '../../../preload/api/workbench.js'
+import type { TerminalEvent, TerminalSession } from '../../../api/schemas/workbench.js'
 import { pane } from '../interaction/focus.js'
 import { t } from '../model/i18n/index.js'
 import { ChevronDown, ChevronUp, ICON, Plus, RefreshCw, Search, Square, Terminal, Trash2, X, iconProps } from '../ui/icons.js'

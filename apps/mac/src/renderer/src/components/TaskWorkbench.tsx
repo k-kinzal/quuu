@@ -13,9 +13,9 @@ import {
   motionRegion
 } from '@design-system/react'
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
-import type { Project } from '../../../preload/api/projects.js'
-import type { ReviewFile, ReviewFileRequest } from '../../../preload/api/review.js'
-import type { Task } from '../../../preload/api/tasks.js'
+import type { Project } from '../../../api/schemas/projects.js'
+import type { ReviewFile, ReviewFileRequest } from '../../../api/schemas/review.js'
+import type { Task } from '../../../api/schemas/tasks.js'
 import { useReviewSnapshot } from '../interaction/useReviewSnapshot.js'
 import type { InspectorTool, WorkTool } from '../interaction/workbench.js'
 import { inspectorTools, useWorkbenchLayout, visibleInspectorTools } from '../interaction/workbench.js'

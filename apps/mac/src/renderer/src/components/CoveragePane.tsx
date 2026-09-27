@@ -19,7 +19,7 @@ import {
   type ProgressTone
 } from '@design-system/react'
 import { useEffect, useMemo, useState } from 'react'
-import type { CoverageFile, CoverageMetric, CoverageSummary } from '../../../preload/api/review.js'
+import type { CoverageFile, CoverageMetric, CoverageSummary } from '../../../api/schemas/review.js'
 import { t } from '../model/i18n/index.js'
 import { FileSearch, FileText, ICON, ListFilter, Search, iconProps } from '../ui/icons.js'
 

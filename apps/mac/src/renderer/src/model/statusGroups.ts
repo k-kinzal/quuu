@@ -1,4 +1,4 @@
-import type { TaskStatus } from '../../../preload/api/tasks.js'
+import type { TaskStatus } from '../../../api/schemas/tasks.js'
 
 /**
  * Display order of statuses and the banding it produces. The View's order.

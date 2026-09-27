@@ -5,8 +5,8 @@ import { RPCHandler } from '@orpc/server/message-port'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { authorizedFrame } from '../src/main/ipc/validation.js'
-import type { Task, TaskInput } from '../src/preload/api.js'
-import { contract } from '../src/preload/contract.js'
+import type { Task, TaskInput } from '../src/api/types.js'
+import { contract } from '../src/api/contract.js'
 import { createQuuuClient } from '../src/renderer/src/state/client.js'
 
 let channel: MessageChannel

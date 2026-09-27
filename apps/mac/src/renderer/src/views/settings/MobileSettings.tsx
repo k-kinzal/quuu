@@ -12,7 +12,7 @@ import {
   Text
 } from '@design-system/react'
 import { useCallback, useEffect, useState } from 'react'
-import type { MobileSyncStatus } from '../../../../preload/api/snapshot.js'
+import type { MobileSyncStatus } from '../../../../api/schemas/snapshot.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
 

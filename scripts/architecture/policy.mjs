@@ -15,12 +15,23 @@ export function layerOf(file) {
   if (file.startsWith('apps/mobile/src/')) return `mobile/${file.split('/')[3]}`
   return 'package'
 }
-const isApi = file => /^apps\/mac\/src\/preload\/(api\.ts|api\/[^/]+\.ts)$/.test(file)
-const isContract = file => ['apps/mac/src/preload/contract.ts','apps/mac/src/preload/events.ts'].includes(file)
-const isChannel = file => file === 'apps/mac/src/preload/channels.ts'
-const isIpcOwner = file => file.startsWith('apps/mac/src/main/ipc/') || ['apps/mac/src/main/index.ts','apps/mac/src/main/menus.ts'].includes(file)
+const isApi = file => /^apps\/mac\/src\/api\/(types\.ts|schemas\/[^/]+\.ts|events\.ts)$/.test(file)
+const isChannel = file => file === 'apps/mac/src/api/channels.ts'
+const receptions = new Set(['main/api', 'main/ipc', 'main/servers', 'main/desktop', 'main/composition'])
 export function layerViolation(from, to, typeOnly = false) {
   const source = layerOf(from), target = layerOf(to)
+  if (source === 'api' && target !== 'api') return 'public contracts must not import implementation or transport'
+  if (source === 'client' && !['api', 'client'].includes(target)) return 'HTTP clients depend only on the public contract and generated protocol'
+  if (source === 'cli' && !['api', 'client', 'cli'].includes(target)) return 'CLI operations must go through the HTTP client'
+  if ((source.startsWith('renderer/') || source === 'preload') && ['client', 'cli', 'main/servers'].includes(target)) return 'desktop operations must not use the HTTP client or servers'
+  if (target === 'api' && source !== 'api') {
+    if (['client', 'cli', 'preload'].includes(source) || receptions.has(source)) return null
+    if (source.startsWith('renderer/') && (typeOnly && isApi(to) || isChannel(to) && from.endsWith('/main.tsx'))) return null
+    return 'features do not depend on public wire contracts; renderer imports only API types'
+  }
+  if (source.startsWith('main/') && !receptions.has(source) && ['main/api', 'main/servers', 'main/ipc', 'main/desktop'].includes(target)) return 'features must not depend on reception or desktop composition'
+  if (source === 'main/api' && ['main/servers', 'main/ipc', 'main/desktop'].includes(target)) return 'operation reception must not depend on a transport or desktop implementation'
+  if (source === 'main/servers' && ['main/db', 'main/tasks', 'main/execution', 'main/ipc', 'main/desktop'].includes(target)) return 'servers call the operation reception, not storage or feature implementations'
   if (source === 'main/agent-clis' && target.startsWith('main/') && target !== source) return 'CLI drivers must not depend on Quuu or its adapters'
   const provider = /^apps\/mac\/src\/main\/agent-adapters\/(claude|codex|cursor|grok|copilot|agy|opencode|stdout)\//
   if (provider.test(to) && source !== 'main/agent-adapters') return 'provider formats are private to agent adapters; use the adapter registry'
@@ -32,9 +43,6 @@ export function layerViolation(from, to, typeOnly = false) {
   if (source.startsWith('renderer/') && target.startsWith('main/')) return 'renderer must not import main implementation'
   if (source.startsWith('main/') && target.startsWith('renderer/')) return 'main must not depend on the View'
   if (target === 'preload' && source !== 'preload') {
-    if (typeOnly && isApi(to) && (source.startsWith('renderer/') || isIpcOwner(from))) return null
-    if (isIpcOwner(from) && (isApi(to) || isContract(to) || isChannel(to))) return null
-    if (isChannel(to) && from === 'apps/mac/src/renderer/src/main.tsx') return null
     return 'cross-process imports are limited to public API types, the IPC contract, and connection channels'
   }
   if (source === 'preload' && target !== 'preload') return 'preload must not import app logic'

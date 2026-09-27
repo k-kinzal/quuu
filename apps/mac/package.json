@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
-    "build": "npm run build:pty && npm run typecheck && electron-vite build",
+    "build": "npm run build:pty && npm run typecheck && electron-vite build && npm run build:cli",
     "build:pty": "bash scripts/build-pty.sh",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.tests.json",
     "dist": "npm run build && npm run --prefix ../.. mobile:build && electron-builder --mac --dir --config.electronVersion=$(node -p \"require('electron/package.json').version\")",
@@ -21,15 +21,24 @@
     "app:restart": "bash scripts/restart-app.sh",
     "dev:fixture": "vite-node -c ../../vitest.config.ts scripts/dev-fixture.ts -- /tmp/taskd-shot",
     "dev:shot": "QUUU_USER_DATA=/tmp/taskd-shot QUUU_CODEX_SESSIONS_DIR=/tmp/taskd-shot/codex-sessions electron-vite dev --remoteDebuggingPort 9222",
-    "shot": "node scripts/shoot.mjs /tmp/taskd-shots 9222"
+    "shot": "node scripts/shoot.mjs /tmp/taskd-shots 9222",
+    "build:cli": "vite build --config cli.vite.config.ts"
   },
   "dependencies": {
+    "@bufbuild/protobuf": "^2.15.0",
+    "@connectrpc/connect": "^2.2.0",
+    "@connectrpc/connect-node": "^2.2.0",
     "@design-system/react": "*",
+    "@modelcontextprotocol/sdk": "^1.30.1",
     "@orpc/client": "1.15.0",
     "@orpc/contract": "1.15.0",
     "@orpc/server": "1.15.0",
     "@tanstack/react-query": "5.102.8",
     "i18next": "^26.4.2",
     "zod": "4.3.6"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "^1.73.0",
+    "@bufbuild/protoc-gen-es": "^2.15.0"
   }
 }

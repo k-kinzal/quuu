@@ -5,13 +5,13 @@ import { failureMessage, failureReason } from '../model/operationFailure.js'
 import type { ColumnWidths, TaskColumnId, TaskFilters, TaskSort, TaskSortKey } from '../model/table.js'
 import { NO_FILTERS, nextSort } from '../model/table.js'
 
-import type { Run, SchedulerStatus } from '../../../preload/api/execution.js'
-import type { SessionSnapshot } from '../../../preload/api/session.js'
-import type { AppSettings } from '../../../preload/api/settings.js'
-import type { AppSnapshot, ToastPayload } from '../../../preload/api/snapshot.js'
-import type { AddAction, Task } from '../../../preload/api/tasks.js'
+import type { Run, SchedulerStatus } from '../../../api/schemas/execution.js'
+import type { SessionSnapshot } from '../../../api/schemas/session.js'
+import type { AppSettings } from '../../../api/schemas/settings.js'
+import type { AppSnapshot, ToastPayload } from '../../../api/schemas/snapshot.js'
+import type { AddAction, Task } from '../../../api/schemas/tasks.js'
 
-import type { EditorApp } from '../../../preload/api/desktop.js'
+import type { EditorApp } from '../../../api/schemas/desktop.js'
 
 import { mergeMessages } from '../model/mergeMessages.js'
 import type { NewTaskLink } from '../model/taskLinkModel.js'
@@ -423,6 +423,7 @@ export const useStore = create<State>((set, get) => ({
     void get().refreshEditors()
 
     window.quuuEvents.snapshot((next) => get().applySnapshot(next))
+    window.quuuEvents.settings((settings) => set({ settings }))
     window.quuuEvents.schedulerStatus((status) => get().applyScheduler(status))
     window.quuuEvents.toast((toast) => get().pushToast(toast))
 

@@ -1,4 +1,4 @@
-import type { Task } from '../../../preload/api/tasks.js'
+import type { Task } from '../../../api/schemas/tasks.js'
 import { useStore } from '../state/store.js'
 import { focusAny, focusPane } from './focus.js'
 

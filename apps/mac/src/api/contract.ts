@@ -1,18 +1,19 @@
-import { PromptFileSchema } from './api/files.js'
+import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
+import { PromptFileSchema } from './schemas/files.js'
 import { oc } from '@orpc/contract'
 import { z } from 'zod'
-import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./api/agents.js"
-import { TaskRuleInputSchema, TaskRuleSchema } from "./api/automation.js"
-import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./api/desktop.js"
-import { RunSchema, SchedulerStatusSchema } from "./api/execution.js"
-import { ProjectInputSchema, ProjectSchema } from "./api/projects.js"
-import { ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./api/report.js"
-import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewSnapshotSchema } from "./api/review.js"
-import { SessionSnapshotSchema } from "./api/session.js"
-import { AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./api/settings.js"
-import { AppSnapshotSchema, MobileSyncStatusSchema } from "./api/snapshot.js"
-import { TaskInputSchema, TaskPatchSchema, TaskSchema } from "./api/tasks.js"
-import { PullRequestViewRequestSchema, TerminalSessionSchema } from "./api/workbench.js"
+import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./schemas/agents.js"
+import { TaskRuleInputSchema, TaskRuleSchema } from "./schemas/automation.js"
+import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./schemas/desktop.js"
+import { RunSchema, SchedulerStatusSchema } from "./schemas/execution.js"
+import { ProjectInputSchema, ProjectSchema } from "./schemas/projects.js"
+import { ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
+import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewSnapshotSchema } from "./schemas/review.js"
+import { SessionSnapshotSchema } from "./schemas/session.js"
+import { ServerStatusSchema, AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./schemas/settings.js"
+import { AppSnapshotSchema, MobileSyncStatusSchema } from "./schemas/snapshot.js"
+import { TaskInputSchema, TaskPatchSchema, TaskSchema } from "./schemas/tasks.js"
+import { PullRequestViewRequestSchema, TerminalSessionSchema } from "./schemas/workbench.js"
 
 const procedure = oc.errors({ OPERATION_FAILED: { data: z.object({ reason: z.string() }) } })
 
@@ -32,6 +33,8 @@ export const contract = {
     remove: procedure.input(z.string()).output(z.void()),
   },
   tasks: {
+    list: procedure.input(TaskListInputSchema).output(TaskPageSchema),
+    get: procedure.input(z.string()).output(TaskSchema),
     create: procedure.input(TaskInputSchema.strict()).output(TaskSchema),
     update: procedure.input(z.object({
       id: z.string(),
@@ -60,6 +63,7 @@ export const contract = {
     clearReserved: procedure.input(z.string()).output(TaskSchema),
   },
   rules: {
+    list: procedure.output(TaskRuleSchema.array()),
     preview: procedure.input(TaskRuleInputSchema.pick({ whenIdle: true, cron: true, frequency: true, blockStatuses: true })).output(z.object({
       nextAt: z.union([z.string(), z.null()]),
       valid: z.boolean(),
@@ -74,6 +78,7 @@ export const contract = {
     enqueue: procedure.input(z.string()).output(TaskSchema),
   },
   agents: {
+    list: procedure.output(AgentSchema.array()),
     defaults: procedure.output(z.object({
       get limitPatterns() { return z.string().array() }
     })),
@@ -87,6 +92,7 @@ export const contract = {
     remove: procedure.input(z.string()).output(z.void()),
   },
   groups: {
+    list: procedure.output(AgentGroupSchema.array()),
     create: procedure.input(AgentGroupInputSchema.strict()).output(AgentGroupSchema),
     update: procedure.input(z.object({
       id: z.string(),
@@ -98,6 +104,7 @@ export const contract = {
     byTask: procedure.input(z.string()).output(RunSchema.array()),
     cancel: procedure.input(z.string()).output(z.void()),
   },
+  logs: { page: procedure.input(LogPageInputSchema).output(LogPageSchema) },
   session: {
     close: procedure.output(z.void()),
     load: procedure.input(z.string()).output(SessionSnapshotSchema),
@@ -109,6 +116,7 @@ export const contract = {
     pause: procedure.output(SchedulerStatusSchema),
     resume: procedure.output(SchedulerStatusSchema),
   },
+  servers: { status: procedure.output(ServerStatusSchema) },
   settings: {
     previewIdentity: procedure.input(z.object({
       identity: CommitIdentitySchema,

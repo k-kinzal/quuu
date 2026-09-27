@@ -10,7 +10,7 @@ import {
   type MenuItemSpec
 } from '@design-system/react'
 import { useMemo } from 'react'
-import type { Task } from '../../../preload/api/tasks.js'
+import type { Task } from '../../../api/schemas/tasks.js'
 import { t } from '../model/i18n/index.js'
 import type { FilterAxis, FilterOption, TableContext } from '../model/table.js'
 import { AXIS_LABEL, axisValue, filterOptions, filterValues, isTableViewDirty, setFilterValues } from '../model/table.js'

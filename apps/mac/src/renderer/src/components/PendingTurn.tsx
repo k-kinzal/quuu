@@ -1,6 +1,6 @@
 import { Badge, Button, ContentBlock, LinkButton, Row, Spacer } from '@design-system/react'
 import { useRef, useState, type MouseEvent } from 'react'
-import type { Task, TaskPatch } from '../../../preload/api/tasks.js'
+import type { Task, TaskPatch } from '../../../api/schemas/tasks.js'
 
 import type { NextSend } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'

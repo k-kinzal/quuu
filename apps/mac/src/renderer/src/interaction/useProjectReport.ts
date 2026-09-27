@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ProjectReport } from '../../../preload/api/report.js'
+import type { ProjectReport } from '../../../api/schemas/report.js'
 import { queryClient } from '../state/queryClient.js'
 
 /** While one is being written, look often enough that "it finished" is not something you wait for. */

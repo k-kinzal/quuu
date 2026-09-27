@@ -838,12 +838,14 @@ function listDependencies(db: Db, taskId: string): TaskDependency[] {
   ).map((r) => ({ taskId: s(r.depends_on_id), mode: s(r.mode, 'done') as DependsMode }))
 }
 
-/** Read every task's dependencies in one query, so a listing does not issue one query per task. */
-function dependencyMap(db: Db): Map<string, TaskDependency[]> {
+/** Read dependencies in one query, optionally restricted to the displayed page. */
+function dependencyMap(db: Db, taskIds?: string[]): Map<string, TaskDependency[]> {
   const map = new Map<string, TaskDependency[]>()
+  if (taskIds?.length === 0) return map
+  const where = taskIds ? ` WHERE task_id IN (${taskIds.map(() => '?').join(',')})` : ''
   const rows = db
-    .prepare('SELECT task_id, depends_on_id, mode FROM task_dependencies ORDER BY sort_order')
-    .all() as Row[]
+    .prepare(`SELECT task_id, depends_on_id, mode FROM task_dependencies${where} ORDER BY sort_order`)
+    .all(...taskIds ?? []) as Row[]
   for (const r of rows) {
     const list = map.get(s(r.task_id)) ?? []
     list.push({ taskId: s(r.depends_on_id), mode: s(r.mode, 'done') as DependsMode })
@@ -873,6 +875,20 @@ export function listTasks(db: Db, includeArchived = false): Task[] {
     : 'SELECT * FROM tasks WHERE archived = 0 ORDER BY seq'
   const deps = dependencyMap(db)
   return (db.prepare(sql).all() as Row[]).map((r) => toTask(r, deps.get(s(r.id)) ?? []))
+}
+
+export function listTaskPage(db: Db, query: { projectId?: string; status?: TaskStatus; archived?: 'include' | 'exclude' | 'only'; after?: number; limit?: number }) {
+  const where = ['seq > ?']
+  const values: Array<string | number> = [query.after ?? 0]
+  if (query.projectId) { where.push('project_id = ?'); values.push(query.projectId) }
+  if (query.status) { where.push('status = ?'); values.push(query.status) }
+  if (query.archived !== 'include') { where.push('archived = ?'); values.push(query.archived === 'only' ? 1 : 0) }
+  const limit = Math.min(200, Math.max(1, query.limit ?? 100))
+  const rows = db.prepare(`SELECT * FROM tasks WHERE ${where.join(' AND ')} ORDER BY seq LIMIT ?`).all(...values, limit + 1) as Row[]
+  const page = rows.slice(0, limit)
+  const deps = dependencyMap(db, page.map(row => s(row.id)))
+  const tasks = page.map(row => toTask(row, deps.get(s(row.id)) ?? []))
+  return { tasks, next: rows.length > limit ? tasks.at(-1)!.seq : null }
 }
 
 export function getTask(db: Db, id: string): Task | null {

@@ -1,6 +1,6 @@
 import { Dot, SearchPicker, type SearchPickerProps } from '@design-system/react'
 import { useMemo } from 'react'
-import type { Project } from '../../../preload/api/projects.js'
+import type { Project } from '../../../api/schemas/projects.js'
 import { t } from '../model/i18n/index.js'
 import { projectOptions } from '../model/projectOptions.js'
 

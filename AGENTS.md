@@ -28,6 +28,7 @@ human.
 - [code.md](docs/code.md): Code rules, the tree map, and the iPhone app
 - [verification.md](docs/verification.md): How to look at the screen without touching production data
 - [guide.md](docs/guide.md): Usage, configuration, environment variables, and development entry points
+- [concepts.md](docs/concepts.md): Quuu concepts, execution responsibilities, and relationships
 - [architecture.md](docs/architecture.md): Structural design decisions and the boundaries the architecture check enforces
 - [design-system.md](docs/design-system.md): Design system kit: tokens, components, and call-site rules
 - [design-system-feedback.md](docs/design-system-feedback.md): Accepted and rejected design-system requests, with reasons

@@ -1,5 +1,5 @@
 /** Prerequisite conditions and queue priority rules. Decided independently of storage and of how the screen sorts. */
-import type { DependsMode, TaskStatus } from '../../../preload/api/tasks.js'
+import type { DependsMode, TaskStatus } from '../../../api/schemas/tasks.js'
 function isFollowupPending(task: { sessionId: string | null; pendingMessage: string }): boolean { return Boolean(task.sessionId) && task.pendingMessage.trim().length > 0 }
 
 /** The minimum shape ordering needs, so this is callable without building a whole Task. */

@@ -1,4 +1,4 @@
-import type { AppCommand } from './ipc/types.js'
+import type { AppCommand } from './desktop/types.js'
 
 /*
  * The trackpad's "swipe between pages" (System Settings › Trackpad › More Gestures).

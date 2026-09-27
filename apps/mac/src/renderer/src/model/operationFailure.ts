@@ -1,5 +1,5 @@
 import { ORPCError } from '@orpc/client'
-import type { QuuuApi } from '../../../preload/api.js'
+import type { QuuuApi } from '../../../api/types.js'
 import { t } from './i18n/index.js'
 
 type OperationLabels<T> = { [K in keyof T]: T[K] extends (...args: never[]) => unknown ? string : OperationLabels<T[K]> }
@@ -7,11 +7,13 @@ type OperationLabels<T> = { [K in keyof T]: T[K] extends (...args: never[]) => u
 const labels: OperationLabels<QuuuApi> = {
   snapshot: t('operationFailure.op.snapshot'),
   projects: { list: t('operationFailure.op.projects.list'), create: t('operationFailure.op.projects.create'), update: t('operationFailure.op.projects.update'), remove: t('operationFailure.op.projects.remove') },
-  tasks: { create: t('operationFailure.op.tasks.create'), update: t('operationFailure.op.tasks.update'), enqueue: t('operationFailure.op.tasks.enqueue'), unqueue: t('operationFailure.op.tasks.unqueue'), hold: t('operationFailure.op.tasks.hold'), runNow: t('operationFailure.op.tasks.runNow'), markDone: t('operationFailure.op.tasks.markDone'), reopen: t('operationFailure.op.tasks.reopen'), sendBack: t('operationFailure.op.tasks.sendBack'), cancel: t('operationFailure.op.tasks.cancel'), remove: t('operationFailure.op.tasks.remove'), archive: t('operationFailure.op.tasks.archive'), send: t('operationFailure.op.tasks.send'), clearReserved: t('operationFailure.op.tasks.clearReserved') },
-  rules: { preview: t('operationFailure.op.rules.preview'), create: t('operationFailure.op.rules.create'), update: t('operationFailure.op.rules.update'), remove: t('operationFailure.op.rules.remove'), enqueue: t('operationFailure.op.rules.enqueue') },
-  agents: { defaults: t('operationFailure.op.agents.defaults'), create: t('operationFailure.op.agents.create'), update: t('operationFailure.op.agents.update'), duplicate: t('operationFailure.op.agents.duplicate'), resetLimit: t('operationFailure.op.agents.resetLimit'), remove: t('operationFailure.op.agents.remove') },
-  groups: { create: t('operationFailure.op.groups.create'), update: t('operationFailure.op.groups.update'), remove: t('operationFailure.op.groups.remove') },
+  tasks: { list: t('operationFailure.op.snapshot'), get: t('operationFailure.op.snapshot'), create: t('operationFailure.op.tasks.create'), update: t('operationFailure.op.tasks.update'), enqueue: t('operationFailure.op.tasks.enqueue'), unqueue: t('operationFailure.op.tasks.unqueue'), hold: t('operationFailure.op.tasks.hold'), runNow: t('operationFailure.op.tasks.runNow'), markDone: t('operationFailure.op.tasks.markDone'), reopen: t('operationFailure.op.tasks.reopen'), sendBack: t('operationFailure.op.tasks.sendBack'), cancel: t('operationFailure.op.tasks.cancel'), remove: t('operationFailure.op.tasks.remove'), archive: t('operationFailure.op.tasks.archive'), send: t('operationFailure.op.tasks.send'), clearReserved: t('operationFailure.op.tasks.clearReserved') },
+  rules: { list: t('operationFailure.op.snapshot'), preview: t('operationFailure.op.rules.preview'), create: t('operationFailure.op.rules.create'), update: t('operationFailure.op.rules.update'), remove: t('operationFailure.op.rules.remove'), enqueue: t('operationFailure.op.rules.enqueue') },
+  agents: { list: t('operationFailure.op.snapshot'), defaults: t('operationFailure.op.agents.defaults'), create: t('operationFailure.op.agents.create'), update: t('operationFailure.op.agents.update'), duplicate: t('operationFailure.op.agents.duplicate'), resetLimit: t('operationFailure.op.agents.resetLimit'), remove: t('operationFailure.op.agents.remove') },
+  groups: { list: t('operationFailure.op.snapshot'), create: t('operationFailure.op.groups.create'), update: t('operationFailure.op.groups.update'), remove: t('operationFailure.op.groups.remove') },
   runs: { byTask: t('operationFailure.op.runs.byTask'), cancel: t('operationFailure.op.runs.cancel') },
+  logs: { page: t('operationFailure.op.session.loadMore') },
+  servers: { status: t('operationFailure.op.settings.get') },
   session: { close: t('operationFailure.op.session.close'), load: t('operationFailure.op.session.load'), loadMore: t('operationFailure.op.session.loadMore'), image: t('operationFailure.op.session.image') },
   scheduler: { status: t('operationFailure.op.scheduler.status'), pause: t('operationFailure.op.scheduler.pause'), resume: t('operationFailure.op.scheduler.resume') },
   settings: { previewIdentity: t('operationFailure.op.settings.previewIdentity'), setIdentity: t('operationFailure.op.settings.setIdentity'), get: t('operationFailure.op.settings.get'), set: t('operationFailure.op.settings.set'), lookupBotUser: t('operationFailure.op.settings.lookupBotUser'), createGitHubApp: t('operationFailure.op.settings.createGitHubApp'), cancelGitHubApp: t('operationFailure.op.settings.cancelGitHubApp') },

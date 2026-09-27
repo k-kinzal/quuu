@@ -15,7 +15,7 @@ import {
   ToolPanelToolbar
 } from '@design-system/react'
 import { useMemo, useState } from 'react'
-import type { CodeSymbol, ReviewFile } from '../../../preload/api/review.js'
+import type { CodeSymbol, ReviewFile } from '../../../api/schemas/review.js'
 import { t } from '../model/i18n/index.js'
 import { ArrowDownAZ, Braces, CircleDot, Code2, FileText, Hash, ICON, Rows3, Search, iconProps } from '../ui/icons.js'
 

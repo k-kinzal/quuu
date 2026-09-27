@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import type { ReviewSnapshot } from '../../../preload/api/review.js'
+import type { ReviewSnapshot } from '../../../api/schemas/review.js'
 import { queryClient } from '../state/queryClient.js'
 
 /** Polling reads the saved projection only. Refresh explicitly requests new Git / GitHub observations. */

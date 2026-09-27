@@ -1,4 +1,4 @@
-import type { Project } from '../../../../preload/api/projects.js'
+import type { Project } from '../../../../api/schemas/projects.js'
 import { userAgents } from '../../model/agents.js'
 import { COMMIT_IDENTITY_MODES } from '../../model/identityOptions.js'
 

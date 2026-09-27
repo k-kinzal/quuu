@@ -33,18 +33,18 @@ enforce them live in [architecture.md](architecture.md) and
   apps hand it a pack via `ThemeProvider strings`. Dev-facing text (logs, internal errors)
   stays plain English in code.
 - **No Quuu vocabulary in the design system.** `@design-system/react` carries only what
-  means the same thing in any app. Putting domain words like "Review" or "priority" into it
+  means the same thing in any app. Putting Quuu-specific words like "Review" or "priority" into it
   would let the design system dictate Quuu's vocabulary.
-- **Views render domain state.** State → shape/color lives in each app's `ui/StatusDot.tsx`
+- **Views render application state.** State → shape/color lives in each app's `ui/StatusDot.tsx`
   and `ui/theme.ts`; copy, display order, and filtering belong to the View's display model.
-  Do not attach UI to the domain.
+  Do not attach UI to feature operations.
 - **Business operations are owned by their main-process feature.** Create/edit/approve in
   `main/tasks/`, execution slots/launch/recovery in `main/execution/`, automation in
   `main/automation/`. Decide and persist in the same transaction; notify and launch after
-  the commit. No domain package.
+  the commit. No separate package for Quuu concepts.
 - **`shared` is forbidden.** Do not grow packages by category of processing; put code with
-  its meaningful owner. The IPC operation contract lives in `preload/contract.ts`, generated
-  client types in `preload/api.ts`, the sync wire format in [mobile-sync.md](mobile-sync.md).
+  its meaningful owner. The operation contract lives in `api/contract.ts`, generated
+  client types in `api/types.ts`, the sync wire format in [mobile-sync.md](mobile-sync.md).
   Cross-app source imports, and Design System imports of app types, are forbidden too.
 - **`ui/` does not implement decoration either.** Composing custom React components and
   assigning meaning is fine. If a generic display rule is missing, feed the reason back via
@@ -59,7 +59,8 @@ enforce them live in [architecture.md](architecture.md) and
   `apps/mac/tests/migration.test.ts`).
 - IPC is oRPC + Zod; in-flight/success/failure state uses TanStack Query (adopted at the
   user's direction). Do not hand-roll contract/client/mock mappings or transport.
-- Do not add other dependencies. No native modules (SQLite is `node:sqlite`).
+- Protocol implementations use `@connectrpc/connect-node`, `@bufbuild/protobuf`, and the official MCP SDK; code generation uses Buf and Protobuf-ES. These implement the requested gRPC/Protobuf/MCP protocols.
+- Do not add unrelated dependencies. No native modules (SQLite is `node:sqlite`).
   **The exception is conversation rendering** (`react-markdown` / `remark-*` / `shiki` /
   `mermaid`): notation, grammar, and diagrams are detailed specs where a homegrown
   approximation renders lies, so accuracy won and the user chose to add them. Do not fold
@@ -78,7 +79,7 @@ packages/            the independent Design System
 
 | Path | Role |
 |------|------|
-| `packages/design-system/` | MUI-based UI kit. **No domain.** Dimensions come in two density axes (`compact` / `comfortable`) |
+| `packages/design-system/` | MUI-based UI kit. **No Quuu concepts.** Dimensions come in two density axes (`compact` / `comfortable`) |
 | `apps/mac/src/main/mobile-sync/` | Mac-side export and import. Applying always goes **through the app's regular operations** |
 | `apps/mobile/src/bridge/` | the seam to the shell. Screens know nothing else (the fake iCloud for browsers lives here too) |
 | `apps/mobile/ios/Quuu/` | the native shell. Holds only folder permission, coordinated reads/writes, and change notification |
@@ -110,7 +111,7 @@ packages/            the independent Design System
 | `apps/mac/src/main/tasks/ordering.ts` | acquisition order and prerequisites. Consistency with display order is tested too |
 | `apps/mac/src/main/import/` | importing sessions that were launched directly |
 | `apps/mac/src/main/session/` | session attachment, indexing and tailing (provider parsers belong to adapters) |
-| `packages/design-system/` | MUI-based design system (`@design-system/react`). **No domain** |
+| `packages/design-system/` | MUI-based design system (`@design-system/react`). **No Quuu concepts** |
 | `apps/mac/src/renderer/src/ui/` | display that belongs to Views (status marks, conversation, run history). Sits on top of the design system |
 | `apps/mac/src/renderer/src/` | React screens. State is centralized in `state/store.ts`. **No CSS** |
 | `brand/icon.icon/` | the icon **master (one per product)**. Mac and iPhone artifacts are generated from here |

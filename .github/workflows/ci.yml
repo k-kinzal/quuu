@@ -37,6 +37,9 @@ jobs:
       - name: Architecture
         run: npm run check:architecture
 
+      - name: Generated API and compatibility
+        run: npm run api:check
+
       - name: Typecheck
         run: npm run typecheck
 

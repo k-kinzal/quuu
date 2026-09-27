@@ -1,6 +1,6 @@
 import { createRouterClient, implement } from '@orpc/server'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
-import { contract } from '../src/preload/contract.js'
+import { contract } from '../src/api/contract.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 // @vitest-environment jsdom
 import { cleanup, render } from '@testing-library/react'
@@ -12,6 +12,7 @@ import { ProjectDetail } from '../src/renderer/src/views/project/ProjectDetail.j
 import { TaskRuleEditor } from '../src/renderer/src/views/project/TaskRules.js'
 import { AgentSettings } from '../src/renderer/src/views/settings/AgentSettings.js'
 import { AppearanceSettings } from '../src/renderer/src/views/settings/AppearanceSettings.js'
+import { ConnectionSettings } from '../src/renderer/src/views/settings/ConnectionSettings.js'
 import { GeneralSettings } from '../src/renderer/src/views/settings/GeneralSettings.js'
 import { NotificationSettings } from '../src/renderer/src/views/settings/NotificationSettings.js'
 import { PullRequestSettings } from '../src/renderer/src/views/settings/PullRequestSettings.js'
@@ -31,7 +32,12 @@ afterEach(cleanup)
 beforeAll(() => {
   useStore.setState({ settings: structuredClone(DEFAULT_SETTINGS) })
   // The general surface recounts the installed IDEs when it opens (it goes and asks main)
-  const client = createRouterClient({ open: { editors: implement(contract.open.editors).handler(() => []) } })
+  const client = createRouterClient({
+    open: { editors: implement(contract.open.editors).handler(() => []) },
+    servers: { status: implement(contract.servers.status).handler(() => ({
+      http: { enabled: false, url: null, error: null }, mcp: { enabled: false, url: null, error: null }, connectionFile: ''
+    })) }
+  })
   Object.defineProperty(window, 'quuu', { configurable: true, writable: true, value: client })
   window.matchMedia = (query: string) => ({
     matches: false,
@@ -91,6 +97,7 @@ const VIEWS: Array<[string, () => JSX.Element]> = [
   ['general', GeneralSettings],
   ['notifications', NotificationSettings],
   ['appearance', AppearanceSettings],
+  ['connections', ConnectionSettings],
   ['agents', AgentSettings],
   ['pull requests', PullRequestSettings],
   // A project's configuration is a surface of the same rank (rule F: settings placed in the entity's context)

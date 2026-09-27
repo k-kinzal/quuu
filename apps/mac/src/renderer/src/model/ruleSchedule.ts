@@ -1,4 +1,4 @@
-import type { TaskRule } from '../../../preload/api/automation.js'
+import type { TaskRule } from '../../../api/schemas/automation.js'
 import { t } from './i18n/index.js'
 
 export type ScheduleChoice = TaskRule['frequency'] | 'cron'

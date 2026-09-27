@@ -30,7 +30,7 @@ import {
   type MenuItemSpec
 } from '@design-system/react'
 import { useEffect, useMemo, useState } from 'react'
-import type { Agent, AgentGroup, GroupStrategy, LogAdapter } from '../../../../preload/api/agents.js'
+import type { Agent, AgentGroup, GroupStrategy, LogAdapter } from '../../../../api/schemas/agents.js'
 import { usePreview } from '../../interaction/usePreview.js'
 import { userAgents } from '../../model/agents.js'
 import { t } from '../../model/i18n/index.js'

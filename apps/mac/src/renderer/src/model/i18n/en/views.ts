@@ -1,6 +1,7 @@
 /** Copy for the settings and project screens (SettingsShell, settings/, project/, CommitIdentity). */
 export const views = {
   settingsShell: {
+    connections: 'Connections',
     title: 'Settings',
     general: 'General',
     agents: 'Agents',
@@ -8,6 +9,13 @@ export const views = {
     pullRequests: 'Pull Requests',
     notifications: 'Notifications',
     appearance: 'Appearance'
+  },
+  connectionSettings: {
+    title: 'Connections', http: 'HTTP / gRPC', mcp: 'MCP',
+    enableHttp: 'Enable CLI and HTTP clients', enableMcp: 'Enable MCP clients',
+    port: 'Port', automatic: 'Automatic', apply: 'Apply', starting: 'Starting…', off: 'Off', unavailable: 'Unavailable',
+    credentials: 'Connection settings',
+    credentialsHint: 'MCP endpoint and bearer token: quuu config',
   },
   agentSettings: {
     title: 'Agents',

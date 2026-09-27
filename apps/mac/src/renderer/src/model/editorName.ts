@@ -8,14 +8,14 @@
  */
 
 
-import type { EditorApp } from '../../../preload/api/desktop.js'
-export type { EditorApp, EditorDefaults, EditorHolder } from '../../../preload/api/desktop.js'
+import type { EditorApp } from '../../../api/schemas/desktop.js'
+export type { EditorApp, EditorDefaults, EditorHolder } from '../../../api/schemas/desktop.js'
 
 /** Only the slice of settings that matters here. Callable without building a whole `AppSettings`. */
-import type { EditorDefaults } from '../../../preload/api/desktop.js'
+import type { EditorDefaults } from '../../../api/schemas/desktop.js'
 
 /** Only the slice of the project that affects where it opens. */
-import type { EditorHolder } from '../../../preload/api/desktop.js'
+import type { EditorHolder } from '../../../api/schemas/desktop.js'
 
 /**
  * Path of the app that opens this project. Empty if undecided.

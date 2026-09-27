@@ -1,5 +1,5 @@
-import type { Agent } from '../../../preload/api/agents.js'
-import type { Project } from '../../../preload/api/projects.js'
+import type { Agent } from '../../../api/schemas/agents.js'
+import type { Project } from '../../../api/schemas/projects.js'
 import { candidateAgentsFor, projectAgentIds, targetLabel } from '../model/derive.js'
 import { useStore } from '../state/store.js'
 

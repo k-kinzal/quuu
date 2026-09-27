@@ -47,6 +47,10 @@ export const PullRequestPromptModeSchema = z.union([z.literal('inherit'), z.lite
 export type PullRequestPromptMode = z.infer<typeof PullRequestPromptModeSchema>
 
 export const AppSettingsSchema = z.object({
+  httpEnabled: z.boolean(),
+  httpPort: z.number().int().min(0).max(65535),
+  mcpEnabled: z.boolean(),
+  mcpPort: z.number().int().min(0).max(65535),
   /** Whether to start the scheduler automatically on app launch. */
   autoStartScheduler: z.boolean(),
   /** Whether to keep running in the background after the window is closed. */
@@ -119,3 +123,9 @@ export type AppSettings = z.infer<typeof AppSettingsSchema>
 
 export const IdentityPreviewSchema = z.object({ slug: z.string(), login: z.string(), email: z.string(), complete: z.boolean(), current: z.boolean(), url: z.string(), resolved: CommitIdentitySchema.nullable() })
 export type IdentityPreview = z.infer<typeof IdentityPreviewSchema>
+
+export const ServerStatusSchema = z.object({
+  http: z.object({ enabled: z.boolean(), url: z.string().nullable(), error: z.string().nullable() }),
+  mcp: z.object({ enabled: z.boolean(), url: z.string().nullable(), error: z.string().nullable() }),
+  connectionFile: z.string(),
+})

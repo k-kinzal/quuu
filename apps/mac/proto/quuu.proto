@@ -1,0 +1,5403 @@
+// Generated from src/api/contract.ts. Run npm run api:generate.
+syntax = "proto3";
+package quuu.v1;
+import "google/protobuf/struct.proto";
+
+message SnapshotRequest {
+
+}
+
+message SnapshotResponseValueProjectsItemTargetId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueProjectsItemDeletedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueProjectsItemImportSince {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueProjectsItemCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SnapshotResponseValueProjectsItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional double priority = 3;
+  optional string targetKind = 4;
+  optional SnapshotResponseValueProjectsItemTargetId targetId = 5;
+  optional double maxConcurrent = 6;
+  optional bool enabled = 7;
+  optional SnapshotResponseValueProjectsItemDeletedAt deletedAt = 8;
+  optional SnapshotResponseValueProjectsItemImportSince importSince = 9;
+  optional string source = 10;
+  optional double sortOrder = 11;
+  optional string createdAt = 12;
+  optional string updatedAt = 13;
+  optional string path = 14;
+  optional string color = 15;
+  optional string commitIdentityMode = 16;
+  optional SnapshotResponseValueProjectsItemCommitIdentity commitIdentity = 17;
+  optional string editorApp = 18;
+  optional bool reportEnabled = 19;
+  optional string pullRequestPromptMode = 20;
+  optional string pullRequestFailurePrompt = 21;
+  optional string pullRequestPendingPrompt = 22;
+  optional string pullRequestConflictPrompt = 23;
+  optional bool pullRequestFailureEnabled = 24;
+  optional bool pullRequestPendingEnabled = 25;
+  optional bool pullRequestConflictEnabled = 26;
+}
+
+message SnapshotResponseValueProjects {
+  repeated SnapshotResponseValueProjectsItem items = 1;
+}
+
+message SnapshotResponseValueTasksItemScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItemCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItemSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItemAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItemDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message SnapshotResponseValueTasksItemDependsOn {
+  repeated SnapshotResponseValueTasksItemDependsOnItem items = 1;
+}
+
+message SnapshotResponseValueTasksItemRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItemExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItemDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueTasksItem {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional SnapshotResponseValueTasksItemScheduledAt scheduledAt = 8;
+  optional SnapshotResponseValueTasksItemCurrentRunId currentRunId = 9;
+  optional SnapshotResponseValueTasksItemSessionId sessionId = 10;
+  optional SnapshotResponseValueTasksItemAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional SnapshotResponseValueTasksItemDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional SnapshotResponseValueTasksItemRuleId ruleId = 17;
+  optional SnapshotResponseValueTasksItemExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional SnapshotResponseValueTasksItemDoneAt doneAt = 22;
+}
+
+message SnapshotResponseValueTasks {
+  repeated SnapshotResponseValueTasksItem items = 1;
+}
+
+message SnapshotResponseValueRulesItemAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRulesItemBlockStatuses {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueRulesItemDueAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRulesItemLastEnqueuedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRulesItem {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string name = 3;
+  optional string prompt = 4;
+  optional double priority = 5;
+  optional SnapshotResponseValueRulesItemAgentOverrideId agentOverrideId = 6;
+  optional bool whenIdle = 7;
+  optional string cron = 8;
+  optional string frequency = 9;
+  optional SnapshotResponseValueRulesItemBlockStatuses blockStatuses = 10;
+  optional bool enabled = 11;
+  optional SnapshotResponseValueRulesItemDueAt dueAt = 12;
+  optional SnapshotResponseValueRulesItemLastEnqueuedAt lastEnqueuedAt = 13;
+  optional double sortOrder = 14;
+  optional string createdAt = 15;
+  optional string updatedAt = 16;
+}
+
+message SnapshotResponseValueRules {
+  repeated SnapshotResponseValueRulesItem items = 1;
+}
+
+message SnapshotResponseValueAgentsItemFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueAgentsItemArgsTemplate {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueAgentsItemResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueAgentsItemLimitPatterns {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueAgentsItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional double concurrency = 4;
+  optional SnapshotResponseValueAgentsItemFallbackAgentId fallbackAgentId = 5;
+  optional double cooldownSeconds = 6;
+  optional double timeoutSeconds = 7;
+  optional bool enabled = 8;
+  optional string source = 9;
+  optional double sortOrder = 10;
+  optional string createdAt = 11;
+  optional string updatedAt = 12;
+  optional string command = 13;
+  optional SnapshotResponseValueAgentsItemArgsTemplate argsTemplate = 14;
+  optional SnapshotResponseValueAgentsItemResumeArgsTemplate resumeArgsTemplate = 15;
+  optional google.protobuf.Value env = 16;
+  optional SnapshotResponseValueAgentsItemLimitPatterns limitPatterns = 17;
+  optional string logAdapter = 18;
+}
+
+message SnapshotResponseValueAgents {
+  repeated SnapshotResponseValueAgentsItem items = 1;
+}
+
+message SnapshotResponseValueGroupsItemMemberIds {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueGroupsItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string strategy = 4;
+  optional SnapshotResponseValueGroupsItemMemberIds memberIds = 5;
+  optional bool isDefault = 6;
+  optional double sortOrder = 7;
+  optional string createdAt = 8;
+  optional string updatedAt = 9;
+}
+
+message SnapshotResponseValueGroups {
+  repeated SnapshotResponseValueGroupsItem items = 1;
+}
+
+message SnapshotResponseValueRunsItemResolvedFromGroupId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemFallbackFromRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemErrorKind {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemEndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemPid {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemArgs {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueRunsItemExitCode {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItemSessionLogPath {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueRunsItem {
+  optional string id = 1;
+  optional string taskId = 2;
+  optional string agentId = 3;
+  optional SnapshotResponseValueRunsItemResolvedFromGroupId resolvedFromGroupId = 4;
+  optional string sessionId = 5;
+  optional string kind = 6;
+  optional string status = 7;
+  optional double attempt = 8;
+  optional SnapshotResponseValueRunsItemFallbackFromRunId fallbackFromRunId = 9;
+  optional string promptPreview = 10;
+  optional SnapshotResponseValueRunsItemErrorKind errorKind = 11;
+  optional string errorMessage = 12;
+  optional string source = 13;
+  optional SnapshotResponseValueRunsItemExternalKey externalKey = 14;
+  optional string startedAt = 15;
+  optional SnapshotResponseValueRunsItemEndedAt endedAt = 16;
+  optional SnapshotResponseValueRunsItemPid pid = 17;
+  optional string cwd = 18;
+  optional string command = 19;
+  optional SnapshotResponseValueRunsItemArgs args = 20;
+  optional SnapshotResponseValueRunsItemExitCode exitCode = 21;
+  optional SnapshotResponseValueRunsItemSessionLogPath sessionLogPath = 22;
+  optional string stdoutLogPath = 23;
+}
+
+message SnapshotResponseValueRuns {
+  repeated SnapshotResponseValueRunsItem items = 1;
+}
+
+message SnapshotResponseValueSchedulerAgentsItemCooldownUntil {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueSchedulerAgentsItem {
+  optional string agentId = 1;
+  optional string agentName = 2;
+  optional double concurrency = 3;
+  optional double active = 4;
+  optional double reserved = 5;
+  optional SnapshotResponseValueSchedulerAgentsItemCooldownUntil cooldownUntil = 6;
+  optional string cooldownReason = 7;
+  optional bool enabled = 8;
+}
+
+message SnapshotResponseValueSchedulerAgents {
+  repeated SnapshotResponseValueSchedulerAgentsItem items = 1;
+}
+
+message SnapshotResponseValueSchedulerHoldsItemAgentName {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueSchedulerHoldsItem {
+  optional string taskId = 1;
+  optional string taskTitle = 2;
+  optional string projectName = 3;
+  optional SnapshotResponseValueSchedulerHoldsItemAgentName agentName = 4;
+}
+
+message SnapshotResponseValueSchedulerHolds {
+  repeated SnapshotResponseValueSchedulerHoldsItem items = 1;
+}
+
+message SnapshotResponseValueSchedulerWarnings {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueSchedulerLastTickAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueScheduler {
+  optional bool running = 1;
+  optional double activeRuns = 2;
+  optional double totalSlots = 3;
+  optional double queued = 4;
+  optional double review = 5;
+  optional double failed = 6;
+  optional SnapshotResponseValueSchedulerAgents agents = 7;
+  optional SnapshotResponseValueSchedulerHolds holds = 8;
+  optional SnapshotResponseValueSchedulerWarnings warnings = 9;
+  optional SnapshotResponseValueSchedulerLastTickAt lastTickAt = 10;
+}
+
+message SnapshotResponseValue {
+  optional google.protobuf.Value resumeCommands = 1;
+  optional google.protobuf.Value externalAgentNames = 2;
+  optional SnapshotResponseValueProjects projects = 3;
+  optional SnapshotResponseValueTasks tasks = 4;
+  optional SnapshotResponseValueRules rules = 5;
+  optional SnapshotResponseValueAgents agents = 6;
+  optional SnapshotResponseValueGroups groups = 7;
+  optional SnapshotResponseValueRuns runs = 8;
+  optional SnapshotResponseValueScheduler scheduler = 9;
+}
+
+message SnapshotResponse {
+  optional SnapshotResponseValue value = 1;
+}
+
+message ProjectsListRequest {
+
+}
+
+message ProjectsListResponseValueItemTargetId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsListResponseValueItemDeletedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsListResponseValueItemImportSince {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsListResponseValueItemCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message ProjectsListResponseValueItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional double priority = 3;
+  optional string targetKind = 4;
+  optional ProjectsListResponseValueItemTargetId targetId = 5;
+  optional double maxConcurrent = 6;
+  optional bool enabled = 7;
+  optional ProjectsListResponseValueItemDeletedAt deletedAt = 8;
+  optional ProjectsListResponseValueItemImportSince importSince = 9;
+  optional string source = 10;
+  optional double sortOrder = 11;
+  optional string createdAt = 12;
+  optional string updatedAt = 13;
+  optional string path = 14;
+  optional string color = 15;
+  optional string commitIdentityMode = 16;
+  optional ProjectsListResponseValueItemCommitIdentity commitIdentity = 17;
+  optional string editorApp = 18;
+  optional bool reportEnabled = 19;
+  optional string pullRequestPromptMode = 20;
+  optional string pullRequestFailurePrompt = 21;
+  optional string pullRequestPendingPrompt = 22;
+  optional string pullRequestConflictPrompt = 23;
+  optional bool pullRequestFailureEnabled = 24;
+  optional bool pullRequestPendingEnabled = 25;
+  optional bool pullRequestConflictEnabled = 26;
+}
+
+message ProjectsListResponseValue {
+  repeated ProjectsListResponseValueItem items = 1;
+}
+
+message ProjectsListResponse {
+  optional ProjectsListResponseValue value = 1;
+}
+
+message ProjectsCreateRequestValueTargetId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsCreateRequestValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message ProjectsCreateRequestValue {
+  optional string name = 1;
+  optional double priority = 2;
+  optional string targetKind = 3;
+  optional ProjectsCreateRequestValueTargetId targetId = 4;
+  optional double maxConcurrent = 5;
+  optional bool enabled = 6;
+  optional double sortOrder = 7;
+  optional string path = 8;
+  optional string color = 9;
+  optional string source = 10;
+  optional string commitIdentityMode = 11;
+  optional ProjectsCreateRequestValueCommitIdentity commitIdentity = 12;
+  optional string editorApp = 13;
+  optional bool reportEnabled = 14;
+  optional string pullRequestPromptMode = 15;
+  optional string pullRequestFailurePrompt = 16;
+  optional string pullRequestPendingPrompt = 17;
+  optional string pullRequestConflictPrompt = 18;
+  optional bool pullRequestFailureEnabled = 19;
+  optional bool pullRequestPendingEnabled = 20;
+  optional bool pullRequestConflictEnabled = 21;
+}
+
+message ProjectsCreateRequest {
+  optional ProjectsCreateRequestValue value = 1;
+}
+
+message ProjectsCreateResponseValueTargetId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsCreateResponseValueDeletedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsCreateResponseValueImportSince {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsCreateResponseValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message ProjectsCreateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional double priority = 3;
+  optional string targetKind = 4;
+  optional ProjectsCreateResponseValueTargetId targetId = 5;
+  optional double maxConcurrent = 6;
+  optional bool enabled = 7;
+  optional ProjectsCreateResponseValueDeletedAt deletedAt = 8;
+  optional ProjectsCreateResponseValueImportSince importSince = 9;
+  optional string source = 10;
+  optional double sortOrder = 11;
+  optional string createdAt = 12;
+  optional string updatedAt = 13;
+  optional string path = 14;
+  optional string color = 15;
+  optional string commitIdentityMode = 16;
+  optional ProjectsCreateResponseValueCommitIdentity commitIdentity = 17;
+  optional string editorApp = 18;
+  optional bool reportEnabled = 19;
+  optional string pullRequestPromptMode = 20;
+  optional string pullRequestFailurePrompt = 21;
+  optional string pullRequestPendingPrompt = 22;
+  optional string pullRequestConflictPrompt = 23;
+  optional bool pullRequestFailureEnabled = 24;
+  optional bool pullRequestPendingEnabled = 25;
+  optional bool pullRequestConflictEnabled = 26;
+}
+
+message ProjectsCreateResponse {
+  optional ProjectsCreateResponseValue value = 1;
+}
+
+message ProjectsUpdateRequestValuePatchTargetId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsUpdateRequestValuePatchCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message ProjectsUpdateRequestValuePatch {
+  optional string name = 1;
+  optional double priority = 2;
+  optional string targetKind = 3;
+  optional ProjectsUpdateRequestValuePatchTargetId targetId = 4;
+  optional double maxConcurrent = 5;
+  optional bool enabled = 6;
+  optional double sortOrder = 7;
+  optional string path = 8;
+  optional string color = 9;
+  optional string source = 10;
+  optional string commitIdentityMode = 11;
+  optional ProjectsUpdateRequestValuePatchCommitIdentity commitIdentity = 12;
+  optional string editorApp = 13;
+  optional bool reportEnabled = 14;
+  optional string pullRequestPromptMode = 15;
+  optional string pullRequestFailurePrompt = 16;
+  optional string pullRequestPendingPrompt = 17;
+  optional string pullRequestConflictPrompt = 18;
+  optional bool pullRequestFailureEnabled = 19;
+  optional bool pullRequestPendingEnabled = 20;
+  optional bool pullRequestConflictEnabled = 21;
+}
+
+message ProjectsUpdateRequestValue {
+  optional string id = 1;
+  optional ProjectsUpdateRequestValuePatch patch = 2;
+}
+
+message ProjectsUpdateRequest {
+  optional ProjectsUpdateRequestValue value = 1;
+}
+
+message ProjectsUpdateResponseValueTargetId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsUpdateResponseValueDeletedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsUpdateResponseValueImportSince {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ProjectsUpdateResponseValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message ProjectsUpdateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional double priority = 3;
+  optional string targetKind = 4;
+  optional ProjectsUpdateResponseValueTargetId targetId = 5;
+  optional double maxConcurrent = 6;
+  optional bool enabled = 7;
+  optional ProjectsUpdateResponseValueDeletedAt deletedAt = 8;
+  optional ProjectsUpdateResponseValueImportSince importSince = 9;
+  optional string source = 10;
+  optional double sortOrder = 11;
+  optional string createdAt = 12;
+  optional string updatedAt = 13;
+  optional string path = 14;
+  optional string color = 15;
+  optional string commitIdentityMode = 16;
+  optional ProjectsUpdateResponseValueCommitIdentity commitIdentity = 17;
+  optional string editorApp = 18;
+  optional bool reportEnabled = 19;
+  optional string pullRequestPromptMode = 20;
+  optional string pullRequestFailurePrompt = 21;
+  optional string pullRequestPendingPrompt = 22;
+  optional string pullRequestConflictPrompt = 23;
+  optional bool pullRequestFailureEnabled = 24;
+  optional bool pullRequestPendingEnabled = 25;
+  optional bool pullRequestConflictEnabled = 26;
+}
+
+message ProjectsUpdateResponse {
+  optional ProjectsUpdateResponseValue value = 1;
+}
+
+message ProjectsRemoveRequest {
+  optional string value = 1;
+}
+
+message ProjectsRemoveResponse {
+
+}
+
+message TasksListRequestValue {
+  optional string projectId = 1;
+  optional string status = 2;
+  optional string archived = 3;
+  optional double after = 4;
+  optional double limit = 5;
+}
+
+message TasksListRequest {
+  optional TasksListRequestValue value = 1;
+}
+
+message TasksListResponseValueTasksItemScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItemCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItemSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItemAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItemDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksListResponseValueTasksItemDependsOn {
+  repeated TasksListResponseValueTasksItemDependsOnItem items = 1;
+}
+
+message TasksListResponseValueTasksItemRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItemExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItemDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValueTasksItem {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksListResponseValueTasksItemScheduledAt scheduledAt = 8;
+  optional TasksListResponseValueTasksItemCurrentRunId currentRunId = 9;
+  optional TasksListResponseValueTasksItemSessionId sessionId = 10;
+  optional TasksListResponseValueTasksItemAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksListResponseValueTasksItemDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksListResponseValueTasksItemRuleId ruleId = 17;
+  optional TasksListResponseValueTasksItemExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksListResponseValueTasksItemDoneAt doneAt = 22;
+}
+
+message TasksListResponseValueTasks {
+  repeated TasksListResponseValueTasksItem items = 1;
+}
+
+message TasksListResponseValueNext {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksListResponseValue {
+  optional TasksListResponseValueTasks tasks = 1;
+  optional TasksListResponseValueNext next = 2;
+}
+
+message TasksListResponse {
+  optional TasksListResponseValue value = 1;
+}
+
+message TasksGetRequest {
+  optional string value = 1;
+}
+
+message TasksGetResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksGetResponseValueDependsOn {
+  repeated TasksGetResponseValueDependsOnItem items = 1;
+}
+
+message TasksGetResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksGetResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksGetResponseValueScheduledAt scheduledAt = 8;
+  optional TasksGetResponseValueCurrentRunId currentRunId = 9;
+  optional TasksGetResponseValueSessionId sessionId = 10;
+  optional TasksGetResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksGetResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksGetResponseValueRuleId ruleId = 17;
+  optional TasksGetResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksGetResponseValueDoneAt doneAt = 22;
+}
+
+message TasksGetResponse {
+  optional TasksGetResponseValue value = 1;
+}
+
+message TasksCreateRequestValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateRequestValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateRequestValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksCreateRequestValueDependsOn {
+  repeated TasksCreateRequestValueDependsOnItem items = 1;
+}
+
+message TasksCreateRequestValue {
+  optional string projectId = 1;
+  optional string title = 2;
+  optional string prompt = 3;
+  optional double priority = 4;
+  optional string status = 5;
+  optional TasksCreateRequestValueScheduledAt scheduledAt = 6;
+  optional TasksCreateRequestValueAgentOverrideId agentOverrideId = 7;
+  optional TasksCreateRequestValueDependsOn dependsOn = 8;
+}
+
+message TasksCreateRequest {
+  optional TasksCreateRequestValue value = 1;
+}
+
+message TasksCreateResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksCreateResponseValueDependsOn {
+  repeated TasksCreateResponseValueDependsOnItem items = 1;
+}
+
+message TasksCreateResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCreateResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksCreateResponseValueScheduledAt scheduledAt = 8;
+  optional TasksCreateResponseValueCurrentRunId currentRunId = 9;
+  optional TasksCreateResponseValueSessionId sessionId = 10;
+  optional TasksCreateResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksCreateResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksCreateResponseValueRuleId ruleId = 17;
+  optional TasksCreateResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksCreateResponseValueDoneAt doneAt = 22;
+}
+
+message TasksCreateResponse {
+  optional TasksCreateResponseValue value = 1;
+}
+
+message TasksUpdateRequestValuePatchScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateRequestValuePatchAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateRequestValuePatchDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksUpdateRequestValuePatchDependsOn {
+  repeated TasksUpdateRequestValuePatchDependsOnItem items = 1;
+}
+
+message TasksUpdateRequestValuePatch {
+  optional string title = 1;
+  optional string prompt = 2;
+  optional string pendingMessage = 3;
+  optional double priority = 4;
+  optional string projectId = 5;
+  optional TasksUpdateRequestValuePatchScheduledAt scheduledAt = 6;
+  optional string reviewNote = 7;
+  optional TasksUpdateRequestValuePatchAgentOverrideId agentOverrideId = 8;
+  optional TasksUpdateRequestValuePatchDependsOn dependsOn = 9;
+}
+
+message TasksUpdateRequestValue {
+  optional string id = 1;
+  optional TasksUpdateRequestValuePatch patch = 2;
+}
+
+message TasksUpdateRequest {
+  optional TasksUpdateRequestValue value = 1;
+}
+
+message TasksUpdateResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksUpdateResponseValueDependsOn {
+  repeated TasksUpdateResponseValueDependsOnItem items = 1;
+}
+
+message TasksUpdateResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUpdateResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksUpdateResponseValueScheduledAt scheduledAt = 8;
+  optional TasksUpdateResponseValueCurrentRunId currentRunId = 9;
+  optional TasksUpdateResponseValueSessionId sessionId = 10;
+  optional TasksUpdateResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksUpdateResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksUpdateResponseValueRuleId ruleId = 17;
+  optional TasksUpdateResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksUpdateResponseValueDoneAt doneAt = 22;
+}
+
+message TasksUpdateResponse {
+  optional TasksUpdateResponseValue value = 1;
+}
+
+message TasksEnqueueRequest {
+  optional string value = 1;
+}
+
+message TasksEnqueueResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksEnqueueResponseValueDependsOn {
+  repeated TasksEnqueueResponseValueDependsOnItem items = 1;
+}
+
+message TasksEnqueueResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksEnqueueResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksEnqueueResponseValueScheduledAt scheduledAt = 8;
+  optional TasksEnqueueResponseValueCurrentRunId currentRunId = 9;
+  optional TasksEnqueueResponseValueSessionId sessionId = 10;
+  optional TasksEnqueueResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksEnqueueResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksEnqueueResponseValueRuleId ruleId = 17;
+  optional TasksEnqueueResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksEnqueueResponseValueDoneAt doneAt = 22;
+}
+
+message TasksEnqueueResponse {
+  optional TasksEnqueueResponseValue value = 1;
+}
+
+message TasksUnqueueRequest {
+  optional string value = 1;
+}
+
+message TasksUnqueueResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksUnqueueResponseValueDependsOn {
+  repeated TasksUnqueueResponseValueDependsOnItem items = 1;
+}
+
+message TasksUnqueueResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksUnqueueResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksUnqueueResponseValueScheduledAt scheduledAt = 8;
+  optional TasksUnqueueResponseValueCurrentRunId currentRunId = 9;
+  optional TasksUnqueueResponseValueSessionId sessionId = 10;
+  optional TasksUnqueueResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksUnqueueResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksUnqueueResponseValueRuleId ruleId = 17;
+  optional TasksUnqueueResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksUnqueueResponseValueDoneAt doneAt = 22;
+}
+
+message TasksUnqueueResponse {
+  optional TasksUnqueueResponseValue value = 1;
+}
+
+message TasksHoldRequest {
+  optional string value = 1;
+}
+
+message TasksHoldResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksHoldResponseValueDependsOn {
+  repeated TasksHoldResponseValueDependsOnItem items = 1;
+}
+
+message TasksHoldResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksHoldResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksHoldResponseValueScheduledAt scheduledAt = 8;
+  optional TasksHoldResponseValueCurrentRunId currentRunId = 9;
+  optional TasksHoldResponseValueSessionId sessionId = 10;
+  optional TasksHoldResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksHoldResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksHoldResponseValueRuleId ruleId = 17;
+  optional TasksHoldResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksHoldResponseValueDoneAt doneAt = 22;
+}
+
+message TasksHoldResponse {
+  optional TasksHoldResponseValue value = 1;
+}
+
+message TasksRunNowRequest {
+  optional string value = 1;
+}
+
+message TasksRunNowResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+  optional bool reserved = 3;
+}
+
+message TasksRunNowResponse {
+  optional TasksRunNowResponseValue value = 1;
+}
+
+message TasksMarkDoneRequest {
+  optional string value = 1;
+}
+
+message TasksMarkDoneResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksMarkDoneResponseValueDependsOn {
+  repeated TasksMarkDoneResponseValueDependsOnItem items = 1;
+}
+
+message TasksMarkDoneResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksMarkDoneResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksMarkDoneResponseValueScheduledAt scheduledAt = 8;
+  optional TasksMarkDoneResponseValueCurrentRunId currentRunId = 9;
+  optional TasksMarkDoneResponseValueSessionId sessionId = 10;
+  optional TasksMarkDoneResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksMarkDoneResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksMarkDoneResponseValueRuleId ruleId = 17;
+  optional TasksMarkDoneResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksMarkDoneResponseValueDoneAt doneAt = 22;
+}
+
+message TasksMarkDoneResponse {
+  optional TasksMarkDoneResponseValue value = 1;
+}
+
+message TasksReopenRequest {
+  optional string value = 1;
+}
+
+message TasksReopenResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksReopenResponseValueDependsOn {
+  repeated TasksReopenResponseValueDependsOnItem items = 1;
+}
+
+message TasksReopenResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksReopenResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksReopenResponseValueScheduledAt scheduledAt = 8;
+  optional TasksReopenResponseValueCurrentRunId currentRunId = 9;
+  optional TasksReopenResponseValueSessionId sessionId = 10;
+  optional TasksReopenResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksReopenResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksReopenResponseValueRuleId ruleId = 17;
+  optional TasksReopenResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksReopenResponseValueDoneAt doneAt = 22;
+}
+
+message TasksReopenResponse {
+  optional TasksReopenResponseValue value = 1;
+}
+
+message TasksSendBackRequestValue {
+  optional string id = 1;
+  optional string note = 2;
+}
+
+message TasksSendBackRequest {
+  optional TasksSendBackRequestValue value = 1;
+}
+
+message TasksSendBackResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksSendBackResponseValueDependsOn {
+  repeated TasksSendBackResponseValueDependsOnItem items = 1;
+}
+
+message TasksSendBackResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksSendBackResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksSendBackResponseValueScheduledAt scheduledAt = 8;
+  optional TasksSendBackResponseValueCurrentRunId currentRunId = 9;
+  optional TasksSendBackResponseValueSessionId sessionId = 10;
+  optional TasksSendBackResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksSendBackResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksSendBackResponseValueRuleId ruleId = 17;
+  optional TasksSendBackResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksSendBackResponseValueDoneAt doneAt = 22;
+}
+
+message TasksSendBackResponse {
+  optional TasksSendBackResponseValue value = 1;
+}
+
+message TasksCancelRequest {
+  optional string value = 1;
+}
+
+message TasksCancelResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksCancelResponseValueDependsOn {
+  repeated TasksCancelResponseValueDependsOnItem items = 1;
+}
+
+message TasksCancelResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksCancelResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksCancelResponseValueScheduledAt scheduledAt = 8;
+  optional TasksCancelResponseValueCurrentRunId currentRunId = 9;
+  optional TasksCancelResponseValueSessionId sessionId = 10;
+  optional TasksCancelResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksCancelResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksCancelResponseValueRuleId ruleId = 17;
+  optional TasksCancelResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksCancelResponseValueDoneAt doneAt = 22;
+}
+
+message TasksCancelResponse {
+  optional TasksCancelResponseValue value = 1;
+}
+
+message TasksRemoveRequest {
+  optional string value = 1;
+}
+
+message TasksRemoveResponse {
+
+}
+
+message TasksArchiveRequestValue {
+  optional string id = 1;
+  optional bool archived = 2;
+}
+
+message TasksArchiveRequest {
+  optional TasksArchiveRequestValue value = 1;
+}
+
+message TasksArchiveResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksArchiveResponseValueDependsOn {
+  repeated TasksArchiveResponseValueDependsOnItem items = 1;
+}
+
+message TasksArchiveResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksArchiveResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksArchiveResponseValueScheduledAt scheduledAt = 8;
+  optional TasksArchiveResponseValueCurrentRunId currentRunId = 9;
+  optional TasksArchiveResponseValueSessionId sessionId = 10;
+  optional TasksArchiveResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksArchiveResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksArchiveResponseValueRuleId ruleId = 17;
+  optional TasksArchiveResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksArchiveResponseValueDoneAt doneAt = 22;
+}
+
+message TasksArchiveResponse {
+  optional TasksArchiveResponseValue value = 1;
+}
+
+message TasksSendRequestValue {
+  optional string id = 1;
+  optional string message = 2;
+}
+
+message TasksSendRequest {
+  optional TasksSendRequestValue value = 1;
+}
+
+message TasksSendResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+  optional bool reserved = 3;
+}
+
+message TasksSendResponse {
+  optional TasksSendResponseValue value = 1;
+}
+
+message TasksClearReservedRequest {
+  optional string value = 1;
+}
+
+message TasksClearReservedResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message TasksClearReservedResponseValueDependsOn {
+  repeated TasksClearReservedResponseValueDependsOnItem items = 1;
+}
+
+message TasksClearReservedResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message TasksClearReservedResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional TasksClearReservedResponseValueScheduledAt scheduledAt = 8;
+  optional TasksClearReservedResponseValueCurrentRunId currentRunId = 9;
+  optional TasksClearReservedResponseValueSessionId sessionId = 10;
+  optional TasksClearReservedResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional TasksClearReservedResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional TasksClearReservedResponseValueRuleId ruleId = 17;
+  optional TasksClearReservedResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional TasksClearReservedResponseValueDoneAt doneAt = 22;
+}
+
+message TasksClearReservedResponse {
+  optional TasksClearReservedResponseValue value = 1;
+}
+
+message RulesListRequest {
+
+}
+
+message RulesListResponseValueItemAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesListResponseValueItemBlockStatuses {
+  repeated string items = 1;
+}
+
+message RulesListResponseValueItemDueAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesListResponseValueItemLastEnqueuedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesListResponseValueItem {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string name = 3;
+  optional string prompt = 4;
+  optional double priority = 5;
+  optional RulesListResponseValueItemAgentOverrideId agentOverrideId = 6;
+  optional bool whenIdle = 7;
+  optional string cron = 8;
+  optional string frequency = 9;
+  optional RulesListResponseValueItemBlockStatuses blockStatuses = 10;
+  optional bool enabled = 11;
+  optional RulesListResponseValueItemDueAt dueAt = 12;
+  optional RulesListResponseValueItemLastEnqueuedAt lastEnqueuedAt = 13;
+  optional double sortOrder = 14;
+  optional string createdAt = 15;
+  optional string updatedAt = 16;
+}
+
+message RulesListResponseValue {
+  repeated RulesListResponseValueItem items = 1;
+}
+
+message RulesListResponse {
+  optional RulesListResponseValue value = 1;
+}
+
+message RulesPreviewRequestValueBlockStatuses {
+  repeated string items = 1;
+}
+
+message RulesPreviewRequestValue {
+  optional bool whenIdle = 1;
+  optional string cron = 2;
+  optional string frequency = 3;
+  optional RulesPreviewRequestValueBlockStatuses blockStatuses = 4;
+}
+
+message RulesPreviewRequest {
+  optional RulesPreviewRequestValue value = 1;
+}
+
+message RulesPreviewResponseValueNextAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesPreviewResponseValue {
+  optional RulesPreviewResponseValueNextAt nextAt = 1;
+  optional bool valid = 2;
+  optional bool hasCondition = 3;
+}
+
+message RulesPreviewResponse {
+  optional RulesPreviewResponseValue value = 1;
+}
+
+message RulesCreateRequestValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesCreateRequestValueBlockStatuses {
+  repeated string items = 1;
+}
+
+message RulesCreateRequestValue {
+  optional string projectId = 1;
+  optional string name = 2;
+  optional string prompt = 3;
+  optional double priority = 4;
+  optional RulesCreateRequestValueAgentOverrideId agentOverrideId = 5;
+  optional bool whenIdle = 6;
+  optional string cron = 7;
+  optional string frequency = 8;
+  optional RulesCreateRequestValueBlockStatuses blockStatuses = 9;
+  optional bool enabled = 10;
+  optional double sortOrder = 11;
+}
+
+message RulesCreateRequest {
+  optional RulesCreateRequestValue value = 1;
+}
+
+message RulesCreateResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesCreateResponseValueBlockStatuses {
+  repeated string items = 1;
+}
+
+message RulesCreateResponseValueDueAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesCreateResponseValueLastEnqueuedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesCreateResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string name = 3;
+  optional string prompt = 4;
+  optional double priority = 5;
+  optional RulesCreateResponseValueAgentOverrideId agentOverrideId = 6;
+  optional bool whenIdle = 7;
+  optional string cron = 8;
+  optional string frequency = 9;
+  optional RulesCreateResponseValueBlockStatuses blockStatuses = 10;
+  optional bool enabled = 11;
+  optional RulesCreateResponseValueDueAt dueAt = 12;
+  optional RulesCreateResponseValueLastEnqueuedAt lastEnqueuedAt = 13;
+  optional double sortOrder = 14;
+  optional string createdAt = 15;
+  optional string updatedAt = 16;
+}
+
+message RulesCreateResponse {
+  optional RulesCreateResponseValue value = 1;
+}
+
+message RulesUpdateRequestValuePatchAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesUpdateRequestValuePatchBlockStatuses {
+  repeated string items = 1;
+}
+
+message RulesUpdateRequestValuePatch {
+  optional string projectId = 1;
+  optional string name = 2;
+  optional string prompt = 3;
+  optional double priority = 4;
+  optional RulesUpdateRequestValuePatchAgentOverrideId agentOverrideId = 5;
+  optional bool whenIdle = 6;
+  optional string cron = 7;
+  optional string frequency = 8;
+  optional RulesUpdateRequestValuePatchBlockStatuses blockStatuses = 9;
+  optional bool enabled = 10;
+  optional double sortOrder = 11;
+}
+
+message RulesUpdateRequestValue {
+  optional string id = 1;
+  optional RulesUpdateRequestValuePatch patch = 2;
+}
+
+message RulesUpdateRequest {
+  optional RulesUpdateRequestValue value = 1;
+}
+
+message RulesUpdateResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesUpdateResponseValueBlockStatuses {
+  repeated string items = 1;
+}
+
+message RulesUpdateResponseValueDueAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesUpdateResponseValueLastEnqueuedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesUpdateResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string name = 3;
+  optional string prompt = 4;
+  optional double priority = 5;
+  optional RulesUpdateResponseValueAgentOverrideId agentOverrideId = 6;
+  optional bool whenIdle = 7;
+  optional string cron = 8;
+  optional string frequency = 9;
+  optional RulesUpdateResponseValueBlockStatuses blockStatuses = 10;
+  optional bool enabled = 11;
+  optional RulesUpdateResponseValueDueAt dueAt = 12;
+  optional RulesUpdateResponseValueLastEnqueuedAt lastEnqueuedAt = 13;
+  optional double sortOrder = 14;
+  optional string createdAt = 15;
+  optional string updatedAt = 16;
+}
+
+message RulesUpdateResponse {
+  optional RulesUpdateResponseValue value = 1;
+}
+
+message RulesRemoveRequest {
+  optional string value = 1;
+}
+
+message RulesRemoveResponse {
+
+}
+
+message RulesEnqueueRequest {
+  optional string value = 1;
+}
+
+message RulesEnqueueResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message RulesEnqueueResponseValueDependsOn {
+  repeated RulesEnqueueResponseValueDependsOnItem items = 1;
+}
+
+message RulesEnqueueResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RulesEnqueueResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional RulesEnqueueResponseValueScheduledAt scheduledAt = 8;
+  optional RulesEnqueueResponseValueCurrentRunId currentRunId = 9;
+  optional RulesEnqueueResponseValueSessionId sessionId = 10;
+  optional RulesEnqueueResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional RulesEnqueueResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional RulesEnqueueResponseValueRuleId ruleId = 17;
+  optional RulesEnqueueResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional RulesEnqueueResponseValueDoneAt doneAt = 22;
+}
+
+message RulesEnqueueResponse {
+  optional RulesEnqueueResponseValue value = 1;
+}
+
+message AgentsListRequest {
+
+}
+
+message AgentsListResponseValueItemFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AgentsListResponseValueItemArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsListResponseValueItemResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsListResponseValueItemLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsListResponseValueItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional double concurrency = 4;
+  optional AgentsListResponseValueItemFallbackAgentId fallbackAgentId = 5;
+  optional double cooldownSeconds = 6;
+  optional double timeoutSeconds = 7;
+  optional bool enabled = 8;
+  optional string source = 9;
+  optional double sortOrder = 10;
+  optional string createdAt = 11;
+  optional string updatedAt = 12;
+  optional string command = 13;
+  optional AgentsListResponseValueItemArgsTemplate argsTemplate = 14;
+  optional AgentsListResponseValueItemResumeArgsTemplate resumeArgsTemplate = 15;
+  optional google.protobuf.Value env = 16;
+  optional AgentsListResponseValueItemLimitPatterns limitPatterns = 17;
+  optional string logAdapter = 18;
+}
+
+message AgentsListResponseValue {
+  repeated AgentsListResponseValueItem items = 1;
+}
+
+message AgentsListResponse {
+  optional AgentsListResponseValue value = 1;
+}
+
+message AgentsDefaultsRequest {
+
+}
+
+message AgentsDefaultsResponseValueLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsDefaultsResponseValue {
+  optional AgentsDefaultsResponseValueLimitPatterns limitPatterns = 1;
+}
+
+message AgentsDefaultsResponse {
+  optional AgentsDefaultsResponseValue value = 1;
+}
+
+message AgentsCreateRequestValueFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AgentsCreateRequestValueArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsCreateRequestValueResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsCreateRequestValueLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsCreateRequestValue {
+  optional string name = 1;
+  optional string description = 2;
+  optional double concurrency = 3;
+  optional AgentsCreateRequestValueFallbackAgentId fallbackAgentId = 4;
+  optional double cooldownSeconds = 5;
+  optional double timeoutSeconds = 6;
+  optional bool enabled = 7;
+  optional double sortOrder = 8;
+  optional string command = 9;
+  optional AgentsCreateRequestValueArgsTemplate argsTemplate = 10;
+  optional AgentsCreateRequestValueResumeArgsTemplate resumeArgsTemplate = 11;
+  optional google.protobuf.Value env = 12;
+  optional AgentsCreateRequestValueLimitPatterns limitPatterns = 13;
+  optional string logAdapter = 14;
+  optional string source = 15;
+}
+
+message AgentsCreateRequest {
+  optional AgentsCreateRequestValue value = 1;
+}
+
+message AgentsCreateResponseValueFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AgentsCreateResponseValueArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsCreateResponseValueResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsCreateResponseValueLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsCreateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional double concurrency = 4;
+  optional AgentsCreateResponseValueFallbackAgentId fallbackAgentId = 5;
+  optional double cooldownSeconds = 6;
+  optional double timeoutSeconds = 7;
+  optional bool enabled = 8;
+  optional string source = 9;
+  optional double sortOrder = 10;
+  optional string createdAt = 11;
+  optional string updatedAt = 12;
+  optional string command = 13;
+  optional AgentsCreateResponseValueArgsTemplate argsTemplate = 14;
+  optional AgentsCreateResponseValueResumeArgsTemplate resumeArgsTemplate = 15;
+  optional google.protobuf.Value env = 16;
+  optional AgentsCreateResponseValueLimitPatterns limitPatterns = 17;
+  optional string logAdapter = 18;
+}
+
+message AgentsCreateResponse {
+  optional AgentsCreateResponseValue value = 1;
+}
+
+message AgentsUpdateRequestValuePatchFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AgentsUpdateRequestValuePatchArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsUpdateRequestValuePatchResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsUpdateRequestValuePatchLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsUpdateRequestValuePatch {
+  optional string name = 1;
+  optional string description = 2;
+  optional double concurrency = 3;
+  optional AgentsUpdateRequestValuePatchFallbackAgentId fallbackAgentId = 4;
+  optional double cooldownSeconds = 5;
+  optional double timeoutSeconds = 6;
+  optional bool enabled = 7;
+  optional double sortOrder = 8;
+  optional string command = 9;
+  optional AgentsUpdateRequestValuePatchArgsTemplate argsTemplate = 10;
+  optional AgentsUpdateRequestValuePatchResumeArgsTemplate resumeArgsTemplate = 11;
+  optional google.protobuf.Value env = 12;
+  optional AgentsUpdateRequestValuePatchLimitPatterns limitPatterns = 13;
+  optional string logAdapter = 14;
+  optional string source = 15;
+}
+
+message AgentsUpdateRequestValue {
+  optional string id = 1;
+  optional AgentsUpdateRequestValuePatch patch = 2;
+}
+
+message AgentsUpdateRequest {
+  optional AgentsUpdateRequestValue value = 1;
+}
+
+message AgentsUpdateResponseValueFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AgentsUpdateResponseValueArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsUpdateResponseValueResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsUpdateResponseValueLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsUpdateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional double concurrency = 4;
+  optional AgentsUpdateResponseValueFallbackAgentId fallbackAgentId = 5;
+  optional double cooldownSeconds = 6;
+  optional double timeoutSeconds = 7;
+  optional bool enabled = 8;
+  optional string source = 9;
+  optional double sortOrder = 10;
+  optional string createdAt = 11;
+  optional string updatedAt = 12;
+  optional string command = 13;
+  optional AgentsUpdateResponseValueArgsTemplate argsTemplate = 14;
+  optional AgentsUpdateResponseValueResumeArgsTemplate resumeArgsTemplate = 15;
+  optional google.protobuf.Value env = 16;
+  optional AgentsUpdateResponseValueLimitPatterns limitPatterns = 17;
+  optional string logAdapter = 18;
+}
+
+message AgentsUpdateResponse {
+  optional AgentsUpdateResponseValue value = 1;
+}
+
+message AgentsDuplicateRequest {
+  optional string value = 1;
+}
+
+message AgentsDuplicateResponseValueFallbackAgentId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AgentsDuplicateResponseValueArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsDuplicateResponseValueResumeArgsTemplate {
+  repeated string items = 1;
+}
+
+message AgentsDuplicateResponseValueLimitPatterns {
+  repeated string items = 1;
+}
+
+message AgentsDuplicateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional double concurrency = 4;
+  optional AgentsDuplicateResponseValueFallbackAgentId fallbackAgentId = 5;
+  optional double cooldownSeconds = 6;
+  optional double timeoutSeconds = 7;
+  optional bool enabled = 8;
+  optional string source = 9;
+  optional double sortOrder = 10;
+  optional string createdAt = 11;
+  optional string updatedAt = 12;
+  optional string command = 13;
+  optional AgentsDuplicateResponseValueArgsTemplate argsTemplate = 14;
+  optional AgentsDuplicateResponseValueResumeArgsTemplate resumeArgsTemplate = 15;
+  optional google.protobuf.Value env = 16;
+  optional AgentsDuplicateResponseValueLimitPatterns limitPatterns = 17;
+  optional string logAdapter = 18;
+}
+
+message AgentsDuplicateResponse {
+  optional AgentsDuplicateResponseValue value = 1;
+}
+
+message AgentsResetLimitRequest {
+  optional string value = 1;
+}
+
+message AgentsResetLimitResponse {
+
+}
+
+message AgentsRemoveRequest {
+  optional string value = 1;
+}
+
+message AgentsRemoveResponse {
+
+}
+
+message GroupsListRequest {
+
+}
+
+message GroupsListResponseValueItemMemberIds {
+  repeated string items = 1;
+}
+
+message GroupsListResponseValueItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string strategy = 4;
+  optional GroupsListResponseValueItemMemberIds memberIds = 5;
+  optional bool isDefault = 6;
+  optional double sortOrder = 7;
+  optional string createdAt = 8;
+  optional string updatedAt = 9;
+}
+
+message GroupsListResponseValue {
+  repeated GroupsListResponseValueItem items = 1;
+}
+
+message GroupsListResponse {
+  optional GroupsListResponseValue value = 1;
+}
+
+message GroupsCreateRequestValueMemberIds {
+  repeated string items = 1;
+}
+
+message GroupsCreateRequestValue {
+  optional string name = 1;
+  optional string description = 2;
+  optional string strategy = 3;
+  optional GroupsCreateRequestValueMemberIds memberIds = 4;
+  optional double sortOrder = 5;
+  optional bool isDefault = 6;
+}
+
+message GroupsCreateRequest {
+  optional GroupsCreateRequestValue value = 1;
+}
+
+message GroupsCreateResponseValueMemberIds {
+  repeated string items = 1;
+}
+
+message GroupsCreateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string strategy = 4;
+  optional GroupsCreateResponseValueMemberIds memberIds = 5;
+  optional bool isDefault = 6;
+  optional double sortOrder = 7;
+  optional string createdAt = 8;
+  optional string updatedAt = 9;
+}
+
+message GroupsCreateResponse {
+  optional GroupsCreateResponseValue value = 1;
+}
+
+message GroupsUpdateRequestValuePatchMemberIds {
+  repeated string items = 1;
+}
+
+message GroupsUpdateRequestValuePatch {
+  optional string name = 1;
+  optional string description = 2;
+  optional string strategy = 3;
+  optional GroupsUpdateRequestValuePatchMemberIds memberIds = 4;
+  optional double sortOrder = 5;
+  optional bool isDefault = 6;
+}
+
+message GroupsUpdateRequestValue {
+  optional string id = 1;
+  optional GroupsUpdateRequestValuePatch patch = 2;
+}
+
+message GroupsUpdateRequest {
+  optional GroupsUpdateRequestValue value = 1;
+}
+
+message GroupsUpdateResponseValueMemberIds {
+  repeated string items = 1;
+}
+
+message GroupsUpdateResponseValue {
+  optional string id = 1;
+  optional string name = 2;
+  optional string description = 3;
+  optional string strategy = 4;
+  optional GroupsUpdateResponseValueMemberIds memberIds = 5;
+  optional bool isDefault = 6;
+  optional double sortOrder = 7;
+  optional string createdAt = 8;
+  optional string updatedAt = 9;
+}
+
+message GroupsUpdateResponse {
+  optional GroupsUpdateResponseValue value = 1;
+}
+
+message GroupsRemoveRequest {
+  optional string value = 1;
+}
+
+message GroupsRemoveResponse {
+
+}
+
+message RunsByTaskRequest {
+  optional string value = 1;
+}
+
+message RunsByTaskResponseValueItemResolvedFromGroupId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemFallbackFromRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemErrorKind {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemEndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemPid {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemArgs {
+  repeated string items = 1;
+}
+
+message RunsByTaskResponseValueItemExitCode {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItemSessionLogPath {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message RunsByTaskResponseValueItem {
+  optional string id = 1;
+  optional string taskId = 2;
+  optional string agentId = 3;
+  optional RunsByTaskResponseValueItemResolvedFromGroupId resolvedFromGroupId = 4;
+  optional string sessionId = 5;
+  optional string kind = 6;
+  optional string status = 7;
+  optional double attempt = 8;
+  optional RunsByTaskResponseValueItemFallbackFromRunId fallbackFromRunId = 9;
+  optional string promptPreview = 10;
+  optional RunsByTaskResponseValueItemErrorKind errorKind = 11;
+  optional string errorMessage = 12;
+  optional string source = 13;
+  optional RunsByTaskResponseValueItemExternalKey externalKey = 14;
+  optional string startedAt = 15;
+  optional RunsByTaskResponseValueItemEndedAt endedAt = 16;
+  optional RunsByTaskResponseValueItemPid pid = 17;
+  optional string cwd = 18;
+  optional string command = 19;
+  optional RunsByTaskResponseValueItemArgs args = 20;
+  optional RunsByTaskResponseValueItemExitCode exitCode = 21;
+  optional RunsByTaskResponseValueItemSessionLogPath sessionLogPath = 22;
+  optional string stdoutLogPath = 23;
+}
+
+message RunsByTaskResponseValue {
+  repeated RunsByTaskResponseValueItem items = 1;
+}
+
+message RunsByTaskResponse {
+  optional RunsByTaskResponseValue value = 1;
+}
+
+message RunsCancelRequest {
+  optional string value = 1;
+}
+
+message RunsCancelResponse {
+
+}
+
+message LogsPageRequestValue {
+  optional string runId = 1;
+  optional double offset = 2;
+  optional string generation = 3;
+  optional double limit = 4;
+  optional string search = 5;
+}
+
+message LogsPageRequest {
+  optional LogsPageRequestValue value = 1;
+}
+
+message LogsPageResponseValueMessagesItemTimestamp {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant1 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant2 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlanItem {
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText text = 1;
+  optional string status = 2;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlan {
+  repeated LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlanItem items = 1;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolTarget {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolResult {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItem {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth width = 4;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight height = 5;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImages {
+  repeated LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItem items = 1;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3Tool {
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlan plan = 1;
+  optional string id = 2;
+  optional string name = 3;
+  optional google.protobuf.Value input = 4;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolTarget target = 5;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolResult result = 6;
+  optional bool isError = 7;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImages images = 8;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant3 {
+  optional string kind = 1;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant3Tool tool = 2;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant4ImageWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant4ImageHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant4Image {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant4ImageWidth width = 4;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant4ImageHeight height = 5;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItemVariant4 {
+  optional string kind = 1;
+  optional LogsPageResponseValueMessagesItemBlocksItemVariant4Image image = 2;
+}
+
+message LogsPageResponseValueMessagesItemBlocksItem {
+  oneof kind {
+  LogsPageResponseValueMessagesItemBlocksItemVariant1 variant1 = 1;
+  LogsPageResponseValueMessagesItemBlocksItemVariant2 variant2 = 2;
+  LogsPageResponseValueMessagesItemBlocksItemVariant3 variant3 = 3;
+  LogsPageResponseValueMessagesItemBlocksItemVariant4 variant4 = 4;
+  }
+}
+
+message LogsPageResponseValueMessagesItemBlocks {
+  repeated LogsPageResponseValueMessagesItemBlocksItem items = 1;
+}
+
+message LogsPageResponseValueMessagesItemModel {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValueMessagesItem {
+  optional string id = 1;
+  optional string role = 2;
+  optional bool isSidechain = 3;
+  optional LogsPageResponseValueMessagesItemTimestamp timestamp = 4;
+  optional LogsPageResponseValueMessagesItemBlocks blocks = 5;
+  optional LogsPageResponseValueMessagesItemModel model = 6;
+}
+
+message LogsPageResponseValueMessages {
+  repeated LogsPageResponseValueMessagesItem items = 1;
+}
+
+message LogsPageResponseValueNext {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message LogsPageResponseValue {
+  optional string runId = 1;
+  optional string sessionId = 2;
+  optional bool exists = 3;
+  optional string generation = 4;
+  optional LogsPageResponseValueMessages messages = 5;
+  optional LogsPageResponseValueNext next = 6;
+  optional double total = 7;
+}
+
+message LogsPageResponse {
+  optional LogsPageResponseValue value = 1;
+}
+
+message SessionCloseRequest {
+
+}
+
+message SessionCloseResponse {
+
+}
+
+message SessionLoadRequest {
+  optional string value = 1;
+}
+
+message SessionLoadResponseValueLogPath {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueTitle {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemTimestamp {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant1 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant2 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlanItem {
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText text = 1;
+  optional string status = 2;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlan {
+  repeated SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlanItem items = 1;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolTarget {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolResult {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItem {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth width = 4;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight height = 5;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImages {
+  repeated SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItem items = 1;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3Tool {
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlan plan = 1;
+  optional string id = 2;
+  optional string name = 3;
+  optional google.protobuf.Value input = 4;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolTarget target = 5;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolResult result = 6;
+  optional bool isError = 7;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImages images = 8;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant3 {
+  optional string kind = 1;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant3Tool tool = 2;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant4ImageWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant4ImageHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant4Image {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant4ImageWidth width = 4;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant4ImageHeight height = 5;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItemVariant4 {
+  optional string kind = 1;
+  optional SessionLoadResponseValueMessagesItemBlocksItemVariant4Image image = 2;
+}
+
+message SessionLoadResponseValueMessagesItemBlocksItem {
+  oneof kind {
+  SessionLoadResponseValueMessagesItemBlocksItemVariant1 variant1 = 1;
+  SessionLoadResponseValueMessagesItemBlocksItemVariant2 variant2 = 2;
+  SessionLoadResponseValueMessagesItemBlocksItemVariant3 variant3 = 3;
+  SessionLoadResponseValueMessagesItemBlocksItemVariant4 variant4 = 4;
+  }
+}
+
+message SessionLoadResponseValueMessagesItemBlocks {
+  repeated SessionLoadResponseValueMessagesItemBlocksItem items = 1;
+}
+
+message SessionLoadResponseValueMessagesItemModel {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadResponseValueMessagesItem {
+  optional string id = 1;
+  optional string role = 2;
+  optional bool isSidechain = 3;
+  optional SessionLoadResponseValueMessagesItemTimestamp timestamp = 4;
+  optional SessionLoadResponseValueMessagesItemBlocks blocks = 5;
+  optional SessionLoadResponseValueMessagesItemModel model = 6;
+}
+
+message SessionLoadResponseValueMessages {
+  repeated SessionLoadResponseValueMessagesItem items = 1;
+}
+
+message SessionLoadResponseValue {
+  optional double first = 1;
+  optional double last = 2;
+  optional string generation = 3;
+  optional bool hasNewer = 4;
+  optional bool indexing = 5;
+  optional string sessionId = 6;
+  optional SessionLoadResponseValueLogPath logPath = 7;
+  optional bool exists = 8;
+  optional SessionLoadResponseValueTitle title = 9;
+  optional SessionLoadResponseValueMessages messages = 10;
+  optional bool hasMore = 11;
+  optional double totalMessages = 12;
+}
+
+message SessionLoadResponse {
+  optional SessionLoadResponseValue value = 1;
+}
+
+message SessionLoadMoreRequestValue {
+  optional string runId = 1;
+  optional string direction = 2;
+}
+
+message SessionLoadMoreRequest {
+  optional SessionLoadMoreRequestValue value = 1;
+}
+
+message SessionLoadMoreResponseValueLogPath {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueTitle {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemTimestamp {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant1 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant2 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlanItem {
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText text = 1;
+  optional string status = 2;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlan {
+  repeated SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlanItem items = 1;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolTarget {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolResult {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItem {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth width = 4;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight height = 5;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImages {
+  repeated SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItem items = 1;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3Tool {
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlan plan = 1;
+  optional string id = 2;
+  optional string name = 3;
+  optional google.protobuf.Value input = 4;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolTarget target = 5;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolResult result = 6;
+  optional bool isError = 7;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImages images = 8;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3 {
+  optional string kind = 1;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3Tool tool = 2;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4ImageWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4ImageHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4Image {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4ImageWidth width = 4;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4ImageHeight height = 5;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4 {
+  optional string kind = 1;
+  optional SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4Image image = 2;
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocksItem {
+  oneof kind {
+  SessionLoadMoreResponseValueMessagesItemBlocksItemVariant1 variant1 = 1;
+  SessionLoadMoreResponseValueMessagesItemBlocksItemVariant2 variant2 = 2;
+  SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3 variant3 = 3;
+  SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4 variant4 = 4;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItemBlocks {
+  repeated SessionLoadMoreResponseValueMessagesItemBlocksItem items = 1;
+}
+
+message SessionLoadMoreResponseValueMessagesItemModel {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionLoadMoreResponseValueMessagesItem {
+  optional string id = 1;
+  optional string role = 2;
+  optional bool isSidechain = 3;
+  optional SessionLoadMoreResponseValueMessagesItemTimestamp timestamp = 4;
+  optional SessionLoadMoreResponseValueMessagesItemBlocks blocks = 5;
+  optional SessionLoadMoreResponseValueMessagesItemModel model = 6;
+}
+
+message SessionLoadMoreResponseValueMessages {
+  repeated SessionLoadMoreResponseValueMessagesItem items = 1;
+}
+
+message SessionLoadMoreResponseValue {
+  optional double first = 1;
+  optional double last = 2;
+  optional string generation = 3;
+  optional bool hasNewer = 4;
+  optional bool indexing = 5;
+  optional string sessionId = 6;
+  optional SessionLoadMoreResponseValueLogPath logPath = 7;
+  optional bool exists = 8;
+  optional SessionLoadMoreResponseValueTitle title = 9;
+  optional SessionLoadMoreResponseValueMessages messages = 10;
+  optional bool hasMore = 11;
+  optional double totalMessages = 12;
+}
+
+message SessionLoadMoreResponse {
+  optional SessionLoadMoreResponseValue value = 1;
+}
+
+message SessionImageRequest {
+  optional string value = 1;
+}
+
+message SessionImageResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SessionImageResponse {
+  optional SessionImageResponseValue value = 1;
+}
+
+message SchedulerStatusRequest {
+
+}
+
+message SchedulerStatusResponseValueAgentsItemCooldownUntil {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerStatusResponseValueAgentsItem {
+  optional string agentId = 1;
+  optional string agentName = 2;
+  optional double concurrency = 3;
+  optional double active = 4;
+  optional double reserved = 5;
+  optional SchedulerStatusResponseValueAgentsItemCooldownUntil cooldownUntil = 6;
+  optional string cooldownReason = 7;
+  optional bool enabled = 8;
+}
+
+message SchedulerStatusResponseValueAgents {
+  repeated SchedulerStatusResponseValueAgentsItem items = 1;
+}
+
+message SchedulerStatusResponseValueHoldsItemAgentName {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerStatusResponseValueHoldsItem {
+  optional string taskId = 1;
+  optional string taskTitle = 2;
+  optional string projectName = 3;
+  optional SchedulerStatusResponseValueHoldsItemAgentName agentName = 4;
+}
+
+message SchedulerStatusResponseValueHolds {
+  repeated SchedulerStatusResponseValueHoldsItem items = 1;
+}
+
+message SchedulerStatusResponseValueWarnings {
+  repeated string items = 1;
+}
+
+message SchedulerStatusResponseValueLastTickAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerStatusResponseValue {
+  optional bool running = 1;
+  optional double activeRuns = 2;
+  optional double totalSlots = 3;
+  optional double queued = 4;
+  optional double review = 5;
+  optional double failed = 6;
+  optional SchedulerStatusResponseValueAgents agents = 7;
+  optional SchedulerStatusResponseValueHolds holds = 8;
+  optional SchedulerStatusResponseValueWarnings warnings = 9;
+  optional SchedulerStatusResponseValueLastTickAt lastTickAt = 10;
+}
+
+message SchedulerStatusResponse {
+  optional SchedulerStatusResponseValue value = 1;
+}
+
+message SchedulerPauseRequest {
+
+}
+
+message SchedulerPauseResponseValueAgentsItemCooldownUntil {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerPauseResponseValueAgentsItem {
+  optional string agentId = 1;
+  optional string agentName = 2;
+  optional double concurrency = 3;
+  optional double active = 4;
+  optional double reserved = 5;
+  optional SchedulerPauseResponseValueAgentsItemCooldownUntil cooldownUntil = 6;
+  optional string cooldownReason = 7;
+  optional bool enabled = 8;
+}
+
+message SchedulerPauseResponseValueAgents {
+  repeated SchedulerPauseResponseValueAgentsItem items = 1;
+}
+
+message SchedulerPauseResponseValueHoldsItemAgentName {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerPauseResponseValueHoldsItem {
+  optional string taskId = 1;
+  optional string taskTitle = 2;
+  optional string projectName = 3;
+  optional SchedulerPauseResponseValueHoldsItemAgentName agentName = 4;
+}
+
+message SchedulerPauseResponseValueHolds {
+  repeated SchedulerPauseResponseValueHoldsItem items = 1;
+}
+
+message SchedulerPauseResponseValueWarnings {
+  repeated string items = 1;
+}
+
+message SchedulerPauseResponseValueLastTickAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerPauseResponseValue {
+  optional bool running = 1;
+  optional double activeRuns = 2;
+  optional double totalSlots = 3;
+  optional double queued = 4;
+  optional double review = 5;
+  optional double failed = 6;
+  optional SchedulerPauseResponseValueAgents agents = 7;
+  optional SchedulerPauseResponseValueHolds holds = 8;
+  optional SchedulerPauseResponseValueWarnings warnings = 9;
+  optional SchedulerPauseResponseValueLastTickAt lastTickAt = 10;
+}
+
+message SchedulerPauseResponse {
+  optional SchedulerPauseResponseValue value = 1;
+}
+
+message SchedulerResumeRequest {
+
+}
+
+message SchedulerResumeResponseValueAgentsItemCooldownUntil {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerResumeResponseValueAgentsItem {
+  optional string agentId = 1;
+  optional string agentName = 2;
+  optional double concurrency = 3;
+  optional double active = 4;
+  optional double reserved = 5;
+  optional SchedulerResumeResponseValueAgentsItemCooldownUntil cooldownUntil = 6;
+  optional string cooldownReason = 7;
+  optional bool enabled = 8;
+}
+
+message SchedulerResumeResponseValueAgents {
+  repeated SchedulerResumeResponseValueAgentsItem items = 1;
+}
+
+message SchedulerResumeResponseValueHoldsItemAgentName {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerResumeResponseValueHoldsItem {
+  optional string taskId = 1;
+  optional string taskTitle = 2;
+  optional string projectName = 3;
+  optional SchedulerResumeResponseValueHoldsItemAgentName agentName = 4;
+}
+
+message SchedulerResumeResponseValueHolds {
+  repeated SchedulerResumeResponseValueHoldsItem items = 1;
+}
+
+message SchedulerResumeResponseValueWarnings {
+  repeated string items = 1;
+}
+
+message SchedulerResumeResponseValueLastTickAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SchedulerResumeResponseValue {
+  optional bool running = 1;
+  optional double activeRuns = 2;
+  optional double totalSlots = 3;
+  optional double queued = 4;
+  optional double review = 5;
+  optional double failed = 6;
+  optional SchedulerResumeResponseValueAgents agents = 7;
+  optional SchedulerResumeResponseValueHolds holds = 8;
+  optional SchedulerResumeResponseValueWarnings warnings = 9;
+  optional SchedulerResumeResponseValueLastTickAt lastTickAt = 10;
+}
+
+message SchedulerResumeResponse {
+  optional SchedulerResumeResponseValue value = 1;
+}
+
+message ServersStatusRequest {
+
+}
+
+message ServersStatusResponseValueHttpUrl {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ServersStatusResponseValueHttpError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ServersStatusResponseValueHttp {
+  optional bool enabled = 1;
+  optional ServersStatusResponseValueHttpUrl url = 2;
+  optional ServersStatusResponseValueHttpError error = 3;
+}
+
+message ServersStatusResponseValueMcpUrl {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ServersStatusResponseValueMcpError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ServersStatusResponseValueMcp {
+  optional bool enabled = 1;
+  optional ServersStatusResponseValueMcpUrl url = 2;
+  optional ServersStatusResponseValueMcpError error = 3;
+}
+
+message ServersStatusResponseValue {
+  optional ServersStatusResponseValueHttp http = 1;
+  optional ServersStatusResponseValueMcp mcp = 2;
+  optional string connectionFile = 3;
+}
+
+message ServersStatusResponse {
+  optional ServersStatusResponseValue value = 1;
+}
+
+message SettingsPreviewIdentityRequestValueIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsPreviewIdentityRequestValue {
+  optional SettingsPreviewIdentityRequestValueIdentity identity = 1;
+  optional string projectId = 2;
+}
+
+message SettingsPreviewIdentityRequest {
+  optional SettingsPreviewIdentityRequestValue value = 1;
+}
+
+message SettingsPreviewIdentityResponseValueResolvedVariant1 {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsPreviewIdentityResponseValueResolved {
+  oneof kind {
+  SettingsPreviewIdentityResponseValueResolvedVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SettingsPreviewIdentityResponseValue {
+  optional string slug = 1;
+  optional string login = 2;
+  optional string email = 3;
+  optional bool complete = 4;
+  optional bool current = 5;
+  optional string url = 6;
+  optional SettingsPreviewIdentityResponseValueResolved resolved = 7;
+}
+
+message SettingsPreviewIdentityResponse {
+  optional SettingsPreviewIdentityResponseValue value = 1;
+}
+
+message SettingsSetIdentityRequestValue {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsSetIdentityRequest {
+  optional SettingsSetIdentityRequestValue value = 1;
+}
+
+message SettingsSetIdentityResponseValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsSetIdentityResponseValue {
+  optional bool httpEnabled = 25;
+  optional double httpPort = 26;
+  optional bool mcpEnabled = 27;
+  optional double mcpPort = 28;
+  optional bool autoStartScheduler = 1;
+  optional bool keepRunningInBackground = 2;
+  optional bool notifyOnReview = 3;
+  optional bool notifyOnFailure = 4;
+  optional double tickIntervalMs = 5;
+  optional bool importExternalSessions = 6;
+  optional double importHistoryDays = 7;
+  optional bool importCreateProjects = 8;
+  optional bool commitIdentityEnabled = 9;
+  optional SettingsSetIdentityResponseValueCommitIdentity commitIdentity = 10;
+  optional string editorApp = 11;
+  optional bool mobileSyncEnabled = 12;
+  optional bool reportEnabled = 13;
+  optional string reportTargetKind = 14;
+  optional string reportTargetId = 15;
+  optional string reportInstructions = 16;
+  optional string projectReportInstructions = 17;
+  optional string pullRequestFailurePrompt = 18;
+  optional string pullRequestPendingPrompt = 19;
+  optional string pullRequestConflictPrompt = 20;
+  optional bool pullRequestFailureEnabled = 21;
+  optional bool pullRequestPendingEnabled = 22;
+  optional bool pullRequestConflictEnabled = 23;
+  optional string theme = 24;
+}
+
+message SettingsSetIdentityResponse {
+  optional SettingsSetIdentityResponseValue value = 1;
+}
+
+message SettingsGetRequest {
+
+}
+
+message SettingsGetResponseValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsGetResponseValue {
+  optional bool httpEnabled = 25;
+  optional double httpPort = 26;
+  optional bool mcpEnabled = 27;
+  optional double mcpPort = 28;
+  optional bool autoStartScheduler = 1;
+  optional bool keepRunningInBackground = 2;
+  optional bool notifyOnReview = 3;
+  optional bool notifyOnFailure = 4;
+  optional double tickIntervalMs = 5;
+  optional bool importExternalSessions = 6;
+  optional double importHistoryDays = 7;
+  optional bool importCreateProjects = 8;
+  optional bool commitIdentityEnabled = 9;
+  optional SettingsGetResponseValueCommitIdentity commitIdentity = 10;
+  optional string editorApp = 11;
+  optional bool mobileSyncEnabled = 12;
+  optional bool reportEnabled = 13;
+  optional string reportTargetKind = 14;
+  optional string reportTargetId = 15;
+  optional string reportInstructions = 16;
+  optional string projectReportInstructions = 17;
+  optional string pullRequestFailurePrompt = 18;
+  optional string pullRequestPendingPrompt = 19;
+  optional string pullRequestConflictPrompt = 20;
+  optional bool pullRequestFailureEnabled = 21;
+  optional bool pullRequestPendingEnabled = 22;
+  optional bool pullRequestConflictEnabled = 23;
+  optional string theme = 24;
+}
+
+message SettingsGetResponse {
+  optional SettingsGetResponseValue value = 1;
+}
+
+message SettingsSetRequestValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsSetRequestValue {
+  optional bool httpEnabled = 25;
+  optional double httpPort = 26;
+  optional bool mcpEnabled = 27;
+  optional double mcpPort = 28;
+  optional bool autoStartScheduler = 1;
+  optional bool keepRunningInBackground = 2;
+  optional bool notifyOnReview = 3;
+  optional bool notifyOnFailure = 4;
+  optional double tickIntervalMs = 5;
+  optional bool importExternalSessions = 6;
+  optional double importHistoryDays = 7;
+  optional bool importCreateProjects = 8;
+  optional bool commitIdentityEnabled = 9;
+  optional SettingsSetRequestValueCommitIdentity commitIdentity = 10;
+  optional string editorApp = 11;
+  optional bool mobileSyncEnabled = 12;
+  optional bool reportEnabled = 13;
+  optional string reportTargetKind = 14;
+  optional string reportTargetId = 15;
+  optional string reportInstructions = 16;
+  optional string projectReportInstructions = 17;
+  optional string pullRequestFailurePrompt = 18;
+  optional string pullRequestPendingPrompt = 19;
+  optional string pullRequestConflictPrompt = 20;
+  optional bool pullRequestFailureEnabled = 21;
+  optional bool pullRequestPendingEnabled = 22;
+  optional bool pullRequestConflictEnabled = 23;
+  optional string theme = 24;
+}
+
+message SettingsSetRequest {
+  optional SettingsSetRequestValue value = 1;
+}
+
+message SettingsSetResponseValueCommitIdentity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsSetResponseValue {
+  optional bool httpEnabled = 25;
+  optional double httpPort = 26;
+  optional bool mcpEnabled = 27;
+  optional double mcpPort = 28;
+  optional bool autoStartScheduler = 1;
+  optional bool keepRunningInBackground = 2;
+  optional bool notifyOnReview = 3;
+  optional bool notifyOnFailure = 4;
+  optional double tickIntervalMs = 5;
+  optional bool importExternalSessions = 6;
+  optional double importHistoryDays = 7;
+  optional bool importCreateProjects = 8;
+  optional bool commitIdentityEnabled = 9;
+  optional SettingsSetResponseValueCommitIdentity commitIdentity = 10;
+  optional string editorApp = 11;
+  optional bool mobileSyncEnabled = 12;
+  optional bool reportEnabled = 13;
+  optional string reportTargetKind = 14;
+  optional string reportTargetId = 15;
+  optional string reportInstructions = 16;
+  optional string projectReportInstructions = 17;
+  optional string pullRequestFailurePrompt = 18;
+  optional string pullRequestPendingPrompt = 19;
+  optional string pullRequestConflictPrompt = 20;
+  optional bool pullRequestFailureEnabled = 21;
+  optional bool pullRequestPendingEnabled = 22;
+  optional bool pullRequestConflictEnabled = 23;
+  optional string theme = 24;
+}
+
+message SettingsSetResponse {
+  optional SettingsSetResponseValue value = 1;
+}
+
+message SettingsLookupBotUserRequest {
+  optional string value = 1;
+}
+
+message SettingsLookupBotUserResponseValueVariant1 {
+  optional bool ok = 1;
+  optional string botUserId = 2;
+}
+
+message SettingsLookupBotUserResponseValueVariant2 {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message SettingsLookupBotUserResponseValue {
+  oneof kind {
+  SettingsLookupBotUserResponseValueVariant1 variant1 = 1;
+  SettingsLookupBotUserResponseValueVariant2 variant2 = 2;
+  }
+}
+
+message SettingsLookupBotUserResponse {
+  optional SettingsLookupBotUserResponseValue value = 1;
+}
+
+message SettingsCreateGitHubAppRequest {
+
+}
+
+message SettingsCreateGitHubAppResponseValueVariant1Identity {
+  optional string appSlug = 1;
+  optional string botUserId = 2;
+  optional string appId = 3;
+  optional double setupVersion = 4;
+}
+
+message SettingsCreateGitHubAppResponseValueVariant1 {
+  optional bool ok = 1;
+  optional SettingsCreateGitHubAppResponseValueVariant1Identity identity = 2;
+}
+
+message SettingsCreateGitHubAppResponseValueVariant2 {
+  optional bool ok = 1;
+  optional string reason = 2;
+  optional bool canceled = 3;
+}
+
+message SettingsCreateGitHubAppResponseValue {
+  oneof kind {
+  SettingsCreateGitHubAppResponseValueVariant1 variant1 = 1;
+  SettingsCreateGitHubAppResponseValueVariant2 variant2 = 2;
+  }
+}
+
+message SettingsCreateGitHubAppResponse {
+  optional SettingsCreateGitHubAppResponseValue value = 1;
+}
+
+message SettingsCancelGitHubAppRequest {
+
+}
+
+message SettingsCancelGitHubAppResponse {
+
+}
+
+message MobileStatusRequest {
+
+}
+
+message MobileStatusResponseValueConflictsItem {
+  optional string intentId = 1;
+  optional string device = 2;
+  optional double seq = 3;
+  optional string taskId = 4;
+  optional string at = 5;
+  optional string outcome = 6;
+  optional string reason = 7;
+}
+
+message MobileStatusResponseValueConflicts {
+  repeated MobileStatusResponseValueConflictsItem items = 1;
+}
+
+message MobileStatusResponseValue {
+  optional bool enabled = 1;
+  optional bool reachable = 2;
+  optional string lastExportAt = 3;
+  optional string lastImportAt = 4;
+  optional MobileStatusResponseValueConflicts conflicts = 5;
+  optional string error = 6;
+}
+
+message MobileStatusResponse {
+  optional MobileStatusResponseValue value = 1;
+}
+
+message MobileSyncNowRequest {
+
+}
+
+message MobileSyncNowResponseValueConflictsItem {
+  optional string intentId = 1;
+  optional string device = 2;
+  optional double seq = 3;
+  optional string taskId = 4;
+  optional string at = 5;
+  optional string outcome = 6;
+  optional string reason = 7;
+}
+
+message MobileSyncNowResponseValueConflicts {
+  repeated MobileSyncNowResponseValueConflictsItem items = 1;
+}
+
+message MobileSyncNowResponseValue {
+  optional bool enabled = 1;
+  optional bool reachable = 2;
+  optional string lastExportAt = 3;
+  optional string lastImportAt = 4;
+  optional MobileSyncNowResponseValueConflicts conflicts = 5;
+  optional string error = 6;
+}
+
+message MobileSyncNowResponse {
+  optional MobileSyncNowResponseValue value = 1;
+}
+
+message ImporterSyncRequest {
+
+}
+
+message ImporterSyncResponseValue {
+  optional double scanned = 1;
+  optional double createdTasks = 2;
+  optional double createdProjects = 3;
+  optional double updated = 4;
+  optional double running = 5;
+}
+
+message ImporterSyncResponse {
+  optional ImporterSyncResponseValue value = 1;
+}
+
+message OpenTerminalRequestValue {
+  optional string kind = 1;
+  optional string id = 2;
+}
+
+message OpenTerminalRequest {
+  optional OpenTerminalRequestValue value = 1;
+}
+
+message OpenTerminalResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message OpenTerminalResponse {
+  optional OpenTerminalResponseValue value = 1;
+}
+
+message OpenResumeRequest {
+  optional string value = 1;
+}
+
+message OpenResumeResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message OpenResumeResponse {
+  optional OpenResumeResponseValue value = 1;
+}
+
+message OpenEditorRequestValueTarget {
+  optional string kind = 1;
+  optional string id = 2;
+}
+
+message OpenEditorRequestValue {
+  optional OpenEditorRequestValueTarget target = 1;
+  optional string appPath = 2;
+}
+
+message OpenEditorRequest {
+  optional OpenEditorRequestValue value = 1;
+}
+
+message OpenEditorResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message OpenEditorResponse {
+  optional OpenEditorResponseValue value = 1;
+}
+
+message OpenRevealRequestValue {
+  optional string kind = 1;
+  optional string id = 2;
+}
+
+message OpenRevealRequest {
+  optional OpenRevealRequestValue value = 1;
+}
+
+message OpenRevealResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message OpenRevealResponse {
+  optional OpenRevealResponseValue value = 1;
+}
+
+message OpenWorkingDirRequestValue {
+  optional string kind = 1;
+  optional string id = 2;
+}
+
+message OpenWorkingDirRequest {
+  optional OpenWorkingDirRequestValue value = 1;
+}
+
+message OpenWorkingDirResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message OpenWorkingDirResponse {
+  optional OpenWorkingDirResponseValue value = 1;
+}
+
+message OpenEditorsRequest {
+
+}
+
+message OpenEditorsResponseValueItem {
+  optional string path = 1;
+  optional string name = 2;
+}
+
+message OpenEditorsResponseValue {
+  repeated OpenEditorsResponseValueItem items = 1;
+}
+
+message OpenEditorsResponse {
+  optional OpenEditorsResponseValue value = 1;
+}
+
+message ReviewSnapshotRequest {
+  optional string value = 1;
+}
+
+message ReviewSnapshotResponseValueRepository {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewSnapshotResponseValueTree {
+  repeated google.protobuf.Value items = 1;
+}
+
+message ReviewSnapshotResponseValueChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewSnapshotResponseValueChanges {
+  repeated ReviewSnapshotResponseValueChangesItem items = 1;
+}
+
+message ReviewSnapshotResponseValueLocalChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewSnapshotResponseValueLocalChanges {
+  repeated ReviewSnapshotResponseValueLocalChangesItem items = 1;
+}
+
+message ReviewSnapshotResponseValueStagedChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewSnapshotResponseValueStagedChanges {
+  repeated ReviewSnapshotResponseValueStagedChangesItem items = 1;
+}
+
+message ReviewSnapshotResponseValueRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewSnapshotResponseValueRevision {
+  oneof kind {
+  ReviewSnapshotResponseValueRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewSnapshotResponseValueLocalRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewSnapshotResponseValueLocalRevision {
+  oneof kind {
+  ReviewSnapshotResponseValueLocalRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewSnapshotResponseValueStagedRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewSnapshotResponseValueStagedRevision {
+  oneof kind {
+  ReviewSnapshotResponseValueStagedRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewSnapshotResponseValueCommitsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewSnapshotResponseValueCommitsItemFiles {
+  repeated ReviewSnapshotResponseValueCommitsItemFilesItem items = 1;
+}
+
+message ReviewSnapshotResponseValueCommitsItem {
+  optional string sha = 1;
+  optional string shortSha = 2;
+  optional string subject = 3;
+  optional string author = 4;
+  optional string committedAt = 5;
+  optional ReviewSnapshotResponseValueCommitsItemFiles files = 6;
+}
+
+message ReviewSnapshotResponseValueCommits {
+  repeated ReviewSnapshotResponseValueCommitsItem items = 1;
+}
+
+message ReviewSnapshotResponseValuePullRequestsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewSnapshotResponseValuePullRequestsItemFiles {
+  repeated ReviewSnapshotResponseValuePullRequestsItemFilesItem items = 1;
+}
+
+message ReviewSnapshotResponseValuePullRequestsItem {
+  optional double number = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string headRefName = 4;
+  optional string baseRefName = 5;
+  optional string headSha = 6;
+  optional bool draft = 7;
+  optional string updatedAt = 8;
+  optional string check = 9;
+  optional string mergeState = 10;
+  optional string state = 11;
+  optional ReviewSnapshotResponseValuePullRequestsItemFiles files = 12;
+}
+
+message ReviewSnapshotResponseValuePullRequests {
+  repeated ReviewSnapshotResponseValuePullRequestsItem items = 1;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1Lines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1Functions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1Branches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1Statements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1FilesItemLines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1FilesItemFunctions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1FilesItemBranches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1FilesItemStatements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1FilesItemUncoveredLines {
+  repeated double items = 1;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1FilesItem {
+  optional string path = 1;
+  optional ReviewSnapshotResponseValueCoverageVariant1FilesItemLines lines = 2;
+  optional ReviewSnapshotResponseValueCoverageVariant1FilesItemFunctions functions = 3;
+  optional ReviewSnapshotResponseValueCoverageVariant1FilesItemBranches branches = 4;
+  optional ReviewSnapshotResponseValueCoverageVariant1FilesItemStatements statements = 5;
+  optional ReviewSnapshotResponseValueCoverageVariant1FilesItemUncoveredLines uncoveredLines = 6;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1Files {
+  repeated ReviewSnapshotResponseValueCoverageVariant1FilesItem items = 1;
+}
+
+message ReviewSnapshotResponseValueCoverageVariant1 {
+  optional string source = 1;
+  optional ReviewSnapshotResponseValueCoverageVariant1Lines lines = 2;
+  optional ReviewSnapshotResponseValueCoverageVariant1Functions functions = 3;
+  optional ReviewSnapshotResponseValueCoverageVariant1Branches branches = 4;
+  optional ReviewSnapshotResponseValueCoverageVariant1Statements statements = 5;
+  optional ReviewSnapshotResponseValueCoverageVariant1Files files = 6;
+}
+
+message ReviewSnapshotResponseValueCoverage {
+  oneof kind {
+  ReviewSnapshotResponseValueCoverageVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewSnapshotResponseValueProjectTasksItem {
+  optional string id = 1;
+  optional string label = 2;
+  optional string source = 3;
+  optional string command = 4;
+}
+
+message ReviewSnapshotResponseValueProjectTasks {
+  repeated ReviewSnapshotResponseValueProjectTasksItem items = 1;
+}
+
+message ReviewSnapshotResponseValue {
+  optional bool preparing = 1;
+  optional string error = 2;
+  optional string cwd = 3;
+  optional string branch = 4;
+  optional ReviewSnapshotResponseValueRepository repository = 5;
+  optional ReviewSnapshotResponseValueTree tree = 6;
+  optional ReviewSnapshotResponseValueChanges changes = 7;
+  optional ReviewSnapshotResponseValueLocalChanges localChanges = 8;
+  optional ReviewSnapshotResponseValueStagedChanges stagedChanges = 9;
+  optional ReviewSnapshotResponseValueRevision revision = 10;
+  optional ReviewSnapshotResponseValueLocalRevision localRevision = 11;
+  optional ReviewSnapshotResponseValueStagedRevision stagedRevision = 12;
+  optional ReviewSnapshotResponseValueCommits commits = 13;
+  optional ReviewSnapshotResponseValuePullRequests pullRequests = 14;
+  optional ReviewSnapshotResponseValueCoverage coverage = 15;
+  optional ReviewSnapshotResponseValueProjectTasks projectTasks = 16;
+  optional string pullRequestNotice = 17;
+}
+
+message ReviewSnapshotResponse {
+  optional ReviewSnapshotResponseValue value = 1;
+}
+
+message ReviewRefreshRequest {
+  optional string value = 1;
+}
+
+message ReviewRefreshResponseValueRepository {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewRefreshResponseValueTree {
+  repeated google.protobuf.Value items = 1;
+}
+
+message ReviewRefreshResponseValueChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewRefreshResponseValueChanges {
+  repeated ReviewRefreshResponseValueChangesItem items = 1;
+}
+
+message ReviewRefreshResponseValueLocalChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewRefreshResponseValueLocalChanges {
+  repeated ReviewRefreshResponseValueLocalChangesItem items = 1;
+}
+
+message ReviewRefreshResponseValueStagedChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewRefreshResponseValueStagedChanges {
+  repeated ReviewRefreshResponseValueStagedChangesItem items = 1;
+}
+
+message ReviewRefreshResponseValueRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewRefreshResponseValueRevision {
+  oneof kind {
+  ReviewRefreshResponseValueRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewRefreshResponseValueLocalRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewRefreshResponseValueLocalRevision {
+  oneof kind {
+  ReviewRefreshResponseValueLocalRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewRefreshResponseValueStagedRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewRefreshResponseValueStagedRevision {
+  oneof kind {
+  ReviewRefreshResponseValueStagedRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewRefreshResponseValueCommitsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewRefreshResponseValueCommitsItemFiles {
+  repeated ReviewRefreshResponseValueCommitsItemFilesItem items = 1;
+}
+
+message ReviewRefreshResponseValueCommitsItem {
+  optional string sha = 1;
+  optional string shortSha = 2;
+  optional string subject = 3;
+  optional string author = 4;
+  optional string committedAt = 5;
+  optional ReviewRefreshResponseValueCommitsItemFiles files = 6;
+}
+
+message ReviewRefreshResponseValueCommits {
+  repeated ReviewRefreshResponseValueCommitsItem items = 1;
+}
+
+message ReviewRefreshResponseValuePullRequestsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewRefreshResponseValuePullRequestsItemFiles {
+  repeated ReviewRefreshResponseValuePullRequestsItemFilesItem items = 1;
+}
+
+message ReviewRefreshResponseValuePullRequestsItem {
+  optional double number = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string headRefName = 4;
+  optional string baseRefName = 5;
+  optional string headSha = 6;
+  optional bool draft = 7;
+  optional string updatedAt = 8;
+  optional string check = 9;
+  optional string mergeState = 10;
+  optional string state = 11;
+  optional ReviewRefreshResponseValuePullRequestsItemFiles files = 12;
+}
+
+message ReviewRefreshResponseValuePullRequests {
+  repeated ReviewRefreshResponseValuePullRequestsItem items = 1;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1Lines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1Functions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1Branches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1Statements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1FilesItemLines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1FilesItemFunctions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1FilesItemBranches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1FilesItemStatements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1FilesItemUncoveredLines {
+  repeated double items = 1;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1FilesItem {
+  optional string path = 1;
+  optional ReviewRefreshResponseValueCoverageVariant1FilesItemLines lines = 2;
+  optional ReviewRefreshResponseValueCoverageVariant1FilesItemFunctions functions = 3;
+  optional ReviewRefreshResponseValueCoverageVariant1FilesItemBranches branches = 4;
+  optional ReviewRefreshResponseValueCoverageVariant1FilesItemStatements statements = 5;
+  optional ReviewRefreshResponseValueCoverageVariant1FilesItemUncoveredLines uncoveredLines = 6;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1Files {
+  repeated ReviewRefreshResponseValueCoverageVariant1FilesItem items = 1;
+}
+
+message ReviewRefreshResponseValueCoverageVariant1 {
+  optional string source = 1;
+  optional ReviewRefreshResponseValueCoverageVariant1Lines lines = 2;
+  optional ReviewRefreshResponseValueCoverageVariant1Functions functions = 3;
+  optional ReviewRefreshResponseValueCoverageVariant1Branches branches = 4;
+  optional ReviewRefreshResponseValueCoverageVariant1Statements statements = 5;
+  optional ReviewRefreshResponseValueCoverageVariant1Files files = 6;
+}
+
+message ReviewRefreshResponseValueCoverage {
+  oneof kind {
+  ReviewRefreshResponseValueCoverageVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewRefreshResponseValueProjectTasksItem {
+  optional string id = 1;
+  optional string label = 2;
+  optional string source = 3;
+  optional string command = 4;
+}
+
+message ReviewRefreshResponseValueProjectTasks {
+  repeated ReviewRefreshResponseValueProjectTasksItem items = 1;
+}
+
+message ReviewRefreshResponseValue {
+  optional bool preparing = 1;
+  optional string error = 2;
+  optional string cwd = 3;
+  optional string branch = 4;
+  optional ReviewRefreshResponseValueRepository repository = 5;
+  optional ReviewRefreshResponseValueTree tree = 6;
+  optional ReviewRefreshResponseValueChanges changes = 7;
+  optional ReviewRefreshResponseValueLocalChanges localChanges = 8;
+  optional ReviewRefreshResponseValueStagedChanges stagedChanges = 9;
+  optional ReviewRefreshResponseValueRevision revision = 10;
+  optional ReviewRefreshResponseValueLocalRevision localRevision = 11;
+  optional ReviewRefreshResponseValueStagedRevision stagedRevision = 12;
+  optional ReviewRefreshResponseValueCommits commits = 13;
+  optional ReviewRefreshResponseValuePullRequests pullRequests = 14;
+  optional ReviewRefreshResponseValueCoverage coverage = 15;
+  optional ReviewRefreshResponseValueProjectTasks projectTasks = 16;
+  optional string pullRequestNotice = 17;
+}
+
+message ReviewRefreshResponse {
+  optional ReviewRefreshResponseValue value = 1;
+}
+
+message ReviewFileRequestValue {
+  optional string taskId = 1;
+  optional google.protobuf.Value request = 2;
+}
+
+message ReviewFileRequest {
+  optional ReviewFileRequestValue value = 1;
+}
+
+message ReviewFileResponseValueDiffItemOldLine {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewFileResponseValueDiffItemNewLine {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewFileResponseValueDiffItem {
+  optional string kind = 1;
+  optional ReviewFileResponseValueDiffItemOldLine oldLine = 2;
+  optional ReviewFileResponseValueDiffItemNewLine newLine = 3;
+  optional string text = 4;
+}
+
+message ReviewFileResponseValueDiff {
+  repeated ReviewFileResponseValueDiffItem items = 1;
+}
+
+message ReviewFileResponseValueSymbolsItem {
+  optional string name = 1;
+  optional string kind = 2;
+  optional double line = 3;
+  optional double depth = 4;
+}
+
+message ReviewFileResponseValueSymbols {
+  repeated ReviewFileResponseValueSymbolsItem items = 1;
+}
+
+message ReviewFileResponseValuePullRequestVariant1 {
+  optional string url = 1;
+  optional double number = 2;
+  optional string headSha = 3;
+}
+
+message ReviewFileResponseValuePullRequest {
+  oneof kind {
+  ReviewFileResponseValuePullRequestVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewFileResponseValue {
+  optional string source = 1;
+  optional string path = 2;
+  optional string language = 3;
+  optional string content = 4;
+  optional ReviewFileResponseValueDiff diff = 5;
+  optional ReviewFileResponseValueSymbols symbols = 6;
+  optional ReviewFileResponseValuePullRequest pullRequest = 7;
+  optional bool binary = 8;
+}
+
+message ReviewFileResponse {
+  optional ReviewFileResponseValue value = 1;
+}
+
+message ReviewCommentRequestValueInput {
+  optional string pullRequestUrl = 1;
+  optional double pullRequest = 2;
+  optional string path = 3;
+  optional double line = 4;
+  optional string body = 5;
+  optional string headSha = 6;
+}
+
+message ReviewCommentRequestValue {
+  optional string taskId = 1;
+  optional ReviewCommentRequestValueInput input = 2;
+}
+
+message ReviewCommentRequest {
+  optional ReviewCommentRequestValue value = 1;
+}
+
+message ReviewCommentResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReviewCommentResponse {
+  optional ReviewCommentResponseValue value = 1;
+}
+
+message ReviewOpenPullRequestRequestValueBounds {
+  optional double x = 1;
+  optional double y = 2;
+  optional double width = 3;
+  optional double height = 4;
+}
+
+message ReviewOpenPullRequestRequestValue {
+  optional string id = 1;
+  optional string url = 2;
+  optional ReviewOpenPullRequestRequestValueBounds bounds = 3;
+}
+
+message ReviewOpenPullRequestRequest {
+  optional ReviewOpenPullRequestRequestValue value = 1;
+}
+
+message ReviewOpenPullRequestResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReviewOpenPullRequestResponse {
+  optional ReviewOpenPullRequestResponseValue value = 1;
+}
+
+message ReviewHidePullRequestRequest {
+  optional string value = 1;
+}
+
+message ReviewHidePullRequestResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReviewHidePullRequestResponse {
+  optional ReviewHidePullRequestResponseValue value = 1;
+}
+
+message ReviewClosePullRequestRequest {
+  optional string value = 1;
+}
+
+message ReviewClosePullRequestResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReviewClosePullRequestResponse {
+  optional ReviewClosePullRequestResponseValue value = 1;
+}
+
+message ReportProjectGetRequest {
+  optional string value = 1;
+}
+
+message ReportProjectGetResponseValueVariant1EndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportProjectGetResponseValueVariant1 {
+  optional string status = 1;
+  optional string revision = 2;
+  optional string path = 3;
+  optional string logPath = 4;
+  optional string error = 5;
+  optional string startedAt = 6;
+  optional ReportProjectGetResponseValueVariant1EndedAt endedAt = 7;
+  optional string projectId = 8;
+}
+
+message ReportProjectGetResponseValue {
+  oneof kind {
+  ReportProjectGetResponseValueVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportProjectGetResponse {
+  optional ReportProjectGetResponseValue value = 1;
+}
+
+message ReportProjectGenerateRequest {
+  optional string value = 1;
+}
+
+message ReportProjectGenerateResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReportProjectGenerateResponse {
+  optional ReportProjectGenerateResponseValue value = 1;
+}
+
+message ReportProjectShowRequestValueBounds {
+  optional double x = 1;
+  optional double y = 2;
+  optional double width = 3;
+  optional double height = 4;
+}
+
+message ReportProjectShowRequestValue {
+  optional string projectId = 1;
+  optional ReportProjectShowRequestValueBounds bounds = 2;
+}
+
+message ReportProjectShowRequest {
+  optional ReportProjectShowRequestValue value = 1;
+}
+
+message ReportProjectShowResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReportProjectShowResponse {
+  optional ReportProjectShowResponseValue value = 1;
+}
+
+message ReportGetRequest {
+  optional string value = 1;
+}
+
+message ReportGetResponseValueVariant1EndedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportGetResponseValueVariant1 {
+  optional string taskId = 1;
+  optional string status = 2;
+  optional string revision = 3;
+  optional string path = 4;
+  optional string logPath = 5;
+  optional string error = 6;
+  optional string startedAt = 7;
+  optional ReportGetResponseValueVariant1EndedAt endedAt = 8;
+}
+
+message ReportGetResponseValue {
+  oneof kind {
+  ReportGetResponseValueVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportGetResponse {
+  optional ReportGetResponseValue value = 1;
+}
+
+message ReportGenerateRequest {
+  optional string value = 1;
+}
+
+message ReportGenerateResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReportGenerateResponse {
+  optional ReportGenerateResponseValue value = 1;
+}
+
+message ReportShowRequestValueBounds {
+  optional double x = 1;
+  optional double y = 2;
+  optional double width = 3;
+  optional double height = 4;
+}
+
+message ReportShowRequestValue {
+  optional string taskId = 1;
+  optional ReportShowRequestValueBounds bounds = 2;
+}
+
+message ReportShowRequest {
+  optional ReportShowRequestValue value = 1;
+}
+
+message ReportShowResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReportShowResponse {
+  optional ReportShowResponseValue value = 1;
+}
+
+message ReportHideRequest {
+
+}
+
+message ReportHideResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message ReportHideResponse {
+  optional ReportHideResponseValue value = 1;
+}
+
+message TerminalOpenRequestValue {
+  optional string taskId = 1;
+  optional double columns = 2;
+  optional double rows = 3;
+}
+
+message TerminalOpenRequest {
+  optional TerminalOpenRequestValue value = 1;
+}
+
+message TerminalOpenResponseValue {
+  optional string id = 1;
+  optional string cwd = 2;
+  optional string shell = 3;
+  optional double columns = 4;
+  optional double rows = 5;
+}
+
+message TerminalOpenResponse {
+  optional TerminalOpenResponseValue value = 1;
+}
+
+message TerminalInputRequestValue {
+  optional string sessionId = 1;
+  optional string input = 2;
+}
+
+message TerminalInputRequest {
+  optional TerminalInputRequestValue value = 1;
+}
+
+message TerminalInputResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message TerminalInputResponse {
+  optional TerminalInputResponseValue value = 1;
+}
+
+message TerminalResizeRequestValue {
+  optional string sessionId = 1;
+  optional double columns = 2;
+  optional double rows = 3;
+}
+
+message TerminalResizeRequest {
+  optional TerminalResizeRequestValue value = 1;
+}
+
+message TerminalResizeResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message TerminalResizeResponse {
+  optional TerminalResizeResponseValue value = 1;
+}
+
+message TerminalRunProjectTaskRequestValue {
+  optional string taskId = 1;
+  optional string sessionId = 2;
+  optional string projectTaskId = 3;
+}
+
+message TerminalRunProjectTaskRequest {
+  optional TerminalRunProjectTaskRequestValue value = 1;
+}
+
+message TerminalRunProjectTaskResponseValue {
+  optional bool ok = 1;
+  optional string reason = 2;
+}
+
+message TerminalRunProjectTaskResponse {
+  optional TerminalRunProjectTaskResponseValue value = 1;
+}
+
+message TerminalCloseRequest {
+  optional string value = 1;
+}
+
+message TerminalCloseResponse {
+
+}
+
+message SystemSavePromptFilesRequestValueItem {
+  optional string name = 1;
+  optional string data = 2;
+}
+
+message SystemSavePromptFilesRequestValue {
+  repeated SystemSavePromptFilesRequestValueItem items = 1;
+}
+
+message SystemSavePromptFilesRequest {
+  optional SystemSavePromptFilesRequestValue value = 1;
+}
+
+message SystemSavePromptFilesResponseValue {
+  repeated string items = 1;
+}
+
+message SystemSavePromptFilesResponse {
+  optional SystemSavePromptFilesResponseValue value = 1;
+}
+
+message SystemWindowLayoutRequest {
+
+}
+
+message SystemWindowLayoutResponseValue {
+  optional double leftInset = 1;
+  optional double collapsedRailWidth = 2;
+  optional double overhang = 3;
+}
+
+message SystemWindowLayoutResponse {
+  optional SystemWindowLayoutResponseValue value = 1;
+}
+
+message SystemScrollSwipesRequest {
+
+}
+
+message SystemScrollSwipesResponse {
+  optional bool value = 1;
+}
+
+message SystemPickDirectoryRequest {
+
+}
+
+message SystemPickDirectoryResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SystemPickDirectoryResponse {
+  optional SystemPickDirectoryResponseValue value = 1;
+}
+
+message SystemPickApplicationRequest {
+
+}
+
+message SystemPickApplicationResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SystemPickApplicationResponse {
+  optional SystemPickApplicationResponseValue value = 1;
+}
+
+message SystemConfirmRequestValue {
+  optional string message = 1;
+  optional string detail = 2;
+  optional string confirmLabel = 3;
+}
+
+message SystemConfirmRequest {
+  optional SystemConfirmRequestValue value = 1;
+}
+
+message SystemConfirmResponse {
+  optional bool value = 1;
+}
+
+message SystemPopupMenuRequestValueItems {
+  repeated google.protobuf.Value items = 1;
+}
+
+message SystemPopupMenuRequestValue {
+  optional SystemPopupMenuRequestValueItems items = 1;
+  optional double x = 2;
+  optional double y = 3;
+}
+
+message SystemPopupMenuRequest {
+  optional SystemPopupMenuRequestValue value = 1;
+}
+
+message SystemPopupMenuResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SystemPopupMenuResponse {
+  optional SystemPopupMenuResponseValue value = 1;
+}
+
+message SystemRevealRequest {
+  optional string value = 1;
+}
+
+message SystemRevealResponse {
+
+}
+
+message SystemOpenExternalRequest {
+  optional string value = 1;
+}
+
+message SystemOpenExternalResponse {
+
+}
+
+message SystemCopyRequest {
+  optional string value = 1;
+}
+
+message SystemCopyResponse {
+
+}
+
+message ConnectRequest {}
+
+message ConnectResponse { string client_id = 1; }
+
+message DisconnectRequest {}
+
+message DisconnectResponse {}
+
+message WatchRequest {}
+
+message WatchResponse { string name = 1; google.protobuf.Value payload = 2; }
+
+service Quuu {
+  rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  rpc ProjectsList(ProjectsListRequest) returns (ProjectsListResponse);
+  rpc ProjectsCreate(ProjectsCreateRequest) returns (ProjectsCreateResponse);
+  rpc ProjectsUpdate(ProjectsUpdateRequest) returns (ProjectsUpdateResponse);
+  rpc ProjectsRemove(ProjectsRemoveRequest) returns (ProjectsRemoveResponse);
+  rpc TasksList(TasksListRequest) returns (TasksListResponse);
+  rpc TasksGet(TasksGetRequest) returns (TasksGetResponse);
+  rpc TasksCreate(TasksCreateRequest) returns (TasksCreateResponse);
+  rpc TasksUpdate(TasksUpdateRequest) returns (TasksUpdateResponse);
+  rpc TasksEnqueue(TasksEnqueueRequest) returns (TasksEnqueueResponse);
+  rpc TasksUnqueue(TasksUnqueueRequest) returns (TasksUnqueueResponse);
+  rpc TasksHold(TasksHoldRequest) returns (TasksHoldResponse);
+  rpc TasksRunNow(TasksRunNowRequest) returns (TasksRunNowResponse);
+  rpc TasksMarkDone(TasksMarkDoneRequest) returns (TasksMarkDoneResponse);
+  rpc TasksReopen(TasksReopenRequest) returns (TasksReopenResponse);
+  rpc TasksSendBack(TasksSendBackRequest) returns (TasksSendBackResponse);
+  rpc TasksCancel(TasksCancelRequest) returns (TasksCancelResponse);
+  rpc TasksRemove(TasksRemoveRequest) returns (TasksRemoveResponse);
+  rpc TasksArchive(TasksArchiveRequest) returns (TasksArchiveResponse);
+  rpc TasksSend(TasksSendRequest) returns (TasksSendResponse);
+  rpc TasksClearReserved(TasksClearReservedRequest) returns (TasksClearReservedResponse);
+  rpc RulesList(RulesListRequest) returns (RulesListResponse);
+  rpc RulesPreview(RulesPreviewRequest) returns (RulesPreviewResponse);
+  rpc RulesCreate(RulesCreateRequest) returns (RulesCreateResponse);
+  rpc RulesUpdate(RulesUpdateRequest) returns (RulesUpdateResponse);
+  rpc RulesRemove(RulesRemoveRequest) returns (RulesRemoveResponse);
+  rpc RulesEnqueue(RulesEnqueueRequest) returns (RulesEnqueueResponse);
+  rpc AgentsList(AgentsListRequest) returns (AgentsListResponse);
+  rpc AgentsDefaults(AgentsDefaultsRequest) returns (AgentsDefaultsResponse);
+  rpc AgentsCreate(AgentsCreateRequest) returns (AgentsCreateResponse);
+  rpc AgentsUpdate(AgentsUpdateRequest) returns (AgentsUpdateResponse);
+  rpc AgentsDuplicate(AgentsDuplicateRequest) returns (AgentsDuplicateResponse);
+  rpc AgentsResetLimit(AgentsResetLimitRequest) returns (AgentsResetLimitResponse);
+  rpc AgentsRemove(AgentsRemoveRequest) returns (AgentsRemoveResponse);
+  rpc GroupsList(GroupsListRequest) returns (GroupsListResponse);
+  rpc GroupsCreate(GroupsCreateRequest) returns (GroupsCreateResponse);
+  rpc GroupsUpdate(GroupsUpdateRequest) returns (GroupsUpdateResponse);
+  rpc GroupsRemove(GroupsRemoveRequest) returns (GroupsRemoveResponse);
+  rpc RunsByTask(RunsByTaskRequest) returns (RunsByTaskResponse);
+  rpc RunsCancel(RunsCancelRequest) returns (RunsCancelResponse);
+  rpc LogsPage(LogsPageRequest) returns (LogsPageResponse);
+  rpc SessionClose(SessionCloseRequest) returns (SessionCloseResponse);
+  rpc SessionLoad(SessionLoadRequest) returns (SessionLoadResponse);
+  rpc SessionLoadMore(SessionLoadMoreRequest) returns (SessionLoadMoreResponse);
+  rpc SessionImage(SessionImageRequest) returns (SessionImageResponse);
+  rpc SchedulerStatus(SchedulerStatusRequest) returns (SchedulerStatusResponse);
+  rpc SchedulerPause(SchedulerPauseRequest) returns (SchedulerPauseResponse);
+  rpc SchedulerResume(SchedulerResumeRequest) returns (SchedulerResumeResponse);
+  rpc ServersStatus(ServersStatusRequest) returns (ServersStatusResponse);
+  rpc SettingsPreviewIdentity(SettingsPreviewIdentityRequest) returns (SettingsPreviewIdentityResponse);
+  rpc SettingsSetIdentity(SettingsSetIdentityRequest) returns (SettingsSetIdentityResponse);
+  rpc SettingsGet(SettingsGetRequest) returns (SettingsGetResponse);
+  rpc SettingsSet(SettingsSetRequest) returns (SettingsSetResponse);
+  rpc SettingsLookupBotUser(SettingsLookupBotUserRequest) returns (SettingsLookupBotUserResponse);
+  rpc SettingsCreateGitHubApp(SettingsCreateGitHubAppRequest) returns (SettingsCreateGitHubAppResponse);
+  rpc SettingsCancelGitHubApp(SettingsCancelGitHubAppRequest) returns (SettingsCancelGitHubAppResponse);
+  rpc MobileStatus(MobileStatusRequest) returns (MobileStatusResponse);
+  rpc MobileSyncNow(MobileSyncNowRequest) returns (MobileSyncNowResponse);
+  rpc ImporterSync(ImporterSyncRequest) returns (ImporterSyncResponse);
+  rpc OpenTerminal(OpenTerminalRequest) returns (OpenTerminalResponse);
+  rpc OpenResume(OpenResumeRequest) returns (OpenResumeResponse);
+  rpc OpenEditor(OpenEditorRequest) returns (OpenEditorResponse);
+  rpc OpenReveal(OpenRevealRequest) returns (OpenRevealResponse);
+  rpc OpenWorkingDir(OpenWorkingDirRequest) returns (OpenWorkingDirResponse);
+  rpc OpenEditors(OpenEditorsRequest) returns (OpenEditorsResponse);
+  rpc ReviewSnapshot(ReviewSnapshotRequest) returns (ReviewSnapshotResponse);
+  rpc ReviewRefresh(ReviewRefreshRequest) returns (ReviewRefreshResponse);
+  rpc ReviewFile(ReviewFileRequest) returns (ReviewFileResponse);
+  rpc ReviewComment(ReviewCommentRequest) returns (ReviewCommentResponse);
+  rpc ReviewOpenPullRequest(ReviewOpenPullRequestRequest) returns (ReviewOpenPullRequestResponse);
+  rpc ReviewHidePullRequest(ReviewHidePullRequestRequest) returns (ReviewHidePullRequestResponse);
+  rpc ReviewClosePullRequest(ReviewClosePullRequestRequest) returns (ReviewClosePullRequestResponse);
+  rpc ReportProjectGet(ReportProjectGetRequest) returns (ReportProjectGetResponse);
+  rpc ReportProjectGenerate(ReportProjectGenerateRequest) returns (ReportProjectGenerateResponse);
+  rpc ReportProjectShow(ReportProjectShowRequest) returns (ReportProjectShowResponse);
+  rpc ReportGet(ReportGetRequest) returns (ReportGetResponse);
+  rpc ReportGenerate(ReportGenerateRequest) returns (ReportGenerateResponse);
+  rpc ReportShow(ReportShowRequest) returns (ReportShowResponse);
+  rpc ReportHide(ReportHideRequest) returns (ReportHideResponse);
+  rpc TerminalOpen(TerminalOpenRequest) returns (TerminalOpenResponse);
+  rpc TerminalInput(TerminalInputRequest) returns (TerminalInputResponse);
+  rpc TerminalResize(TerminalResizeRequest) returns (TerminalResizeResponse);
+  rpc TerminalRunProjectTask(TerminalRunProjectTaskRequest) returns (TerminalRunProjectTaskResponse);
+  rpc TerminalClose(TerminalCloseRequest) returns (TerminalCloseResponse);
+  rpc SystemSavePromptFiles(SystemSavePromptFilesRequest) returns (SystemSavePromptFilesResponse);
+  rpc SystemWindowLayout(SystemWindowLayoutRequest) returns (SystemWindowLayoutResponse);
+  rpc SystemScrollSwipes(SystemScrollSwipesRequest) returns (SystemScrollSwipesResponse);
+  rpc SystemPickDirectory(SystemPickDirectoryRequest) returns (SystemPickDirectoryResponse);
+  rpc SystemPickApplication(SystemPickApplicationRequest) returns (SystemPickApplicationResponse);
+  rpc SystemConfirm(SystemConfirmRequest) returns (SystemConfirmResponse);
+  rpc SystemPopupMenu(SystemPopupMenuRequest) returns (SystemPopupMenuResponse);
+  rpc SystemReveal(SystemRevealRequest) returns (SystemRevealResponse);
+  rpc SystemOpenExternal(SystemOpenExternalRequest) returns (SystemOpenExternalResponse);
+  rpc SystemCopy(SystemCopyRequest) returns (SystemCopyResponse);
+  rpc Connect(ConnectRequest) returns (ConnectResponse);
+  rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);
+  rpc Watch(WatchRequest) returns (stream WatchResponse);
+}

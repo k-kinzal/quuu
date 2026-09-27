@@ -1,4 +1,4 @@
-import type { Agent } from '../../../preload/api/agents.js'
+import type { Agent } from '../../../api/schemas/agents.js'
 import { isManagedAgent } from './agentVisibility.js'
 
 /** The settings screen lists only definitions the user can edit. */

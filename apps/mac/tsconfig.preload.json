@@ -1,6 +1,7 @@
 {
   "include": [
-    "src/preload/**/*.ts"
+    "src/preload/**/*.ts",
+    "src/api/**/*.ts"
   ],
   "compilerOptions": {
     "composite": true,

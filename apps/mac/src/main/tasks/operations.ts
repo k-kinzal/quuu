@@ -6,7 +6,7 @@ import type { SessionOwner } from '../execution/agentResolver.js'
 import { eligibleAgents, sessionOwner, sessionOwnerLabel, taskLineage } from '../execution/agentResolver.js'
 import type { Run } from '../execution/types.js'
 import { t } from '../i18n/index.js'
-import type { RunNowResult } from '../ipc/types.js'
+import type { RunNowResult } from '../execution/types.js'
 import type { Project } from '../projects/types.js'
 import { attachSessionLog } from '../session/sessionAttach.js'
 import type { ToastPayload } from '../snapshot.js'
@@ -31,6 +31,8 @@ export class TaskOperations {
     return repo.listTasks(this.db, includeArchived)
   }
 
+
+  listPage(query: Parameters<typeof repo.listTaskPage>[1]) { return repo.listTaskPage(this.db, query) }
 
   getTask(id: string): Task | null {
     return repo.getTask(this.db, id)

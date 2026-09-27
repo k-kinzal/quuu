@@ -6,7 +6,7 @@ import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemePr
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import { WINDOW_BUTTONS, WINDOW_BUTTONS_INSET, COLLAPSED_RAIL_WIDTH, WINDOW_BUTTONS_OVERHANG } from '../src/main/windowGeometry.js'
 import type { Project } from '../src/main/projects/types.js'
-import { contract } from '../src/preload/contract.js'
+import { contract } from '../src/api/contract.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { ProjectDetail } from '../src/renderer/src/views/project/ProjectDetail.js'
 import { SettingsShell } from '../src/renderer/src/views/SettingsShell.js'

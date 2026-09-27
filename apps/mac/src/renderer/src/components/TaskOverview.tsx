@@ -44,10 +44,10 @@ import {
   type MouseEvent,
   type RefObject
 } from 'react'
-import type { Run } from '../../../preload/api/execution.js'
-import type { TaskRule } from '../../../preload/api/automation.js'
-import type { Project } from '../../../preload/api/projects.js'
-import type { Priority, Task, TaskStatus } from '../../../preload/api/tasks.js'
+import type { Run } from '../../../api/schemas/execution.js'
+import type { TaskRule } from '../../../api/schemas/automation.js'
+import type { Project } from '../../../api/schemas/projects.js'
+import type { Priority, Task, TaskStatus } from '../../../api/schemas/tasks.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import { PRIORITY_LABEL, RUN_STATUS_LABEL, TASK_STATUS_LABEL } from '../model/labels.js'

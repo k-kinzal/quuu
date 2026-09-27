@@ -1,5 +1,5 @@
 import type { MenuItemSpec } from '@design-system/react'
-import type { Priority } from '../../../preload/api/tasks.js'
+import type { Priority } from '../../../api/schemas/tasks.js'
 import { confirmDestructive, copyItem, group } from '../interaction/contextMenu.js'
 import { copyWorkingDirItem, openWithItems } from '../interaction/openWith.js'
 import { startNewTask } from '../interaction/taskLink.js'

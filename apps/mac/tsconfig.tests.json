@@ -4,7 +4,8 @@
     "tests/**/*",
     "scripts/**/*",
     "electron.vite.config.ts",
-    "../../packages/design-system/src/**/*"
+    "../../packages/design-system/src/**/*",
+    "src/api/**/*.ts"
   ],
   "compilerOptions": {
     "composite": false,

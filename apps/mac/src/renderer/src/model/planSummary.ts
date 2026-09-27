@@ -1,4 +1,4 @@
-import type { PlanStep } from '../../../preload/api/session.js'
+import type { PlanStep } from '../../../api/schemas/session.js'
 import { t } from './i18n/index.js'
 
 export function summarizePlan(steps: PlanStep[]): string | null {

@@ -1,4 +1,4 @@
-import type { ToolCall } from '../../../preload/api/session.js'
+import type { ToolCall } from '../../../api/schemas/session.js'
 import { t } from './i18n/index.js'
 import { compactCommand, compactPath, relativeToCwd } from './paths.js'
 import { summarizePlan } from './planSummary.js'

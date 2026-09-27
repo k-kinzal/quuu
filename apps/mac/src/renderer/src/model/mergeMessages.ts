@@ -1,5 +1,5 @@
-import type { SessionAppendedPayload } from '../../../preload/api/desktop.js'
-import type { SessionMessage } from '../../../preload/api/session.js'
+import type { SessionAppendedPayload } from '../../../api/schemas/desktop.js'
+import type { SessionMessage } from '../../../api/schemas/session.js'
 
 /**
  * Merge appended messages into the existing list.

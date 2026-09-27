@@ -8,7 +8,11 @@ files:
   - package.json
 # Dock image for dev launches. main reads it from process.resourcesPath/build.
 extraResources:
+  - from: proto/quuu.proto
+    to: api/quuu.proto
   # CLI that calls the local API from AI agents and the terminal.
+  - from: out/cli/quuu.mjs
+    to: bin/quuu.mjs
   - from: bin/quuu
     to: bin/quuu
   # Pseudo-terminal host for the built-in terminal. Node pipes cannot handle interactive CLIs or screen size.

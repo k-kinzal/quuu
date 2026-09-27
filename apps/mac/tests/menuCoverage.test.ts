@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { AppCommandSchema } from '../src/preload/api/desktop.js'
+import { AppCommandSchema } from '../src/api/schemas/desktop.js'
 
 /**
  * The native menu is the complete set of actions.

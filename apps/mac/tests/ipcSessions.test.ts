@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
 import { createAppRouter, registerIpc } from '../src/main/ipc/index.js'
-import { EVENTS, RPC_CONNECT } from '../src/preload/channels.js'
+import { EVENTS, RPC_CONNECT } from '../src/api/channels.js'
 
 const transport = vi.hoisted(() => ({ handlers: new Map<string, (event: unknown, ...args: unknown[]) => unknown>() }))
 vi.mock('electron', () => ({

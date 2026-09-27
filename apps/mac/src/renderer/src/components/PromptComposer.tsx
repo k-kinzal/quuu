@@ -3,8 +3,8 @@ import {
   ContextChip, Dot, PlainInput, SegmentedControl, Text, claimContextMenu, resizeInput, useTheme
 } from '@design-system/react'
 import { useLayoutEffect, type ComponentPropsWithRef, type ComponentPropsWithoutRef, type ReactNode, type RefObject } from 'react'
-import type { Project } from '../../../preload/api/projects.js'
-import type { Priority } from '../../../preload/api/tasks.js'
+import type { Project } from '../../../api/schemas/projects.js'
+import type { Priority } from '../../../api/schemas/tasks.js'
 import { pathItems } from '../interaction/contextMenu.js'
 import { pane } from '../interaction/focus.js'
 import { contextMenu } from '../interaction/menu.js'

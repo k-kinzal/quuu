@@ -1,6 +1,6 @@
 import { Dot, IconButton, Panel, PanelHeader, PanelHeading, WindowDragArea } from '@design-system/react'
 import { useCallback } from 'react'
-import type { Project } from '../../../../preload/api/projects.js'
+import type { Project } from '../../../../api/schemas/projects.js'
 import { ReportPage } from '../../components/ReportPage.js'
 import { useProjectReport } from '../../interaction/useProjectReport.js'
 import { t } from '../../model/i18n/index.js'

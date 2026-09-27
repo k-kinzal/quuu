@@ -122,7 +122,7 @@ packages/
   design-system/       MUI-based UI kit. **Owns no domain**
 ```
 
-Those are the three workspaces. The Mac's public API is `src/preload/api.ts`; the iPhone
+Those are the three workspaces. The Mac's public API is `src/api/types.ts`; the iPhone
 protocol is owned by each app's receiving end and the
 [compatibility tests](../tests/mobile-sync.compat.test.ts). There is no standalone domain
 package and no `shared`.
@@ -206,7 +206,8 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | Variable | Purpose |
 |------|------|
 | `QUUU_USER_DATA` | Overrides the data directory (default: `~/Library/Application Support/taskd`) |
-| `QUUU_SOCKET` | Overrides the Unix socket of the local task API (default: `$QUUU_USER_DATA/quuu.sock`) |
+| `QUUU_CONNECTION_FILE` | Overrides CLI discovery (`$QUUU_USER_DATA/connections.json` by default) |
+| `QUUU_URL` / `QUUU_TOKEN` | Explicit gRPC URL and bearer token; set both |
 | `QUUU_CLAUDE_PROJECTS_DIR` | Root of Claude Code session logs (default: `~/.claude/projects`) |
 | `QUUU_CLAUDE_SESSIONS_DIR` | Pid files Claude Code keeps only while running (default: `~/.claude/sessions`) |
 | `QUUU_CODEX_SESSIONS_DIR` | Root of Codex session logs (default: `~/.codex/sessions`) |
@@ -270,28 +271,8 @@ same day, delete that day's Release and tag first, then publish again.
 
 ## Operating tasks from the CLI
 
-While Quuu is running, the main process serves a local API on a Unix socket under the
-user data directory. No TCP port is opened, and the socket's permissions are `0600`. The
-CLI never writes the DB directly; it goes through the same `QuuuApp` operations as the
-UI and the iPhone, so side effects like waking the scheduler line up as well.
-
-```sh
-quuu projects list
-quuu tasks list --project /Users/me/Projects/example
-quuu tasks create --project /Users/me/Projects/example \
-  --title 'Update the README' --prompt 'Add usage examples too' --priority 2
-quuu tasks send <task-id> --message 'Please append the test results as well'
-quuu tasks hold <task-id>
-```
-
-`quuu help` lists every operation. Output is JSON, easy for AI agents to consume as
-well. The CLI's source of truth is [`apps/mac/bin/quuu`](../apps/mac/bin/quuu), which is
-also bundled into the distributed `.app`. In development, symlink it from somewhere on
-PATH (e.g. `~/.local/bin/quuu`) and the same command works from any project.
-
-The HTTP contract is `GET /v1/projects`, `GET|POST /v1/tasks`,
-`GET|PATCH|DELETE /v1/tasks/:id`, and `POST /v1/tasks/:id/:action`.
-The endpoint is a Unix socket, so with `curl` use `--unix-socket`.
+The CLI uses the built-in gRPC server. See [CLI and MCP](#cli-and-mcp) for discovery,
+configuration and history analysis. The Unix socket API has been retired.
 
 ## View and queue from iPhone
 
@@ -698,3 +679,37 @@ to the full-width table — the same operation as the ✕ in the detail header.
 - Agent definitions are a shared resource, so they live in **Settings › Agents**
 - **Project configuration lives on the project's screen** (rail → project → settings icon).
   Configuration that affects only one project is not gathered into the app settings
+
+## CLI and MCP
+
+See [the quuu skill](../skills/quuu/SKILL.md) for task operations, historical log
+analysis and recurring analysis examples. Every operation is discoverable with
+`quuu api` and `quuu describe RESOURCE.ACTION`. Use `quuu call RESOURCE.ACTION`
+with JSON for the full operation set. The CLI uses HTTP/2 gRPC and generated
+Protobuf messages; the old Unix socket API is retired.
+
+**Settings > Connections** controls HTTP and MCP independently, with configurable
+ports (Automatic selects a free port), live endpoints and binding errors. Both
+listen only on loopback. `quuu config` returns connection information and the bearer
+token for MCP client configuration; keep that output private. The token survives
+restarts. Select a fixed MCP port when saving a client's connection configuration;
+port zero selects an available port at each start. The generated gRPC
+service contract is `apps/mac/proto/quuu.proto`.
+
+Build the bundled CLI with `npm run build:cli`. `apps/mac/bin/quuu` launches it; the
+packaged app includes the launcher and bundle in `Contents/Resources/bin`. Add
+that directory to PATH, or link the checkout launcher into a directory on PATH.
+The installed local checkout uses `~/.local/bin/quuu`.
+
+```sh
+quuu tasks list --project /path/to/project --include-archived
+quuu tasks logs TASK_ID --all > /tmp/task-history.jsonl
+quuu tasks logs TASK_ID --all --search 'failed'
+quuu rules list
+quuu describe rules.create
+```
+
+Task log output is paged and streamed. Run IDs and message IDs accompany evidence
+so an analysis can cite the original task instead of reporting untraceable advice.
+Recurring rules enqueue ordinary tasks; those agents can use the same CLI to
+inspect a project and create follow-up work.

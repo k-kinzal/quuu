@@ -4,7 +4,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import type { Task } from '../src/main/tasks/types.js'
-import { contract } from '../src/preload/contract.js'
+import { contract } from '../src/api/contract.js'
 import { PendingTurn } from '../src/renderer/src/components/PendingTurn.js'
 import { queryClient } from '../src/renderer/src/state/queryClient.js'
 import { buildTheme } from '../src/renderer/src/ui/theme.js'

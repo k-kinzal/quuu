@@ -1,4 +1,4 @@
-import type { Project } from '../../../preload/api/projects.js'
+import type { Project } from '../../../api/schemas/projects.js'
 import { compareText } from './collation.js'
 
 /** Sorts only the options A–Z. Never rewrites execution priority or the nav's order. */

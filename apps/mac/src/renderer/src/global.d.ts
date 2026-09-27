@@ -1,5 +1,5 @@
-import type { QuuuFiles } from '../../preload/api/files.js'
-import type { QuuuEvents } from '../../preload/api.js'
+import type { QuuuFiles } from '../../api/schemas/files.js'
+import type { QuuuEvents } from '../../api/types.js'
 import type { QuuuClient } from './state/client.js'
 
 declare global {

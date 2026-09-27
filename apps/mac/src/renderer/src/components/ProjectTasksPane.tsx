@@ -16,7 +16,7 @@ import {
   ToolPanelToolbar
 } from '@design-system/react'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
-import type { ProjectTask } from '../../../preload/api/review.js'
+import type { ProjectTask } from '../../../api/schemas/review.js'
 import { t } from '../model/i18n/index.js'
 import { ChevronRight, FileText, ICON, Play, Search, iconProps } from '../ui/icons.js'
 

@@ -1,4 +1,4 @@
-import type { Run } from '../../../preload/api/execution.js'
+import type { Run } from '../../../api/schemas/execution.js'
 
 /** Follow recorded handoffs, not row adjacency: history may contain unrelated or missing runs. */
 export function fallbackAgentChain(run: Run, runs: ReadonlyMap<string, Run>): string[] {

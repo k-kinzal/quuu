@@ -1,6 +1,6 @@
 import { observeLayoutMotion, EmbeddedContentHost as EmbeddedBrowserHost } from '@design-system/react'
 import { useLayoutEffect, useRef } from 'react'
-import type { PullRequestViewBounds } from '../../../preload/api/workbench.js'
+import type { PullRequestViewBounds } from '../../../api/schemas/workbench.js'
 import { t } from '../model/i18n/index.js'
 import { useStore } from '../state/store.js'
 

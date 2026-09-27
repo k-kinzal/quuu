@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { RPC_CLIENT } from '../../preload/channels.js'
+import { RPC_CLIENT } from '../../api/channels.js'
 import { App } from './App.js'
 import { currentPane, focusPane, movePaneFocus, openContextMenuAtFocus } from './interaction/focus.js'
 import { createQuuuClient } from './state/client.js'

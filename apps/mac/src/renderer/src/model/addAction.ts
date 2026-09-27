@@ -1,9 +1,9 @@
 /** The action picked when adding, and that field's default selection. */
-import type { AddAction } from '../../../preload/api/tasks.js'
-export type { AddAction, AddActionStatus } from '../../../preload/api/tasks.js'
+import type { AddAction } from '../../../api/schemas/tasks.js'
+export type { AddAction, AddActionStatus } from '../../../api/schemas/tasks.js'
 
 /** The states that can be written to the DB at creation (the move to running is done by a manual run). */
-import type { AddActionStatus } from '../../../preload/api/tasks.js'
+import type { AddActionStatus } from '../../../api/schemas/tasks.js'
 
 /** Ordered from the "don't run it" side toward the "run it" side. */
 export const ADD_ACTIONS: AddAction[] = ['draft', 'held', 'queued', 'now']

@@ -1,12 +1,8 @@
 {
   "include": [
     "src/renderer/**/*",
-    "src/preload/api.ts",
-    "src/preload/api/**/*.ts",
     "../../packages/design-system/src/**/*",
-    "src/preload/contract.ts",
-    "src/preload/events.ts",
-    "src/preload/channels.ts"
+    "src/api/**/*.ts"
   ],
   "compilerOptions": {
     "composite": true,

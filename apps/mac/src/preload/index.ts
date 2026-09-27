@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
-import { EVENTS, RPC_CLIENT, RPC_CONNECT } from './channels.js'
-import type { EventPayloads, QuuuEvents } from './events.js'
+import { EVENTS, RPC_CLIENT, RPC_CONNECT } from '../api/channels.js'
+import type { EventPayloads, QuuuEvents } from '../api/events.js'
 
 // Only forward ports from the main frame itself to main. main verifies the sender too.
 window.addEventListener('message', (event: MessageEvent<unknown>) => {
@@ -15,6 +15,7 @@ function subscribe<K extends keyof EventPayloads>(channel: K, cb: (payload: Even
 }
 const events: QuuuEvents = {
   snapshot: cb => subscribe(EVENTS.snapshot, cb),
+  settings: cb => subscribe(EVENTS.settings, cb),
   sessionAppended: cb => subscribe(EVENTS.sessionAppended, cb),
   schedulerStatus: cb => subscribe(EVENTS.schedulerStatus, cb),
   toast: cb => subscribe(EVENTS.toast, cb),
@@ -24,4 +25,4 @@ const events: QuuuEvents = {
 contextBridge.exposeInMainWorld('quuuEvents', events)
 
 // webUtils needs the original DOM File, before IPC structured cloning loses its native path.
-contextBridge.exposeInMainWorld('quuuFiles', { getPathForFile: (file: File): string => webUtils.getPathForFile(file) } satisfies import('./api/files.js').QuuuFiles)
+contextBridge.exposeInMainWorld('quuuFiles', { getPathForFile: (file: File): string => webUtils.getPathForFile(file) } satisfies import('../api/schemas/files.js').QuuuFiles)

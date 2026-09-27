@@ -14,7 +14,7 @@ import {
   motionRegion
 } from '@design-system/react'
 import { useEffect, useRef, useState } from 'react'
-import type { Task } from '../../../preload/api/tasks.js'
+import type { Task } from '../../../api/schemas/tasks.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useOrderedTasks } from '../interaction/useTasks.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'

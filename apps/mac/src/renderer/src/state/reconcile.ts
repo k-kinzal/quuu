@@ -1,4 +1,4 @@
-import type { AppSnapshot } from '../../../preload/api/snapshot.js'
+import type { AppSnapshot } from '../../../api/schemas/snapshot.js'
 
 /** Structural equality for the plain JSON that crosses IPC. */
 export function sameValue(a: unknown, b: unknown): boolean {

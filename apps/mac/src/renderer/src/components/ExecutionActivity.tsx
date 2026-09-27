@@ -1,6 +1,6 @@
 import { ActivityStatus, Badge, Text } from '@design-system/react'
-import type { Run } from '../../../preload/api/execution.js'
-import type { SessionMessage } from '../../../preload/api/session.js'
+import type { Run } from '../../../api/schemas/execution.js'
+import type { SessionMessage } from '../../../api/schemas/session.js'
 import { executionFeedback } from '../model/executionFeedback.js'
 import { t } from '../model/i18n/index.js'
 import { Turn, TurnBody, TurnHead, TurnRole, TurnRule, TurnText } from '../ui/session.js'

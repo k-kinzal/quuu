@@ -6,7 +6,7 @@ import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemePr
 import type { Project } from '../src/main/projects/types.js'
 import type { AppSnapshot } from '../src/main/snapshot.js'
 import type { Task } from '../src/main/tasks/types.js'
-import { contract } from '../src/preload/contract.js'
+import { contract } from '../src/api/contract.js'
 import { Toasts } from '../src/renderer/src/components/Toasts.js'
 import { NO_FILTERS } from '../src/renderer/src/model/table.js'
 import { useStore, type Section } from '../src/renderer/src/state/store.js'

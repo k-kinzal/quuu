@@ -326,6 +326,8 @@ CREATE TABLE IF NOT EXISTS sync_intents (
 const INDEXES = `
 CREATE INDEX IF NOT EXISTS idx_tasks_status  ON tasks(status);
 CREATE INDEX IF NOT EXISTS idx_tasks_project ON tasks(project_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_seq ON tasks(seq);
+CREATE INDEX IF NOT EXISTS idx_tasks_project_seq ON tasks(project_id, seq);
 CREATE INDEX IF NOT EXISTS idx_tasks_queue   ON tasks(status, priority, seq);
 CREATE INDEX IF NOT EXISTS idx_task_deps_blocker ON task_dependencies(depends_on_id);
 CREATE INDEX IF NOT EXISTS idx_tasks_rule ON tasks(rule_id) WHERE rule_id IS NOT NULL;

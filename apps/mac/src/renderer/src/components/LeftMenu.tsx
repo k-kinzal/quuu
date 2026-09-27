@@ -1,5 +1,5 @@
 import { CollapseHandle, GlassPanel, GlassPanelDivider, Resizer } from '@design-system/react'
-import type { Project } from '../../../preload/api/projects.js'
+import type { Project } from '../../../api/schemas/projects.js'
 import { t } from '../model/i18n/index.js'
 import { useStore } from '../state/store.js'
 import { ChevronRight, ICON, iconProps } from '../ui/icons.js'

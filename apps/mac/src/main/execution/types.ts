@@ -68,3 +68,10 @@ export interface RunOutcome {
   errorMessage: string
   startedAt: string
 }
+
+export interface RunNowResult {
+  ok: boolean
+  reason?: string
+  /** It was running, so instead of sending now it was held as a reservation. */
+  reserved?: boolean
+}

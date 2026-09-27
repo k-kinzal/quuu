@@ -1,4 +1,4 @@
-import type { DependsMode } from '../../../preload/api/tasks.js'
+import type { DependsMode } from '../../../api/schemas/tasks.js'
 import { t } from './i18n/index.js'
 
 /**

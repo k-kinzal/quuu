@@ -1,6 +1,6 @@
 import { ToastStack, iconDefaults, iconSize, type ToastTone } from '@design-system/react'
 import { CircleAlert, CircleCheckBig, TriangleAlert } from 'lucide-react'
-import type { ToastPayload } from '../../../preload/api/snapshot.js'
+import type { ToastPayload } from '../../../api/schemas/snapshot.js'
 import { useStore } from '../state/store.js'
 
 /** Mapping from the level main uses to the design system's tone. */

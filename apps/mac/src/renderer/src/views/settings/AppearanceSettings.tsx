@@ -1,5 +1,5 @@
 import { Field, Page, Select } from '@design-system/react'
-import type { AppSettings } from '../../../../preload/api/settings.js'
+import type { AppSettings } from '../../../../api/schemas/settings.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
 

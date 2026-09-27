@@ -10,7 +10,7 @@ import {
   jaStrings
 } from '@design-system/react'
 import { useEffect } from 'react'
-import type { CommandPayload } from '../../preload/api/desktop.js'
+import type { CommandPayload } from '../../api/schemas/desktop.js'
 import { CommandPalette } from './components/CommandPalette.js'
 import { Footer } from './components/Footer.js'
 import { LeftMenu } from './components/LeftMenu.js'

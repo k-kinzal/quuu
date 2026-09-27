@@ -1,5 +1,5 @@
 import type { MenuItemSpec } from '@design-system/react'
-import type { MenuTemplateItem } from '../../../preload/api/desktop.js'
+import type { MenuTemplateItem } from '../../../api/schemas/desktop.js'
 
 /**
  * **Let the OS open the right-click menu. Only right-click may come through

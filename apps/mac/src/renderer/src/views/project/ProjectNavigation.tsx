@@ -1,7 +1,7 @@
 import { NavItem, NavSection, SideNav, SideNavTop } from '@design-system/react'
 import { useEffect } from 'react'
 import { pane } from '../../interaction/focus.js'
-import type { Project } from '../../../../preload/api/projects.js'
+import type { Project } from '../../../../api/schemas/projects.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
 import { Gauge, ICON, ListChecks, Settings, iconProps } from '../../ui/icons.js'

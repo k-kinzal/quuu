@@ -22,7 +22,8 @@ export default tseslint.config(
       '**/release/**',
       '**/dist/**',
       '**/build/**',
-      '**/*.tsbuildinfo'
+      '**/*.tsbuildinfo',
+      'apps/mac/src/api/generated/**' // Compiler output is verified by api:check and TypeScript.
     ]
   },
 
@@ -91,7 +92,7 @@ export default tseslint.config(
   },
 
   {
-    files: ['apps/mac/src/preload/api{,/**}.ts', 'apps/mobile/src/sync/**/*.ts', 'apps/mac/src/renderer/src/model/**/*.ts'],
+    files: ['apps/mac/src/api/schemas/**/*.ts', 'apps/mobile/src/sync/**/*.ts', 'apps/mac/src/renderer/src/model/**/*.ts'],
     rules: {
       // Keep import-free OS / browser dependencies out of pure contracts and decision logic too.
       'no-restricted-globals': ['error', 'process', 'Buffer', 'require', 'window', 'document', 'fetch', 'localStorage', 'sessionStorage', 'navigator']

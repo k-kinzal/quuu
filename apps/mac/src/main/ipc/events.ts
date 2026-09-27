@@ -1,5 +1,5 @@
 import { BrowserWindow } from 'electron'
-import { eventSchemas, type EventPayloads } from '../../preload/events.js'
+import { eventSchemas, type EventPayloads } from '../../api/events.js'
 
 export function sendEvent<K extends keyof EventPayloads>(owner: BrowserWindow, channel: K, payload: EventPayloads[K]): void {
   if (!owner.isDestroyed()) owner.webContents.send(channel, eventSchemas[channel].parse(payload))

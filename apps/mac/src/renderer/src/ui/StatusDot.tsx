@@ -1,5 +1,5 @@
 import { StatusIndicator, useTheme, type StatusShape } from '@design-system/react'
-import type { RunStatus, TaskStatus } from '../../../preload/api/tasks.js'
+import type { RunStatus, TaskStatus } from '../../../api/schemas/tasks.js'
 import { TASK_STATUS_LABEL } from '../model/labels.js'
 
 /**

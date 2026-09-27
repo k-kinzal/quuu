@@ -5,7 +5,7 @@ description: Inspect and operate the local Quuu task queue with the quuu CLI. Us
 
 # Quuu Tasks
 
-Use the `quuu` command. It talks to the running Quuu app through a local Unix socket and prints JSON. If it reports that Quuu is unavailable, ask the user to start the app; do not edit its SQLite database directly.
+Use the `quuu` command. It talks to the running Quuu app through local HTTP/2 gRPC and prints JSON. If it reports that Quuu is unavailable, ask the user to start the app; do not edit its SQLite database directly.
 
 ## Find the target
 
@@ -64,3 +64,5 @@ quuu tasks delete <task-id>
 Before changing an existing task, inspect it when the user's wording does not identify one exact task. Never infer authorization for `done`, `delete`, or `cancel`: run those only when the user explicitly requests that operation for the resolved task. In particular, completion is a human decision; an agent must not mark its own work done.
 
 An exit status of 2 from `tasks run` or `tasks send` means Quuu accepted the command but the requested immediate action could not proceed; read the JSON `run` or `result` reason before choosing a follow-up. Use `quuu help` for the complete flag summary.
+
+For session analysis, recurring workflows, and all operation schemas, use [the quuu skill](../quuu/SKILL.md).

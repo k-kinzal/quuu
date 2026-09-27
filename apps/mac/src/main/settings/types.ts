@@ -3,6 +3,10 @@ import type { CommitIdentity } from './identity.js'
 import { EMPTY_COMMIT_IDENTITY } from './identity.js'
 
 export interface AppSettings {
+  httpEnabled: boolean
+  httpPort: number
+  mcpEnabled: boolean
+  mcpPort: number
   /** Start the scheduler automatically at app launch. */
   autoStartScheduler: boolean
   /** Keep running in the background after the window is closed. */
@@ -89,6 +93,10 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
+  httpEnabled: true,
+  httpPort: 0,
+  mcpEnabled: true,
+  mcpPort: 0,
   autoStartScheduler: true,
   keepRunningInBackground: true,
   notifyOnReview: true,

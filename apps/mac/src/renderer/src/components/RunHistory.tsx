@@ -10,7 +10,7 @@ import {
   type MenuItemSpec
 } from '@design-system/react'
 import { useState } from 'react'
-import type { Run } from '../../../preload/api/execution.js'
+import type { Run } from '../../../api/schemas/execution.js'
 import { copyItem, group, selectionItems } from '../interaction/contextMenu.js'
 import { moveWithinList, rowActivation } from '../interaction/focus.js'
 import { contextMenu } from '../interaction/menu.js'

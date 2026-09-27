@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
-import type { TaskRule } from '../../../preload/api/automation.js'
-import type { Task } from '../../../preload/api/tasks.js'
+import type { TaskRule } from '../../../api/schemas/automation.js'
+import type { Task } from '../../../api/schemas/tasks.js'
 import type { ScopeFilter, TaskGroup } from '../model/derive.js'
 import { latestRunMap, projectMap, scopeTasks, sortTasks, taskAgentKey, taskAgentLabel } from '../model/derive.js'
 import { groupByStatus } from '../model/statusGroups.js'

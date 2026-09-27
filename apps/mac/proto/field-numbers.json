@@ -1,0 +1,3952 @@
+{
+  "SnapshotRequest": {},
+  "SnapshotResponseValueProjectsItemTargetId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueProjectsItemDeletedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueProjectsItemImportSince": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueProjectsItemCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SnapshotResponseValueProjectsItem": {
+    "id": 1,
+    "name": 2,
+    "priority": 3,
+    "targetKind": 4,
+    "targetId": 5,
+    "maxConcurrent": 6,
+    "enabled": 7,
+    "deletedAt": 8,
+    "importSince": 9,
+    "source": 10,
+    "sortOrder": 11,
+    "createdAt": 12,
+    "updatedAt": 13,
+    "path": 14,
+    "color": 15,
+    "commitIdentityMode": 16,
+    "commitIdentity": 17,
+    "editorApp": 18,
+    "reportEnabled": 19,
+    "pullRequestPromptMode": 20,
+    "pullRequestFailurePrompt": 21,
+    "pullRequestPendingPrompt": 22,
+    "pullRequestConflictPrompt": 23,
+    "pullRequestFailureEnabled": 24,
+    "pullRequestPendingEnabled": 25,
+    "pullRequestConflictEnabled": 26
+  },
+  "SnapshotResponseValueProjects": {
+    "items": 1
+  },
+  "SnapshotResponseValueTasksItemScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItemCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItemSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItemAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItemDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "SnapshotResponseValueTasksItemDependsOn": {
+    "items": 1
+  },
+  "SnapshotResponseValueTasksItemRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItemExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItemDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueTasksItem": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "SnapshotResponseValueTasks": {
+    "items": 1
+  },
+  "SnapshotResponseValueRulesItemAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRulesItemBlockStatuses": {
+    "items": 1
+  },
+  "SnapshotResponseValueRulesItemDueAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRulesItemLastEnqueuedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRulesItem": {
+    "id": 1,
+    "projectId": 2,
+    "name": 3,
+    "prompt": 4,
+    "priority": 5,
+    "agentOverrideId": 6,
+    "whenIdle": 7,
+    "cron": 8,
+    "frequency": 9,
+    "blockStatuses": 10,
+    "enabled": 11,
+    "dueAt": 12,
+    "lastEnqueuedAt": 13,
+    "sortOrder": 14,
+    "createdAt": 15,
+    "updatedAt": 16
+  },
+  "SnapshotResponseValueRules": {
+    "items": 1
+  },
+  "SnapshotResponseValueAgentsItemFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueAgentsItemArgsTemplate": {
+    "items": 1
+  },
+  "SnapshotResponseValueAgentsItemResumeArgsTemplate": {
+    "items": 1
+  },
+  "SnapshotResponseValueAgentsItemLimitPatterns": {
+    "items": 1
+  },
+  "SnapshotResponseValueAgentsItem": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "concurrency": 4,
+    "fallbackAgentId": 5,
+    "cooldownSeconds": 6,
+    "timeoutSeconds": 7,
+    "enabled": 8,
+    "source": 9,
+    "sortOrder": 10,
+    "createdAt": 11,
+    "updatedAt": 12,
+    "command": 13,
+    "argsTemplate": 14,
+    "resumeArgsTemplate": 15,
+    "env": 16,
+    "limitPatterns": 17,
+    "logAdapter": 18
+  },
+  "SnapshotResponseValueAgents": {
+    "items": 1
+  },
+  "SnapshotResponseValueGroupsItemMemberIds": {
+    "items": 1
+  },
+  "SnapshotResponseValueGroupsItem": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "strategy": 4,
+    "memberIds": 5,
+    "isDefault": 6,
+    "sortOrder": 7,
+    "createdAt": 8,
+    "updatedAt": 9
+  },
+  "SnapshotResponseValueGroups": {
+    "items": 1
+  },
+  "SnapshotResponseValueRunsItemResolvedFromGroupId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemFallbackFromRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemErrorKind": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemEndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemPid": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemArgs": {
+    "items": 1
+  },
+  "SnapshotResponseValueRunsItemExitCode": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItemSessionLogPath": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueRunsItem": {
+    "id": 1,
+    "taskId": 2,
+    "agentId": 3,
+    "resolvedFromGroupId": 4,
+    "sessionId": 5,
+    "kind": 6,
+    "status": 7,
+    "attempt": 8,
+    "fallbackFromRunId": 9,
+    "promptPreview": 10,
+    "errorKind": 11,
+    "errorMessage": 12,
+    "source": 13,
+    "externalKey": 14,
+    "startedAt": 15,
+    "endedAt": 16,
+    "pid": 17,
+    "cwd": 18,
+    "command": 19,
+    "args": 20,
+    "exitCode": 21,
+    "sessionLogPath": 22,
+    "stdoutLogPath": 23
+  },
+  "SnapshotResponseValueRuns": {
+    "items": 1
+  },
+  "SnapshotResponseValueSchedulerAgentsItemCooldownUntil": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueSchedulerAgentsItem": {
+    "agentId": 1,
+    "agentName": 2,
+    "concurrency": 3,
+    "active": 4,
+    "reserved": 5,
+    "cooldownUntil": 6,
+    "cooldownReason": 7,
+    "enabled": 8
+  },
+  "SnapshotResponseValueSchedulerAgents": {
+    "items": 1
+  },
+  "SnapshotResponseValueSchedulerHoldsItemAgentName": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueSchedulerHoldsItem": {
+    "taskId": 1,
+    "taskTitle": 2,
+    "projectName": 3,
+    "agentName": 4
+  },
+  "SnapshotResponseValueSchedulerHolds": {
+    "items": 1
+  },
+  "SnapshotResponseValueSchedulerWarnings": {
+    "items": 1
+  },
+  "SnapshotResponseValueSchedulerLastTickAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueScheduler": {
+    "running": 1,
+    "activeRuns": 2,
+    "totalSlots": 3,
+    "queued": 4,
+    "review": 5,
+    "failed": 6,
+    "agents": 7,
+    "holds": 8,
+    "warnings": 9,
+    "lastTickAt": 10
+  },
+  "SnapshotResponseValue": {
+    "resumeCommands": 1,
+    "externalAgentNames": 2,
+    "projects": 3,
+    "tasks": 4,
+    "rules": 5,
+    "agents": 6,
+    "groups": 7,
+    "runs": 8,
+    "scheduler": 9
+  },
+  "SnapshotResponse": {
+    "value": 1
+  },
+  "ProjectsListRequest": {},
+  "ProjectsListResponseValueItemTargetId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsListResponseValueItemDeletedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsListResponseValueItemImportSince": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsListResponseValueItemCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "ProjectsListResponseValueItem": {
+    "id": 1,
+    "name": 2,
+    "priority": 3,
+    "targetKind": 4,
+    "targetId": 5,
+    "maxConcurrent": 6,
+    "enabled": 7,
+    "deletedAt": 8,
+    "importSince": 9,
+    "source": 10,
+    "sortOrder": 11,
+    "createdAt": 12,
+    "updatedAt": 13,
+    "path": 14,
+    "color": 15,
+    "commitIdentityMode": 16,
+    "commitIdentity": 17,
+    "editorApp": 18,
+    "reportEnabled": 19,
+    "pullRequestPromptMode": 20,
+    "pullRequestFailurePrompt": 21,
+    "pullRequestPendingPrompt": 22,
+    "pullRequestConflictPrompt": 23,
+    "pullRequestFailureEnabled": 24,
+    "pullRequestPendingEnabled": 25,
+    "pullRequestConflictEnabled": 26
+  },
+  "ProjectsListResponseValue": {
+    "items": 1
+  },
+  "ProjectsListResponse": {
+    "value": 1
+  },
+  "ProjectsCreateRequestValueTargetId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsCreateRequestValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "ProjectsCreateRequestValue": {
+    "name": 1,
+    "priority": 2,
+    "targetKind": 3,
+    "targetId": 4,
+    "maxConcurrent": 5,
+    "enabled": 6,
+    "sortOrder": 7,
+    "path": 8,
+    "color": 9,
+    "source": 10,
+    "commitIdentityMode": 11,
+    "commitIdentity": 12,
+    "editorApp": 13,
+    "reportEnabled": 14,
+    "pullRequestPromptMode": 15,
+    "pullRequestFailurePrompt": 16,
+    "pullRequestPendingPrompt": 17,
+    "pullRequestConflictPrompt": 18,
+    "pullRequestFailureEnabled": 19,
+    "pullRequestPendingEnabled": 20,
+    "pullRequestConflictEnabled": 21
+  },
+  "ProjectsCreateRequest": {
+    "value": 1
+  },
+  "ProjectsCreateResponseValueTargetId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsCreateResponseValueDeletedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsCreateResponseValueImportSince": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsCreateResponseValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "ProjectsCreateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "priority": 3,
+    "targetKind": 4,
+    "targetId": 5,
+    "maxConcurrent": 6,
+    "enabled": 7,
+    "deletedAt": 8,
+    "importSince": 9,
+    "source": 10,
+    "sortOrder": 11,
+    "createdAt": 12,
+    "updatedAt": 13,
+    "path": 14,
+    "color": 15,
+    "commitIdentityMode": 16,
+    "commitIdentity": 17,
+    "editorApp": 18,
+    "reportEnabled": 19,
+    "pullRequestPromptMode": 20,
+    "pullRequestFailurePrompt": 21,
+    "pullRequestPendingPrompt": 22,
+    "pullRequestConflictPrompt": 23,
+    "pullRequestFailureEnabled": 24,
+    "pullRequestPendingEnabled": 25,
+    "pullRequestConflictEnabled": 26
+  },
+  "ProjectsCreateResponse": {
+    "value": 1
+  },
+  "ProjectsUpdateRequestValuePatchTargetId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsUpdateRequestValuePatchCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "ProjectsUpdateRequestValuePatch": {
+    "name": 1,
+    "priority": 2,
+    "targetKind": 3,
+    "targetId": 4,
+    "maxConcurrent": 5,
+    "enabled": 6,
+    "sortOrder": 7,
+    "path": 8,
+    "color": 9,
+    "source": 10,
+    "commitIdentityMode": 11,
+    "commitIdentity": 12,
+    "editorApp": 13,
+    "reportEnabled": 14,
+    "pullRequestPromptMode": 15,
+    "pullRequestFailurePrompt": 16,
+    "pullRequestPendingPrompt": 17,
+    "pullRequestConflictPrompt": 18,
+    "pullRequestFailureEnabled": 19,
+    "pullRequestPendingEnabled": 20,
+    "pullRequestConflictEnabled": 21
+  },
+  "ProjectsUpdateRequestValue": {
+    "id": 1,
+    "patch": 2
+  },
+  "ProjectsUpdateRequest": {
+    "value": 1
+  },
+  "ProjectsUpdateResponseValueTargetId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsUpdateResponseValueDeletedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsUpdateResponseValueImportSince": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ProjectsUpdateResponseValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "ProjectsUpdateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "priority": 3,
+    "targetKind": 4,
+    "targetId": 5,
+    "maxConcurrent": 6,
+    "enabled": 7,
+    "deletedAt": 8,
+    "importSince": 9,
+    "source": 10,
+    "sortOrder": 11,
+    "createdAt": 12,
+    "updatedAt": 13,
+    "path": 14,
+    "color": 15,
+    "commitIdentityMode": 16,
+    "commitIdentity": 17,
+    "editorApp": 18,
+    "reportEnabled": 19,
+    "pullRequestPromptMode": 20,
+    "pullRequestFailurePrompt": 21,
+    "pullRequestPendingPrompt": 22,
+    "pullRequestConflictPrompt": 23,
+    "pullRequestFailureEnabled": 24,
+    "pullRequestPendingEnabled": 25,
+    "pullRequestConflictEnabled": 26
+  },
+  "ProjectsUpdateResponse": {
+    "value": 1
+  },
+  "ProjectsRemoveRequest": {
+    "value": 1
+  },
+  "ProjectsRemoveResponse": {},
+  "TasksListRequestValue": {
+    "projectId": 1,
+    "status": 2,
+    "archived": 3,
+    "after": 4,
+    "limit": 5
+  },
+  "TasksListRequest": {
+    "value": 1
+  },
+  "TasksListResponseValueTasksItemScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItemCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItemSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItemAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItemDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksListResponseValueTasksItemDependsOn": {
+    "items": 1
+  },
+  "TasksListResponseValueTasksItemRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItemExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItemDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValueTasksItem": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksListResponseValueTasks": {
+    "items": 1
+  },
+  "TasksListResponseValueNext": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksListResponseValue": {
+    "tasks": 1,
+    "next": 2
+  },
+  "TasksListResponse": {
+    "value": 1
+  },
+  "TasksGetRequest": {
+    "value": 1
+  },
+  "TasksGetResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksGetResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksGetResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksGetResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksGetResponse": {
+    "value": 1
+  },
+  "TasksCreateRequestValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateRequestValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateRequestValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksCreateRequestValueDependsOn": {
+    "items": 1
+  },
+  "TasksCreateRequestValue": {
+    "projectId": 1,
+    "title": 2,
+    "prompt": 3,
+    "priority": 4,
+    "status": 5,
+    "scheduledAt": 6,
+    "agentOverrideId": 7,
+    "dependsOn": 8
+  },
+  "TasksCreateRequest": {
+    "value": 1
+  },
+  "TasksCreateResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksCreateResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksCreateResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCreateResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksCreateResponse": {
+    "value": 1
+  },
+  "TasksUpdateRequestValuePatchScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateRequestValuePatchAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateRequestValuePatchDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksUpdateRequestValuePatchDependsOn": {
+    "items": 1
+  },
+  "TasksUpdateRequestValuePatch": {
+    "title": 1,
+    "prompt": 2,
+    "pendingMessage": 3,
+    "priority": 4,
+    "projectId": 5,
+    "scheduledAt": 6,
+    "reviewNote": 7,
+    "agentOverrideId": 8,
+    "dependsOn": 9
+  },
+  "TasksUpdateRequestValue": {
+    "id": 1,
+    "patch": 2
+  },
+  "TasksUpdateRequest": {
+    "value": 1
+  },
+  "TasksUpdateResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksUpdateResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksUpdateResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUpdateResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksUpdateResponse": {
+    "value": 1
+  },
+  "TasksEnqueueRequest": {
+    "value": 1
+  },
+  "TasksEnqueueResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksEnqueueResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksEnqueueResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksEnqueueResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksEnqueueResponse": {
+    "value": 1
+  },
+  "TasksUnqueueRequest": {
+    "value": 1
+  },
+  "TasksUnqueueResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksUnqueueResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksUnqueueResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksUnqueueResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksUnqueueResponse": {
+    "value": 1
+  },
+  "TasksHoldRequest": {
+    "value": 1
+  },
+  "TasksHoldResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksHoldResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksHoldResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksHoldResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksHoldResponse": {
+    "value": 1
+  },
+  "TasksRunNowRequest": {
+    "value": 1
+  },
+  "TasksRunNowResponseValue": {
+    "ok": 1,
+    "reason": 2,
+    "reserved": 3
+  },
+  "TasksRunNowResponse": {
+    "value": 1
+  },
+  "TasksMarkDoneRequest": {
+    "value": 1
+  },
+  "TasksMarkDoneResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksMarkDoneResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksMarkDoneResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksMarkDoneResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksMarkDoneResponse": {
+    "value": 1
+  },
+  "TasksReopenRequest": {
+    "value": 1
+  },
+  "TasksReopenResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksReopenResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksReopenResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksReopenResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksReopenResponse": {
+    "value": 1
+  },
+  "TasksSendBackRequestValue": {
+    "id": 1,
+    "note": 2
+  },
+  "TasksSendBackRequest": {
+    "value": 1
+  },
+  "TasksSendBackResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksSendBackResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksSendBackResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksSendBackResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksSendBackResponse": {
+    "value": 1
+  },
+  "TasksCancelRequest": {
+    "value": 1
+  },
+  "TasksCancelResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksCancelResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksCancelResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksCancelResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksCancelResponse": {
+    "value": 1
+  },
+  "TasksRemoveRequest": {
+    "value": 1
+  },
+  "TasksRemoveResponse": {},
+  "TasksArchiveRequestValue": {
+    "id": 1,
+    "archived": 2
+  },
+  "TasksArchiveRequest": {
+    "value": 1
+  },
+  "TasksArchiveResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksArchiveResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksArchiveResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksArchiveResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksArchiveResponse": {
+    "value": 1
+  },
+  "TasksSendRequestValue": {
+    "id": 1,
+    "message": 2
+  },
+  "TasksSendRequest": {
+    "value": 1
+  },
+  "TasksSendResponseValue": {
+    "ok": 1,
+    "reason": 2,
+    "reserved": 3
+  },
+  "TasksSendResponse": {
+    "value": 1
+  },
+  "TasksClearReservedRequest": {
+    "value": 1
+  },
+  "TasksClearReservedResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "TasksClearReservedResponseValueDependsOn": {
+    "items": 1
+  },
+  "TasksClearReservedResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "TasksClearReservedResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "TasksClearReservedResponse": {
+    "value": 1
+  },
+  "RulesListRequest": {},
+  "RulesListResponseValueItemAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesListResponseValueItemBlockStatuses": {
+    "items": 1
+  },
+  "RulesListResponseValueItemDueAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesListResponseValueItemLastEnqueuedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesListResponseValueItem": {
+    "id": 1,
+    "projectId": 2,
+    "name": 3,
+    "prompt": 4,
+    "priority": 5,
+    "agentOverrideId": 6,
+    "whenIdle": 7,
+    "cron": 8,
+    "frequency": 9,
+    "blockStatuses": 10,
+    "enabled": 11,
+    "dueAt": 12,
+    "lastEnqueuedAt": 13,
+    "sortOrder": 14,
+    "createdAt": 15,
+    "updatedAt": 16
+  },
+  "RulesListResponseValue": {
+    "items": 1
+  },
+  "RulesListResponse": {
+    "value": 1
+  },
+  "RulesPreviewRequestValueBlockStatuses": {
+    "items": 1
+  },
+  "RulesPreviewRequestValue": {
+    "whenIdle": 1,
+    "cron": 2,
+    "frequency": 3,
+    "blockStatuses": 4
+  },
+  "RulesPreviewRequest": {
+    "value": 1
+  },
+  "RulesPreviewResponseValueNextAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesPreviewResponseValue": {
+    "nextAt": 1,
+    "valid": 2,
+    "hasCondition": 3
+  },
+  "RulesPreviewResponse": {
+    "value": 1
+  },
+  "RulesCreateRequestValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesCreateRequestValueBlockStatuses": {
+    "items": 1
+  },
+  "RulesCreateRequestValue": {
+    "projectId": 1,
+    "name": 2,
+    "prompt": 3,
+    "priority": 4,
+    "agentOverrideId": 5,
+    "whenIdle": 6,
+    "cron": 7,
+    "frequency": 8,
+    "blockStatuses": 9,
+    "enabled": 10,
+    "sortOrder": 11
+  },
+  "RulesCreateRequest": {
+    "value": 1
+  },
+  "RulesCreateResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesCreateResponseValueBlockStatuses": {
+    "items": 1
+  },
+  "RulesCreateResponseValueDueAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesCreateResponseValueLastEnqueuedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesCreateResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "name": 3,
+    "prompt": 4,
+    "priority": 5,
+    "agentOverrideId": 6,
+    "whenIdle": 7,
+    "cron": 8,
+    "frequency": 9,
+    "blockStatuses": 10,
+    "enabled": 11,
+    "dueAt": 12,
+    "lastEnqueuedAt": 13,
+    "sortOrder": 14,
+    "createdAt": 15,
+    "updatedAt": 16
+  },
+  "RulesCreateResponse": {
+    "value": 1
+  },
+  "RulesUpdateRequestValuePatchAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesUpdateRequestValuePatchBlockStatuses": {
+    "items": 1
+  },
+  "RulesUpdateRequestValuePatch": {
+    "projectId": 1,
+    "name": 2,
+    "prompt": 3,
+    "priority": 4,
+    "agentOverrideId": 5,
+    "whenIdle": 6,
+    "cron": 7,
+    "frequency": 8,
+    "blockStatuses": 9,
+    "enabled": 10,
+    "sortOrder": 11
+  },
+  "RulesUpdateRequestValue": {
+    "id": 1,
+    "patch": 2
+  },
+  "RulesUpdateRequest": {
+    "value": 1
+  },
+  "RulesUpdateResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesUpdateResponseValueBlockStatuses": {
+    "items": 1
+  },
+  "RulesUpdateResponseValueDueAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesUpdateResponseValueLastEnqueuedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesUpdateResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "name": 3,
+    "prompt": 4,
+    "priority": 5,
+    "agentOverrideId": 6,
+    "whenIdle": 7,
+    "cron": 8,
+    "frequency": 9,
+    "blockStatuses": 10,
+    "enabled": 11,
+    "dueAt": 12,
+    "lastEnqueuedAt": 13,
+    "sortOrder": 14,
+    "createdAt": 15,
+    "updatedAt": 16
+  },
+  "RulesUpdateResponse": {
+    "value": 1
+  },
+  "RulesRemoveRequest": {
+    "value": 1
+  },
+  "RulesRemoveResponse": {},
+  "RulesEnqueueRequest": {
+    "value": 1
+  },
+  "RulesEnqueueResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "RulesEnqueueResponseValueDependsOn": {
+    "items": 1
+  },
+  "RulesEnqueueResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RulesEnqueueResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "RulesEnqueueResponse": {
+    "value": 1
+  },
+  "AgentsListRequest": {},
+  "AgentsListResponseValueItemFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AgentsListResponseValueItemArgsTemplate": {
+    "items": 1
+  },
+  "AgentsListResponseValueItemResumeArgsTemplate": {
+    "items": 1
+  },
+  "AgentsListResponseValueItemLimitPatterns": {
+    "items": 1
+  },
+  "AgentsListResponseValueItem": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "concurrency": 4,
+    "fallbackAgentId": 5,
+    "cooldownSeconds": 6,
+    "timeoutSeconds": 7,
+    "enabled": 8,
+    "source": 9,
+    "sortOrder": 10,
+    "createdAt": 11,
+    "updatedAt": 12,
+    "command": 13,
+    "argsTemplate": 14,
+    "resumeArgsTemplate": 15,
+    "env": 16,
+    "limitPatterns": 17,
+    "logAdapter": 18
+  },
+  "AgentsListResponseValue": {
+    "items": 1
+  },
+  "AgentsListResponse": {
+    "value": 1
+  },
+  "AgentsDefaultsRequest": {},
+  "AgentsDefaultsResponseValueLimitPatterns": {
+    "items": 1
+  },
+  "AgentsDefaultsResponseValue": {
+    "limitPatterns": 1
+  },
+  "AgentsDefaultsResponse": {
+    "value": 1
+  },
+  "AgentsCreateRequestValueFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AgentsCreateRequestValueArgsTemplate": {
+    "items": 1
+  },
+  "AgentsCreateRequestValueResumeArgsTemplate": {
+    "items": 1
+  },
+  "AgentsCreateRequestValueLimitPatterns": {
+    "items": 1
+  },
+  "AgentsCreateRequestValue": {
+    "name": 1,
+    "description": 2,
+    "concurrency": 3,
+    "fallbackAgentId": 4,
+    "cooldownSeconds": 5,
+    "timeoutSeconds": 6,
+    "enabled": 7,
+    "sortOrder": 8,
+    "command": 9,
+    "argsTemplate": 10,
+    "resumeArgsTemplate": 11,
+    "env": 12,
+    "limitPatterns": 13,
+    "logAdapter": 14,
+    "source": 15
+  },
+  "AgentsCreateRequest": {
+    "value": 1
+  },
+  "AgentsCreateResponseValueFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AgentsCreateResponseValueArgsTemplate": {
+    "items": 1
+  },
+  "AgentsCreateResponseValueResumeArgsTemplate": {
+    "items": 1
+  },
+  "AgentsCreateResponseValueLimitPatterns": {
+    "items": 1
+  },
+  "AgentsCreateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "concurrency": 4,
+    "fallbackAgentId": 5,
+    "cooldownSeconds": 6,
+    "timeoutSeconds": 7,
+    "enabled": 8,
+    "source": 9,
+    "sortOrder": 10,
+    "createdAt": 11,
+    "updatedAt": 12,
+    "command": 13,
+    "argsTemplate": 14,
+    "resumeArgsTemplate": 15,
+    "env": 16,
+    "limitPatterns": 17,
+    "logAdapter": 18
+  },
+  "AgentsCreateResponse": {
+    "value": 1
+  },
+  "AgentsUpdateRequestValuePatchFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AgentsUpdateRequestValuePatchArgsTemplate": {
+    "items": 1
+  },
+  "AgentsUpdateRequestValuePatchResumeArgsTemplate": {
+    "items": 1
+  },
+  "AgentsUpdateRequestValuePatchLimitPatterns": {
+    "items": 1
+  },
+  "AgentsUpdateRequestValuePatch": {
+    "name": 1,
+    "description": 2,
+    "concurrency": 3,
+    "fallbackAgentId": 4,
+    "cooldownSeconds": 5,
+    "timeoutSeconds": 6,
+    "enabled": 7,
+    "sortOrder": 8,
+    "command": 9,
+    "argsTemplate": 10,
+    "resumeArgsTemplate": 11,
+    "env": 12,
+    "limitPatterns": 13,
+    "logAdapter": 14,
+    "source": 15
+  },
+  "AgentsUpdateRequestValue": {
+    "id": 1,
+    "patch": 2
+  },
+  "AgentsUpdateRequest": {
+    "value": 1
+  },
+  "AgentsUpdateResponseValueFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AgentsUpdateResponseValueArgsTemplate": {
+    "items": 1
+  },
+  "AgentsUpdateResponseValueResumeArgsTemplate": {
+    "items": 1
+  },
+  "AgentsUpdateResponseValueLimitPatterns": {
+    "items": 1
+  },
+  "AgentsUpdateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "concurrency": 4,
+    "fallbackAgentId": 5,
+    "cooldownSeconds": 6,
+    "timeoutSeconds": 7,
+    "enabled": 8,
+    "source": 9,
+    "sortOrder": 10,
+    "createdAt": 11,
+    "updatedAt": 12,
+    "command": 13,
+    "argsTemplate": 14,
+    "resumeArgsTemplate": 15,
+    "env": 16,
+    "limitPatterns": 17,
+    "logAdapter": 18
+  },
+  "AgentsUpdateResponse": {
+    "value": 1
+  },
+  "AgentsDuplicateRequest": {
+    "value": 1
+  },
+  "AgentsDuplicateResponseValueFallbackAgentId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AgentsDuplicateResponseValueArgsTemplate": {
+    "items": 1
+  },
+  "AgentsDuplicateResponseValueResumeArgsTemplate": {
+    "items": 1
+  },
+  "AgentsDuplicateResponseValueLimitPatterns": {
+    "items": 1
+  },
+  "AgentsDuplicateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "concurrency": 4,
+    "fallbackAgentId": 5,
+    "cooldownSeconds": 6,
+    "timeoutSeconds": 7,
+    "enabled": 8,
+    "source": 9,
+    "sortOrder": 10,
+    "createdAt": 11,
+    "updatedAt": 12,
+    "command": 13,
+    "argsTemplate": 14,
+    "resumeArgsTemplate": 15,
+    "env": 16,
+    "limitPatterns": 17,
+    "logAdapter": 18
+  },
+  "AgentsDuplicateResponse": {
+    "value": 1
+  },
+  "AgentsResetLimitRequest": {
+    "value": 1
+  },
+  "AgentsResetLimitResponse": {},
+  "AgentsRemoveRequest": {
+    "value": 1
+  },
+  "AgentsRemoveResponse": {},
+  "GroupsListRequest": {},
+  "GroupsListResponseValueItemMemberIds": {
+    "items": 1
+  },
+  "GroupsListResponseValueItem": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "strategy": 4,
+    "memberIds": 5,
+    "isDefault": 6,
+    "sortOrder": 7,
+    "createdAt": 8,
+    "updatedAt": 9
+  },
+  "GroupsListResponseValue": {
+    "items": 1
+  },
+  "GroupsListResponse": {
+    "value": 1
+  },
+  "GroupsCreateRequestValueMemberIds": {
+    "items": 1
+  },
+  "GroupsCreateRequestValue": {
+    "name": 1,
+    "description": 2,
+    "strategy": 3,
+    "memberIds": 4,
+    "sortOrder": 5,
+    "isDefault": 6
+  },
+  "GroupsCreateRequest": {
+    "value": 1
+  },
+  "GroupsCreateResponseValueMemberIds": {
+    "items": 1
+  },
+  "GroupsCreateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "strategy": 4,
+    "memberIds": 5,
+    "isDefault": 6,
+    "sortOrder": 7,
+    "createdAt": 8,
+    "updatedAt": 9
+  },
+  "GroupsCreateResponse": {
+    "value": 1
+  },
+  "GroupsUpdateRequestValuePatchMemberIds": {
+    "items": 1
+  },
+  "GroupsUpdateRequestValuePatch": {
+    "name": 1,
+    "description": 2,
+    "strategy": 3,
+    "memberIds": 4,
+    "sortOrder": 5,
+    "isDefault": 6
+  },
+  "GroupsUpdateRequestValue": {
+    "id": 1,
+    "patch": 2
+  },
+  "GroupsUpdateRequest": {
+    "value": 1
+  },
+  "GroupsUpdateResponseValueMemberIds": {
+    "items": 1
+  },
+  "GroupsUpdateResponseValue": {
+    "id": 1,
+    "name": 2,
+    "description": 3,
+    "strategy": 4,
+    "memberIds": 5,
+    "isDefault": 6,
+    "sortOrder": 7,
+    "createdAt": 8,
+    "updatedAt": 9
+  },
+  "GroupsUpdateResponse": {
+    "value": 1
+  },
+  "GroupsRemoveRequest": {
+    "value": 1
+  },
+  "GroupsRemoveResponse": {},
+  "RunsByTaskRequest": {
+    "value": 1
+  },
+  "RunsByTaskResponseValueItemResolvedFromGroupId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemFallbackFromRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemErrorKind": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemEndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemPid": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemArgs": {
+    "items": 1
+  },
+  "RunsByTaskResponseValueItemExitCode": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItemSessionLogPath": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunsByTaskResponseValueItem": {
+    "id": 1,
+    "taskId": 2,
+    "agentId": 3,
+    "resolvedFromGroupId": 4,
+    "sessionId": 5,
+    "kind": 6,
+    "status": 7,
+    "attempt": 8,
+    "fallbackFromRunId": 9,
+    "promptPreview": 10,
+    "errorKind": 11,
+    "errorMessage": 12,
+    "source": 13,
+    "externalKey": 14,
+    "startedAt": 15,
+    "endedAt": 16,
+    "pid": 17,
+    "cwd": 18,
+    "command": 19,
+    "args": 20,
+    "exitCode": 21,
+    "sessionLogPath": 22,
+    "stdoutLogPath": 23
+  },
+  "RunsByTaskResponseValue": {
+    "items": 1
+  },
+  "RunsByTaskResponse": {
+    "value": 1
+  },
+  "RunsCancelRequest": {
+    "value": 1
+  },
+  "RunsCancelResponse": {},
+  "LogsPageRequestValue": {
+    "runId": 1,
+    "offset": 2,
+    "generation": 3,
+    "limit": 4,
+    "search": 5
+  },
+  "LogsPageRequest": {
+    "value": 1
+  },
+  "LogsPageResponseValueMessagesItemTimestamp": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant1": {
+    "kind": 1,
+    "text": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant2": {
+    "kind": 1,
+    "text": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlanItem": {
+    "text": 1,
+    "status": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolPlan": {
+    "items": 1
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolTarget": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolResult": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImagesItem": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3ToolImages": {
+    "items": 1
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3Tool": {
+    "plan": 1,
+    "id": 2,
+    "name": 3,
+    "input": 4,
+    "target": 5,
+    "result": 6,
+    "isError": 7,
+    "images": 8
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant3": {
+    "kind": 1,
+    "tool": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant4ImageWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant4ImageHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant4Image": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "LogsPageResponseValueMessagesItemBlocksItemVariant4": {
+    "kind": 1,
+    "image": 2
+  },
+  "LogsPageResponseValueMessagesItemBlocksItem": {
+    "variant1": 1,
+    "variant2": 2,
+    "variant3": 3,
+    "variant4": 4
+  },
+  "LogsPageResponseValueMessagesItemBlocks": {
+    "items": 1
+  },
+  "LogsPageResponseValueMessagesItemModel": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValueMessagesItem": {
+    "id": 1,
+    "role": 2,
+    "isSidechain": 3,
+    "timestamp": 4,
+    "blocks": 5,
+    "model": 6
+  },
+  "LogsPageResponseValueMessages": {
+    "items": 1
+  },
+  "LogsPageResponseValueNext": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "LogsPageResponseValue": {
+    "runId": 1,
+    "sessionId": 2,
+    "exists": 3,
+    "generation": 4,
+    "messages": 5,
+    "next": 6,
+    "total": 7
+  },
+  "LogsPageResponse": {
+    "value": 1
+  },
+  "SessionCloseRequest": {},
+  "SessionCloseResponse": {},
+  "SessionLoadRequest": {
+    "value": 1
+  },
+  "SessionLoadResponseValueLogPath": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueTitle": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemTimestamp": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant1": {
+    "kind": 1,
+    "text": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant2": {
+    "kind": 1,
+    "text": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlanItem": {
+    "text": 1,
+    "status": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolPlan": {
+    "items": 1
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolTarget": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolResult": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImagesItem": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3ToolImages": {
+    "items": 1
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3Tool": {
+    "plan": 1,
+    "id": 2,
+    "name": 3,
+    "input": 4,
+    "target": 5,
+    "result": 6,
+    "isError": 7,
+    "images": 8
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant3": {
+    "kind": 1,
+    "tool": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant4ImageWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant4ImageHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant4Image": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItemVariant4": {
+    "kind": 1,
+    "image": 2
+  },
+  "SessionLoadResponseValueMessagesItemBlocksItem": {
+    "variant1": 1,
+    "variant2": 2,
+    "variant3": 3,
+    "variant4": 4
+  },
+  "SessionLoadResponseValueMessagesItemBlocks": {
+    "items": 1
+  },
+  "SessionLoadResponseValueMessagesItemModel": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadResponseValueMessagesItem": {
+    "id": 1,
+    "role": 2,
+    "isSidechain": 3,
+    "timestamp": 4,
+    "blocks": 5,
+    "model": 6
+  },
+  "SessionLoadResponseValueMessages": {
+    "items": 1
+  },
+  "SessionLoadResponseValue": {
+    "first": 1,
+    "last": 2,
+    "generation": 3,
+    "hasNewer": 4,
+    "indexing": 5,
+    "sessionId": 6,
+    "logPath": 7,
+    "exists": 8,
+    "title": 9,
+    "messages": 10,
+    "hasMore": 11,
+    "totalMessages": 12
+  },
+  "SessionLoadResponse": {
+    "value": 1
+  },
+  "SessionLoadMoreRequestValue": {
+    "runId": 1,
+    "direction": 2
+  },
+  "SessionLoadMoreRequest": {
+    "value": 1
+  },
+  "SessionLoadMoreResponseValueLogPath": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueTitle": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemTimestamp": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant1": {
+    "kind": 1,
+    "text": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant2": {
+    "kind": 1,
+    "text": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlanItem": {
+    "text": 1,
+    "status": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolPlan": {
+    "items": 1
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolTarget": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolResult": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImagesItem": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3ToolImages": {
+    "items": 1
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3Tool": {
+    "plan": 1,
+    "id": 2,
+    "name": 3,
+    "input": 4,
+    "target": 5,
+    "result": 6,
+    "isError": 7,
+    "images": 8
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant3": {
+    "kind": 1,
+    "tool": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4ImageWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4ImageHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4Image": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItemVariant4": {
+    "kind": 1,
+    "image": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocksItem": {
+    "variant1": 1,
+    "variant2": 2,
+    "variant3": 3,
+    "variant4": 4
+  },
+  "SessionLoadMoreResponseValueMessagesItemBlocks": {
+    "items": 1
+  },
+  "SessionLoadMoreResponseValueMessagesItemModel": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionLoadMoreResponseValueMessagesItem": {
+    "id": 1,
+    "role": 2,
+    "isSidechain": 3,
+    "timestamp": 4,
+    "blocks": 5,
+    "model": 6
+  },
+  "SessionLoadMoreResponseValueMessages": {
+    "items": 1
+  },
+  "SessionLoadMoreResponseValue": {
+    "first": 1,
+    "last": 2,
+    "generation": 3,
+    "hasNewer": 4,
+    "indexing": 5,
+    "sessionId": 6,
+    "logPath": 7,
+    "exists": 8,
+    "title": 9,
+    "messages": 10,
+    "hasMore": 11,
+    "totalMessages": 12
+  },
+  "SessionLoadMoreResponse": {
+    "value": 1
+  },
+  "SessionImageRequest": {
+    "value": 1
+  },
+  "SessionImageResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SessionImageResponse": {
+    "value": 1
+  },
+  "SchedulerStatusRequest": {},
+  "SchedulerStatusResponseValueAgentsItemCooldownUntil": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerStatusResponseValueAgentsItem": {
+    "agentId": 1,
+    "agentName": 2,
+    "concurrency": 3,
+    "active": 4,
+    "reserved": 5,
+    "cooldownUntil": 6,
+    "cooldownReason": 7,
+    "enabled": 8
+  },
+  "SchedulerStatusResponseValueAgents": {
+    "items": 1
+  },
+  "SchedulerStatusResponseValueHoldsItemAgentName": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerStatusResponseValueHoldsItem": {
+    "taskId": 1,
+    "taskTitle": 2,
+    "projectName": 3,
+    "agentName": 4
+  },
+  "SchedulerStatusResponseValueHolds": {
+    "items": 1
+  },
+  "SchedulerStatusResponseValueWarnings": {
+    "items": 1
+  },
+  "SchedulerStatusResponseValueLastTickAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerStatusResponseValue": {
+    "running": 1,
+    "activeRuns": 2,
+    "totalSlots": 3,
+    "queued": 4,
+    "review": 5,
+    "failed": 6,
+    "agents": 7,
+    "holds": 8,
+    "warnings": 9,
+    "lastTickAt": 10
+  },
+  "SchedulerStatusResponse": {
+    "value": 1
+  },
+  "SchedulerPauseRequest": {},
+  "SchedulerPauseResponseValueAgentsItemCooldownUntil": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerPauseResponseValueAgentsItem": {
+    "agentId": 1,
+    "agentName": 2,
+    "concurrency": 3,
+    "active": 4,
+    "reserved": 5,
+    "cooldownUntil": 6,
+    "cooldownReason": 7,
+    "enabled": 8
+  },
+  "SchedulerPauseResponseValueAgents": {
+    "items": 1
+  },
+  "SchedulerPauseResponseValueHoldsItemAgentName": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerPauseResponseValueHoldsItem": {
+    "taskId": 1,
+    "taskTitle": 2,
+    "projectName": 3,
+    "agentName": 4
+  },
+  "SchedulerPauseResponseValueHolds": {
+    "items": 1
+  },
+  "SchedulerPauseResponseValueWarnings": {
+    "items": 1
+  },
+  "SchedulerPauseResponseValueLastTickAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerPauseResponseValue": {
+    "running": 1,
+    "activeRuns": 2,
+    "totalSlots": 3,
+    "queued": 4,
+    "review": 5,
+    "failed": 6,
+    "agents": 7,
+    "holds": 8,
+    "warnings": 9,
+    "lastTickAt": 10
+  },
+  "SchedulerPauseResponse": {
+    "value": 1
+  },
+  "SchedulerResumeRequest": {},
+  "SchedulerResumeResponseValueAgentsItemCooldownUntil": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerResumeResponseValueAgentsItem": {
+    "agentId": 1,
+    "agentName": 2,
+    "concurrency": 3,
+    "active": 4,
+    "reserved": 5,
+    "cooldownUntil": 6,
+    "cooldownReason": 7,
+    "enabled": 8
+  },
+  "SchedulerResumeResponseValueAgents": {
+    "items": 1
+  },
+  "SchedulerResumeResponseValueHoldsItemAgentName": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerResumeResponseValueHoldsItem": {
+    "taskId": 1,
+    "taskTitle": 2,
+    "projectName": 3,
+    "agentName": 4
+  },
+  "SchedulerResumeResponseValueHolds": {
+    "items": 1
+  },
+  "SchedulerResumeResponseValueWarnings": {
+    "items": 1
+  },
+  "SchedulerResumeResponseValueLastTickAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SchedulerResumeResponseValue": {
+    "running": 1,
+    "activeRuns": 2,
+    "totalSlots": 3,
+    "queued": 4,
+    "review": 5,
+    "failed": 6,
+    "agents": 7,
+    "holds": 8,
+    "warnings": 9,
+    "lastTickAt": 10
+  },
+  "SchedulerResumeResponse": {
+    "value": 1
+  },
+  "SettingsPreviewIdentityRequestValueIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsPreviewIdentityRequestValue": {
+    "identity": 1,
+    "projectId": 2
+  },
+  "SettingsPreviewIdentityRequest": {
+    "value": 1
+  },
+  "SettingsPreviewIdentityResponseValueResolvedVariant1": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsPreviewIdentityResponseValueResolved": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SettingsPreviewIdentityResponseValue": {
+    "slug": 1,
+    "login": 2,
+    "email": 3,
+    "complete": 4,
+    "current": 5,
+    "url": 6,
+    "resolved": 7
+  },
+  "SettingsPreviewIdentityResponse": {
+    "value": 1
+  },
+  "SettingsSetIdentityRequestValue": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsSetIdentityRequest": {
+    "value": 1
+  },
+  "SettingsSetIdentityResponseValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsSetIdentityResponseValue": {
+    "autoStartScheduler": 1,
+    "keepRunningInBackground": 2,
+    "notifyOnReview": 3,
+    "notifyOnFailure": 4,
+    "tickIntervalMs": 5,
+    "importExternalSessions": 6,
+    "importHistoryDays": 7,
+    "importCreateProjects": 8,
+    "commitIdentityEnabled": 9,
+    "commitIdentity": 10,
+    "editorApp": 11,
+    "mobileSyncEnabled": 12,
+    "reportEnabled": 13,
+    "reportTargetKind": 14,
+    "reportTargetId": 15,
+    "reportInstructions": 16,
+    "projectReportInstructions": 17,
+    "pullRequestFailurePrompt": 18,
+    "pullRequestPendingPrompt": 19,
+    "pullRequestConflictPrompt": 20,
+    "pullRequestFailureEnabled": 21,
+    "pullRequestPendingEnabled": 22,
+    "pullRequestConflictEnabled": 23,
+    "theme": 24,
+    "httpEnabled": 25,
+    "httpPort": 26,
+    "mcpEnabled": 27,
+    "mcpPort": 28
+  },
+  "SettingsSetIdentityResponse": {
+    "value": 1
+  },
+  "SettingsGetRequest": {},
+  "SettingsGetResponseValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsGetResponseValue": {
+    "autoStartScheduler": 1,
+    "keepRunningInBackground": 2,
+    "notifyOnReview": 3,
+    "notifyOnFailure": 4,
+    "tickIntervalMs": 5,
+    "importExternalSessions": 6,
+    "importHistoryDays": 7,
+    "importCreateProjects": 8,
+    "commitIdentityEnabled": 9,
+    "commitIdentity": 10,
+    "editorApp": 11,
+    "mobileSyncEnabled": 12,
+    "reportEnabled": 13,
+    "reportTargetKind": 14,
+    "reportTargetId": 15,
+    "reportInstructions": 16,
+    "projectReportInstructions": 17,
+    "pullRequestFailurePrompt": 18,
+    "pullRequestPendingPrompt": 19,
+    "pullRequestConflictPrompt": 20,
+    "pullRequestFailureEnabled": 21,
+    "pullRequestPendingEnabled": 22,
+    "pullRequestConflictEnabled": 23,
+    "theme": 24,
+    "httpEnabled": 25,
+    "httpPort": 26,
+    "mcpEnabled": 27,
+    "mcpPort": 28
+  },
+  "SettingsGetResponse": {
+    "value": 1
+  },
+  "SettingsSetRequestValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsSetRequestValue": {
+    "autoStartScheduler": 1,
+    "keepRunningInBackground": 2,
+    "notifyOnReview": 3,
+    "notifyOnFailure": 4,
+    "tickIntervalMs": 5,
+    "importExternalSessions": 6,
+    "importHistoryDays": 7,
+    "importCreateProjects": 8,
+    "commitIdentityEnabled": 9,
+    "commitIdentity": 10,
+    "editorApp": 11,
+    "mobileSyncEnabled": 12,
+    "reportEnabled": 13,
+    "reportTargetKind": 14,
+    "reportTargetId": 15,
+    "reportInstructions": 16,
+    "projectReportInstructions": 17,
+    "pullRequestFailurePrompt": 18,
+    "pullRequestPendingPrompt": 19,
+    "pullRequestConflictPrompt": 20,
+    "pullRequestFailureEnabled": 21,
+    "pullRequestPendingEnabled": 22,
+    "pullRequestConflictEnabled": 23,
+    "theme": 24,
+    "httpEnabled": 25,
+    "httpPort": 26,
+    "mcpEnabled": 27,
+    "mcpPort": 28
+  },
+  "SettingsSetRequest": {
+    "value": 1
+  },
+  "SettingsSetResponseValueCommitIdentity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsSetResponseValue": {
+    "autoStartScheduler": 1,
+    "keepRunningInBackground": 2,
+    "notifyOnReview": 3,
+    "notifyOnFailure": 4,
+    "tickIntervalMs": 5,
+    "importExternalSessions": 6,
+    "importHistoryDays": 7,
+    "importCreateProjects": 8,
+    "commitIdentityEnabled": 9,
+    "commitIdentity": 10,
+    "editorApp": 11,
+    "mobileSyncEnabled": 12,
+    "reportEnabled": 13,
+    "reportTargetKind": 14,
+    "reportTargetId": 15,
+    "reportInstructions": 16,
+    "projectReportInstructions": 17,
+    "pullRequestFailurePrompt": 18,
+    "pullRequestPendingPrompt": 19,
+    "pullRequestConflictPrompt": 20,
+    "pullRequestFailureEnabled": 21,
+    "pullRequestPendingEnabled": 22,
+    "pullRequestConflictEnabled": 23,
+    "theme": 24,
+    "httpEnabled": 25,
+    "httpPort": 26,
+    "mcpEnabled": 27,
+    "mcpPort": 28
+  },
+  "SettingsSetResponse": {
+    "value": 1
+  },
+  "SettingsLookupBotUserRequest": {
+    "value": 1
+  },
+  "SettingsLookupBotUserResponseValueVariant1": {
+    "ok": 1,
+    "botUserId": 2
+  },
+  "SettingsLookupBotUserResponseValueVariant2": {
+    "ok": 1,
+    "reason": 2
+  },
+  "SettingsLookupBotUserResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SettingsLookupBotUserResponse": {
+    "value": 1
+  },
+  "SettingsCreateGitHubAppRequest": {},
+  "SettingsCreateGitHubAppResponseValueVariant1Identity": {
+    "appSlug": 1,
+    "botUserId": 2,
+    "appId": 3,
+    "setupVersion": 4
+  },
+  "SettingsCreateGitHubAppResponseValueVariant1": {
+    "ok": 1,
+    "identity": 2
+  },
+  "SettingsCreateGitHubAppResponseValueVariant2": {
+    "ok": 1,
+    "reason": 2,
+    "canceled": 3
+  },
+  "SettingsCreateGitHubAppResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SettingsCreateGitHubAppResponse": {
+    "value": 1
+  },
+  "SettingsCancelGitHubAppRequest": {},
+  "SettingsCancelGitHubAppResponse": {},
+  "MobileStatusRequest": {},
+  "MobileStatusResponseValueConflictsItem": {
+    "intentId": 1,
+    "device": 2,
+    "seq": 3,
+    "taskId": 4,
+    "at": 5,
+    "outcome": 6,
+    "reason": 7
+  },
+  "MobileStatusResponseValueConflicts": {
+    "items": 1
+  },
+  "MobileStatusResponseValue": {
+    "enabled": 1,
+    "reachable": 2,
+    "lastExportAt": 3,
+    "lastImportAt": 4,
+    "conflicts": 5,
+    "error": 6
+  },
+  "MobileStatusResponse": {
+    "value": 1
+  },
+  "MobileSyncNowRequest": {},
+  "MobileSyncNowResponseValueConflictsItem": {
+    "intentId": 1,
+    "device": 2,
+    "seq": 3,
+    "taskId": 4,
+    "at": 5,
+    "outcome": 6,
+    "reason": 7
+  },
+  "MobileSyncNowResponseValueConflicts": {
+    "items": 1
+  },
+  "MobileSyncNowResponseValue": {
+    "enabled": 1,
+    "reachable": 2,
+    "lastExportAt": 3,
+    "lastImportAt": 4,
+    "conflicts": 5,
+    "error": 6
+  },
+  "MobileSyncNowResponse": {
+    "value": 1
+  },
+  "ImporterSyncRequest": {},
+  "ImporterSyncResponseValue": {
+    "scanned": 1,
+    "createdTasks": 2,
+    "createdProjects": 3,
+    "updated": 4,
+    "running": 5
+  },
+  "ImporterSyncResponse": {
+    "value": 1
+  },
+  "OpenTerminalRequestValue": {
+    "kind": 1,
+    "id": 2
+  },
+  "OpenTerminalRequest": {
+    "value": 1
+  },
+  "OpenTerminalResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "OpenTerminalResponse": {
+    "value": 1
+  },
+  "OpenResumeRequest": {
+    "value": 1
+  },
+  "OpenResumeResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "OpenResumeResponse": {
+    "value": 1
+  },
+  "OpenEditorRequestValueTarget": {
+    "kind": 1,
+    "id": 2
+  },
+  "OpenEditorRequestValue": {
+    "target": 1,
+    "appPath": 2
+  },
+  "OpenEditorRequest": {
+    "value": 1
+  },
+  "OpenEditorResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "OpenEditorResponse": {
+    "value": 1
+  },
+  "OpenRevealRequestValue": {
+    "kind": 1,
+    "id": 2
+  },
+  "OpenRevealRequest": {
+    "value": 1
+  },
+  "OpenRevealResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "OpenRevealResponse": {
+    "value": 1
+  },
+  "OpenWorkingDirRequestValue": {
+    "kind": 1,
+    "id": 2
+  },
+  "OpenWorkingDirRequest": {
+    "value": 1
+  },
+  "OpenWorkingDirResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "OpenWorkingDirResponse": {
+    "value": 1
+  },
+  "OpenEditorsRequest": {},
+  "OpenEditorsResponseValueItem": {
+    "path": 1,
+    "name": 2
+  },
+  "OpenEditorsResponseValue": {
+    "items": 1
+  },
+  "OpenEditorsResponse": {
+    "value": 1
+  },
+  "ReviewSnapshotRequest": {
+    "value": 1
+  },
+  "ReviewSnapshotResponseValueRepository": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewSnapshotResponseValueTree": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewSnapshotResponseValueChanges": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueLocalChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewSnapshotResponseValueLocalChanges": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueStagedChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewSnapshotResponseValueStagedChanges": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewSnapshotResponseValueRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewSnapshotResponseValueLocalRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewSnapshotResponseValueLocalRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewSnapshotResponseValueStagedRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewSnapshotResponseValueStagedRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewSnapshotResponseValueCommitsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewSnapshotResponseValueCommitsItemFiles": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueCommitsItem": {
+    "sha": 1,
+    "shortSha": 2,
+    "subject": 3,
+    "author": 4,
+    "committedAt": 5,
+    "files": 6
+  },
+  "ReviewSnapshotResponseValueCommits": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValuePullRequestsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewSnapshotResponseValuePullRequestsItemFiles": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValuePullRequestsItem": {
+    "number": 1,
+    "title": 2,
+    "url": 3,
+    "headRefName": 4,
+    "baseRefName": 5,
+    "headSha": 6,
+    "draft": 7,
+    "updatedAt": 8,
+    "check": 9,
+    "mergeState": 10,
+    "state": 11,
+    "files": 12
+  },
+  "ReviewSnapshotResponseValuePullRequests": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1Lines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1Functions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1Branches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1Statements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1FilesItemLines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1FilesItemFunctions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1FilesItemBranches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1FilesItemStatements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1FilesItemUncoveredLines": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1FilesItem": {
+    "path": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "uncoveredLines": 6
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1Files": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValueCoverageVariant1": {
+    "source": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "files": 6
+  },
+  "ReviewSnapshotResponseValueCoverage": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewSnapshotResponseValueProjectTasksItem": {
+    "id": 1,
+    "label": 2,
+    "source": 3,
+    "command": 4
+  },
+  "ReviewSnapshotResponseValueProjectTasks": {
+    "items": 1
+  },
+  "ReviewSnapshotResponseValue": {
+    "preparing": 1,
+    "error": 2,
+    "cwd": 3,
+    "branch": 4,
+    "repository": 5,
+    "tree": 6,
+    "changes": 7,
+    "localChanges": 8,
+    "stagedChanges": 9,
+    "revision": 10,
+    "localRevision": 11,
+    "stagedRevision": 12,
+    "commits": 13,
+    "pullRequests": 14,
+    "coverage": 15,
+    "projectTasks": 16,
+    "pullRequestNotice": 17
+  },
+  "ReviewSnapshotResponse": {
+    "value": 1
+  },
+  "ReviewRefreshRequest": {
+    "value": 1
+  },
+  "ReviewRefreshResponseValueRepository": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewRefreshResponseValueTree": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewRefreshResponseValueChanges": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueLocalChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewRefreshResponseValueLocalChanges": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueStagedChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewRefreshResponseValueStagedChanges": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewRefreshResponseValueRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewRefreshResponseValueLocalRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewRefreshResponseValueLocalRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewRefreshResponseValueStagedRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewRefreshResponseValueStagedRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewRefreshResponseValueCommitsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewRefreshResponseValueCommitsItemFiles": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueCommitsItem": {
+    "sha": 1,
+    "shortSha": 2,
+    "subject": 3,
+    "author": 4,
+    "committedAt": 5,
+    "files": 6
+  },
+  "ReviewRefreshResponseValueCommits": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValuePullRequestsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewRefreshResponseValuePullRequestsItemFiles": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValuePullRequestsItem": {
+    "number": 1,
+    "title": 2,
+    "url": 3,
+    "headRefName": 4,
+    "baseRefName": 5,
+    "headSha": 6,
+    "draft": 7,
+    "updatedAt": 8,
+    "check": 9,
+    "mergeState": 10,
+    "state": 11,
+    "files": 12
+  },
+  "ReviewRefreshResponseValuePullRequests": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueCoverageVariant1Lines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1Functions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1Branches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1Statements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1FilesItemLines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1FilesItemFunctions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1FilesItemBranches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1FilesItemStatements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewRefreshResponseValueCoverageVariant1FilesItemUncoveredLines": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueCoverageVariant1FilesItem": {
+    "path": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "uncoveredLines": 6
+  },
+  "ReviewRefreshResponseValueCoverageVariant1Files": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValueCoverageVariant1": {
+    "source": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "files": 6
+  },
+  "ReviewRefreshResponseValueCoverage": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewRefreshResponseValueProjectTasksItem": {
+    "id": 1,
+    "label": 2,
+    "source": 3,
+    "command": 4
+  },
+  "ReviewRefreshResponseValueProjectTasks": {
+    "items": 1
+  },
+  "ReviewRefreshResponseValue": {
+    "preparing": 1,
+    "error": 2,
+    "cwd": 3,
+    "branch": 4,
+    "repository": 5,
+    "tree": 6,
+    "changes": 7,
+    "localChanges": 8,
+    "stagedChanges": 9,
+    "revision": 10,
+    "localRevision": 11,
+    "stagedRevision": 12,
+    "commits": 13,
+    "pullRequests": 14,
+    "coverage": 15,
+    "projectTasks": 16,
+    "pullRequestNotice": 17
+  },
+  "ReviewRefreshResponse": {
+    "value": 1
+  },
+  "ReviewFileRequestValue": {
+    "taskId": 1,
+    "request": 2
+  },
+  "ReviewFileRequest": {
+    "value": 1
+  },
+  "ReviewFileResponseValueDiffItemOldLine": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewFileResponseValueDiffItemNewLine": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewFileResponseValueDiffItem": {
+    "kind": 1,
+    "oldLine": 2,
+    "newLine": 3,
+    "text": 4
+  },
+  "ReviewFileResponseValueDiff": {
+    "items": 1
+  },
+  "ReviewFileResponseValueSymbolsItem": {
+    "name": 1,
+    "kind": 2,
+    "line": 3,
+    "depth": 4
+  },
+  "ReviewFileResponseValueSymbols": {
+    "items": 1
+  },
+  "ReviewFileResponseValuePullRequestVariant1": {
+    "url": 1,
+    "number": 2,
+    "headSha": 3
+  },
+  "ReviewFileResponseValuePullRequest": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewFileResponseValue": {
+    "source": 1,
+    "path": 2,
+    "language": 3,
+    "content": 4,
+    "diff": 5,
+    "symbols": 6,
+    "pullRequest": 7,
+    "binary": 8
+  },
+  "ReviewFileResponse": {
+    "value": 1
+  },
+  "ReviewCommentRequestValueInput": {
+    "pullRequestUrl": 1,
+    "pullRequest": 2,
+    "path": 3,
+    "line": 4,
+    "body": 5,
+    "headSha": 6
+  },
+  "ReviewCommentRequestValue": {
+    "taskId": 1,
+    "input": 2
+  },
+  "ReviewCommentRequest": {
+    "value": 1
+  },
+  "ReviewCommentResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReviewCommentResponse": {
+    "value": 1
+  },
+  "ReviewOpenPullRequestRequestValueBounds": {
+    "x": 1,
+    "y": 2,
+    "width": 3,
+    "height": 4
+  },
+  "ReviewOpenPullRequestRequestValue": {
+    "id": 1,
+    "url": 2,
+    "bounds": 3
+  },
+  "ReviewOpenPullRequestRequest": {
+    "value": 1
+  },
+  "ReviewOpenPullRequestResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReviewOpenPullRequestResponse": {
+    "value": 1
+  },
+  "ReviewHidePullRequestRequest": {
+    "value": 1
+  },
+  "ReviewHidePullRequestResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReviewHidePullRequestResponse": {
+    "value": 1
+  },
+  "ReviewClosePullRequestRequest": {
+    "value": 1
+  },
+  "ReviewClosePullRequestResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReviewClosePullRequestResponse": {
+    "value": 1
+  },
+  "ReportProjectGetRequest": {
+    "value": 1
+  },
+  "ReportProjectGetResponseValueVariant1EndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportProjectGetResponseValueVariant1": {
+    "status": 1,
+    "revision": 2,
+    "path": 3,
+    "logPath": 4,
+    "error": 5,
+    "startedAt": 6,
+    "endedAt": 7,
+    "projectId": 8
+  },
+  "ReportProjectGetResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportProjectGetResponse": {
+    "value": 1
+  },
+  "ReportProjectGenerateRequest": {
+    "value": 1
+  },
+  "ReportProjectGenerateResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReportProjectGenerateResponse": {
+    "value": 1
+  },
+  "ReportProjectShowRequestValueBounds": {
+    "x": 1,
+    "y": 2,
+    "width": 3,
+    "height": 4
+  },
+  "ReportProjectShowRequestValue": {
+    "projectId": 1,
+    "bounds": 2
+  },
+  "ReportProjectShowRequest": {
+    "value": 1
+  },
+  "ReportProjectShowResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReportProjectShowResponse": {
+    "value": 1
+  },
+  "ReportGetRequest": {
+    "value": 1
+  },
+  "ReportGetResponseValueVariant1EndedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportGetResponseValueVariant1": {
+    "taskId": 1,
+    "status": 2,
+    "revision": 3,
+    "path": 4,
+    "logPath": 5,
+    "error": 6,
+    "startedAt": 7,
+    "endedAt": 8
+  },
+  "ReportGetResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportGetResponse": {
+    "value": 1
+  },
+  "ReportGenerateRequest": {
+    "value": 1
+  },
+  "ReportGenerateResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReportGenerateResponse": {
+    "value": 1
+  },
+  "ReportShowRequestValueBounds": {
+    "x": 1,
+    "y": 2,
+    "width": 3,
+    "height": 4
+  },
+  "ReportShowRequestValue": {
+    "taskId": 1,
+    "bounds": 2
+  },
+  "ReportShowRequest": {
+    "value": 1
+  },
+  "ReportShowResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReportShowResponse": {
+    "value": 1
+  },
+  "ReportHideRequest": {},
+  "ReportHideResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "ReportHideResponse": {
+    "value": 1
+  },
+  "TerminalOpenRequestValue": {
+    "taskId": 1,
+    "columns": 2,
+    "rows": 3
+  },
+  "TerminalOpenRequest": {
+    "value": 1
+  },
+  "TerminalOpenResponseValue": {
+    "id": 1,
+    "cwd": 2,
+    "shell": 3,
+    "columns": 4,
+    "rows": 5
+  },
+  "TerminalOpenResponse": {
+    "value": 1
+  },
+  "TerminalInputRequestValue": {
+    "sessionId": 1,
+    "input": 2
+  },
+  "TerminalInputRequest": {
+    "value": 1
+  },
+  "TerminalInputResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "TerminalInputResponse": {
+    "value": 1
+  },
+  "TerminalResizeRequestValue": {
+    "sessionId": 1,
+    "columns": 2,
+    "rows": 3
+  },
+  "TerminalResizeRequest": {
+    "value": 1
+  },
+  "TerminalResizeResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "TerminalResizeResponse": {
+    "value": 1
+  },
+  "TerminalRunProjectTaskRequestValue": {
+    "taskId": 1,
+    "sessionId": 2,
+    "projectTaskId": 3
+  },
+  "TerminalRunProjectTaskRequest": {
+    "value": 1
+  },
+  "TerminalRunProjectTaskResponseValue": {
+    "ok": 1,
+    "reason": 2
+  },
+  "TerminalRunProjectTaskResponse": {
+    "value": 1
+  },
+  "TerminalCloseRequest": {
+    "value": 1
+  },
+  "TerminalCloseResponse": {},
+  "SystemSavePromptFilesRequestValueItem": {
+    "name": 1,
+    "data": 2
+  },
+  "SystemSavePromptFilesRequestValue": {
+    "items": 1
+  },
+  "SystemSavePromptFilesRequest": {
+    "value": 1
+  },
+  "SystemSavePromptFilesResponseValue": {
+    "items": 1
+  },
+  "SystemSavePromptFilesResponse": {
+    "value": 1
+  },
+  "SystemWindowLayoutRequest": {},
+  "SystemWindowLayoutResponseValue": {
+    "leftInset": 1,
+    "collapsedRailWidth": 2,
+    "overhang": 3
+  },
+  "SystemWindowLayoutResponse": {
+    "value": 1
+  },
+  "SystemScrollSwipesRequest": {},
+  "SystemScrollSwipesResponse": {
+    "value": 1
+  },
+  "SystemPickDirectoryRequest": {},
+  "SystemPickDirectoryResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SystemPickDirectoryResponse": {
+    "value": 1
+  },
+  "SystemPickApplicationRequest": {},
+  "SystemPickApplicationResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SystemPickApplicationResponse": {
+    "value": 1
+  },
+  "SystemConfirmRequestValue": {
+    "message": 1,
+    "detail": 2,
+    "confirmLabel": 3
+  },
+  "SystemConfirmRequest": {
+    "value": 1
+  },
+  "SystemConfirmResponse": {
+    "value": 1
+  },
+  "SystemPopupMenuRequestValueItems": {
+    "items": 1
+  },
+  "SystemPopupMenuRequestValue": {
+    "items": 1,
+    "x": 2,
+    "y": 3
+  },
+  "SystemPopupMenuRequest": {
+    "value": 1
+  },
+  "SystemPopupMenuResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SystemPopupMenuResponse": {
+    "value": 1
+  },
+  "SystemRevealRequest": {
+    "value": 1
+  },
+  "SystemRevealResponse": {},
+  "SystemOpenExternalRequest": {
+    "value": 1
+  },
+  "SystemOpenExternalResponse": {},
+  "SystemCopyRequest": {
+    "value": 1
+  },
+  "SystemCopyResponse": {},
+  "ServersStatusRequest": {},
+  "ServersStatusResponseValueHttpUrl": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ServersStatusResponseValueHttpError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ServersStatusResponseValueHttp": {
+    "enabled": 1,
+    "url": 2,
+    "error": 3
+  },
+  "ServersStatusResponseValueMcpUrl": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ServersStatusResponseValueMcpError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ServersStatusResponseValueMcp": {
+    "enabled": 1,
+    "url": 2,
+    "error": 3
+  },
+  "ServersStatusResponseValue": {
+    "http": 1,
+    "mcp": 2,
+    "connectionFile": 3
+  },
+  "ServersStatusResponse": {
+    "value": 1
+  }
+}

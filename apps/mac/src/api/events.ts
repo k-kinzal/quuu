@@ -1,13 +1,15 @@
 import type { z } from 'zod'
-import { CommandPayloadSchema, SessionAppendedPayloadSchema } from './api/desktop.js'
-import { SchedulerStatusSchema } from './api/execution.js'
-import { AppSnapshotSchema, ToastPayloadSchema } from './api/snapshot.js'
-import { TerminalEventSchema } from './api/workbench.js'
+import { CommandPayloadSchema, SessionAppendedPayloadSchema } from './schemas/desktop.js'
+import { SchedulerStatusSchema } from './schemas/execution.js'
+import { AppSettingsSchema } from './schemas/settings.js'
+import { AppSnapshotSchema, ToastPayloadSchema } from './schemas/snapshot.js'
+import { TerminalEventSchema } from './schemas/workbench.js'
 import { EVENTS } from './channels.js'
 
 /** Notifications, too, never declare separate types on the sending and subscribing sides. */
 export const eventSchemas = {
   [EVENTS.snapshot]: AppSnapshotSchema,
+  [EVENTS.settings]: AppSettingsSchema,
   [EVENTS.sessionAppended]: SessionAppendedPayloadSchema,
   [EVENTS.schedulerStatus]: SchedulerStatusSchema,
   [EVENTS.toast]: ToastPayloadSchema,

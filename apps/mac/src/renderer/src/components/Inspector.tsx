@@ -18,8 +18,8 @@ import {
   type MenuItemSpec
 } from '@design-system/react'
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
-import type { Project } from '../../../preload/api/projects.js'
-import type { DependsMode, Task, TaskDependency } from '../../../preload/api/tasks.js'
+import type { Project } from '../../../api/schemas/projects.js'
+import type { DependsMode, Task, TaskDependency } from '../../../api/schemas/tasks.js'
 import { t } from '../model/i18n/index.js'
 import { DEPENDS_MODE_LABEL, PRIORITY_LABEL, TASK_STATUS_LABEL } from '../model/labels.js'
 

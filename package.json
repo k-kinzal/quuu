@@ -1,7 +1,7 @@
 {
   "name": "quuu-workspace",
   "version": "1.0.0",
-  "description": "Manages AI agent runs — a macOS app and an iPhone app",
+  "description": "Manages AI agent runs \u2014 a macOS app and an iPhone app",
   "author": "k-kinzal",
   "license": "MIT",
   "private": true,
@@ -20,12 +20,12 @@
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p tsconfig.tests.json",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "pretest": "npm run build:pty -w quuu",
+    "pretest": "npm run build:pty -w quuu && npm run build:cli",
     "test": "vitest run",
     "test:watch": "vitest",
     "storybook": "npm run storybook -w @design-system/react",
     "build-storybook": "npm run build-storybook -w @design-system/react",
-    "check": "npm run lint && npm run check:architecture && npm run typecheck && npm test",
+    "check": "npm run lint && npm run check:architecture && npm run api:check && npm run typecheck && npm test",
     "dist": "npm run dist -w quuu",
     "dist:dmg": "npm run dist:dmg -w quuu",
     "app:restart": "npm run app:restart -w quuu",
@@ -38,7 +38,10 @@
     "ios:build": "npm run ios:build -w @quuu/mobile",
     "ios:open": "npm run ios:open -w @quuu/mobile",
     "ios:install": "npm run ios:install -w @quuu/mobile",
-    "check:architecture": "node --test scripts/architecture/*.test.mjs && node scripts/architecture/check.mjs"
+    "check:architecture": "node --test scripts/architecture/*.test.mjs && node scripts/architecture/check.mjs",
+    "api:generate": "vite-node -c vitest.config.ts apps/mac/scripts/generate-api.ts",
+    "build:cli": "npm run build:cli -w quuu",
+    "api:check": "vite-node -c vitest.config.ts apps/mac/scripts/generate-api.ts --check"
   },
   "devDependencies": {
     "@emotion/react": "^11.14.0",

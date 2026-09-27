@@ -120,3 +120,22 @@ export type ProjectInput = Omit<
   pullRequestPendingEnabled?: boolean
   pullRequestConflictEnabled?: boolean
 }
+
+/**
+ * Which working directory to open.
+ *
+ *   task    ... where that task's most recent run was (its worktree, if any)
+ *   run     ... where that run was (a past run may be somewhere else than now)
+ *   project ... the registered directory
+ *
+ * The caller states outright which one it means, so main never has to guess
+ * "is this a task ID or a project ID".
+ */
+export type OpenTarget = { kind: 'task' | 'run' | 'project'; id: string }
+
+
+/** The result of opening an external app. Returns the reason when it did not open. */
+export interface OpenResult {
+  ok: boolean
+  reason?: string
+}

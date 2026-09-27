@@ -1,4 +1,4 @@
-import type { FileChangeKind, ReviewChange, ReviewTreeNode } from '../../../preload/api/review.js'
+import type { FileChangeKind, ReviewChange, ReviewTreeNode } from '../../../api/schemas/review.js'
 
 interface MutableTreeNode extends ReviewTreeNode {
   children?: MutableTreeNode[]

@@ -1,6 +1,6 @@
 import { createORPCClient, safe } from '@orpc/client'
 import { RPCLink, type SupportedMessagePort } from '@orpc/client/message-port'
-import type { QuuuApi } from '../../../preload/api.js'
+import type { QuuuApi } from '../../../api/types.js'
 
 /** Only operations that surface errors at the input field set this. oRPC client context is not forwarded to main. */
 export type QuuuClient = QuuuApi<{ feedback?: 'inline' }>

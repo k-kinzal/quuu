@@ -1,7 +1,7 @@
-import type { GroupStrategy, LogAdapter } from '../../../preload/api/agents.js'
-import type { RunErrorKind } from '../../../preload/api/execution.js'
-import type { CommitIdentityMode, PullRequestPromptMode } from '../../../preload/api/settings.js'
-import type { AddAction, DependsMode, Priority, RunStatus, TaskStatus } from '../../../preload/api/tasks.js'
+import type { GroupStrategy, LogAdapter } from '../../../api/schemas/agents.js'
+import type { RunErrorKind } from '../../../api/schemas/execution.js'
+import type { CommitIdentityMode, PullRequestPromptMode } from '../../../api/schemas/settings.js'
+import type { AddAction, DependsMode, Priority, RunStatus, TaskStatus } from '../../../api/schemas/tasks.js'
 import { t } from './i18n/index.js'
 
 /**

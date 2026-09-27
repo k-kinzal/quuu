@@ -75,24 +75,36 @@ for (const [from,to] of [
   ['main/terminal/service.ts','main/review/service.ts'],
   ['main/tasks/operations.ts','main/execution/scheduler.ts'],
   ['main/tasks/operations.ts','main/mobile-sync/protocol.ts'],
-  ['main/tasks/operations.ts','preload/api.ts'],
+  ['main/tasks/operations.ts','api/types.ts'],
   ['preload/index.ts','main/tasks/operations.ts']
 ]) test(`rejects a reverse reference: ${from} → ${to}`, () => {
   assert.ok(layerViolation(`apps/mac/src/${from}`,`apps/mac/src/${to}`,true))
 })
-test('the contract implementation lives in the IPC layer; the renderer uses only generated API types', () => {
-  assert.equal(layerViolation('apps/mac/src/main/ipc/index.ts','apps/mac/src/preload/contract.ts'),null)
-  assert.equal(layerViolation('apps/mac/src/main/ipc/index.ts','apps/mac/src/preload/api/tasks.ts'),null)
-  assert.equal(layerViolation('apps/mac/src/renderer/src/state/client.ts','apps/mac/src/preload/api.ts',true),null)
-  assert.ok(layerViolation('apps/mac/src/renderer/src/state/client.ts','apps/mac/src/preload/contract.ts'))
-  assert.ok(layerViolation('apps/mac/src/renderer/src/state/store.ts','apps/mac/src/preload/api/tasks.ts'))
+test('all receptions use one contract and the desktop never uses HTTP', () => {
+  const path = name => `apps/mac/src/${name}`
+  for (const layer of ['main/api/router.ts', 'main/ipc/index.ts', 'main/servers/grpc.ts', 'client/http.ts', 'preload/index.ts']) {
+    assert.equal(layerViolation(path(layer), path('api/contract.ts')), null)
+  }
+  assert.equal(layerViolation(path('renderer/src/state/client.ts'), path('api/types.ts'), true), null)
+  for (const [from, to] of [
+    ['renderer/src/state/client.ts', 'api/contract.ts'],
+    ['renderer/src/state/client.ts', 'client/http.ts'],
+    ['preload/index.ts', 'client/http.ts'],
+    ['main/tasks/operations.ts', 'main/api/router.ts'],
+    ['main/execution/scheduler.ts', 'main/servers/grpc.ts'],
+    ['main/api/router.ts', 'main/ipc/index.ts'],
+    ['main/servers/grpc.ts', 'main/db/repo.ts'],
+    ['client/http.ts', 'main/bootstrap.ts'],
+    ['cli/main.mjs', 'main/tasks/operations.ts'],
+    ['api/contract.ts', 'main/tasks/types.ts'],
+  ]) assert.ok(layerViolation(path(from), path(to)), `${from} -> ${to}`)
 })
 test('detects runtime code in the API declaration and re-exported main types', () => {
   const {write,issues} = fixture()
   write('apps/mac/src/main/tasks/types.ts','export interface Task { id: string }')
-  write('apps/mac/src/preload/api.ts',"export type { Task } from '../main/tasks/types.js'; export const value = 1")
+  write('apps/mac/src/api/types.ts',"export type { Task } from '../main/tasks/types.js'; export const value = 1")
   assert.match(issues(),/runtime code in the API declaration/)
-  assert.match(issues(),/preload must not import app logic/)
+  assert.match(issues(),/public contracts must not import implementation or transport/)
 })
 test('a declared app can use the Design System public entry', () => {
   const {write,issues} = fixture()

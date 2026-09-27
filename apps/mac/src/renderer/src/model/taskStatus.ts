@@ -1,4 +1,4 @@
-import type { Task, TaskStatus } from '../../../preload/api/tasks.js'
+import type { Task, TaskStatus } from '../../../api/schemas/tasks.js'
 
 /** The unfinished statuses listed in an automation's condition picker. */
 export const OPEN_STATUSES: TaskStatus[] = ['draft', 'held', 'queued', 'running', 'review', 'failed']

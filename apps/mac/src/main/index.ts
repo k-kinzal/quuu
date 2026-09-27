@@ -1,7 +1,8 @@
 import { app, nativeImage, nativeTheme, Notification } from 'electron'
 import { dirname, join } from 'node:path'
+import { unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { EVENTS } from '../preload/channels.js'
+import { EVENTS } from '../api/channels.js'
 import { userDataDir } from './appPaths.js'
 import { QuuuApp } from './bootstrap.js'
 import type { SchedulerStatus } from './execution/status.js'
@@ -12,13 +13,16 @@ import { mobileWebRoot } from './mobile-sync/folder.js'
 import type { AppSettings } from './settings/types.js'
 import type { AppSnapshot, ToastPayload } from './snapshot.js'
 import { swipeCommand } from './swipe.js'
-import { TaskApiServer } from './taskApi.js'
+import type { ServerController } from './servers/controller.js'
+import { desktopOperations } from './desktop/operations.js'
 import { beginQuit, configureWindows, mainWindow, showWindow } from './windows.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 let quuu: QuuuApp | null = null
-let taskApi: TaskApiServer | null = null
+let servers: ServerController | null = null
+let quitting = false
+let shutdownComplete = false
 let broadcastTimer: NodeJS.Timeout | null = null
 
 const RESOURCES = app.isPackaged
@@ -35,7 +39,10 @@ const RESOURCES = app.isPackaged
 
 function wire(instance: QuuuApp): void {
   applyAppearance(instance.settings.getSettings().theme)
-  instance.on('settings', (settings: AppSettings) => applyAppearance(settings.theme))
+  instance.on('settings', (settings: AppSettings) => {
+    applyAppearance(settings.theme)
+    broadcast(EVENTS.settings, settings)
+  })
 
   const pushSnapshot = (): void => {
     if (broadcastTimer) return
@@ -143,6 +150,9 @@ if (!app.requestSingleInstanceLock()) {
     }
 
     quuu = new QuuuApp()
+    quuu.settings.serverStatus.connectionFile = join(userDataDir(), 'connections.json')
+    try { unlinkSync(quuu.settings.serverStatus.connectionFile) }
+    catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('Cannot remove stale connection information:', error) }
     configureWindows(() => quuu?.settings.getSettings().keepRunningInBackground ?? true)
     // The Mac distributes the iPhone UI via iCloud (so it can be fixed without plugging in a device)
     quuu.setMobileWebRoot(mobileWebRoot(app.isPackaged, process.resourcesPath, __dirname))
@@ -150,18 +160,28 @@ if (!app.requestSingleInstanceLock()) {
     registerIpc(quuu)
     await quuu.bootstrap()
 
-    try {
-      taskApi = new TaskApiServer(quuu)
-      await taskApi.start()
-    } catch (error) {
-      taskApi = null
-      // Even if the API is unavailable, don't take the UI and scheduler down with it.
-      console.error('Failed to start the Quuu task API:', error)
-    }
-
     // Built after bootstrap so "Go › Projects" can be populated
     refreshMenuIfProjectsChanged(quuu?.snapshot().projects ?? [])
     showWindow()
+
+    // Loading network SDKs follows the first window and is skipped while both listeners are off.
+    const instance = quuu
+    let startingServers = false
+    const startServers = (settings: AppSettings): void => {
+      if (servers || startingServers || quitting || (!settings.httpEnabled && !settings.mcpEnabled)) return
+      startingServers = true
+      void import('./servers/controller.js').then(async ({ ServerController }) => {
+        if (quitting) return
+        servers = new ServerController(instance, userDataDir(), () => {
+          showWindow()
+          if (!mainWindow) throw new Error('Cannot open the desktop window')
+          return desktopOperations(mainWindow)
+        })
+        await servers.configure(instance.settings.getSettings())
+      }).catch(error => console.error('Cannot start Quuu servers:', error)).finally(() => { startingServers = false })
+    }
+    instance.settings.on('changed', startServers)
+    startServers(instance.settings.getSettings())
 
     app.on('activate', () => showWindow())
   })
@@ -174,18 +194,28 @@ if (!app.requestSingleInstanceLock()) {
     }
   })
 
-  app.on('before-quit', () => {
+  app.on('before-quit', event => {
     beginQuit()
-    void taskApi?.stop()
-    taskApi = null
-    const instance = quuu
-    quuu = null
-    // Stop late-arriving updates before closing the DB, so post-quit timers can't touch it.
-    instance?.removeAllListeners()
-    instance?.shutdown()
-    if (broadcastTimer) clearTimeout(broadcastTimer)
-    broadcastTimer = null
-    instance?.db.close()
+    if (shutdownComplete) return
+    event.preventDefault()
+    if (quitting) return
+    quitting = true
+    void (async () => {
+      // Stop listeners and caller-owned resources before closing SQLite.
+      await servers?.stop()
+      servers = null
+      const instance = quuu
+      quuu = null
+      instance?.removeAllListeners()
+      instance?.shutdown()
+      if (broadcastTimer) clearTimeout(broadcastTimer)
+      broadcastTimer = null
+      instance?.db.close()
+    })().catch(error => console.error('Quuu shutdown:', error)).finally(() => {
+      shutdownComplete = true
+      // Finish the canceled native quit event before requesting a fresh quit.
+      setImmediate(() => app.quit())
+    })
   })
 
   // Killed from outside on every rebuild (`npm run app:restart`). Route signals

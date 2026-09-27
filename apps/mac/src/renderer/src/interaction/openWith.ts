@@ -1,6 +1,6 @@
 import type { MenuItemSpec } from '@design-system/react'
-import type { OpenResult, OpenTarget } from '../../../preload/api/desktop.js'
-import type { Project } from '../../../preload/api/projects.js'
+import type { OpenResult, OpenTarget } from '../../../api/schemas/desktop.js'
+import type { Project } from '../../../api/schemas/projects.js'
 import { editorAppName, resolveEditorApp } from '../model/editorName.js'
 import { t } from '../model/i18n/index.js'
 import { useStore } from '../state/store.js'

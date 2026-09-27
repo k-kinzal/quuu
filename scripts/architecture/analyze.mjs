@@ -95,7 +95,7 @@ export function analyze(root) {
   for (const file of files) {
     const from = relative(root, file)
     if (from.split('/').includes('shared')) issues.push(`${from}: shared is forbidden`)
-    if (from === 'apps/mac/src/preload/api.ts') {
+    if (from === 'apps/mac/src/api/types.ts') {
       const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true)
       for (const node of source.statements) {
         if (ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node) || ts.isEmptyStatement(node)) continue
@@ -116,7 +116,7 @@ export function analyze(root) {
       // Column dimensions come from the DS source of truth. Only the React-free entry is allowed in the view model.
       if (layer === 'renderer/model' && specifier !== '@design-system/react/layout-spec' && ['react', 'zustand', '@mui/material', '@design-system/react'].includes(bareName)) fail(`view models must not depend on UI or state libraries: ${specifier}`)
       if (isBuiltin(specifier) || specifier === 'electron') {
-        if (purePackages.has(pkg.name) || layerOf(from).startsWith('renderer/') || pkg.name === '@quuu/mobile' || pkg.name === '@design-system/react' || (layer === 'preload' && specifier !== 'electron')) fail(`OS dependency ${specifier} is not allowed in this layer`)
+        if (purePackages.has(pkg.name) || layer === 'api' || layerOf(from).startsWith('renderer/') || pkg.name === '@quuu/mobile' || pkg.name === '@design-system/react' || (layer === 'preload' && specifier !== 'electron') || (['main/api','main/servers','client','cli'].includes(layer) && specifier === 'electron')) fail(`OS dependency ${specifier} is not allowed in this layer`)
         continue
       }
       // Vite raw text assets are files, not TypeScript modules. Resolve the actual file and

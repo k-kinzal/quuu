@@ -22,7 +22,7 @@ import {
   motionAnchor
 } from '@design-system/react'
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
-import type { Task, TaskStatus } from '../../../preload/api/tasks.js'
+import type { Task, TaskStatus } from '../../../api/schemas/tasks.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import { TASK_STATUS_LABEL } from '../model/labels.js'

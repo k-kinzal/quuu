@@ -12,8 +12,8 @@
  * (letting it be freely chosen would drift the name in history away from the
  * actual account).
  */
-import type { CommitIdentity } from '../../../preload/api/settings.js'
-export type { CommitIdentity, CommitIdentityMode } from '../../../preload/api/settings.js'
+import type { CommitIdentity } from '../../../api/schemas/settings.js'
+export type { CommitIdentity, CommitIdentityMode } from '../../../api/schemas/settings.js'
 
 export const EMPTY_COMMIT_IDENTITY: CommitIdentity = {
   appSlug: '',
@@ -28,6 +28,6 @@ export const EMPTY_COMMIT_IDENTITY: CommitIdentity = {
  *   off     … pass no identity for this project
  *   custom  … this project alone uses a different App's identity
  */
-import type { CommitIdentityMode } from '../../../preload/api/settings.js'
+import type { CommitIdentityMode } from '../../../api/schemas/settings.js'
 
 export const COMMIT_IDENTITY_MODES: CommitIdentityMode[] = ['inherit', 'off', 'custom']

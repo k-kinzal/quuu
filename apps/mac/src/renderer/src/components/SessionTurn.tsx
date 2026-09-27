@@ -1,6 +1,6 @@
 import { Reveal, Text, TranscriptCode, claimContextMenu, conversationBlock, type MenuItemSpec } from '@design-system/react'
 import { useId, useState } from 'react'
-import type { ToolCall } from '../../../preload/api/session.js'
+import type { ToolCall } from '../../../api/schemas/session.js'
 import { copyItem, copyText, pathItems, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
 import { clockTime } from '../model/format.js'

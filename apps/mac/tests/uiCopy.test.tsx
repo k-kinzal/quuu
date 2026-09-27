@@ -6,7 +6,7 @@ import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemePr
 import type { Project } from '../src/main/projects/types.js'
 import type { AppSnapshot } from '../src/main/snapshot.js'
 import type { Task } from '../src/main/tasks/types.js'
-import { contract } from '../src/preload/contract.js'
+import { contract } from '../src/api/contract.js'
 import { Chat } from '../src/renderer/src/components/Chat.js'
 import { Composer } from '../src/renderer/src/components/Composer.js'
 import { PendingTurn } from '../src/renderer/src/components/PendingTurn.js'

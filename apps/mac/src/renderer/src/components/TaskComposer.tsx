@@ -10,7 +10,7 @@ import {
 import { safe } from '@orpc/client'
 import { useMutation } from '@tanstack/react-query'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { AddAction, Priority, TaskInput } from '../../../preload/api/tasks.js'
+import type { AddAction, Priority, TaskInput } from '../../../api/schemas/tasks.js'
 import { ADD_ACTIONS, addActionStatus, defaultAddAction } from '../model/addAction.js'
 import { t } from '../model/i18n/index.js'
 import { ADD_ACTION_LABEL } from '../model/labels.js'

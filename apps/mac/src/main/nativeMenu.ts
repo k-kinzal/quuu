@@ -1,6 +1,6 @@
 import type { BrowserWindow } from 'electron'
 import { Menu } from 'electron'
-import type { PopupMenuRequest } from './ipc/types.js'
+import type { PopupMenuRequest } from './desktop/types.js'
 import { menuTemplate } from './menuTemplate.js'
 
 /**

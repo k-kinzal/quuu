@@ -1,7 +1,7 @@
 import { Alert, Button, ContentInset, Text } from '@design-system/react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import type { Project } from '../../../preload/api/projects.js'
-import type { Task } from '../../../preload/api/tasks.js'
+import type { Project } from '../../../api/schemas/projects.js'
+import type { Task } from '../../../api/schemas/tasks.js'
 
 import { useSessionPaging } from '../interaction/useSessionPaging.js'
 import { focusAny, pane } from '../interaction/focus.js'

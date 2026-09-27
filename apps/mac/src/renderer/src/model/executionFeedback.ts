@@ -1,5 +1,5 @@
-import type { Run } from '../../../preload/api/execution.js'
-import type { SessionMessage } from '../../../preload/api/session.js'
+import type { Run } from '../../../api/schemas/execution.js'
+import type { SessionMessage } from '../../../api/schemas/session.js'
 import { writtenBy } from './derive.js'
 import { t } from './i18n/index.js'
 

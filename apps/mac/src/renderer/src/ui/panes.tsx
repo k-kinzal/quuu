@@ -1,6 +1,6 @@
 import { NumericLabel, Quotation, useTheme } from '@design-system/react'
 import type { ComponentProps } from 'react'
-import type { Priority as PriorityLevel } from '../../../preload/api/tasks.js'
+import type { Priority as PriorityLevel } from '../../../api/schemas/tasks.js'
 export {
   ConversationIntro as ChatIntro,
   ConversationMore as ChatMore, ConversationRoot as ChatRoot, ConversationFeed as ChatScroll, ConversationViewport as ChatViewport, DetailFixed as InspectorFixed, DetailGroup as InspectorGroup, DetailScroll as InspectorRuns, FloatingAction as JumpToLatest

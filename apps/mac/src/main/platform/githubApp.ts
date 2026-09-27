@@ -4,7 +4,7 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { t } from '../i18n/index.js'
-import type { BotUserResult, CreateAppResult } from '../ipc/types.js'
+import type { BotUserResult, CreateAppResult } from '../settings/identity.js'
 import { botLogin, GITHUB_APP_SETUP_VERSION, normalizeAppSlug } from '../settings/commitIdentity.js'
 import { GITHUB_API_VERSION, githubAppJwt, saveGitHubAppPrivateKey } from './githubAuth.js'
 

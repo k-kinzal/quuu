@@ -1,3 +1,4 @@
+import { ConnectionSettings } from './settings/ConnectionSettings.js'
 import { MenuNav, MenuNavItem, MenuNavTitle, Panel, Row } from '@design-system/react'
 import { moveWithinList, pane } from '../interaction/focus.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
@@ -24,6 +25,7 @@ const CATEGORIES: Array<{
     { id: 'pullRequests', label: t('settingsShell.pullRequests'), icon: <GitPullRequest size={ICON.md} {...iconProps} /> },
     { id: 'notifications', label: t('settingsShell.notifications'), icon: <Bell size={ICON.md} {...iconProps} /> },
     { id: 'mobile', label: 'iPhone', icon: <Smartphone size={ICON.md} {...iconProps} /> },
+    { id: 'connections', label: t('settingsShell.connections'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
     { id: 'appearance', label: t('settingsShell.appearance'), icon: <Palette size={ICON.md} {...iconProps} /> }
   ]
 
@@ -64,6 +66,7 @@ export function SettingsShell(): JSX.Element {
       </MenuNav>
 
       <Panel surface="canvas" grow scroll {...pane('settings', { tab: true })} aria-label={t('settingsShell.title')}>
+        {category === 'connections' && <ConnectionSettings />}
         {category === 'general' && <GeneralSettings />}
         {category === 'agents' && <AgentSettings />}
         {category === 'report' && <ReportSettings />}

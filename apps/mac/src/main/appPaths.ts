@@ -26,16 +26,7 @@ export function runLogDir(): string {
   return join(userDataDir(), 'logs')
 }
 
-/**
- * Unix socket through which the local CLI passes task operations to the main process.
- *
- * Not a TCP port: it keeps the control surface from being exposed beyond this
- * Mac, and cleanly separates a fixture's `QUUU_USER_DATA` from production by
- * location alone.
- */
-export function taskApiSocketPath(): string {
-  return process.env.QUUU_SOCKET ?? join(userDataDir(), 'quuu.sock')
-}
+
 
 /** Root where Claude Code writes session logs. */
 export function claudeProjectsDir(): string {

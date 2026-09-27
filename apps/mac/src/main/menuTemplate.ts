@@ -1,5 +1,5 @@
 import type { MenuItemConstructorOptions } from 'electron'
-import type { MenuTemplateItem } from './ipc/types.js'
+import type { MenuTemplateItem } from './desktop/types.js'
 
 /**
  * Turn "what to show" from the UI into the OS menu shape.

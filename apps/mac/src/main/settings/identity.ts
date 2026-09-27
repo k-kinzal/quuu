@@ -39,3 +39,19 @@ export const EMPTY_COMMIT_IDENTITY: CommitIdentity = {
 export type CommitIdentityMode = 'inherit' | 'off' | 'custom'
 
 export const COMMIT_IDENTITY_MODES: CommitIdentityMode[] = ['inherit', 'off', 'custom']
+
+/** Query for a GitHub App's bot user ID. */
+export type BotUserResult = { ok: true; botUserId: string } | { ok: false; reason: string }
+
+
+/**
+ * The result of creating a GitHub App in the browser.
+ *
+ * The App ID and setup version come back with it. Without telling an old App apart from a new one,
+ * gh's identity would be handed to an App that cannot authenticate, so the creation result is
+ * passed around as one unit.
+ */
+export type CreateAppResult =
+  | { ok: true; identity: CommitIdentity }
+  /** `canceled` is when a human stopped it themselves. Do not restate that to them as a failure. */
+  | { ok: false; reason: string; canceled?: boolean }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Run } from '../src/preload/api/execution.js'
-import type { SessionMessage } from '../src/preload/api/session.js'
+import type { Run } from '../src/api/schemas/execution.js'
+import type { SessionMessage } from '../src/api/schemas/session.js'
 import type { Task } from '../src/main/tasks/types.js'
 import { deliveredInstructions, nextSend } from '../src/renderer/src/model/derive.js'
 

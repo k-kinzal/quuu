@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { SessionImage } from '../../../preload/api/session.js'
+import type { SessionImage } from '../../../api/schemas/session.js'
 import { t } from '../model/i18n/index.js'
 import { ImageFrame, ImageMissing, ImageStrip } from '../ui/session.js'
 

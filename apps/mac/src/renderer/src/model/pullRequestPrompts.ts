@@ -1,5 +1,5 @@
-import type { PullRequestPromptMode } from '../../../preload/api/settings.js'
-export type { PullRequestPromptMode } from '../../../preload/api/settings.js'
+import type { PullRequestPromptMode } from '../../../api/schemas/settings.js'
+export type { PullRequestPromptMode } from '../../../api/schemas/settings.js'
 
 /**
  * How a project decides what its tasks are told about their Pull Request.

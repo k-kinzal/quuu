@@ -1,6 +1,6 @@
 import { Button, Code, Column, DescriptionList, FieldHint, Row } from '@design-system/react'
 import { useEffect, useState } from 'react'
-import type { CommitIdentity } from '../../../preload/api/settings.js'
+import type { CommitIdentity } from '../../../api/schemas/settings.js'
 import { usePreview } from '../interaction/usePreview.js'
 import { t } from '../model/i18n/index.js'
 

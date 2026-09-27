@@ -2,6 +2,7 @@ import type { views as en } from '../en/views.js'
 
 export const views: typeof en = {
   settingsShell: {
+    connections: '外部接続',
     title: '設定',
     general: '一般',
     agents: 'エージェント',
@@ -9,6 +10,13 @@ export const views: typeof en = {
     pullRequests: 'プルリクエスト',
     notifications: '通知',
     appearance: '外観'
+  },
+  connectionSettings: {
+    title: '外部接続', http: 'HTTP / gRPC', mcp: 'MCP',
+    enableHttp: 'CLI・HTTPクライアントからの操作を有効にする', enableMcp: 'MCPクライアントからの操作を有効にする',
+    port: 'ポート', automatic: '自動', apply: '適用', starting: '起動中…', off: 'オフ', unavailable: '接続できません',
+    credentials: '接続設定',
+    credentialsHint: 'MCPの接続先と認証トークン: quuu config',
   },
   agentSettings: {
     title: 'エージェント',

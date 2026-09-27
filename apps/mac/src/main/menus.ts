@@ -1,9 +1,9 @@
 import { app, Menu, shell } from 'electron'
-import { EVENTS } from '../preload/channels.js'
+import { EVENTS } from '../api/channels.js'
 import { userDataDir } from './appPaths.js'
 import { t } from './i18n/index.js'
 import { sendEvent } from './ipc/events.js'
-import type { AppCommand, CommandPayload } from './ipc/types.js'
+import type { AppCommand, CommandPayload } from './desktop/types.js'
 import { PRIORITY_LABEL } from './menuLabels.js'
 import { beginQuit, mainWindow, showWindow } from './windows.js'
 let currentProjects: { id: string; name: string }[] = []

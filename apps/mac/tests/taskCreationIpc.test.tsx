@@ -14,7 +14,7 @@ import { MessageChannel } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
 import { createAppRouter } from '../src/main/ipc/index.js'
-import type { QuuuEvents } from '../src/preload/api.js'
+import type { QuuuEvents } from '../src/api/types.js'
 import { App } from '../src/renderer/src/App.js'
 import { TaskComposer } from '../src/renderer/src/components/TaskComposer.js'
 import { TaskSidebar } from '../src/renderer/src/components/TaskSidebar.js'
@@ -67,6 +67,7 @@ beforeEach(() => {
   window.quuu = createQuuuClient(channel.port2, (error, path, notify) => useStore.getState().reportFailure(error, path, notify))
   wire = new RPCLink({ port: channel.port2 })
   const events: QuuuEvents = {
+    settings: callback => { app.on('settings', callback); return () => { app.off('settings', callback) } },
     snapshot: () => () => { }, sessionAppended: () => () => { }, schedulerStatus: () => () => { },
     toast: () => () => { }, command: () => () => { }, terminal: () => () => { }
   }
@@ -597,7 +598,7 @@ describe('typing in the list -> contract-based IPC -> save -> the list updates',
     }
     expect(app.tasks.listTasks()).toHaveLength(1)
   })
-  it('does not stall on a failed initial load, shows the reason and can reload from the screen', async () => {
+  it('can retry a failed initial load and receives later settings changes from other callers', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => undefined)
     vi.spyOn(app.workspace, 'listEditors').mockReturnValue([{ name: '確認用 Editor', path: '/tmp/FixtureEditor.app' }])
     vi.spyOn(app, 'snapshot').mockImplementationOnce(() => { throw new Error('一覧の保存先を読めません') })
@@ -610,6 +611,8 @@ describe('typing in the list -> contract-based IPC -> save -> the list updates',
     await waitFor(() => expect(useStore.getState().ready).toBe(true))
     await waitFor(() => expect(useStore.getState().editors).toEqual([{ name: '確認用 Editor', path: '/tmp/FixtureEditor.app' }]))
     expect(screen.queryByText("Couldn't load the screen")).toBeNull()
+    act(() => { app.settings.setSettings({ theme: 'light', httpEnabled: false }) })
+    expect(useStore.getState().settings).toMatchObject({ theme: 'light', httpEnabled: false })
   })
 
 })

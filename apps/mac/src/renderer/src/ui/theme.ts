@@ -1,6 +1,6 @@
 import { createTheme, type ColorScheme, type Density } from '@design-system/react'
 import type { Theme } from '@mui/material/styles'
-import type { Priority, TaskStatus } from '../../../preload/api/tasks.js'
+import type { Priority, TaskStatus } from '../../../api/schemas/tasks.js'
 
 /** The colors the View uses to show status. The values originate as Design System tokens. */
 declare module '@mui/material/styles' {

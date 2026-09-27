@@ -1,11 +1,9 @@
 {
   "include": [
     "src/main/**/*.ts",
-    "src/preload/api.ts",
-    "src/preload/api/**/*.ts",
-    "src/preload/channels.ts",
-    "src/preload/contract.ts",
-    "src/preload/events.ts"
+    "src/api/**/*.ts",
+    "src/client/**/*.ts",
+    "src/cli/**/*.ts"
   ],
   "compilerOptions": {
     "composite": true,
