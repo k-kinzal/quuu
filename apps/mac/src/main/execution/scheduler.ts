@@ -336,7 +336,10 @@ export class Scheduler extends EventEmitter {
    * always in: a task that has run on one CLI is never handed to another, whatever else is free.
    */
   private resolveOptionsFor(task: Task, reservations: repo.SlotReservation[] = []): ResolveOptions {
+    const project = repo.getProject(this.db, task.projectId)
     return {
+      available: agent => this.runner.availableAgent(task.id, agent),
+      rank: agent => project ? this.runner.rankAgent(task.id, project, agent) : 1,
       preferredAgentId: task.agentOverrideId,
       reserved: reservedByAgent(reservations),
       continuation: this.continuationFor(task),

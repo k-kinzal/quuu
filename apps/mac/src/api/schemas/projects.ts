@@ -11,6 +11,8 @@ import { RecordSourceSchema } from './tasks.js'
 const WorktreeModeSchema = z.enum(['inherit', 'on', 'off'])
 
 export const ProjectSchema = z.object({
+  runnerEnabled: z.boolean().optional(),
+  gitRemote: z.string().optional(),
   taskHooks: TaskHookSchema.array(),
   worktreeMode: WorktreeModeSchema,
   id: z.string(),

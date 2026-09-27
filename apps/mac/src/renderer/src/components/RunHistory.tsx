@@ -103,6 +103,7 @@ export function RunHistory({
               <RunTime>{clockTime(run.startedAt)}</RunTime>
               <RunTarget>
                 {agentNames.get(run.agentId) ?? run.agentId}
+                {run.runnerId && t('runnerSettings.runLabel')}
                 {run.kind === 'followup' && t('runHistory.followup')}
               </RunTarget>
               <RunResult color={runStatusColor(theme, run.status)}>
@@ -119,6 +120,7 @@ export function RunHistory({
             <Reveal open={isOpen}>
               {() => (
                 <DataList placement="history">
+                  {run.runnerId && <><dt>{t('runnerSettings.title')}</dt><dd>{run.runnerId}</dd></>}
                   <dt>{t('runHistory.command')}</dt>
                   <dd>
                     {run.command} {formatArgs(run.args)}

@@ -361,7 +361,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 33
+  const target = 34
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -698,6 +698,17 @@ function migrate(db: Db): void {
     CREATE INDEX IF NOT EXISTS hook_runs_task ON hook_runs(task_id, seq);
     CREATE INDEX IF NOT EXISTS hook_runs_active ON hook_runs(status, project_id);
     CREATE TABLE IF NOT EXISTS hook_pending_reports (task_id TEXT PRIMARY KEY);`)
+  }
+
+  if (current < 34) {
+    addColumnIfMissing(db, 'projects', 'runner_enabled', 'INTEGER NOT NULL DEFAULT 0')
+    addColumnIfMissing(db, 'projects', 'git_remote', "TEXT NOT NULL DEFAULT ''")
+    addColumnIfMissing(db, 'runs', 'runner_id', 'TEXT')
+    db.exec(`CREATE TABLE IF NOT EXISTS remote_runners (id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS runner_workspaces (task_id TEXT PRIMARY KEY, data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS runner_jobs (id TEXT PRIMARY KEY, runner_id TEXT NOT NULL,
+        task_id TEXT NOT NULL, status TEXT NOT NULL, data TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS runner_jobs_active ON runner_jobs(runner_id, status);`)
   }
 
   setSchemaVersion(db, target)

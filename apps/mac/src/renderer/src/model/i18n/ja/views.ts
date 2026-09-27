@@ -1,6 +1,29 @@
 import type { views as en } from '../en/views.js'
 
 export const views: typeof en = {
+  runnerSettings: {
+    title: "Runner",
+    enable: "同じネットワークのRunnerから接続を受け付ける",
+    hint: "許可したプロジェクトを接続済みのコンピュータで実行",
+    port: "Runnerのポート",
+    apply: "Runnerのポートを保存",
+    pair: "接続用PINを発行",
+    pin: "PIN: {{pin}}",
+    expires: "{{time}}まで有効・1回限り",
+    fingerprint: "母艦の証明書フィンガープリント",
+    pairHint: "URL・PIN・フィンガープリントを指定してRunnerを起動",
+    online: "接続中",
+    offline: "未接続",
+    capacity: "実行中 {{active}} / 実行枠 {{capacity}}",
+    noAgents: "エージェントの報告がありません",
+    revoke: "接続を解除",
+    allowProject: "新しいタスクではRunner実行を優先する",
+    projectHint: "Gitリモートと、タスク・フック・レポート用AIが必要",
+    repository: "Gitリモート",
+    saveRemote: "Gitリモートを保存",
+    detectRemote: "プロジェクトのディレクトリから検出",
+    runLabel: " · Runner",
+  },
   projectDocuments: {
     title: 'ドキュメント', search: 'ドキュメントを検索…', files: 'リポジトリ', websites: 'ドキュメントサイト',
     branch: 'デフォルトブランチ: {{branch}}', refresh: 'ドキュメントを更新', loading: 'ドキュメントを読み込み中…',

@@ -31,8 +31,8 @@ export type ChosenWriter =
  * would take the job and die on arrival, so it is passed over — and when it is a single agent
  * that is waiting, the honest answer is "not right now" rather than a run that cannot work.
  */
-export function chooseWriter(db: Db, settings: AppSettings): ChosenWriter {
-  const candidates = writerCandidates(db, settings)
+export function chooseWriter(db: Db, settings: AppSettings, available: (agent: Agent) => boolean = () => true): ChosenWriter {
+  const candidates = writerCandidates(db, settings).filter(available)
   if (candidates.length === 0) return { ok: false, reason: 'none' }
   const agent = candidates.find((a) => !repo.isCoolingDown(db, a.id))
   if (!agent) return { ok: false, reason: 'cooling' }

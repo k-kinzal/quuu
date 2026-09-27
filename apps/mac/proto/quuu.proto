@@ -57,6 +57,8 @@ message SnapshotResponseValueProjectsItemCommitIdentity {
 }
 
 message SnapshotResponseValueProjectsItem {
+  optional bool runnerEnabled = 30;
+  optional string gitRemote = 31;
   optional SnapshotResponseValueProjectsItemTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
@@ -291,6 +293,13 @@ message SnapshotResponseValueGroups {
   repeated SnapshotResponseValueGroupsItem items = 1;
 }
 
+message SnapshotResponseValueRunsItemRunnerId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
 message SnapshotResponseValueRunsItemResolvedFromGroupId {
   oneof kind {
   string variant1 = 1;
@@ -352,6 +361,7 @@ message SnapshotResponseValueRunsItemSessionLogPath {
 }
 
 message SnapshotResponseValueRunsItem {
+  optional SnapshotResponseValueRunsItemRunnerId runnerId = 24;
   optional string id = 1;
   optional string taskId = 2;
   optional string agentId = 3;
@@ -460,6 +470,134 @@ message SnapshotResponseValue {
 
 message SnapshotResponse {
   optional SnapshotResponseValue value = 1;
+}
+
+message RunnersStatusRequest {
+
+}
+
+message RunnersStatusResponseValueUrls {
+  repeated string items = 1;
+}
+
+message RunnersStatusResponseValueRunnersItemAgentsItem {
+  optional string name = 1;
+  optional string command = 2;
+  optional string version = 3;
+}
+
+message RunnersStatusResponseValueRunnersItemAgents {
+  repeated RunnersStatusResponseValueRunnersItemAgentsItem items = 1;
+}
+
+message RunnersStatusResponseValueRunnersItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional RunnersStatusResponseValueRunnersItemAgents agents = 3;
+  optional double capacity = 4;
+  optional string root = 5;
+  optional string lastSeen = 6;
+  optional bool revoked = 7;
+  optional bool online = 8;
+  optional double active = 9;
+}
+
+message RunnersStatusResponseValueRunners {
+  repeated RunnersStatusResponseValueRunnersItem items = 1;
+}
+
+message RunnersStatusResponseValue {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional bool listening = 3;
+  optional string fingerprint = 4;
+  optional string error = 5;
+  optional RunnersStatusResponseValueUrls urls = 6;
+  optional RunnersStatusResponseValueRunners runners = 7;
+}
+
+message RunnersStatusResponse {
+  optional RunnersStatusResponseValue value = 1;
+}
+
+message RunnersConfigureRequestValue {
+  optional bool enabled = 1;
+  optional double port = 2;
+}
+
+message RunnersConfigureRequest {
+  optional RunnersConfigureRequestValue value = 1;
+}
+
+message RunnersConfigureResponseValueUrls {
+  repeated string items = 1;
+}
+
+message RunnersConfigureResponseValueRunnersItemAgentsItem {
+  optional string name = 1;
+  optional string command = 2;
+  optional string version = 3;
+}
+
+message RunnersConfigureResponseValueRunnersItemAgents {
+  repeated RunnersConfigureResponseValueRunnersItemAgentsItem items = 1;
+}
+
+message RunnersConfigureResponseValueRunnersItem {
+  optional string id = 1;
+  optional string name = 2;
+  optional RunnersConfigureResponseValueRunnersItemAgents agents = 3;
+  optional double capacity = 4;
+  optional string root = 5;
+  optional string lastSeen = 6;
+  optional bool revoked = 7;
+  optional bool online = 8;
+  optional double active = 9;
+}
+
+message RunnersConfigureResponseValueRunners {
+  repeated RunnersConfigureResponseValueRunnersItem items = 1;
+}
+
+message RunnersConfigureResponseValue {
+  optional bool enabled = 1;
+  optional double port = 2;
+  optional bool listening = 3;
+  optional string fingerprint = 4;
+  optional string error = 5;
+  optional RunnersConfigureResponseValueUrls urls = 6;
+  optional RunnersConfigureResponseValueRunners runners = 7;
+}
+
+message RunnersConfigureResponse {
+  optional RunnersConfigureResponseValue value = 1;
+}
+
+message RunnersPairingRequest {
+
+}
+
+message RunnersPairingResponseValueUrls {
+  repeated string items = 1;
+}
+
+message RunnersPairingResponseValue {
+  optional string pin = 1;
+  optional string expiresAt = 2;
+  optional string fingerprint = 3;
+  optional RunnersPairingResponseValueUrls urls = 4;
+}
+
+message RunnersPairingResponse {
+  optional RunnersPairingResponseValue value = 1;
+}
+
+message RunnersRevokeRequest {
+  optional string value = 1;
+}
+
+message RunnersRevokeResponse {
+
 }
 
 message DocumentsListRequest {
@@ -993,6 +1131,8 @@ message ProjectsListResponseValueItemCommitIdentity {
 }
 
 message ProjectsListResponseValueItem {
+  optional bool runnerEnabled = 30;
+  optional string gitRemote = 31;
   optional ProjectsListResponseValueItemTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
@@ -1068,6 +1208,8 @@ message ProjectsCreateRequestValueCommitIdentity {
 }
 
 message ProjectsCreateRequestValue {
+  optional bool runnerEnabled = 24;
+  optional string gitRemote = 25;
   optional string name = 1;
   optional double priority = 2;
   optional string targetKind = 3;
@@ -1147,6 +1289,8 @@ message ProjectsCreateResponseValueCommitIdentity {
 }
 
 message ProjectsCreateResponseValue {
+  optional bool runnerEnabled = 30;
+  optional string gitRemote = 31;
   optional ProjectsCreateResponseValueTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
@@ -1218,6 +1362,8 @@ message ProjectsUpdateRequestValuePatchCommitIdentity {
 }
 
 message ProjectsUpdateRequestValuePatch {
+  optional bool runnerEnabled = 24;
+  optional string gitRemote = 25;
   optional string name = 1;
   optional double priority = 2;
   optional string targetKind = 3;
@@ -1302,6 +1448,8 @@ message ProjectsUpdateResponseValueCommitIdentity {
 }
 
 message ProjectsUpdateResponseValue {
+  optional bool runnerEnabled = 30;
+  optional string gitRemote = 31;
   optional ProjectsUpdateResponseValueTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
   optional string id = 1;
@@ -3449,6 +3597,13 @@ message RunsByTaskRequest {
   optional string value = 1;
 }
 
+message RunsByTaskResponseValueItemRunnerId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
 message RunsByTaskResponseValueItemResolvedFromGroupId {
   oneof kind {
   string variant1 = 1;
@@ -3510,6 +3665,7 @@ message RunsByTaskResponseValueItemSessionLogPath {
 }
 
 message RunsByTaskResponseValueItem {
+  optional RunsByTaskResponseValueItemRunnerId runnerId = 24;
   optional string id = 1;
   optional string taskId = 2;
   optional string agentId = 3;
@@ -6044,6 +6200,10 @@ message WatchResponse { string name = 1; google.protobuf.Value payload = 2; }
 
 service Quuu {
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
+  rpc RunnersStatus(RunnersStatusRequest) returns (RunnersStatusResponse);
+  rpc RunnersConfigure(RunnersConfigureRequest) returns (RunnersConfigureResponse);
+  rpc RunnersPairing(RunnersPairingRequest) returns (RunnersPairingResponse);
+  rpc RunnersRevoke(RunnersRevokeRequest) returns (RunnersRevokeResponse);
   rpc DocumentsList(DocumentsListRequest) returns (DocumentsListResponse);
   rpc DocumentsRead(DocumentsReadRequest) returns (DocumentsReadResponse);
   rpc DocumentsShow(DocumentsShowRequest) returns (DocumentsShowResponse);

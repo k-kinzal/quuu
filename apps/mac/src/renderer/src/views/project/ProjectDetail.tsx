@@ -1,3 +1,4 @@
+import { ProjectRunnerSettings } from './ProjectRunnerSettings.js'
 import { HookEditor } from '../../components/HookEditor.js'
 import type { Project } from '../../../../api/schemas/projects.js'
 import { userAgents } from '../../model/agents.js'
@@ -113,6 +114,7 @@ export function ProjectDetail({
           </>
         }
       >
+        <ProjectRunnerSettings key={project.id} project={project} />
         <Section title={t('projectDetail.basicsSection')}>
           <Field label={t('projectDetail.name')} width="md">
             {/*

@@ -1,0 +1,20 @@
+# Only the public Runner's source and dependency manifests enter the build context.
+**
+!package.json
+!package-lock.json
+!apps/
+!apps/mac/
+!apps/mac/package.json
+!apps/mac/runner.vite.config.ts
+!apps/mac/src/
+!apps/mac/src/main/
+!apps/mac/src/main/**
+!apps/mobile/
+!apps/mobile/package.json
+!packages/
+!packages/design-system/
+!packages/design-system/package.json
+!containers/
+!containers/runner/
+!containers/runner/Dockerfile
+!containers/runner/Dockerfile.agents

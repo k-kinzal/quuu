@@ -1,3 +1,5 @@
+import type { RunnerOperations } from '../runners/operations.js'
+import type { RemoteJob } from '../runners/types.js'
 import { assertWorktreeIdle, ensureTaskWorktree } from '../tasks/worktrees.js'
 import { spawn, type ChildProcess } from 'node:child_process'
 import { afterCommit, inTransaction } from '../db/database.js'
@@ -113,9 +115,13 @@ export class Runner extends EventEmitter {
   private stopped = false
   private live = new Map<string, Live>()
 
-  constructor(private db: Db) {
+  constructor(private db: Db, private remote?: RunnerOperations) {
     super()
+    remote?.on('job', (job: RemoteJob, sessionId: string) => this.remoteUpdate(job, sessionId))
   }
+
+  availableAgent(taskId: string, agent: Agent): boolean { return this.remote?.canUseAgent(taskId, agent) ?? true }
+  rankAgent(taskId: string, project: Project, agent: Agent): number { return this.remote?.rankAgent(taskId, project, agent) ?? 1 }
 
   get activeRunIds(): string[] {
     return [...this.live.keys()]
@@ -140,6 +146,7 @@ export class Runner extends EventEmitter {
       if (!sameLineage(agent, lineage)) {
         throw new Error(`refusing to launch ${agent.command} for a task that belongs to ${lineage.command}`)
       }
+      const workspace = this.remote?.choose(task.id, project, agent) ?? null
       const runId = newId('run')
       const sessionId = params.sessionId ?? newSessionId()
       const message = params.messageOverride ?? (task.prompt.trim() || task.title)
@@ -149,7 +156,7 @@ export class Runner extends EventEmitter {
         prompt: agentPrompt(project, kind, message),
         title: task.title,
         sessionId,
-        projectPath: project.path,
+        projectPath: workspace?.cwd ?? project.path,
         projectName: project.name,
         taskId: task.id,
         runId
@@ -170,7 +177,8 @@ export class Runner extends EventEmitter {
         attempt,
         fallbackFromRunId,
         pid: null,
-        cwd: project.path,
+        cwd: workspace?.cwd ?? project.path,
+        runnerId: workspace?.runnerId ?? null,
         command: invocation.command,
         logAdapter: agent.logAdapter,
         limitPatterns: agent.limitPatterns,
@@ -183,6 +191,15 @@ export class Runner extends EventEmitter {
         stdoutLogPath: stdoutLog
       })
 
+      if (workspace && this.remote) {
+        this.remote.reserve(workspace)
+        this.remote.enqueue({ id: runId, taskId: task.id, projectId: project.id, workspace,
+          action: 'agent', command: this.remote.agentCommand(workspace, agent), args,
+          env: { ...agent.env, ...commitIdentityEnv(repo.getAppSettings(this.db), project) },
+          sessionId, adapter: agent.logAdapter, timeoutSeconds: agent.timeoutSeconds,
+          createWorkspace: !repo.getTaskReviewBase(this.db, task.id) && repo.listRunsByTask(this.db, task.id)
+            .filter(previous => previous.id !== runId).every(previous => this.remote?.job(previous.id)?.result?.started === false), project })
+      }
       recordExecutionState(this.db, task.id, 'running', { currentRunId: run.id, sessionId })
       return run
     })
@@ -191,6 +208,7 @@ export class Runner extends EventEmitter {
   async start(params: StartParams, prepared?: Run): Promise<Run> {
     const { task, project, agent } = params
     const run = prepared ?? this.prepare(params)
+    if (run.runnerId) return run
     const runId = run.id
     const sessionId = run.sessionId
     let args = run.args
@@ -466,6 +484,10 @@ export class Runner extends EventEmitter {
   /** Cancel a running run. */
   cancel(runId: string): void {
     inTransaction(this.db, () => {
+      if (repo.getRun(this.db, runId)?.runnerId) {
+        afterCommit(this.db, () => this.remote?.cancel(runId))
+        return
+      }
       const live = this.live.get(runId)
       if (live) {
         afterCommit(this.db, () => {
@@ -582,6 +604,34 @@ export class Runner extends EventEmitter {
       classification,
       tail
     } satisfies FinishedEvent)
+  }
+
+  /** Remote receipts use the same classification and scheduler policy as local exits. */
+  private remoteUpdate(job: RemoteJob, sessionId: string): void {
+    if (this.stopped) return
+    const run = repo.getRun(this.db, job.id)
+    if (!run?.runnerId || !['starting', 'running'].includes(run.status)) return
+    if (job.result?.baseline && !repo.getTaskReviewBase(this.db, run.taskId)) {
+      repo.insertTaskReviewBase(this.db, { taskId: run.taskId, cwd: run.cwd, ...job.result.baseline })
+    }
+    const updated = repo.updateRun(this.db, run.id, { status: 'running',
+      sessionId: sessionId || run.sessionId, sessionLogPath: job.sessionPath })
+    if (sessionId) repo.setTaskSessionId(this.db, run.taskId, sessionId)
+    if (!job.result) { this.emit('changed'); return }
+    const tail = readLogTail(job.logPath)
+    const classification = job.result.error && !job.result.canceled && !job.result.timedOut
+      ? { kind: job.result.started === false ? 'spawn' as const : 'nonzero-exit' as const, message: job.result.error }
+      : adapterFor(run.logAdapter ?? 'stdout').classify({ exitCode: job.result.exitCode, signal: null,
+          output: tail, limitPatterns: run.limitPatterns ?? [], canceled: job.result.canceled, timedOut: job.result.timedOut })
+    const finished = repo.updateRun(this.db, updated.id, { status: runStatusForKind(classification.kind),
+      exitCode: job.result.exitCode, errorKind: classification.kind, errorMessage: classification.message, endedAt: nowIso() })
+    this.emit('finished', { run: finished, classification, tail } satisfies FinishedEvent)
+  }
+
+  recoverRemote(run: Run): void {
+    const job = this.remote?.job(run.id)
+    if (job) this.remoteUpdate(job, job.result?.sessionId ?? run.sessionId)
+    else this.fail(run, 'spawn', t('runners.interrupted'))
   }
 
   /**

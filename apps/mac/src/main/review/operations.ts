@@ -1,3 +1,4 @@
+import type { RunnerOperations } from '../runners/operations.js'
 import { EventEmitter } from 'node:events'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
@@ -44,7 +45,7 @@ function pendingHeads(snapshot: ReviewSnapshot): string {
  * a fresh look, never on the retained copy a failed fetch leaves behind.
  */
 export class ReviewOperations extends EventEmitter {
-  constructor(private db: Db, private getSettings: () => AppSettings, private review: ReviewService, private workbenchPlace: (taskId: string) => { dir: string; project: Project }) { super() }
+  constructor(private db: Db, private getSettings: () => AppSettings, private review: ReviewService, private workbenchPlace: (taskId: string) => { dir: string; project: Project }, private remote?: RunnerOperations) { super() }
 
 
 
@@ -186,6 +187,14 @@ export class ReviewOperations extends EventEmitter {
   }
 
   private async materialize(taskId: string): Promise<void> {
+    if (this.remote?.workspace(taskId)) {
+      const snapshot = await this.remote.inspect(taskId, 'snapshot') as ReviewSnapshot
+      if (this.stopped || !repo.getTask(this.db, taskId)) return
+      repo.saveReviewSnapshot(this.db, taskId, snapshot)
+      this.watch(taskId, snapshot)
+      this.emit('projected', taskId, snapshot)
+      return
+    }
     const place = this.workbenchPlace(taskId)
     const runs = repo.listRunsByTask(this.db, taskId)
     const firstRun = runs.at(-1)
@@ -230,6 +239,7 @@ export class ReviewOperations extends EventEmitter {
 
 
   async reviewFile(taskId: string, request: ReviewFileRequest): Promise<ReviewFile> {
+    if (this.remote?.workspace(taskId)) return await this.remote.inspect(taskId, 'file', { file: request }) as ReviewFile
     const place = this.workbenchPlace(taskId)
     return this.review.file(place.dir, place.project, this.getSettings(), request)
   }
@@ -240,6 +250,7 @@ export class ReviewOperations extends EventEmitter {
     taskId: string,
     input: ReviewCommentInput
   ): Promise<ReviewActionResult> {
+    if (this.remote?.workspace(taskId)) return await this.remote.inspect(taskId, 'comment', { comment: input }) as ReviewActionResult
     const place = this.workbenchPlace(taskId)
     return this.review.comment(place.dir, place.project, this.getSettings(), input)
   }

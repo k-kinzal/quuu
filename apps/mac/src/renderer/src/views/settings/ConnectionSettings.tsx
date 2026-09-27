@@ -1,3 +1,4 @@
+import { RunnerConnections } from './RunnerConnections.js'
 import { Button, Checkbox, Field, FieldHint, NumberInput, Page, Row, Section, Text } from '@design-system/react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
@@ -13,6 +14,7 @@ export function ConnectionSettings(): JSX.Element {
     refetchInterval: 2000, retry: false, networkMode: 'always'
   }, queryClient)
   return <Page title={t('connectionSettings.title')}>
+    <RunnerConnections />
     <Section title={t('connectionSettings.http')}>
       <Checkbox label={t('connectionSettings.enableHttp')} checked={settings.httpEnabled} onChange={enabled => void setSettings({ httpEnabled: enabled })} />
       <Port key={`http-${settings.httpPort}`} value={settings.httpPort} save={port => setSettings({ httpPort: port })} />

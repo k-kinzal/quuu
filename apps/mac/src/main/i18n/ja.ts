@@ -1,6 +1,19 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  runners: {
+    listenerOff: "先にRunner接続を有効にしてください。",
+    busyRevoke: "接続を解除する前に、このRunnerの処理を停止してください。",
+    notFound: "Runnerまたはリモート作業領域が見つかりません。",
+    waiting: "{{name}}と必要なエージェントの接続を待っています。",
+    full: "{{name}}の実行枠が空くのを待っています。",
+    agentMissing: "このRunnerでは{{name}}を利用できません。",
+    operationFailed: "Runnerの処理に失敗しました。ログを確認してください。",
+    disconnected: "Runnerが未接続、または応答がタイムアウトしました。",
+    interrupted: "リモート実行の記録前に起動が中断されました。",
+    builtIn: "QuuuAIは母艦のコンピュータで実行します。",
+    remoteWorkspace: "作業領域はRunner上にあります。コンテナのシェル、またはアプリの差分表示をご利用ください。",
+  },
   documents: {
     gitFailed: 'Gitリポジトリを読み込めませんでした。プロジェクトのディレクトリを確認してください。',
     notFound: 'このドキュメントは見つかりません。ドキュメント一覧を更新してください。',

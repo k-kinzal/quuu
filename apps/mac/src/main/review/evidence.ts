@@ -4,7 +4,8 @@ import type { SessionBatch, SessionDerivation } from '../session/derive.js'
 import { isShellTool } from '../session/shell.js'
 import type { SessionMessage } from '../session/types.js'
 
-export interface ReviewEvidence { commits: string[]; pullRequests: string[] }
+import type { ReviewEvidence } from './types.js'
+export type { ReviewEvidence } from './types.js'
 const PR_RECEIPT = /^\s*(https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/pull\/[1-9]\d*)\s*$/gm
 
 /** Tool wrappers often put the real stdout inside JSON (including nested exec results). */

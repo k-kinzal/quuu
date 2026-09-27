@@ -1,3 +1,4 @@
+import { RunnerConfigSchema, RunnerStatusSchema, RunnerPairingSchema } from './schemas/runners.js'
 import { HookRunSchema, TaskHookSchema } from './schemas/hooks.js'
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
 import { PromptFileSchema } from './schemas/files.js'
@@ -23,6 +24,12 @@ const procedure = oc.errors({ OPERATION_FAILED: { data: z.object({ reason: z.str
 /** The public contract implemented by both Electron ends and by test mocks. */
 export const contract = {
   snapshot: procedure.output(AppSnapshotSchema),
+  runners: {
+    status: procedure.output(RunnerStatusSchema),
+    configure: procedure.input(RunnerConfigSchema).output(RunnerStatusSchema),
+    pairing: procedure.output(RunnerPairingSchema),
+    revoke: procedure.input(z.string()).output(z.void())
+  },
   documents: {
     list: procedure.input(z.string()).output(ProjectDocumentsSchema),
     read: procedure.input(DocumentReadSchema.strict()).output(DocumentContentSchema),

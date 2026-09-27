@@ -1,0 +1,14 @@
+ARG RUNNER_IMAGE=quuu-runner:local
+FROM ${RUNNER_IMAGE}
+ARG CODEX_VERSION=latest
+USER root
+RUN npm install -g @openai/codex@${CODEX_VERSION} && npm cache clean --force
+USER node
+RUN curl -fsSL https://claude.ai/install.sh -o /tmp/install-claude.sh \
+    && bash /tmp/install-claude.sh \
+    && rm /tmp/install-claude.sh
+RUN curl -fsSL https://cursor.com/install -o /tmp/install-cursor.sh \
+    && bash /tmp/install-cursor.sh \
+    && rm /tmp/install-cursor.sh \
+    && if [ ! -e /home/node/.local/bin/cursor-agent ]; then ln -s /home/node/.local/bin/agent /home/node/.local/bin/cursor-agent; fi
+ENV QUUU_RUNNER_AGENTS=codex,claude,cursor-agent

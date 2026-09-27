@@ -227,6 +227,8 @@ function orderByStrategy(db: Db, groupId: string, strategy: GroupStrategy, membe
 }
 
 export interface ResolveOptions {
+  available?: (agent: Agent) => boolean
+  rank?: (agent: Agent) => number
   /**
    * A per-task agent choice ("just this one on Codex" from the composer).
    *
@@ -359,7 +361,8 @@ export function resolveAgentForProject(
 
   const eligible = eligibleAgents(db, project, options)
   if (!eligible.ok) return eligible
-  const candidates = eligible.value
+  const candidates = eligible.value.filter(agent => options.available?.(agent) ?? true)
+    .sort((a, b) => (options.rank?.(a) ?? 0) - (options.rank?.(b) ?? 0))
 
   const holds = fallbackHolds(db)
   const availabilityOf = (agent: Agent): SlotAvailability =>

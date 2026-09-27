@@ -20,6 +20,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "items": {
             "kind": "object",
             "fields": {
+              "runnerEnabled": {
+                "kind": "boolean"
+              },
+              "gitRemote": {
+                "kind": "string"
+              },
               "taskHooks": {
                 "kind": "array",
                 "items": {
@@ -759,6 +765,17 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "items": {
             "kind": "object",
             "fields": {
+              "runnerId": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
               "id": {
                 "kind": "string"
               },
@@ -1096,6 +1113,271 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "runs",
         "scheduler"
       ]
+    }
+  },
+  "runners.status": {
+    "method": "runnersStatus",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "port": {
+          "kind": "number"
+        },
+        "listening": {
+          "kind": "boolean"
+        },
+        "fingerprint": {
+          "kind": "string"
+        },
+        "error": {
+          "kind": "string"
+        },
+        "urls": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
+        },
+        "runners": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "agents": {
+                "kind": "array",
+                "items": {
+                  "kind": "object",
+                  "fields": {
+                    "name": {
+                      "kind": "string"
+                    },
+                    "command": {
+                      "kind": "string"
+                    },
+                    "version": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "command",
+                    "version"
+                  ]
+                }
+              },
+              "capacity": {
+                "kind": "number"
+              },
+              "root": {
+                "kind": "string"
+              },
+              "lastSeen": {
+                "kind": "string"
+              },
+              "revoked": {
+                "kind": "boolean"
+              },
+              "online": {
+                "kind": "boolean"
+              },
+              "active": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "agents",
+              "capacity",
+              "root",
+              "lastSeen",
+              "revoked",
+              "online",
+              "active"
+            ]
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "port",
+        "listening",
+        "fingerprint",
+        "error",
+        "urls",
+        "runners"
+      ]
+    }
+  },
+  "runners.configure": {
+    "method": "runnersConfigure",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "port": {
+          "kind": "number"
+        }
+      },
+      "required": [
+        "enabled",
+        "port"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "port": {
+          "kind": "number"
+        },
+        "listening": {
+          "kind": "boolean"
+        },
+        "fingerprint": {
+          "kind": "string"
+        },
+        "error": {
+          "kind": "string"
+        },
+        "urls": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
+        },
+        "runners": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "name": {
+                "kind": "string"
+              },
+              "agents": {
+                "kind": "array",
+                "items": {
+                  "kind": "object",
+                  "fields": {
+                    "name": {
+                      "kind": "string"
+                    },
+                    "command": {
+                      "kind": "string"
+                    },
+                    "version": {
+                      "kind": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "command",
+                    "version"
+                  ]
+                }
+              },
+              "capacity": {
+                "kind": "number"
+              },
+              "root": {
+                "kind": "string"
+              },
+              "lastSeen": {
+                "kind": "string"
+              },
+              "revoked": {
+                "kind": "boolean"
+              },
+              "online": {
+                "kind": "boolean"
+              },
+              "active": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "agents",
+              "capacity",
+              "root",
+              "lastSeen",
+              "revoked",
+              "online",
+              "active"
+            ]
+          }
+        }
+      },
+      "required": [
+        "enabled",
+        "port",
+        "listening",
+        "fingerprint",
+        "error",
+        "urls",
+        "runners"
+      ]
+    }
+  },
+  "runners.pairing": {
+    "method": "runnersPairing",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "pin": {
+          "kind": "string"
+        },
+        "expiresAt": {
+          "kind": "string"
+        },
+        "fingerprint": {
+          "kind": "string"
+        },
+        "urls": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
+        }
+      },
+      "required": [
+        "pin",
+        "expiresAt",
+        "fingerprint",
+        "urls"
+      ]
+    }
+  },
+  "runners.revoke": {
+    "method": "runnersRevoke",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "void"
     }
   },
   "documents.list": {
@@ -2152,6 +2434,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "items": {
         "kind": "object",
         "fields": {
+          "runnerEnabled": {
+            "kind": "boolean"
+          },
+          "gitRemote": {
+            "kind": "string"
+          },
           "taskHooks": {
             "kind": "array",
             "items": {
@@ -2408,6 +2696,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "input": {
       "kind": "object",
       "fields": {
+        "runnerEnabled": {
+          "kind": "boolean"
+        },
+        "gitRemote": {
+          "kind": "string"
+        },
         "name": {
           "kind": "string"
         },
@@ -2599,6 +2893,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "runnerEnabled": {
+          "kind": "boolean"
+        },
+        "gitRemote": {
+          "kind": "string"
+        },
         "taskHooks": {
           "kind": "array",
           "items": {
@@ -2860,6 +3160,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "patch": {
           "kind": "object",
           "fields": {
+            "runnerEnabled": {
+              "kind": "boolean"
+            },
+            "gitRemote": {
+              "kind": "string"
+            },
             "name": {
               "kind": "string"
             },
@@ -3054,6 +3360,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "runnerEnabled": {
+          "kind": "boolean"
+        },
+        "gitRemote": {
+          "kind": "string"
+        },
         "taskHooks": {
           "kind": "array",
           "items": {
@@ -7923,6 +8235,17 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "items": {
         "kind": "object",
         "fields": {
+          "runnerId": {
+            "kind": "union",
+            "variants": [
+              {
+                "kind": "string"
+              },
+              {
+                "kind": "null"
+              }
+            ]
+          },
           "id": {
             "kind": "string"
           },

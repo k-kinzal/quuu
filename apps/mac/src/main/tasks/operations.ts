@@ -78,7 +78,7 @@ export class TaskOperations {
       const before = assertTaskExists(repo.getTask(this.db, id), id)
       assertEditable(before, patch)
       const worktree = repo.getTaskWorktree(this.db, id)
-      if (patch.projectId && patch.projectId !== before.projectId && worktree && worktree.state !== 'removed') {
+      if (patch.projectId && patch.projectId !== before.projectId && ((worktree && worktree.state !== 'removed') || repo.getRunnerWorkspace(this.db, id))) {
         throw new Error(t('worktree.cannotMove'))
       }
       const task = repo.patchTask(this.db, id, patch)

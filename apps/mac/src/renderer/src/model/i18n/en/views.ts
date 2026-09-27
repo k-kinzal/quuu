@@ -1,5 +1,28 @@
 /** Copy for the settings and project screens (SettingsShell, settings/, project/, CommitIdentity). */
 export const views = {
+  runnerSettings: {
+    title: "Runners",
+    enable: "Accept Runner connections on this network",
+    hint: "Run permitted projects on paired computers",
+    port: "Runner port",
+    apply: "Save Runner port",
+    pair: "Create pairing PIN",
+    pin: "PIN: {{pin}}",
+    expires: "Valid until {{time}} · one use",
+    fingerprint: "Controller certificate fingerprint",
+    pairHint: "Start the Runner with this URL, PIN and fingerprint",
+    online: "Connected",
+    offline: "Disconnected",
+    capacity: "{{active}} active / {{capacity}} slots",
+    noAgents: "No agents reported",
+    revoke: "Revoke connection",
+    allowProject: "Prefer Runner execution for new tasks",
+    projectHint: "Requires Git and all task, hook and report agents",
+    repository: "Git remote",
+    saveRemote: "Save Git remote",
+    detectRemote: "Detect from the project directory",
+    runLabel: " · Runner",
+  },
   projectDocuments: {
     title: 'Documents', search: 'Find a document…', files: 'Repository', websites: 'Documentation sites',
     branch: 'Default branch: {{branch}}', refresh: 'Refresh documents', loading: 'Loading documents…',

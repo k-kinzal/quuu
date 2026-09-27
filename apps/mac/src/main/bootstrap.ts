@@ -1,3 +1,4 @@
+import { RunnerOperations } from './runners/operations.js'
 import { HookOperations } from './hooks/operations.js'
 import { EventEmitter } from 'node:events'
 import type { AppInfo } from '../api/schemas/app.js'
@@ -56,6 +57,7 @@ const LIVENESS_TICK_MS = 5_000
 /** Assembles the features that live for the app's lifetime. Operations connect to each feature's public interface. */
 export class QuuuApp extends EventEmitter {
   readonly db: Db
+  readonly runners: RunnerOperations
   readonly runner: Runner
   readonly scheduler: Scheduler
   readonly importer: SessionImporter
@@ -87,7 +89,8 @@ export class QuuuApp extends EventEmitter {
   constructor(dbPath?: string) {
     super()
     this.db = openDatabase(dbPath)
-    this.runner = new Runner(this.db)
+    this.runners = new RunnerOperations(this.db, () => this.changed())
+    this.runner = new Runner(this.db, this.runners)
     this.scheduler = new Scheduler(this.db, this.runner)
     this.importer = new SessionImporter(this.db)
     this.review = new ReviewService()
@@ -98,10 +101,10 @@ export class QuuuApp extends EventEmitter {
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.workspace = new WorkspaceOperations(this.db, () => this.settings.getSettings())
-    this.hooks = new HookOperations(this.db, () => this.changed(), id => this.workspace.workingDir({ kind: 'task', id })?.dir ?? null)
-    this.reviews = new ReviewOperations(this.db, () => this.settings.getSettings(), this.review, id => this.workspace.workbenchPlace(id))
+    this.hooks = new HookOperations(this.db, () => this.changed(), id => this.workspace.workingDir({ kind: 'task', id })?.dir ?? null, this.runners)
+    this.reviews = new ReviewOperations(this.db, () => this.settings.getSettings(), this.review, id => this.workspace.workbenchPlace(id), this.runners)
     this.projectReports = new ProjectReportOperations(this.db, () => this.settings.getSettings())
-    this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id))
+    this.reports = new ReportOperations(this.db, () => this.settings.getSettings(), id => this.workspace.workbenchPlace(id), this.runners)
     /*
      * A Pull Request that is not in order sends the task back through the same entry a person's
      * follow-up takes. It decides on full projections only, so a retained copy never speaks for
@@ -199,6 +202,7 @@ export class QuuuApp extends EventEmitter {
     if (this.builtInWorkspace) this.projects.ensureBuiltIn(this.builtInWorkspace)
     this.settings.load()
     this.hooks.start()
+    void this.runners.start()
     this.scheduler.reconcile()
     // Right after startup, re-bind the logs of re-adopted Runs to their actual sessions
     this.attachSessions()
@@ -301,6 +305,7 @@ export class QuuuApp extends EventEmitter {
     for (const view of this.sessionViews) view.closeSession()
     this.sessionViews.clear()
     this.terminals.shutdown()
+    this.runners.stop()
     this.runner.shutdown()
   }
 

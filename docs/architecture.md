@@ -210,3 +210,23 @@ leave a pid and exit file for restart recovery; an ambiguous start is not replay
 Conversation previews use the provider adapters through `session/auxiliary` and keep
 raw command output bounded. Import excludes auxiliary sessions so they do not become
 new tasks that recursively launch hooks.
+
+## Remote Runner execution
+
+`main/runners/operations` owns pairing grants, advertised capabilities, durable
+dispatch and result ingestion. The scheduler still chooses eligible agents and
+owns task transitions. `execution/runner`, hooks, reports and review ask this
+feature to execute an instruction when a task has a remote workspace.
+
+The standalone Node entrypoint under `main/runners/entry` polls a pinned HTTPS
+controller, journals instruction IDs and launches a separate process per job.
+An acknowledged byte offset makes log delivery repeatable after reconnection;
+an interrupted job is reported without replaying its instruction. A task remains
+bound to its original checkout and Runner. Remote PIDs never enter local process
+recovery. SQL and schema upgrades remain in `db`.
+
+GitHub installation tokens travel separately from durable instruction records.
+Quuu reads the App key from its own Keychain and scopes each token to the task's
+repository. The worker writes temporary GitHub CLI credentials and receives
+refreshes while the controller is connected. Agent authentication and project
+toolchains belong to the image user's runtime setup.

@@ -40,6 +40,7 @@ export class ExecutionRecovery {
       // An imported session is not a child process of Quuu.
       // Whether it lives is decided by the log's updates, so it must not be called a ghost here.
       if (run.source === 'imported') continue
+      if (run.runnerId) { this.runner.recoverRemote(run); continue }
 
       const code = readExitCode(runExitPath(run.id))
       if (code !== null) {

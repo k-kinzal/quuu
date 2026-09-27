@@ -19,6 +19,7 @@ export type RunErrorKind =
 export type RunKind = 'initial' | 'followup'
 
 export interface Run {
+  runnerId?: string | null
   id: string
   taskId: string
   agentId: string

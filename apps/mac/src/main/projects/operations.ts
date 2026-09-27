@@ -1,3 +1,4 @@
+import { normalizeRepository, projectRepository } from '../runners/repository.js'
 import { validateHooks } from '../hooks/config.js'
 import { t } from '../i18n/index.js'
 import { assertWorktreeIdle, discardTaskWorktree, withWorktreeOperation } from '../tasks/worktrees.js'
@@ -21,6 +22,8 @@ export class ProjectOperations {
 
   createProject(input: Partial<ProjectInput> & { name: string; path: string }): Project {
     validateHooks(input.taskHooks ?? [])
+    if (input.gitRemote?.trim()) input = { ...input, gitRemote: normalizeRepository(input.gitRemote.trim()) }
+    if (input.runnerEnabled) input = { ...input, gitRemote: projectRepository(input.path, input.gitRemote).repository }
     const existing = repo.listProjects(this.db)
 
     /*
@@ -80,15 +83,22 @@ export class ProjectOperations {
 
   updateProject(id: string, patch: Partial<ProjectInput>): Project {
     if (patch.taskHooks) validateHooks(patch.taskHooks)
+    if (patch.gitRemote?.trim()) patch = { ...patch, gitRemote: normalizeRepository(patch.gitRemote.trim()) }
     const current = repo.getProject(this.db, id)
-    if (current) assertBuiltInEdit(current, patch)
+    if (current) {
+      assertBuiltInEdit(current, patch)
+      if (current.builtIn && patch.runnerEnabled) throw new Error(t('runners.builtIn'))
+      if ((patch.runnerEnabled ?? current.runnerEnabled) && (patch.runnerEnabled !== undefined || patch.gitRemote !== undefined || patch.path !== undefined)) {
+        patch = { ...patch, gitRemote: projectRepository(patch.path ?? current.path, patch.gitRemote ?? current.gitRemote).repository }
+      }
+    }
     if (patch.path !== undefined) {
       for (const task of repo.listTasks(this.db, true).filter(task => task.projectId === id)) assertWorktreeIdle(this.db, task.id)
     }
     if (patch.path !== undefined && patch.path !== repo.getProject(this.db, id)?.path &&
       repo.listTasks(this.db, true).some(task => {
         const tree = task.projectId === id ? repo.getTaskWorktree(this.db, task.id) : null
-        return tree !== null && tree.state !== 'removed'
+        return (tree !== null && tree.state !== 'removed') || (task.projectId === id && repo.getRunnerWorkspace(this.db, task.id) !== null)
       })) {
       throw new Error(t('worktree.cannotMove'))
     }
@@ -104,7 +114,7 @@ export class ProjectOperations {
     const tasks = repo.listTasks(this.db, true).filter(task => task.projectId === id)
     for (const task of tasks) assertWorktreeIdle(this.db, task.id)
     const remove = (): void => { repo.deleteProject(this.db, id); this.changed() }
-    if (!tasks.some(task => repo.getTaskWorktree(this.db, task.id))) return remove()
+    if (!tasks.some(task => repo.getTaskWorktree(this.db, task.id) || repo.getRunnerWorkspace(this.db, task.id))) return remove()
     const enabled = repo.getProject(this.db, id)?.enabled ?? false
     repo.updateProject(this.db, id, { enabled: false })
     return (async () => {

@@ -12,6 +12,7 @@ export const RunKindSchema = z.union([z.literal('initial'), z.literal('followup'
 export type RunKind = z.infer<typeof RunKindSchema>
 
 export const RunSchema = z.object({
+  runnerId: z.string().nullable().optional(),
   id: z.string(),
   taskId: z.string(),
   agentId: z.string(),

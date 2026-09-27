@@ -160,6 +160,8 @@ export class WorkspaceOperations {
   private readableDir(
     target: OpenTarget
   ): { dir: string; project: Project | null } | { ok: false; reason: string } {
+    const taskId = target.kind === 'task' ? target.id : target.kind === 'run' ? repo.getRun(this.db, target.id)?.taskId : null
+    if (taskId && repo.getRunnerWorkspace(this.db, taskId)) return { ok: false, reason: t('runners.remoteWorkspace') }
     const resolved = this.workingDir(target)
     if (!resolved) return { ok: false, reason: t('workspace.unknownWorkingDir') }
     if (!existsSync(resolved.dir)) {

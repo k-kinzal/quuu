@@ -1,6 +1,10 @@
 // Generated from the operation contract.
 export const operationNames: string[] = [
   "snapshot",
+  "runners.status",
+  "runners.configure",
+  "runners.pairing",
+  "runners.revoke",
   "documents.list",
   "documents.read",
   "documents.show",

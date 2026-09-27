@@ -1,5 +1,7 @@
+import type { RunnerOperations } from '../runners/operations.js'
+import type { ReviewSnapshot } from '../review/types.js'
 import { EventEmitter } from 'node:events'
-import { existsSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { reportDir, reportRoot } from '../appPaths.js'
 import type { Db } from '../db/database.js'
@@ -50,7 +52,8 @@ export class ReportOperations extends EventEmitter {
   constructor(
     private db: Db,
     private getSettings: () => AppSettings,
-    private place: (taskId: string) => { dir: string; project: Project }
+    private place: (taskId: string) => { dir: string; project: Project },
+    private remote?: RunnerOperations
   ) { super() }
 
   /** Begin settling generations, including any that outlived the last launch. */
@@ -116,7 +119,7 @@ export class ReportOperations extends EventEmitter {
   private writer(taskId: string): { ok: true; value: ReportWriter } | { ok: false; reason: string } {
     const settings = this.getSettings()
     if (!settings.reportEnabled) return { ok: false, reason: t('report.turnedOff') }
-    const chosen = chooseWriter(this.db, settings)
+    const chosen = chooseWriter(this.db, settings, agent => this.remote?.canUseAgent(taskId, agent) ?? true)
     if (!chosen.ok) {
       return { ok: false, reason: chosen.reason === 'cooling' ? t('report.allCooling') : t('report.noAgent') }
     }
@@ -131,6 +134,7 @@ export class ReportOperations extends EventEmitter {
   private async begin(taskId: string, trigger: 'automatic' | 'requested'): Promise<void> {
     const writer = this.writer(taskId)
     if (!writer.ok) throw new Error(writer.reason)
+    if (this.remote?.workspace(taskId)) { await this.beginRemote(taskId, trigger, writer.value); return }
     const settings = this.getSettings()
     const agent = writer.value.agent
     const place = this.place(taskId)
@@ -235,6 +239,42 @@ export class ReportOperations extends EventEmitter {
     }
   }
 
+  private async beginRemote(taskId: string, trigger: 'automatic' | 'requested', writer: ReportWriter): Promise<void> {
+    const remote = this.remote!
+    const workspace = remote.workspace(taskId)!
+    const task = repo.getTask(this.db, taskId)!
+    const project = repo.getProject(this.db, task.projectId)!
+    if (!project.reportEnabled) throw new Error(t('report.projectTurnedOff'))
+    this.settle()
+    const previous = repo.getTaskReport(this.db, taskId)
+    if (previous?.status === 'generating' || this.starting.has(taskId)) return
+    this.starting.add(taskId)
+    try {
+      const snapshot = await remote.inspect(taskId, 'snapshot') as ReviewSnapshot
+      if (this.stopped || !repo.getTask(this.db, taskId)) return
+      if (trigger === 'automatic' && alreadyReported(previous, snapshot.revision?.head)) return
+      const id = newId('rpt'), dir = reportDir(taskId), page = join(dir, `${id}.html`), log = join(dir, `${id}.log`)
+      writeReportAssets()
+      const request: ReportRequest = { cwd: workspace.cwd, title: task.title, prompt: task.prompt || task.title,
+        page, instructions: this.getSettings().reportInstructions,
+        revision: snapshot.revision ? { ...snapshot.revision, inferred: false, foreign: 0 } : null,
+        uncommitted: snapshot.localRevision,
+        changes: snapshot.changes.map(change => ({ path: change.path, mark: change.change === 'added' || change.change === 'untracked' ? '+' : change.change === 'deleted' ? '-' : '+-' })),
+        commits: snapshot.commits.map(commit => `${commit.shortSha} ${commit.subject}`),
+        pullRequests: snapshot.pullRequests.map(pr => pr.url),
+        runs: repo.listRunsByTask(this.db, taskId).reverse().map(run => ({ ...run,
+          stdoutLogPath: remote.logOnRunner(taskId, run.id), sessionLogPath: null })) }
+      remote.enqueue({ id, taskId, projectId: project.id, workspace, action: 'report',
+        command: remote.agentCommand(workspace, writer.agent), args: [], env: writer.agent.env,
+        sessionId: newSessionId(), adapter: writer.agent.logAdapter, timeoutSeconds: TIMEOUT_MS / 1000,
+        createWorkspace: false, project, report: { request, template: writer.agent.argsTemplate } }, log)
+      if (writer.groupId) repo.advanceGroupRotation(this.db, writer.groupId, writer.agent.id)
+      repo.saveTaskReport(this.db, { taskId, status: 'generating', cwd: workspace.cwd, revision: snapshot.revision?.head ?? '',
+        path: previous?.path ?? '', logPath: log, error: '', startedAt: nowIso(), endedAt: null, pid: null,
+        pending: page, exitPath: join(dir, `${id}.exit`) })
+    } finally { this.starting.delete(taskId) }
+  }
+
   /**
    * What the work left behind, as facts rather than instructions to go and find them.
    *
@@ -310,10 +350,13 @@ export class ReportOperations extends EventEmitter {
   settle(): void {
     if (this.stopped) return
     for (const row of repo.listGeneratingReports(this.db)) {
-      const timedOut = Date.now() - Date.parse(row.startedAt) > TIMEOUT_MS
+      const remoteJob = this.remote?.job(row.pending.split('/').at(-1)?.replace(/\.html$/, '') ?? '')
+      if (remoteJob && !remoteJob.result) continue
+      if (remoteJob?.result?.page && row.pending) writeFileSync(row.pending, remoteJob.result.page, { mode: 0o600 })
+      const timedOut = remoteJob ? remoteJob.result?.timedOut ?? false : Date.now() - Date.parse(row.startedAt) > TIMEOUT_MS
       const result = settleReport({
         alive: row.pid !== null && isProcessAlive(row.pid),
-        exitCode: readExitCode(row.exitPath),
+        exitCode: remoteJob ? remoteJob.result?.exitCode ?? null : readExitCode(row.exitPath),
         pageExists: row.pending.length > 0 && existsSync(row.pending),
         timedOut
       })
@@ -327,7 +370,7 @@ export class ReportOperations extends EventEmitter {
        * What the generator said, not what we can infer from an exit code. "It ended with 1" sends
        * a person to the log; "you must acknowledge the model's data policy" is the answer itself.
        */
-      const said = ready ? '' : readLogTail(row.logPath, 600).trim()
+      const said = ready ? '' : remoteJob?.result?.error || readLogTail(row.logPath, 600).trim()
       const why = said || reason(result.reason, result.exitCode)
       const endedAt = nowIso()
       // Nothing of ours is working there any more, so stop hiding what starts there next

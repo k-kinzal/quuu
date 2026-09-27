@@ -184,3 +184,5 @@ export interface ReviewActionResult {
   ok: boolean
   reason?: string
 }
+
+export interface ReviewEvidence { commits: string[]; pullRequests: string[] }

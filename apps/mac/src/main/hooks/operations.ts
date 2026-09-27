@@ -1,3 +1,4 @@
+import type { RunnerOperations } from '../runners/operations.js'
 import { auxiliaryMessages } from '../session/auxiliary.js'
 import { spawn } from 'node:child_process'
 import { closeSync, openSync } from 'node:fs'
@@ -31,7 +32,7 @@ export class HookOperations {
   private ticking = false
   private report: ((taskId: string) => Promise<void>) | null = null
   setReportHook(report: (taskId: string) => Promise<void>): void { this.report = report }
-  constructor(private db: Db, private changed: () => void, private workspace: (id: string) => string | null) {
+  constructor(private db: Db, private changed: () => void, private workspace: (id: string) => string | null, private remote?: RunnerOperations) {
     repo.setLifecycleRecorder(db, (task, event, run) => { this.record(task, event, run) })
   }
 
@@ -91,11 +92,13 @@ export class HookOperations {
   log(id: string) {
     const run = this.requireRun(id)
     const output = readLogTail(run.logPath)
-    return { run: publicRun(run), output, messages: auxiliaryMessages(run.logAdapter, run.cwd, run.sessionId, output) }
+    const remote = this.remote?.job(id)
+    return { run: publicRun(run), output, messages: auxiliaryMessages(run.logAdapter, run.cwd, remote?.result?.sessionId ?? run.sessionId, output, remote?.sessionPath) }
   }
   cancel(id: string): void {
     const run = this.requireRun(id)
     if (!ACTIVE.has(run.status)) return
+    if (this.remote?.job(id)) { this.remote.cancel(id); return }
     const pid = run.pid ?? readExitCode(run.exitPath + '.pid')
     if (pid) killProcessGroup(pid, 'SIGKILL')
     this.finish(run, 'canceled', null, t('hooks.canceled'))
@@ -126,7 +129,7 @@ export class HookOperations {
     const active = repo.listHookRuns(this.db, { taskId, active: true })
     for (const run of active) this.cancel(run.id)
     const deadline = Date.now() + 15_000
-    while (active.some(run => run.pid && isProcessAlive(run.pid))) {
+    while (active.some(run => run.pid && isProcessAlive(run.pid) || this.remote?.job(run.id)?.status !== 'finished' && !!this.remote?.job(run.id))) {
       if (Date.now() > deadline) throw new Error(t('hooks.busy'))
       await delay(50)
       if (this.stopped) throw new Error(t('hooks.interrupted'))
@@ -167,6 +170,18 @@ export class HookOperations {
   }
 
   private observe(run: StoredHookRun): void {
+    const remote = this.remote?.job(run.id)
+    if (remote) {
+      if (!remote.result) return
+      const result = remote.result
+      const classification = run.logAdapter ? adapterFor(run.logAdapter).classify({ exitCode: result.exitCode,
+        signal: null, output: readLogTail(run.logPath), limitPatterns: run.limitPatterns,
+        timedOut: result.timedOut, canceled: result.canceled }) : null
+      const success = result.exitCode === 0 && !result.error && !result.timedOut && !result.canceled && !classification?.kind
+      this.finish(run, result.canceled ? 'canceled' : success ? 'succeeded' : 'failed', result.exitCode,
+        success ? '' : result.error || classification?.message || t('runners.operationFailed'))
+      return
+    }
     if (run.logAdapter) {
       const sessionId = adapterFor(run.logAdapter).sessionIdInStdout?.(run.logPath)
       if (sessionId && sessionId !== run.sessionId) { run = { ...run, sessionId }; repo.saveHookRun(this.db, run) }
@@ -199,6 +214,27 @@ export class HookOperations {
       const agent = run.kind === 'agent' ? this.chooseAgent(run) : null
       if (run.kind === 'agent' && !agent) return
       const settings = repo.getAppSettings(this.db)
+      let remoteWorkspace = this.remote?.workspace(run.taskId)
+      if (!remoteWorkspace && this.remote) {
+        remoteWorkspace = this.remote.chooseForHook(run.taskId, run.project, agent ?? undefined)
+        if (remoteWorkspace) this.remote.reserve(remoteWorkspace)
+      }
+      if (remoteWorkspace && this.remote) {
+        const command = agent ? this.remote.agentCommand(remoteWorkspace, agent) : '/bin/sh'
+        const args = agent ? adapterFor(agent.logAdapter).invoke({ command, template: agent.argsTemplate,
+          vars: { prompt: run.input, title: run.taskTitle, sessionId: run.sessionId, projectPath: remoteWorkspace.cwd,
+            projectName: run.project.name, taskId: run.taskId, runId: run.id } }).args : ['-c', run.input]
+        this.remote.enqueue({ id: run.id, taskId: run.taskId, projectId: run.projectId, workspace: remoteWorkspace,
+          action: agent ? 'agent' : 'command', command, args,
+          env: { ...agent?.env, ...commitIdentityEnv(settings, run.project), QUUU_HOOK_ID: run.hookId, QUUU_HOOK_EVENT: run.event },
+          sessionId: run.sessionId, adapter: agent?.logAdapter ?? 'stdout', timeoutSeconds: run.definition.timeoutSeconds,
+          createWorkspace: !repo.getTaskReviewBase(this.db, run.taskId), project: run.project }, run.logPath)
+        repo.saveHookRun(this.db, { ...run, cwd: remoteWorkspace.cwd, status: 'running', startedAt: nowIso(),
+          agentId: agent?.id ?? null, logAdapter: agent?.logAdapter ?? null, limitPatterns: agent?.limitPatterns ?? [] })
+        if (agent && run.definition.targetKind === 'group') repo.advanceGroupRotation(this.db, run.definition.targetId, agent.id)
+        this.changed()
+        return
+      }
       const baseEnv = withPath({ ...process.env, ...agent?.env, ...commitIdentityEnv(settings, run.project) }, path)
       const auth = prepareGitHubAuthEnvironment(resolveCommitIdentity(settings, run.project), run.cwd, path, baseEnv)
       authDir = auth.dir
@@ -244,7 +280,7 @@ export class HookOperations {
     const members = group ? group.memberIds.map(id => repo.getAgent(this.db, id)).filter((agent): agent is Agent => agent !== null) : []
     const candidates = definition.targetKind === 'agent' ? [repo.getAgent(this.db, definition.targetId)] :
       group ? orderAgents(group.strategy, members, new Map(members.map(a => [a.id, repo.countActiveRunsByAgent(this.db, a.id)])), repo.groupRotation(this.db, group.id)) : []
-    const enabled = candidates.filter((agent): agent is Agent => agent?.enabled === true)
+    const enabled = candidates.filter((agent): agent is Agent => agent?.enabled === true && (this.remote?.canUseAgent(run.taskId, agent) ?? true))
     if (enabled.length === 0) throw new Error(t('hooks.noAgent'))
     return enabled.find(agent => !repo.isCoolingDown(this.db, agent.id) &&
       repo.countActiveRunsByAgent(this.db, agent.id) < agent.concurrency) ?? null

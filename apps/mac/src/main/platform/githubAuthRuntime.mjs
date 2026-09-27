@@ -42,7 +42,7 @@ export function refreshDelay(expiresAt, nowMs = Date.now()) {
   return Math.max(1000, expiresAt - REFRESH_MARGIN_MS - nowMs)
 }
 
-async function issueToken(config, signal) {
+export async function issueToken(config, signal) {
   let pem
   try {
     const result = await security('/usr/bin/security', [

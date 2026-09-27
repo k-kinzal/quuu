@@ -1,0 +1,142 @@
+# Quuu Runner
+
+Run a project's agents and builds on another Linux machine while the Quuu desktop
+app owns its queue, hooks, reports, cancellation and review. The Runner makes outbound
+HTTPS requests to Quuu; it needs no published container port. Images are built locally
+for now.
+
+## Build
+
+From the repository root:
+
+```sh
+docker build -f containers/runner/Dockerfile -t quuu-runner:local .
+docker build -f containers/runner/Dockerfile.agents -t quuu-runner-agents:local .
+```
+
+The first image includes Node.js, Git, GitHub CLI and the Runner entrypoint. The second
+adds Codex, Claude Code and Cursor CLI. Extend either image to install your project's
+compilers, package managers and system dependencies. The runtime user is `node`
+(UID/GID 1000). Restore `USER node` after installing packages as root.
+
+```dockerfile
+FROM quuu-runner-agents:local
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential \
+    && rm -rf /var/lib/apt/lists/*
+USER node
+```
+
+Agent accounts, SSH configuration and project-specific dependencies are configured by
+the image's user. Put credentials in runtime mounts, never in a Dockerfile or image
+layer. Claude's Linux credential file is `~/.claude/.credentials.json`; Codex uses
+`~/.codex/auth.json`; Cursor's Linux authentication uses `~/.config/cursor/auth.json`.
+Persist each agent's session directories too, so follow-ups survive container replacement.
+
+## Pair
+
+1. In Quuu, open **Settings → Connections → Runners**, enable Runner connections and
+   create a pairing PIN. The PIN is single-use and expires after five minutes.
+2. Copy the displayed LAN URL and certificate fingerprint to the Runner. Allow inbound
+   TCP on Quuu's selected port (default `47833`) in the desktop's firewall.
+3. Create a private environment file with the values below and start the container.
+
+```dotenv
+QUUU_CONTROLLER_URL=https://YOUR_QUUU_LAN_ADDRESS:47833
+QUUU_CONTROLLER_FINGERPRINT=THE_SHA256_FINGERPRINT_SHOWN_BY_QUUU
+QUUU_RUNNER_PIN=THE_EIGHT_DIGIT_PIN
+QUUU_RUNNER_NAME=Build machine
+QUUU_RUNNER_CAPACITY=2
+```
+
+```sh
+chmod 600 runner.env
+docker run -d --name quuu-runner --restart unless-stopped \
+  --env-file runner.env \
+  --mount type=volume,source=quuu-runner-data,target=/var/lib/quuu-runner \
+  --tmpfs /run/quuu-runner:uid=1000,gid=1000,mode=0700 \
+  quuu-runner-agents:local
+```
+
+Add mounts for your authenticated agents. Bind-mounted data directories must be writable
+by UID 1000. `/var/lib/quuu-runner` holds the pairing grant, independent checkouts and job
+journal. Keep it across container updates. Once paired, remove the PIN from the environment
+file and recreate the container with the same data volume. The saved grant handles reconnects.
+Revoke an idle Runner in Quuu to invalidate that grant. Re-pairing requires removing its
+`connection.json` and creating a fresh PIN.
+
+TLS certificate pinning verifies the controller before sending the PIN, bearer grant or
+job results. Treat the Runner as a trusted machine: it can execute project instructions
+and receives the project credentials needed by active jobs. Reachability alone grants
+no access.
+
+## Project routing and Git
+
+Enable **Prefer Runner for new tasks** in the project's settings. Quuu detects the Git
+remote from `origin`, or the only remote if there is no `origin`. You may set a different
+credential-free HTTPS or SSH clone URL. A project inside a Git subdirectory keeps that
+subdirectory inside its Runner checkout.
+
+- A new task prefers an online Runner with capacity and the configured task agent.
+  Every enabled AI hook and task-report writer must also have an available agent on that
+  Runner. Group targets need at least one supported member. CLI executable names match
+  across platforms; machine-specific absolute paths are replaced by the advertised command.
+- If no suitable Runner exists, a new task can run locally. Existing local conversations
+  stay local. An existing Runner conversation stays on its original Runner and waits if
+  that Runner is unavailable. There is no automatic replay on a second machine.
+- Each task clones the remote's default branch into `workspaces/<task-id>` and creates
+  `quuu/<task-id>`. Commit and push the local input you want to use before dispatching.
+  Uncommitted files and local-only branches are not transferred.
+- Task hooks execute in that checkout when instructed by Quuu. Task report generation
+  also executes there and returns its HTML to Quuu. Project-wide daily reports still
+  assess the desktop project's checkout.
+- Review diffs, files, GitHub PR inspection and PR comments use the Runner checkout.
+  Use Git/PRs to bring work back to your local repository. Marking a task Done does not
+  merge a Runner branch into the desktop checkout. Checkouts are retained after Done
+  and task deletion; clean up unused Runner data after preserving the work you need.
+
+When GitHub App authentication is configured for a project, Quuu issues a short-lived
+installation token restricted to that repository and refreshes it while the job is active.
+The Runner exposes it through Git's credential helper and `gh`, so the agent can clone,
+push and create PRs within the App's installed permissions. The App's private key stays
+in the desktop Keychain. Tokens travel separately from the job journal and are removed
+after completion is acknowledged. `/run/quuu-runner` should be a tmpfs. Git operations
+that need a refreshed token wait for Quuu to reconnect after a long outage.
+
+For other Git hosts, configure SSH keys/known hosts or a credential helper in the Runner.
+Never embed tokens in the project's clone URL.
+
+## Operation
+
+```sh
+docker logs --tail 100 quuu-runner
+docker stop quuu-runner
+docker start quuu-runner
+```
+
+Quitting/restarting Quuu leaves remote processes running; the Runner buffers their output
+until Quuu reconnects. Cancellation is delivered when the Runner next connects. Stopping
+the container stops its processes. Its journal reports interrupted work after restart
+without replaying the instruction. Keep both controller data and Runner data backed up.
+
+Additional environment variables:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `QUUU_RUNNER_DATA` | `/var/lib/quuu-runner` | Persistent checkouts, journal and pairing grant |
+| `QUUU_RUNNER_SECRETS` | `/run/quuu-runner` in the image | Temporary GitHub credentials |
+| `QUUU_RUNNER_PIN_FILE` | unset | Read initial PIN from a mounted secret instead of an environment variable |
+| `QUUU_RUNNER_AGENTS` | `codex,claude,cursor-agent` | Comma-separated CLI names to probe with `--version` |
+| `QUUU_RUNNER_CAPACITY` | `2` | Concurrent remote jobs, 1–64; fixed at pairing |
+
+`--version` proves installation; it does not prove authentication or model access. Verify
+each agent account before allowing real tasks. Arbitrary command hooks need their tools
+installed too. Codex and Claude structured session logs are mirrored; agents whose native
+history is a database currently show their stdout in Quuu.
+
+## Development
+
+`npm run build:runner` builds the standalone Node 24 entrypoint. `npm test` builds it before
+testing HTTPS pairing, Git isolation, output delivery, recovery, cancellation and auxiliaries.
+Run manual checks against a temporary `QUUU_USER_DATA`; never create test tasks in the
+production application.

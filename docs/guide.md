@@ -946,3 +946,21 @@ survives restart; their agent, output contract, revision deduplication, and repo
 settings remain owned by Quuu. Project assessments keep their daily schedule. The
 hook settings show this built-in behavior without exposing its system prompt or
 trigger as an editable custom hook.
+
+## Remote Runners
+
+Quuu can dispatch new tasks to a paired Linux Runner when a project permits it.
+Enable Runner connections in Settings → Connections, issue a PIN, and start the
+Runner with Quuu's LAN URL and certificate fingerprint. The project needs a Git
+remote and the Runner needs the task, hook and task-report agents installed and
+authenticated. Eligible Runners are preferred; existing conversations keep their
+original computer. A disconnected Runner's work waits for reconnection.
+
+The Runner owns an independent Git clone per task. Quuu owns scheduling, hooks,
+reports, cancellation and review. Changes return through Git or PRs. Local-only
+changes are not copied. GitHub App private keys stay in Quuu; active jobs receive
+short-lived, repository-scoped installation tokens.
+
+See [Runner image and operation instructions](../containers/runner/README.md) for
+Docker builds, pairing, persistent storage and lifecycle limits. The local API
+exposes `runners.status`, `runners.configure`, `runners.pairing` and `runners.revoke`.

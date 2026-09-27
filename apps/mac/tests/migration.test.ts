@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('33')
+    expect(version.value).toBe('34')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('33')
+    expect(version.value).toBe('34')
     db.close()
   })
 
@@ -789,5 +789,24 @@ it('adds lifecycle hooks without enabling work and preserves project overrides a
   upgraded.close()
   const reopened = openDatabase(path)
   expect(repo.getProject(reopened, projectId)?.taskHooks).toEqual([{ id: 'commit', events: ['stopped'], enabled: true }])
+  reopened.close()
+})
+
+it('adds opt-in Runners without rerouting existing projects or losing queued tasks', () => {
+  const old = openDatabase(path)
+  const agentId = makeAgent(old, { name: 'runner migration' })
+  const projectId = makeProject(old, { name: 'existing', targetId: agentId })
+  const taskId = makeTask(old, projectId, 'existing task')
+  old.exec("DROP TABLE remote_runners; DROP TABLE runner_workspaces; DROP TABLE runner_jobs; ALTER TABLE projects DROP COLUMN runner_enabled; ALTER TABLE projects DROP COLUMN git_remote; ALTER TABLE runs DROP COLUMN runner_id; UPDATE meta SET value = '33' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getProject(upgraded, projectId)).toMatchObject({ runnerEnabled: false, gitRemote: '' })
+  expect(repo.getTask(upgraded, taskId)?.status).toBe('queued')
+  expect(repo.listRemoteRunners(upgraded)).toEqual([])
+  expect(repo.listRemoteJobs(upgraded)).toEqual([])
+  repo.updateProject(upgraded, projectId, { runnerEnabled: true, gitRemote: 'https://example.test/repository.git' })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.getProject(reopened, projectId)).toMatchObject({ runnerEnabled: true, gitRemote: 'https://example.test/repository.git' })
   reopened.close()
 })

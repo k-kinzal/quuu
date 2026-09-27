@@ -1,5 +1,18 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  runners: {
+    listenerOff: "Enable Runner connections first.",
+    busyRevoke: "Stop this Runner’s active jobs before revoking it.",
+    notFound: "Runner or remote workspace was not found.",
+    waiting: "Waiting for {{name}} and its required agents.",
+    full: "{{name}} has no free execution slots.",
+    agentMissing: "{{name}} is unavailable on this Runner.",
+    operationFailed: "The Runner operation failed. Open its log for details.",
+    disconnected: "The Runner is disconnected or did not respond in time.",
+    interrupted: "The remote launch was interrupted before it was recorded.",
+    builtIn: "QuuuAI runs on the controller computer.",
+    remoteWorkspace: "This workspace is on a Runner. Use its container shell or review it here.",
+  },
   documents: {
     gitFailed: 'Could not read the Git repository. Check the project directory.',
     notFound: 'This document is no longer available. Refresh the document list.',

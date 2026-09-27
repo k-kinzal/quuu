@@ -47,7 +47,9 @@
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
     "taskHooks": 28,
-    "builtIn": 29
+    "builtIn": 29,
+    "runnerEnabled": 30,
+    "gitRemote": 31
   },
   "SnapshotResponseValueProjects": {
     "items": 1
@@ -261,7 +263,8 @@
     "args": 20,
     "exitCode": 21,
     "sessionLogPath": 22,
-    "stdoutLogPath": 23
+    "stdoutLogPath": 23,
+    "runnerId": 24
   },
   "SnapshotResponseValueRuns": {
     "items": 1
@@ -378,7 +381,9 @@
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
     "taskHooks": 28,
-    "builtIn": 29
+    "builtIn": 29,
+    "runnerEnabled": 30,
+    "gitRemote": 31
   },
   "ProjectsListResponseValue": {
     "items": 1
@@ -419,7 +424,9 @@
     "pullRequestPendingEnabled": 20,
     "pullRequestConflictEnabled": 21,
     "worktreeMode": 22,
-    "taskHooks": 23
+    "taskHooks": 23,
+    "runnerEnabled": 24,
+    "gitRemote": 25
   },
   "ProjectsCreateRequest": {
     "value": 1
@@ -471,7 +478,9 @@
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
     "taskHooks": 28,
-    "builtIn": 29
+    "builtIn": 29,
+    "runnerEnabled": 30,
+    "gitRemote": 31
   },
   "ProjectsCreateResponse": {
     "value": 1
@@ -509,7 +518,9 @@
     "pullRequestPendingEnabled": 20,
     "pullRequestConflictEnabled": 21,
     "worktreeMode": 22,
-    "taskHooks": 23
+    "taskHooks": 23,
+    "runnerEnabled": 24,
+    "gitRemote": 25
   },
   "ProjectsUpdateRequestValue": {
     "id": 1,
@@ -565,7 +576,9 @@
     "pullRequestConflictEnabled": 26,
     "worktreeMode": 27,
     "taskHooks": 28,
-    "builtIn": 29
+    "builtIn": 29,
+    "runnerEnabled": 30,
+    "gitRemote": 31
   },
   "ProjectsUpdateResponse": {
     "value": 1
@@ -2176,7 +2189,8 @@
     "args": 20,
     "exitCode": 21,
     "sessionLogPath": 22,
-    "stdoutLogPath": 23
+    "stdoutLogPath": 23,
+    "runnerId": 24
   },
   "RunsByTaskResponseValue": {
     "items": 1
@@ -4522,5 +4536,112 @@
   },
   "AppCheckForUpdatesResponse": {
     "value": 1
+  },
+  "SnapshotResponseValueRunsItemRunnerId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "RunnersStatusRequest": {},
+  "RunnersStatusResponseValueUrls": {
+    "items": 1
+  },
+  "RunnersStatusResponseValueRunnersItemAgentsItem": {
+    "name": 1,
+    "command": 2,
+    "version": 3
+  },
+  "RunnersStatusResponseValueRunnersItemAgents": {
+    "items": 1
+  },
+  "RunnersStatusResponseValueRunnersItem": {
+    "id": 1,
+    "name": 2,
+    "agents": 3,
+    "capacity": 4,
+    "root": 5,
+    "lastSeen": 6,
+    "revoked": 7,
+    "online": 8,
+    "active": 9
+  },
+  "RunnersStatusResponseValueRunners": {
+    "items": 1
+  },
+  "RunnersStatusResponseValue": {
+    "enabled": 1,
+    "port": 2,
+    "listening": 3,
+    "fingerprint": 4,
+    "error": 5,
+    "urls": 6,
+    "runners": 7
+  },
+  "RunnersStatusResponse": {
+    "value": 1
+  },
+  "RunnersConfigureRequestValue": {
+    "enabled": 1,
+    "port": 2
+  },
+  "RunnersConfigureRequest": {
+    "value": 1
+  },
+  "RunnersConfigureResponseValueUrls": {
+    "items": 1
+  },
+  "RunnersConfigureResponseValueRunnersItemAgentsItem": {
+    "name": 1,
+    "command": 2,
+    "version": 3
+  },
+  "RunnersConfigureResponseValueRunnersItemAgents": {
+    "items": 1
+  },
+  "RunnersConfigureResponseValueRunnersItem": {
+    "id": 1,
+    "name": 2,
+    "agents": 3,
+    "capacity": 4,
+    "root": 5,
+    "lastSeen": 6,
+    "revoked": 7,
+    "online": 8,
+    "active": 9
+  },
+  "RunnersConfigureResponseValueRunners": {
+    "items": 1
+  },
+  "RunnersConfigureResponseValue": {
+    "enabled": 1,
+    "port": 2,
+    "listening": 3,
+    "fingerprint": 4,
+    "error": 5,
+    "urls": 6,
+    "runners": 7
+  },
+  "RunnersConfigureResponse": {
+    "value": 1
+  },
+  "RunnersPairingRequest": {},
+  "RunnersPairingResponseValueUrls": {
+    "items": 1
+  },
+  "RunnersPairingResponseValue": {
+    "pin": 1,
+    "expiresAt": 2,
+    "fingerprint": 3,
+    "urls": 4
+  },
+  "RunnersPairingResponse": {
+    "value": 1
+  },
+  "RunnersRevokeRequest": {
+    "value": 1
+  },
+  "RunnersRevokeResponse": {},
+  "RunsByTaskResponseValueItemRunnerId": {
+    "variant1": 1,
+    "variant2": 2
   }
 }

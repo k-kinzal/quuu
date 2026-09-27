@@ -1,3 +1,4 @@
+import type { RemoteRunner, RemoteJob, RunnerWorkspace } from '../runners/types.js'
 import type { HookEvent } from '../hooks/types.js'
 import type { StoredHookRun } from '../hooks/stored.js'
 import { inTransaction } from './database.js'
@@ -257,6 +258,8 @@ function toAgent(r: Row): Agent {
 
 function toProject(r: Row): Project {
   return {
+    runnerEnabled: i2b(r.runner_enabled),
+    gitRemote: s(r.git_remote),
     taskHooks: parseJson(s(r.task_hooks), []),
     id: s(r.id),
     builtIn: isBuiltInProject(s(r.id)),
@@ -323,6 +326,7 @@ function toTask(r: Row, dependsOn: TaskDependency[]): Task {
 
 function toRun(r: Row): Run {
   return {
+    runnerId: sn(r.runner_id),
     id: s(r.id),
     taskId: s(r.task_id),
     agentId: s(r.agent_id),
@@ -731,8 +735,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
        commit_app_id, commit_setup_version, editor_app, report_enabled,
        pull_request_prompt_mode, pull_request_failure_prompt, pull_request_pending_prompt,
        pull_request_conflict_prompt, pull_request_failure_enabled, pull_request_pending_enabled,
-       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode, task_hooks)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode, task_hooks, runner_enabled, git_remote)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     id,
     input.name,
@@ -762,7 +766,9 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
     ts,
     ts,
     input.worktreeMode ?? 'inherit',
-    JSON.stringify(input.taskHooks ?? [])
+    JSON.stringify(input.taskHooks ?? []),
+    b2i(input.runnerEnabled ?? false),
+    input.gitRemote ?? ''
   )
   return getProject(db, id)!
 }
@@ -777,7 +783,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
        commit_bot_user_id=?, commit_app_id=?, commit_setup_version=?, editor_app=?,
        report_enabled=?, pull_request_prompt_mode=?, pull_request_failure_prompt=?,
        pull_request_pending_prompt=?, pull_request_conflict_prompt=?, pull_request_failure_enabled=?,
-       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?, task_hooks=?
+       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?, task_hooks=?, runner_enabled=?, git_remote=?
      WHERE id=?`
   ).run(
     next.name,
@@ -806,6 +812,8 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     nowIso(),
     next.worktreeMode,
     JSON.stringify(next.taskHooks),
+    b2i(next.runnerEnabled ?? false),
+    next.gitRemote ?? '',
     id
   )
   return getProject(db, id)!
@@ -1371,8 +1379,8 @@ export function insertRun(
     `INSERT INTO runs (id, task_id, agent_id, resolved_from_group_id, session_id, kind, status,
        attempt, fallback_from_run_id, pid, cwd, command, args, prompt_preview, exit_code,
        error_kind, error_message, session_log_path, stdout_log_path, source, external_key,
-       started_at, ended_at, log_adapter, limit_patterns)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       started_at, ended_at, log_adapter, limit_patterns, runner_id)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     run.id,
     run.taskId,
@@ -1398,7 +1406,8 @@ export function insertRun(
     run.startedAt ?? nowIso(),
     run.endedAt ?? null,
     run.logAdapter ?? agent?.logAdapter ?? 'stdout',
-    JSON.stringify(run.limitPatterns ?? agent?.limitPatterns ?? [])
+    JSON.stringify(run.limitPatterns ?? agent?.limitPatterns ?? []),
+    run.runnerId ?? null
   )
   return getRun(db, run.id)!
 }
@@ -1925,4 +1934,33 @@ export function pendingHookReports(db: Db): string[] {
 }
 export function removeHookReport(db: Db, taskId: string): void {
   db.prepare('DELETE FROM hook_pending_reports WHERE task_id = ?').run(taskId)
+}
+
+
+// Remote execution journals contain instructions and receipts, never issued GitHub tokens.
+export function saveRemoteRunner(db: Db, runner: RemoteRunner): void {
+  db.prepare('INSERT OR REPLACE INTO remote_runners (id, data) VALUES (?, ?)').run(runner.id, JSON.stringify(runner))
+}
+export function listRemoteRunners(db: Db): RemoteRunner[] {
+  return (db.prepare('SELECT data FROM remote_runners').all() as Array<{ data: string }>).map(r => JSON.parse(r.data) as RemoteRunner)
+}
+export function saveRunnerWorkspace(db: Db, workspace: RunnerWorkspace): void {
+  db.prepare('INSERT OR REPLACE INTO runner_workspaces (task_id, data) VALUES (?, ?)').run(workspace.taskId, JSON.stringify(workspace))
+}
+export function getRunnerWorkspace(db: Db, taskId: string): RunnerWorkspace | null {
+  const row = db.prepare('SELECT data FROM runner_workspaces WHERE task_id = ?').get(taskId) as { data: string } | undefined
+  return row ? JSON.parse(row.data) as RunnerWorkspace : null
+}
+export function saveRemoteJob(db: Db, job: RemoteJob): void {
+  db.prepare('INSERT OR REPLACE INTO runner_jobs (id, runner_id, task_id, status, data) VALUES (?, ?, ?, ?, ?)')
+    .run(job.id, job.runnerId, job.taskId, job.status, JSON.stringify(job))
+}
+export function getRemoteJob(db: Db, id: string): RemoteJob | null {
+  const row = db.prepare('SELECT data FROM runner_jobs WHERE id = ?').get(id) as { data: string } | undefined
+  return row ? JSON.parse(row.data) as RemoteJob : null
+}
+export function listRemoteJobs(db: Db, runnerId?: string): RemoteJob[] {
+  const rows = runnerId ? db.prepare('SELECT data FROM runner_jobs WHERE runner_id = ? AND status <> ?').all(runnerId, 'finished')
+    : db.prepare('SELECT data FROM runner_jobs WHERE status <> ?').all('finished')
+  return (rows as Array<{ data: string }>).map(row => JSON.parse(row.data) as RemoteJob)
 }

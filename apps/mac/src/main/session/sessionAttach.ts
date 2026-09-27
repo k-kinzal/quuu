@@ -56,7 +56,7 @@ export interface SessionReadTarget {
  */
 export function attachSessionLog(db: Db, run: Run): Run {
   // An imported run carries the real path from the start
-  if (run.source !== 'user') return run
+  if (run.source !== 'user' || run.runnerId) return run
   const adapter: LogAdapter = run.logAdapter ?? 'stdout'
   /*
    * Codex cannot be handed an ID on the first run, but it announces the real one in its stdout header.
@@ -100,6 +100,8 @@ export function attachSessionLog(db: Db, run: Run): Run {
  * back to the grey raw log on its own, so the decision is centralized here.
  */
 export function sessionReadTarget(db: Db, run: Run): SessionReadTarget {
+  if (run.runnerId) return { sessionId: run.sessionId, logPath: run.sessionLogPath ?? run.stdoutLogPath,
+    mode: run.sessionLogPath ? run.logAdapter ?? 'stdout' : 'stdout', awaitingStructured: !run.sessionLogPath }
   const configured: LogAdapter = run.logAdapter ?? 'stdout'
   const attached = attachSessionLog(db, run)
   const external =
@@ -125,6 +127,7 @@ export function sessionReadTarget(db: Db, run: Run): SessionReadTarget {
 /** While stdout is on screen, has a structured log worth swapping in appeared? */
 export function structuredSessionTarget(db: Db, run: Run): SessionReadTarget | null {
   const configured: LogAdapter = run.logAdapter ?? 'stdout'
+  if (run.runnerId && !run.sessionLogPath) return null
   if (!readsExternalLog(configured)) return null
 
   const attached = attachSessionLog(db, run)

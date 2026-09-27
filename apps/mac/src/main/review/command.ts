@@ -13,7 +13,7 @@ export interface CommandResult {
 export function command(
   executable: string,
   args: string[],
-  options: { cwd: string; env?: NodeJS.ProcessEnv; timeout?: number }
+  options: { cwd: string; env?: NodeJS.ProcessEnv; timeout?: number; signal?: AbortSignal }
 ): Promise<CommandResult> {
   return new Promise((resolveResult, reject) => {
     execFile(
@@ -23,6 +23,7 @@ export function command(
         cwd: options.cwd,
         env: options.env,
         timeout: options.timeout ?? 15_000,
+        signal: options.signal,
         maxBuffer: MAX_OUTPUT,
         encoding: 'utf8'
       },
@@ -49,4 +50,3 @@ export async function git(
 ): Promise<CommandResult> {
   return command(GIT, ['-c', 'color.ui=false', ...args], { cwd, timeout, env })
 }
-

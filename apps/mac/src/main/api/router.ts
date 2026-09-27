@@ -427,6 +427,12 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
     },
     servers: { status: os.servers.status.handler(() => app.settings.serverStatus) },
     logs: { page: os.logs.page.handler(({ input }) => history.page(input)) },
+    runners: {
+      status: os.runners.status.handler(() => app.runners.status()),
+      configure: os.runners.configure.handler(({ input }) => app.runners.configure(input)),
+      pairing: os.runners.pairing.handler(() => app.runners.pairing()),
+      revoke: os.runners.revoke.handler(({ input }) => app.runners.revoke(input))
+    },
     snapshot: snapshot,
     app: {
       info: os.app.info.handler(() => app.appControls().info()),
