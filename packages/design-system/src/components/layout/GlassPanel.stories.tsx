@@ -41,7 +41,16 @@ function Example({ collapsed = false, hidden = false, plain = false, secondaryNa
             <GlassPanelDivider>
               {!railCollapsed && <Resizer value={railWidth} profile="navigation" onChange={setRailWidth} />}
             </GlassPanelDivider>
-            {listHidden ? (
+            {secondaryNav ? (
+              <SideNav collapsed surface="transparent" bordered={false} aria-label="Section navigation">
+                <SideNavTop collapsed draggable />
+                <NavSection>
+                  <NavItem collapsed icon={<LayoutDashboard size={16} />} label="Overview" />
+                  <NavItem collapsed icon={<ListChecks size={16} />} label="Items" active />
+                  <NavItem collapsed icon={<Settings size={16} />} label="Settings" />
+                </NavSection>
+              </SideNav>
+            ) : listHidden ? (
               <CollapseHandle title="Bring the list back" surface="transparent" bordered={false} icon={<ChevronRight size={12} />} onClick={() => setListHidden(false)} />
             ) : (
               <>
@@ -58,18 +67,6 @@ function Example({ collapsed = false, hidden = false, plain = false, secondaryNa
               </>
             )}
           </GlassPanel>
-          {secondaryNav && (
-            <GlassPanel>
-              <SideNav collapsed surface="transparent" bordered={false} aria-label="Section navigation">
-                <SideNavTop collapsed draggable />
-                <NavSection>
-                  <NavItem collapsed icon={<LayoutDashboard size={16} />} label="Overview" />
-                  <NavItem collapsed icon={<ListChecks size={16} />} label="Items" active />
-                  <NavItem collapsed icon={<Settings size={16} />} label="Settings" />
-                </NavSection>
-              </SideNav>
-            </GlassPanel>
-          )}
           <AppShellMain windowHeader>
             <Panel grow surface="canvas" windowHeader>
               <PanelHeader startInset={railCollapsed && listHidden ? 20 : undefined}><Text weight="bold">Contents</Text><WindowDragArea /></PanelHeader>

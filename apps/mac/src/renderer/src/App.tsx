@@ -4,7 +4,6 @@ import {
   AppShellBody,
   AppShellMain,
   EmptyState,
-  GlassPanel,
   MotionLayout,
   Panel,
   ThemeProvider,
@@ -32,7 +31,6 @@ import { useCursorTask, useStore } from './state/store.js'
 import { buildTheme } from './ui/theme.js'
 import { SettingsShell } from './views/SettingsShell.js'
 import { ProjectDashboard } from './views/project/ProjectDashboard.js'
-import { ProjectNavigation } from './views/project/ProjectNavigation.js'
 import { ProjectDetail } from './views/project/ProjectDetail.js'
 
 /**
@@ -378,8 +376,10 @@ function Shell(): JSX.Element {
           motionKey={`${detailOpen ? task?.id ?? 'missing' : 'overview'}:${layout.railCollapsed}:${layout.listMode}`}
           contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}`}
         >
-          <LeftMenu showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen} />
-          {project && <GlassPanel><ProjectNavigation project={project} /></GlassPanel>}
+          <LeftMenu
+            showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen}
+            project={detailOpen ? undefined : project}
+          />
           <AppShellMain windowHeader>
             <AppShellBody>
               {isSettings ? (

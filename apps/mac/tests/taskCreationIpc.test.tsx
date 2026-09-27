@@ -32,7 +32,8 @@ import { useStore } from '../src/renderer/src/state/store.js'
 import { buildTheme } from '../src/renderer/src/ui/theme.js'
 
 vi.mock('electron', () => ({
-  BrowserWindow: {}, ipcMain: {}, clipboard: {}, dialog: {}, shell: {}, Menu: {}, WebContentsView: class { }
+  BrowserWindow: {}, ipcMain: {}, clipboard: {}, dialog: {}, shell: {}, Menu: {}, WebContentsView: class { },
+  systemPreferences: { getUserDefault: () => '' }
 }))
 vi.mock('../src/main/windows.js', () => ({ applicationWindows: () => [], ownsWindow: () => true, windowUrl: () => 'file:///quuu/index.html' }))
 class Window extends EventEmitter {
@@ -78,13 +79,41 @@ beforeEach(() => {
     snapshot: app.snapshot(), settings: app.settings.getSettings(), section: { kind: 'all' },
     drafts: {}, newTaskAgentIds: {}, targetProjectId: projectId, newTaskLink: null, addAction: null,
     detailOpen: false, cursorTaskId: null, selectedRunId: null, session: null, runs: [], toasts: [], filters: NO_FILTERS,
-    projectSettingsOpen: false, editingRuleId: null, trail: INITIAL_TRAIL
+    projectSettingsOpen: false, projectDashboardOpen: false, editingRuleId: null, trail: INITIAL_TRAIL
   })
   useStore.setState({ layout: { ...useStore.getState().layout, rail: paneProfiles.navigation.initial, list: paneProfiles.collection.initial, railCollapsed: false, listMode: 'compact' } })
   app.on('changed', () => useStore.getState().applySnapshot(app.snapshot()))
 })
 
 describe('the single left menu and the footer of the main surface', () => {
+  it.each(['compact', 'hidden'] as const)('shares the project navigation panel and hides it while a task is open with the list %s', async (listMode) => {
+    useStore.setState({ ready: true, layout: { ...useStore.getState().layout, listMode } })
+    useStore.getState().setSection({ kind: 'project', id: projectId })
+    render(<App />)
+    const menu = screen.getByRole('complementary', { name: 'Left menu' })
+    const projectNav = () => within(menu).queryByRole('navigation', { name: 'Project navigation' })
+    expect(projectNav()).not.toBeNull()
+    expect(screen.getAllByRole('complementary')).toHaveLength(1)
+    fireEvent.click(screen.getByRole('button', { name: 'Hide Menu (⌘⌥1)' }))
+    expect(projectNav()).not.toBeNull()
+
+    await act(() => useStore.getState().openTask(readingTaskId))
+    expect(projectNav()).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Project Settings' })).toBeNull()
+    expect(screen.getAllByRole('complementary')).toHaveLength(1)
+    if (listMode === 'compact') expect(within(menu).getByRole('listbox')).toBeTruthy()
+    else expect(within(menu).getByRole('button', { name: 'Restore List (⌘⌥2)' })).toBeTruthy()
+
+    await act(() => useStore.getState().goBack())
+    expect(projectNav()).not.toBeNull()
+    await act(() => useStore.getState().goForward())
+    expect(projectNav()).toBeNull()
+    act(() => useStore.getState().closeDetail())
+    expect(projectNav()).not.toBeNull()
+    act(() => useStore.getState().setSection({ kind: 'all' }))
+    expect(projectNav()).toBeNull()
+  })
+
   it('keeps one panel and its width controls through folding and restoring the nav and the list independently', () => {
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><LeftMenu showTasks /></ThemeProvider>)
     const menu = screen.getByRole('complementary', { name: 'Left menu' })

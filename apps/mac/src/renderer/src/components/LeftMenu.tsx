@@ -1,12 +1,14 @@
 import { CollapseHandle, GlassPanel, GlassPanelDivider, Resizer } from '@design-system/react'
+import type { Project } from '../../../preload/api/projects.js'
 import { t } from '../model/i18n/index.js'
 import { useStore } from '../state/store.js'
 import { ChevronRight, ICON, iconProps } from '../ui/icons.js'
+import { ProjectNavigation } from '../views/project/ProjectNavigation.js'
 import { Rail } from './Rail.js'
 import { TaskSidebar } from './TaskSidebar.js'
 
-/** The list running alongside the nav stays inside the same single sheet of material, open or collapsed. */
-export function LeftMenu({ showTasks }: { showTasks: boolean }): JSX.Element {
+/** Project navigation and the companion list share the rail's material and outer edge. */
+export function LeftMenu({ showTasks, project }: { showTasks: boolean; project?: Project }): JSX.Element {
   const layout = useStore((s) => s.layout)
   const setLayout = useStore((s) => s.setLayout)
   const navigationResizer = !layout.railCollapsed && (
@@ -21,10 +23,10 @@ export function LeftMenu({ showTasks }: { showTasks: boolean }): JSX.Element {
   return (
     <GlassPanel aria-label={t('leftMenu.label')}>
       <Rail />
-      {showTasks ? (
+      {showTasks || project ? (
         <>
           <GlassPanelDivider>{navigationResizer}</GlassPanelDivider>
-          {layout.listMode === 'compact' ? (
+          {project ? <ProjectNavigation project={project} /> : layout.listMode === 'compact' ? (
             <>
               <TaskSidebar />
               <Resizer
