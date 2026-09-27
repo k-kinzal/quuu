@@ -1,6 +1,8 @@
-# The quality gate (docs/working.md) on every push to main.
+# The quality gate (docs/working.md) on every push to main, and a Windows build.
 #
 # - macos-15 because pretest builds quuu-pty with xcrun
+# - The gate's tests drive POSIX processes, so Windows proves the build (typecheck, the ConPTY
+#   host, the bundle) and the Windows launch rules, not the whole suite
 # - Type-aware ESLint OOMs on the hosted runner's ~2GB default heap
 name: ci
 
@@ -45,3 +47,34 @@ jobs:
 
       - name: Test
         run: npm test
+
+  windows:
+    runs-on: windows-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Ensure a C compiler
+        run: |
+          if ! command -v gcc >/dev/null 2>&1; then
+            choco install mingw --no-progress -y
+            echo 'C:\ProgramData\mingw64\mingw64\bin' >> "$GITHUB_PATH"
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Windows launch rules
+        run: npx vitest run apps/mac/tests/windowsPlatform.test.ts

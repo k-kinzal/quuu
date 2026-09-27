@@ -16,6 +16,7 @@ import { useCallback, useId, useEffect, useRef, useState } from 'react'
 import type { TerminalEvent, TerminalSession } from '../../../api/schemas/workbench.js'
 import { pane } from '../interaction/focus.js'
 import { t } from '../model/i18n/index.js'
+import { lastSegment } from '../model/paths.js'
 import { ChevronDown, ChevronUp, ICON, Plus, RefreshCw, Search, Square, Terminal, Trash2, X, iconProps } from '../ui/icons.js'
 
 interface TerminalTabState {
@@ -41,7 +42,7 @@ export interface TerminalPaneProps {
 }
 
 function displayName(tab: TerminalTabState): string {
-  const pathName = tab.cwd.split('/').filter(Boolean).at(-1)
+  const pathName = lastSegment(tab.cwd)
   return pathName ? `${tab.shell} · ${pathName}` : tab.shell || tab.title.trim() || 'shell'
 }
 

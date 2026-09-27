@@ -4,6 +4,7 @@ import { isInjectedUserText } from '../injectedText.js'
 import type { PushResult } from '../parserUtil.js'
 import { collectText, firstLine } from '../parserUtil.js'
 import { readCodexOutput, readCodexTool } from './tools.js'
+import { isAbsolutePath } from '../../platform/pathText.js'
 
 /**
  * Converts a Codex rollout log (jsonl) into a message list for the UI.
@@ -90,7 +91,7 @@ export class CodexSessionParser {
       }
       if (!entry.payload) continue
       if (entry.type === 'session_meta' || entry.type === 'turn_context') {
-        if (typeof entry.payload.cwd === 'string' && entry.payload.cwd.startsWith('/')) this.cwd = entry.payload.cwd
+        if (typeof entry.payload.cwd === 'string' && isAbsolutePath(entry.payload.cwd)) this.cwd = entry.payload.cwd
         continue
       }
       if (entry.type !== 'response_item') continue

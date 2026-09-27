@@ -1,4 +1,4 @@
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, shell, type BrowserWindowConstructorOptions } from 'electron'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { attachContextMenu } from './contextMenu.js'
@@ -13,6 +13,41 @@ export function beginQuit(): void { isQuitting = true }
 export function applicationWindows(): BrowserWindow[] { return [...trustedWindows.keys()].filter(w => !w.isDestroyed()) }
 export function ownsWindow(win: BrowserWindow): boolean { return trustedWindows.has(win) }
 export function windowUrl(win: BrowserWindow): string { return trustedWindows.get(win) ?? '' }
+const macChrome: BrowserWindowConstructorOptions = {
+  /*
+   * No title bar.
+   *
+   * There is nothing to put in it (macOS shows the name in the menu bar and
+   * Dock, and search is handled by the ⌘T palette), so the bar itself goes
+   * and the content extends to the top edge. Not `frame: false` — the rounded
+   * corners and shadow come from the OS window.
+   */
+  titleBarStyle: 'hidden',
+  trafficLightPosition: { x: WINDOW_BUTTONS.x, y: WINDOW_BUTTONS.y },
+  /*
+   * No background of our own; let the OS blur show through.
+   *
+   * Leaving a color in `backgroundColor` puts that color in front and hides
+   * the blur. Every surface except the translucent ones (rail, list) paints
+   * its own ground in the renderer, so the blur appears only where a veil is laid.
+   */
+  backgroundColor: '#00000000',
+  // The menu material picks up the background color. Keeps the material contrast with the main surface even when inactive.
+  vibrancy: 'menu',
+  visualEffectState: 'active'
+}
+
+/*
+ * Windows keeps its own title bar: that is where its window buttons and the menu live, and the
+ * menu is how the keyboard shortcuts exist at all. The menu bar stays out of sight until Alt.
+ * Mica stands in for vibrancy under the translucent surfaces.
+ */
+const windowsChrome: BrowserWindowConstructorOptions = {
+  autoHideMenuBar: true,
+  backgroundColor: '#00000000',
+  backgroundMaterial: 'mica'
+}
+
 export function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1480,
@@ -20,27 +55,7 @@ export function createWindow(): BrowserWindow {
     minWidth: 1040,
     minHeight: 620,
     show: false,
-    /*
-     * No title bar.
-     *
-     * There is nothing to put in it (macOS shows the name in the menu bar and
-     * Dock, and search is handled by the ⌘T palette), so the bar itself goes
-     * and the content extends to the top edge. Not `frame: false` — the rounded
-     * corners and shadow come from the OS window.
-     */
-    titleBarStyle: 'hidden',
-    trafficLightPosition: { x: WINDOW_BUTTONS.x, y: WINDOW_BUTTONS.y },
-    /*
-     * No background of our own; let the OS blur show through.
-     *
-     * Leaving a color in `backgroundColor` puts that color in front and hides
-     * the blur. Every surface except the translucent ones (rail, list) paints
-     * its own ground in the renderer, so the blur appears only where a veil is laid.
-     */
-    backgroundColor: '#00000000',
-    // The menu material picks up the background color. Keeps the material contrast with the main surface even when inactive.
-    vibrancy: 'menu',
-    visualEffectState: 'active',
+    ...(process.platform === 'darwin' ? macChrome : windowsChrome),
     webPreferences: {
       preload: join(__dirname, '../preload/index.cjs'),
       sandbox: true,

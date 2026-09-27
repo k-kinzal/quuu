@@ -1,6 +1,7 @@
 import { t } from '../../i18n/index.js'
 import type { PlanStep } from '../../session/plan.js'
 import { readPlanSteps } from '../../session/plan.js'
+import { isAbsolutePath } from '../../platform/pathText.js'
 
 /**
  * Decodes a Codex tool call down to "what, and against what".
@@ -267,7 +268,7 @@ function fromScript(script: string): CodexTool {
 
 /** A directory only when it is absolute. A relative one would be read against the wrong root. */
 function absoluteDir(value: unknown): string | null {
-  return typeof value === 'string' && value.startsWith('/') ? value : null
+  return typeof value === 'string' && isAbsolutePath(value) ? value : null
 }
 
 function targetFromArgs(name: string, args: string, script: string): string | null {

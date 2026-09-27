@@ -11,6 +11,7 @@ import { DEEP_BYTES, discoverFiles, firstLine, readHead, type ExternalLogs, type
 import { collectText } from '../parserUtil.js'
 import { layout } from './layout.js'
 import { userText as agyUserText } from './parser.js'
+import { isAbsolutePath } from '../../platform/pathText.js'
 
 // ---------------------------------------------------------------------------
 // Antigravity (agy)
@@ -58,7 +59,7 @@ function agyCwdOf(conversationId: string): string | null {
   try {
     const json = JSON.parse(text) as Record<string, unknown>
     for (const [cwd, id] of Object.entries(json)) {
-      if (id === conversationId && cwd.startsWith('/')) return cwd
+      if (id === conversationId && isAbsolutePath(cwd)) return cwd
     }
   } catch {
     // An unreadable cache means no conversation can be placed. Better than placing it wrongly

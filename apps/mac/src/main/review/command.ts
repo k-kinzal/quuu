@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process'
 import { t } from '../i18n/index.js'
+import { GIT } from '../platform/executables.js'
 
 const MAX_OUTPUT = 8 * 1024 * 1024
 
@@ -46,6 +47,6 @@ export async function git(
   timeout?: number,
   env?: NodeJS.ProcessEnv
 ): Promise<CommandResult> {
-  return command('/usr/bin/git', ['-c', 'color.ui=false', ...args], { cwd, timeout, env })
+  return command(GIT, ['-c', 'color.ui=false', ...args], { cwd, timeout, env })
 }
 

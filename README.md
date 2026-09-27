@@ -1,6 +1,6 @@
 # Quuu AI
 
-![Platform: macOS](https://img.shields.io/badge/platform-macOS-000000?logo=apple)
+![Platform: macOS | Windows](https://img.shields.io/badge/platform-macOS%20%7C%20Windows-000000)
 [![Download: Releases](https://img.shields.io/badge/download-Releases-181717?logo=github)](https://github.com/k-kinzal/quuu/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
@@ -10,7 +10,7 @@
 > will not be addressed unless kinzal is personally affected by the problem or needs
 > the feature.
 
-Quuu brings AI coding agents into one macOS workspace. Queue work across projects,
+Quuu brings AI coding agents into one desktop workspace on macOS and Windows. Queue work across projects,
 let agents run unattended, then review the results and send follow-ups without
 juggling terminals or losing track of sessions.
 
@@ -24,12 +24,14 @@ juggling terminals or losing track of sessions.
 
 ## Requirement
 
-- macOS on Apple Silicon or Intel.
+- macOS on Apple Silicon or Intel, or Windows 10 (1809) / 11 on x64.
 - At least one supported agent CLI installed and authenticated.
 
 The optional iPhone companion requires iOS 18+, iCloud Drive, and a local Xcode build.
 
 ## Install
+
+### macOS
 
 1. Download `Quuu-<version>-arm64.dmg` (Apple Silicon) or
    `Quuu-<version>-x64.dmg` (Intel) from [Releases](https://github.com/k-kinzal/quuu/releases).
@@ -37,6 +39,15 @@ The optional iPhone companion requires iOS 18+, iCloud Drive, and a local Xcode 
 3. Open Quuu. If macOS blocks the first launch, go to
    **System Settings → Privacy & Security → Open Anyway**, then confirm **Open**
    ([Apple's instructions](https://support.apple.com/en-us/102445)).
+
+### Windows
+
+1. Download `Quuu-<version>-win-x64-setup.exe` from [Releases](https://github.com/k-kinzal/quuu/releases)
+   and run it (or unzip `Quuu-<version>-win-x64.zip` and run `Quuu.exe`).
+2. The build is unsigned: if SmartScreen stops it, choose **More info → Run anyway**.
+
+Windows updates by installing a newer Release. Automatic updates and the GitHub App commit
+identity are macOS-only; syncing with the iPhone needs iCloud for Windows.
 
 Enable an agent in **Settings → Agents** and select it for your project to start
 queueing work.

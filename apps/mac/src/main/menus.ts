@@ -5,6 +5,7 @@ import { t } from './i18n/index.js'
 import { sendEvent } from './ipc/events.js'
 import type { AppCommand, CommandPayload } from './desktop/types.js'
 import { PRIORITY_LABEL } from './menuLabels.js'
+import { menuForPlatform } from './menuPlatform.js'
 import { beginQuit, mainWindow, showWindow } from './windows.js'
 import type { UpdateMenuItem } from './desktop/appUpdates.js'
 let updateMenuItem: UpdateMenuItem | null = null
@@ -317,5 +318,5 @@ function buildMenu(): void {
     }
   ]
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template))
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuForPlatform(template, process.platform)))
 }

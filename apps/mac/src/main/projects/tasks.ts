@@ -53,6 +53,8 @@ export function taskCommand(task: ProjectTask): string {
 }
 
 export function shellQuote(value: string): string {
+  // The built-in terminal runs PowerShell on Windows, where a quote inside quotes is doubled
+  if (process.platform === 'win32') return `'${value.replaceAll("'", "''")}'`
   return `'${value.replaceAll("'", "'\\''")}'`
 }
 

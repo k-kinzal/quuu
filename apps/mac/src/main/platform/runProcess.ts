@@ -1,4 +1,6 @@
+import { spawn } from 'node:child_process'
 import { closeSync, openSync, readFileSync, readSync, rmSync, statSync } from 'node:fs'
+import { join } from 'node:path'
 
 /**
  * The plumbing for handling Runs across app restarts.
@@ -34,6 +36,10 @@ export function isProcessAlive(pid: number): boolean {
  * as the group ID.
  */
 export function killProcessGroup(pid: number, signal: NodeJS.Signals): void {
+  if (process.platform === 'win32') {
+    killProcessTree(pid)
+    return
+  }
   try {
     process.kill(-pid, signal)
     return
@@ -44,6 +50,23 @@ export function killProcessGroup(pid: number, signal: NodeJS.Signals): void {
     process.kill(pid, signal)
   } catch {
     // Already exited
+  }
+}
+
+/**
+ * Windows has no process groups to signal. `taskkill /T` walks the tree from the pid instead, and
+ * `/F` because a console program with no window never answers the polite request.
+ */
+function killProcessTree(pid: number): void {
+  const taskkill = join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'taskkill.exe')
+  try {
+    const child = spawn(taskkill, ['/PID', String(pid), '/T', '/F'], { stdio: 'ignore', windowsHide: true, detached: true })
+    child.on('error', () => {
+      // Already exited, or taskkill is missing; either way there is nothing left to do
+    })
+    child.unref()
+  } catch {
+    // Same as above
   }
 }
 

@@ -21,6 +21,7 @@ import { projectStateItems } from '../interaction/projectActions.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { openCountByProject, reviewCount } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
+import { lastSegment } from '../model/paths.js'
 import { projectsByName } from '../model/projectOptions.js'
 import type { Section } from '../state/store.js'
 import { useStore } from '../state/store.js'
@@ -68,7 +69,7 @@ export function Rail(): JSX.Element {
   const addProject = async (): Promise<void> => {
     const path = await window.quuu.system.pickDirectory()
     if (!path) return
-    const name = path.split('/').filter(Boolean).pop() ?? 'project'
+    const name = lastSegment(path) ?? 'project'
     const created = await window.quuu.projects.create({ name, path })
     setSection({ kind: 'project', id: created.id })
     openProjectSettings(true)

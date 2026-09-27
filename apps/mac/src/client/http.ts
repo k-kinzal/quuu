@@ -15,9 +15,15 @@ import type { QuuuApi } from '../api/types.js'
 const ConnectionSchema = z.object({ version: z.literal(1), http: z.string().nullable(), mcp: z.string().nullable(), token: z.string().min(1) })
 export function connectionSettings() {
   if (process.env.QUUU_URL && process.env.QUUU_TOKEN) return { http: process.env.QUUU_URL, mcp: null, token: process.env.QUUU_TOKEN }
-  const file = process.env.QUUU_CONNECTION_FILE ?? join(process.env.QUUU_USER_DATA ?? join(homedir(), 'Library', 'Application Support', 'taskd'), 'connections.json')
+  const file = process.env.QUUU_CONNECTION_FILE ?? join(process.env.QUUU_USER_DATA ?? defaultUserData(), 'connections.json')
   try { return ConnectionSchema.parse(JSON.parse(readFileSync(file, 'utf8')) as unknown) }
   catch (error) { throw new Error(`Cannot read Quuu connection settings at ${file}. Start Quuu and enable HTTP in Settings → Connections.`, { cause: error }) }
+}
+
+/** The app's data directory; the client cannot import the app, so this mirrors main/appPaths.ts. */
+function defaultUserData(): string {
+  if (process.platform === 'win32') return join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'taskd')
+  return join(homedir(), 'Library', 'Application Support', 'taskd')
 }
 
 /** Generated Protobuf descriptors and the official gRPC transport provide the external client. */

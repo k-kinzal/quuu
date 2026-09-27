@@ -43,6 +43,6 @@ export function editorAppName(path: string, known: EditorApp[] = []): string {
   if (trimmed.length === 0) return ''
   const found = known.find((e) => e.path === trimmed)
   if (found) return found.name
-  const base = trimmed.split('/').filter(Boolean).pop() ?? trimmed
-  return base.replace(/\.app$/i, '')
+  const base = trimmed.split(/[\\/]/).filter(Boolean).pop() ?? trimmed
+  return base.replace(/\.(app|exe)$/i, '')
 }

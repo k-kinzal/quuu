@@ -1,10 +1,13 @@
-# Build the Mac app and publish installers and automatic-update feeds on Releases.
+# Build the Mac and Windows apps and publish installers (and the Mac's automatic-update feeds) on Releases.
 #
-# - Runs when a GitHub Release is published; attaches the dmg, zip and feeds to that Release
+# - Runs when a GitHub Release is published; attaches the dmg, zip and feeds to that Release,
+#   and the Windows installer and zip beside them
 # - workflow_dispatch creates no Release; it only verifies the build passes and inspects artifacts
 # - Signing defaults to ad-hoc (unsigned distribution). To use an Apple Developer
 #   Program certificate, put CSC_LINK (base64 of the .p12) and CSC_KEY_PASSWORD in
 #   the repo Secrets and electron-builder switches to proper signing (its standard hook)
+# - Windows builds are unsigned (SmartScreen asks once) and update by manual download; the
+#   automatic-update feeds are macOS-only
 # - The iPhone app is not released. Signed distribution needs the Apple Developer
 #   Program, so build and install it locally (apps/mobile/ios/install.sh)
 name: release
@@ -86,3 +89,54 @@ jobs:
           path: |
             apps/mac/release/Quuu-*.dmg
             apps/mac/release/Quuu-*.zip
+
+  release-windows:
+    runs-on: windows-latest
+    env:
+      NODE_OPTIONS: --max-old-space-size=8192
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # The built-in terminal's ConPTY host is C, built with MinGW gcc (native/quuu-pty-win.c).
+      - name: Ensure a C compiler
+        run: |
+          if ! command -v gcc >/dev/null 2>&1; then
+            choco install mingw --no-progress -y
+            echo 'C:\ProgramData\mingw64\mingw64\bin' >> "$GITHUB_PATH"
+          fi
+
+      - name: Stamp version from Release tag
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: npx vite-node -c vitest.config.ts apps/mac/scripts/release-manifest.ts --stamp
+
+      - name: Build (x64 installer and zip)
+        run: npm run dist:release
+
+      - name: Attach installer and zip to Release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$TAG" apps/mac/release/Quuu-*-win-x64-setup.exe apps/mac/release/Quuu-*-win-x64.zip --clobber
+
+      - name: Upload artifacts
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            apps/mac/release/Quuu-*-win-x64-setup.exe
+            apps/mac/release/Quuu-*-win-x64.zip

@@ -1,5 +1,6 @@
 import type { MenuItemConstructorOptions } from 'electron'
 import type { MenuTemplateItem } from './desktop/types.js'
+import { platformAccelerator } from './menuPlatform.js'
 
 /**
  * Turn "what to show" from the UI into the OS menu shape.
@@ -41,7 +42,7 @@ export function menuTemplate(
          * Without it, the key gets stolen even while the menu isn't open
          * (breaking the rule that shortcuts are defined in the native menu, one place only)
          */
-        ...(item.accelerator ? { accelerator: item.accelerator, registerAccelerator: false } : {}),
+        ...(item.accelerator ? { accelerator: platformAccelerator(item.accelerator, process.platform), registerAccelerator: false } : {}),
         click: () => choose(item.id)
       }
     ]

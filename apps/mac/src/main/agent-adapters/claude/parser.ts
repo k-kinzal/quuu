@@ -4,6 +4,7 @@ import { MemoryMessages, type MessageBuffer } from '../../session/messageBuffer.
 import { readPlanSteps } from '../../session/plan.js'
 import type { SessionBlock, SessionImage, SessionMessage } from '../../session/types.js'
 import { isInjectedUserText } from '../injectedText.js'
+import { isAbsolutePath } from '../../platform/pathText.js'
 
 /**
  * Converts a Claude Code session jsonl into a message list for the UI.
@@ -284,7 +285,7 @@ export class ClaudeSessionParser {
 
 /** The line's `cwd`, as a field to spread in. Nothing when the line carries none, so the record stays as it was. */
 function recordedCwd(entry: RawEntry): { cwd?: string } {
-  return typeof entry.cwd === 'string' && entry.cwd.startsWith('/') ? { cwd: entry.cwd } : {}
+  return typeof entry.cwd === 'string' && isAbsolutePath(entry.cwd) ? { cwd: entry.cwd } : {}
 }
 
 export function stringifyToolResult(content: unknown): string {

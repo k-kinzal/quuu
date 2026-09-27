@@ -89,6 +89,7 @@ npm run build        # typecheck + bundle
 npm run dist         # build the .app into apps/mac/release/
 npm run dist:dmg     # build the dmg
 npm run dist:release # build Release-marked dmg + zip for both Mac architectures
+                     # (on Windows: the x64 installer and zip)
 npm run app:restart  # quit → rebuild the .app → relaunch
 npm run icon         # regenerate the icon artifacts (only after redrawing)
 npm run storybook    # visual check of the design system
@@ -259,10 +260,16 @@ GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) runs the quality gate
 tests are separate steps so a failure names the layer. The runner is macOS
 because the tests build `quuu-pty` with `xcrun`.
 
+A second job builds on Windows (`npm run build`: typecheck, the ConPTY terminal host,
+the bundle) and runs `tests/windowsPlatform.test.ts`. The rest of the suite drives POSIX
+processes and runs on macOS only.
+
 ## Releases
 
 GitHub Actions ([release.yml](../.github/workflows/release.yml)) builds the Mac app and
-puts dmgs, update ZIPs and JSON feeds (arm64 / x64) on the Release you published. Publish a GitHub Release (the tag
+puts dmgs, update ZIPs and JSON feeds (arm64 / x64) on the Release you published. A
+Windows runner builds `Quuu-<version>-win-x64-setup.exe` (installer) and
+`Quuu-<version>-win-x64.zip` (no install) and attaches them to the same Release. Publish a GitHub Release (the tag
 is created with it). The tag is the release date, `YYYY.MM.DD`, with no `v` prefix. The
 workflow stamps `apps/mac/package.json` with its numeric version (for example,
 `2026.09.27` becomes `2026.9.27`), then attaches the artifacts. The version in git is not consulted. Title
@@ -287,6 +294,9 @@ installations automatically; automatic updates require a newer dated Release.
 - To use an Apple Developer Program certificate, put `CSC_LINK` (the .p12 certificate,
   base64) and `CSC_KEY_PASSWORD` in the repository Secrets. electron-builder switches to
   proper signing (no notarization is performed)
+- **Windows builds are unsigned.** SmartScreen asks once ("More info" → "Run anyway").
+  Windows has no automatic updates; install a newer Release over the old one. The
+  GitHub App commit identity keeps its key in the macOS Keychain and is macOS-only
 - **The iPhone app is not released.** Signed distribution requires the Apple Developer
   Program, so each user builds and installs it locally (`npm run ios:install`). The
   signing team goes into the gitignored `apps/mobile/ios/Local.xcconfig` as your own
@@ -617,7 +627,7 @@ order, so it only takes effect when a human sets P0.
 
 ## Data
 
-`~/Library/Application Support/taskd/`
+`~/Library/Application Support/taskd/` (Windows: `%APPDATA%\taskd\`)
 
 - `taskd.db` — SQLite (WAL). Tasks, run history, agent definitions, projects
 - `logs/<runId>.log` — stdout / stderr of each run
@@ -661,6 +671,9 @@ This is a desktop app, so the same operation gets three entry points.
 column widths are changed by going to the handle with `⇥` and pressing `←` `→`.
 
 ### Shortcuts (defined in the native menus)
+
+On Windows, `Ctrl` stands in for `⌘`, `⌘⌃` becomes `Alt`, and Archive is `Ctrl+Shift+Backspace`
+(`apps/mac/src/main/menuPlatform.ts`). The menu bar appears with `Alt`.
 
 The menus are split **by what they act on**, so there is one place to look.
 `Go` is destinations, `Task` is operations on the selected item, `View` is how the panes

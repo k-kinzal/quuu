@@ -9,8 +9,10 @@ import { afterCommit, inTransaction, type Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { Run } from '../execution/types.js'
 import { t } from '../i18n/index.js'
+import { detachedLaunch } from '../platform/detachedLaunch.js'
 import { cleanupGitHubAuth, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
+import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import { commitIdentityEnv, resolveCommitIdentity } from '../settings/commitIdentity.js'
 import type { Task } from '../tasks/types.js'
@@ -197,11 +199,12 @@ export class HookOperations {
       const agent = run.kind === 'agent' ? this.chooseAgent(run) : null
       if (run.kind === 'agent' && !agent) return
       const settings = repo.getAppSettings(this.db)
-      const baseEnv = { ...process.env, ...agent?.env, ...commitIdentityEnv(settings, run.project), PATH: path }
+      const baseEnv = withPath({ ...process.env, ...agent?.env, ...commitIdentityEnv(settings, run.project) }, path)
       const auth = prepareGitHubAuthEnvironment(resolveCommitIdentity(settings, run.project), run.cwd, path, baseEnv)
       authDir = auth.dir
-      let command = '/bin/sh'
-      let args = ['-c', run.input]
+      // A command hook is a line for the platform's shell
+      let command = process.platform === 'win32' ? process.env.ComSpec ?? 'cmd.exe' : '/bin/sh'
+      let args = process.platform === 'win32' ? ['/d', '/s', '/c', run.input] : ['-c', run.input]
       if (agent) {
         const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command, template: agent.argsTemplate,
           vars: { prompt: run.input, title: run.taskTitle, sessionId: run.sessionId, projectPath: run.cwd,
@@ -214,12 +217,13 @@ export class HookOperations {
       repo.saveHookRun(this.db, started)
       const fd = openSync(run.logPath, 'a')
       try {
-        const child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu hook', ...launch], {
-          cwd: run.cwd, detached: true, stdio: ['ignore', fd, fd],
+        const wrapped = detachedLaunch(WRAPPER, 'Quuu hook', launch)
+        const child = spawn(wrapped.command, wrapped.args, {
+          cwd: run.cwd, detached: true, stdio: ['ignore', fd, fd], windowsHide: true,
           env: { ...baseEnv, ...auth.env, ELECTRON_RUN_AS_NODE: undefined, NODE_OPTIONS: undefined,
             QUUU_TASK_ID: run.taskId, QUUU_PROJECT: run.project.name, QUUU_RUN_ID: run.id,
             QUUU_HOOK_ID: run.hookId, QUUU_HOOK_EVENT: run.event,
-            QUUU_EXIT_FILE: run.exitPath, QUUU_HOOK_PID_FILE: run.exitPath + '.pid' }
+            QUUU_EXIT_FILE: run.exitPath, QUUU_HOOK_PID_FILE: run.exitPath + '.pid', ...wrapped.env }
         })
         child.on('error', error => {
           if (!this.stopped && this.db.isOpen && ACTIVE.has(this.requireRun(run.id).status)) this.finish(started, 'failed', null, error.message)

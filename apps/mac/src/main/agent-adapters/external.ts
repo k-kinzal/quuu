@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import { layoutLastWrittenMs } from './files.js'
 import type { AdapterLayout } from './layout.js'
+import { isAbsolutePath } from '../platform/pathText.js'
 export interface ExternalSession {
   adapter: LogAdapter
   /** Unique key `<adapter>:<sessionId>`. Used for import idempotency. */
@@ -84,7 +85,7 @@ export function dirsAtDepth(root: string, depth: number): string[] {
 export function decodeDirName(name: string): string | null {
   try {
     const decoded = decodeURIComponent(name)
-    return decoded.startsWith('/') ? decoded : null
+    return isAbsolutePath(decoded) ? decoded : null
   } catch {
     return null
   }

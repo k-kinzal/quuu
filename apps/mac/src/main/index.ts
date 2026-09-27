@@ -128,6 +128,9 @@ function notifyNative(instance: QuuuApp, toast: ToastPayload): void {
  */
 app.setPath('userData', userDataDir())
 
+// Windows attributes notifications to this ID; it must match the installer's appId (electron-builder.yml)
+if (process.platform === 'win32') app.setAppUserModelId('net.kinzal.quuu')
+
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {

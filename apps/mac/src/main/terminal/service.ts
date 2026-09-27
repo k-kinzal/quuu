@@ -5,6 +5,7 @@ import { existsSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import type { Writable } from 'node:stream'
 import { t } from '../i18n/index.js'
+import { interactiveShell } from '../platform/shellEnv.js'
 import { discoverProjectTasks, shellQuote, taskCommand } from '../projects/tasks.js'
 import type { TerminalActionResult, TerminalEvent, TerminalSession } from './types.js'
 
@@ -20,10 +21,12 @@ export function ptyHelperPath(): string {
   const override = process.env.QUUU_PTY_HELPER
   if (override) return override
   const resourcesPath = 'resourcesPath' in process && typeof process.resourcesPath === 'string' ? process.resourcesPath : null
+  // Windows gets its own host over ConPTY (native/quuu-pty-win.c); the contract is the same
+  const name = process.platform === 'win32' ? 'quuu-pty.exe' : 'quuu-pty'
   const candidates = [
-    ...(resourcesPath ? [join(resourcesPath, 'bin', 'quuu-pty')] : []),
-    join(process.cwd(), 'build', 'pty', 'quuu-pty'),
-    join(process.cwd(), 'apps', 'mac', 'build', 'pty', 'quuu-pty')
+    ...(resourcesPath ? [join(resourcesPath, 'bin', name)] : []),
+    join(process.cwd(), 'build', 'pty', name),
+    join(process.cwd(), 'apps', 'mac', 'build', 'pty', name)
   ]
   const helper = candidates.find(existsSync)
   if (!helper) throw new Error(t('terminal.ptyHostMissing'))
@@ -38,7 +41,7 @@ export class TerminalService extends EventEmitter {
   >()
 
   openTerminal(cwd: string, columns: number, rows: number): TerminalSession {
-    const shell = process.env.SHELL || '/bin/zsh'
+    const shell = interactiveShell()
     const id = randomUUID()
     const safeColumns = terminalDimension(columns, DEFAULT_TERMINAL_COLUMNS)
     const safeRows = terminalDimension(rows, DEFAULT_TERMINAL_ROWS)
@@ -50,7 +53,8 @@ export class TerminalService extends EventEmitter {
         env: process.env,
         // The helper owns TERM / size / process group. The renderer only passes terminal bytes.
         stdio: ['pipe', 'pipe', 'pipe', 'pipe'],
-        detached: true
+        detached: true,
+        windowsHide: true
       }
     )
     const input = child.stdin
@@ -64,7 +68,7 @@ export class TerminalService extends EventEmitter {
     const session = {
       id,
       cwd,
-      shell: basename(shell),
+      shell: basename(shell).replace(/\.exe$/i, ''),
       columns: safeColumns,
       rows: safeRows
     }
@@ -112,7 +116,10 @@ export class TerminalService extends EventEmitter {
     const task = discoverProjectTasks(cwd).find((candidate) => candidate.id === id)
     if (!task) return { ok: false, reason: t('terminal.projectTaskNotFound') }
     // Send to a fresh command line without disturbing the current input line, as an IDE's "run in terminal" does.
-    return this.terminalInput(sessionId, `\u0003cd ${shellQuote(cwd)} && ${taskCommand(task)}\r`)
+    const line = process.platform === 'win32'
+      ? `Set-Location -LiteralPath ${shellQuote(cwd)}; if ($?) { ${taskCommand(task)} }`
+      : `cd ${shellQuote(cwd)} && ${taskCommand(task)}`
+    return this.terminalInput(sessionId, `\u0003${line}\r`)
   }
 
   closeTerminal(sessionId: string): void {
@@ -129,6 +136,11 @@ export class TerminalService extends EventEmitter {
   private stopTerminal(child: ChildProcess): void {
     if (child.exitCode !== null) return
     const pid = child.pid
+    if (process.platform === 'win32') {
+      // No process groups: closing stdin is the host's hangup, and its job takes the shell's tree
+      child.stdin?.end()
+      return
+    }
     try {
       if (pid === undefined) throw new Error('the terminal has no process ID')
       process.kill(-pid, 'SIGTERM')

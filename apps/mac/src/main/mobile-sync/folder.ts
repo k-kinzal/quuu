@@ -40,6 +40,8 @@ import { LAYOUT, nameFromPlaceholder, placeholderName } from './layout.js'
 export function syncRoot(): string {
   const override = process.env.QUUU_MOBILE_SYNC_DIR?.trim()
   if (override) return expandHome(override)
+  // iCloud for Windows keeps the same iCloud Drive under the user's folder
+  if (process.platform === 'win32') return join(homedir(), 'iCloudDrive', 'Quuu')
   return join(homedir(), 'Library', 'Mobile Documents', 'com~apple~CloudDocs', 'Quuu')
 }
 

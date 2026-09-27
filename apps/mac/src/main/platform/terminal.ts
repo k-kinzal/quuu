@@ -1,8 +1,10 @@
+import { spawn } from 'node:child_process'
 import { chmodSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { terminalScriptDir, terminalScriptPath } from '../appPaths.js'
 import { launch } from './launch.js'
-import { resolveLoginPath } from './shellEnv.js'
+import { interactiveShell, resolveLoginPath } from './shellEnv.js'
+import { resolveWindowsLaunch } from './windowsLaunch.mjs'
 
 /**
  * Open the stock macOS Terminal.
@@ -60,24 +62,79 @@ export function terminalScript(
   ].join('\n')
 }
 
+/**
+ * One word in a batch file. Quoted, with the quote doubled and `%` escaped: enough for the
+ * paths, session IDs and flags a resume hands over, which is all that ever goes through here.
+ */
+export function batchQuote(value: string): string {
+  return `"${value.replaceAll('"', '""').replaceAll('%', '%%')}"`
+}
+
+/**
+ * The Windows counterpart of `terminalScript`, as a `.cmd`.
+ *
+ * The command is resolved first (`claude.cmd` becomes `node …\cli.js`), because a batch file that
+ * runs another batch file without `call` never comes back to open the shell afterwards.
+ */
+export function windowsTerminalScript(
+  input: TerminalCommand & { path: string; shell: string }
+): string {
+  const env = { ...process.env, PATH: input.path }
+  const resolved = resolveWindowsLaunch(input.command, input.args, env)
+  const argv = resolved.verbatim
+    ? `${batchQuote(resolved.file)} ${resolved.args.join(' ').replaceAll('%', '%%')}`
+    : [resolved.file, ...resolved.args].map(batchQuote).join(' ')
+  return [
+    '@echo off',
+    'rem A launch script written by Quuu. Safe to delete once the window is closed.',
+    `cd /d ${batchQuote(input.cwd)} || exit /b 1`,
+    `set "PATH=${input.path.replaceAll('%', '%%')}"`,
+    `title ${input.title.replace(/[&|<>^%]/g, (c) => (c === '%' ? '%%' : `^${c}`))}`,
+    argv,
+    'rem Keep the shell after the agent finishes (this window exists to keep typing in)',
+    `${batchQuote(input.shell)} -NoLogo`,
+    ''
+  ].join('\r\n')
+}
+
+/** `start` hands a console program to the default terminal (Windows Terminal, where installed). */
+function startConsole(cwd: string, target: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', `"start "" /D ${batchQuote(cwd)} ${batchQuote(target)}"`], {
+      detached: true,
+      stdio: 'ignore',
+      windowsHide: true,
+      windowsVerbatimArguments: true
+    })
+    child.once('error', reject)
+    child.once('spawn', () => {
+      child.unref()
+      resolve()
+    })
+  })
+}
+
 /** Just open the directory. Terminal provides the login shell. */
 export async function openTerminalAt(cwd: string): Promise<void> {
+  if (process.platform === 'win32') {
+    await startConsole(cwd, interactiveShell())
+    return
+  }
   await launch(['-a', 'Terminal', cwd])
 }
 
 /** Open a terminal in that directory with one command already running. */
 export async function openTerminalWith(id: string, input: TerminalCommand): Promise<void> {
-  const script = terminalScript({
-    ...input,
-    path: await resolveLoginPath(),
-    shell: process.env.SHELL || '/bin/zsh'
-  })
+  const shellInput = { ...input, path: await resolveLoginPath(), shell: interactiveShell() }
+  const windows = process.platform === 'win32'
+  const script = windows ? windowsTerminalScript(shellInput) : terminalScript(shellInput)
   const path = terminalScriptPath(id)
   writeFileSync(path, script, 'utf8')
   // Terminal will not open a file without the execute bit (it tries and is refused)
   chmodSync(path, 0o700)
   pruneScripts(path)
-  await launch(['-a', 'Terminal', path])
+  if (windows) await startConsole(input.cwd, path)
+  else await launch(['-a', 'Terminal', path])
 }
 
 /** Throw away old launch scripts. The one being handed over now is kept. */

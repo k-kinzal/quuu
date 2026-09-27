@@ -40,9 +40,13 @@ export const appControls = {
 export function desktopOperations(owner: BrowserWindow): DesktopOperations {
   return {
     windowLayout: () => {
+      // Only macOS draws its window buttons over the content; elsewhere the title bar holds them
+      if (process.platform !== 'darwin') return { leftInset: 0, collapsedRailWidth: COLLAPSED_RAIL_WIDTH, overhang: 0 }
       return ({ leftInset: WINDOW_BUTTONS_INSET, collapsedRailWidth: COLLAPSED_RAIL_WIDTH, overhang: WINDOW_BUTTONS_OVERHANG })
     },
     scrollSwipes: () => {
+      // A macOS trackpad preference; elsewhere there is no swipe to navigate with
+      if (process.platform !== 'darwin') return false
       return scrollSwipeNavigates(systemPreferences.getUserDefault(SCROLL_SWIPE_DEFAULT, 'string'))
     },
     lookupBotUser: (input) => {
@@ -68,11 +72,13 @@ export function desktopOperations(owner: BrowserWindow): DesktopOperations {
     pickApplication: async () => {
 
       const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
-      // A `.app` is a directory inside, but the panel lets it be picked as a single file
+      // A `.app` is a directory inside, but the panel lets it be picked as a single file.
+      // On Windows an application is its executable
+      const windows = process.platform === 'win32'
       const options: OpenDialogOptions = {
         properties: ['openFile'],
-        defaultPath: '/Applications',
-        filters: [{ name: t('dialog.applications'), extensions: ['app'] }]
+        defaultPath: windows ? process.env.ProgramFiles ?? 'C:\\Program Files' : '/Applications',
+        filters: [{ name: t('dialog.applications'), extensions: [windows ? 'exe' : 'app'] }]
       }
       const result = win
         ? await dialog.showOpenDialog(win, options)

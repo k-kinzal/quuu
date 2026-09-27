@@ -16,6 +16,7 @@ import {
 } from '@design-system/react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { t } from '../model/i18n/index.js'
+import { lastSegment } from '../model/paths.js'
 import { PRIORITY_LABEL, TASK_STATUS_LABEL } from '../model/labels.js'
 
 import type { PaneId } from '../interaction/focus.js'
@@ -251,7 +252,7 @@ export function CommandPalette(): JSX.Element | null {
       run: close(async () => {
         const path = await window.quuu.system.pickDirectory()
         if (!path) return
-        const name = path.split('/').filter(Boolean).pop() ?? 'project'
+        const name = lastSegment(path) ?? 'project'
         const created = await window.quuu.projects.create({ name, path })
         setSection({ kind: 'project', id: created.id })
         openProjectSettings(true)

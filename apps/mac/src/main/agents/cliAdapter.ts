@@ -1,4 +1,4 @@
-import { cliForCommand, cliForId } from '../agent-clis/registry.js'
+import { cliForCommand, cliForId, commandName } from '../agent-clis/registry.js'
 
 export type LogAdapter =
   | 'claude'
@@ -33,8 +33,7 @@ export function legacyRunAdapter(
 ): LogAdapter {
   const external = adapterOfExternalKey(run.externalKey ?? null)
   if (external) return external
-  const basename = (command: string): string => command.trim().split('/').pop() ?? ''
-  if (configured && basename(configured.command) === basename(run.command)) return configured.logAdapter
+  if (configured && commandName(configured.command) === commandName(run.command)) return configured.logAdapter
   const cli = cliForCommand(run.command)
   return IMPORTABLE_ADAPTERS.find(id => cli !== null && cliForId(id) === cli) ?? 'stdout'
 }

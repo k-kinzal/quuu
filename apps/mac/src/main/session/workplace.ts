@@ -6,6 +6,7 @@ import * as repo from '../db/repo.js'
 import type { SessionBatch, SessionDerivation } from './derive.js'
 import { shellCommandOf } from './shell.js'
 import type { SessionMessage } from './types.js'
+import { GIT } from '../platform/executables.js'
 
 /**
  * Where the agent actually worked, read from what its session recorded.
@@ -108,7 +109,7 @@ function realDir(path: string): string | null {
 export function worktreesOf(dir: string): string[] {
   let out: string
   try {
-    out = execFileSync('/usr/bin/git', ['-C', dir, 'worktree', 'list', '--porcelain'], {
+    out = execFileSync(GIT, ['-C', dir, 'worktree', 'list', '--porcelain'], {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: 5000

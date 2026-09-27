@@ -2,6 +2,7 @@ import { MemoryMessages, type MessageBuffer } from '../../session/messageBuffer.
 import type { SessionMessage } from '../../session/types.js'
 import type { PushResult } from '../parserUtil.js'
 import { collectText, firstLine } from '../parserUtil.js'
+import { isAbsolutePath } from '../../platform/pathText.js'
 
 /**
  * Converts the GitHub Copilot CLI's `events.jsonl` into a message list for the UI.
@@ -84,7 +85,7 @@ export class CopilotSessionParser {
       switch (entry.type) {
         case 'session.start': {
           const cwd = data?.context?.cwd
-          if (typeof cwd === 'string' && cwd.startsWith('/')) this.cwd = cwd
+          if (typeof cwd === 'string' && isAbsolutePath(cwd)) this.cwd = cwd
           break
         }
 

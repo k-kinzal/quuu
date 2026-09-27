@@ -15,7 +15,10 @@ import { join } from 'node:path'
  * gone). The public name and the storage name are treated as separate things.
  */
 export function userDataDir(): string {
-  return process.env.QUUU_USER_DATA ?? join(homedir(), 'Library', 'Application Support', 'taskd')
+  if (process.env.QUUU_USER_DATA) return process.env.QUUU_USER_DATA
+  // Where each OS keeps an app's data; the CLI's client mirrors this (client/http.ts)
+  if (process.platform === 'win32') return join(process.env.APPDATA ?? join(homedir(), 'AppData', 'Roaming'), 'taskd')
+  return join(homedir(), 'Library', 'Application Support', 'taskd')
 }
 
 export function dbPath(): string {
@@ -136,8 +139,8 @@ export function terminalScriptDir(): string {
 export function terminalScriptPath(id: string): string {
   const dir = terminalScriptDir()
   mkdirSync(dir, { recursive: true })
-  // The extension is `.command`. Terminal treats these as "open = execute"
-  return join(dir, `${id}.command`)
+  // The extension is `.command`. Terminal treats these as "open = execute". Windows runs a `.cmd`
+  return join(dir, `${id}${process.platform === 'win32' ? '.cmd' : '.command'}`)
 }
 
 /**

@@ -5,6 +5,7 @@ import { recordExecutionState } from '../tasks/execution.js'
 
 import { EventEmitter } from 'node:events'
 import { closeSync, existsSync, openSync, writeSync } from 'node:fs'
+import { delimiter } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Agent } from '../agents/types.js'
 import { runExitPath, runLogPath } from '../appPaths.js'
@@ -13,6 +14,8 @@ import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { cleanupGitHubAuth, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
 import { clearExitFile, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
+import { detachedLaunch } from '../platform/detachedLaunch.js'
+import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import { builtInPrompt, quuuBinDir } from '../projects/builtIn.js'
 import type { Project } from '../projects/types.js'
@@ -246,7 +249,7 @@ export class Runner extends EventEmitter {
     if (this.stopped) return run
     const settings = repo.getAppSettings(this.db)
     const identity = resolveCommitIdentity(settings, project)
-    const baseEnv: NodeJS.ProcessEnv = {
+    const baseEnv: NodeJS.ProcessEnv = withPath({
       ...process.env,
       ...agent.env,
       /*
@@ -257,10 +260,9 @@ export class Runner extends EventEmitter {
        * false identity in the history.
        * History cannot be fixed afterwards, so overwriting beats being overridden.
       */
-      ...commitIdentityEnv(settings, project),
+      ...commitIdentityEnv(settings, project)
       // QuuuAI's work is done through the CLI that shipped with this app, so it comes first
-      PATH: project.builtIn ? `${quuuBinDir(project)}:${path}` : path
-    }
+    }, project.builtIn ? `${quuuBinDir(project)}${delimiter}${path}` : path)
 
     let launch = [run.command, ...args]
     let githubAuthDir: string | null = null
@@ -319,14 +321,16 @@ export class Runner extends EventEmitter {
 
     let child: ChildProcess
     try {
-      child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', ...launch], {
+      const wrapped = detachedLaunch(WRAPPER, 'Quuu', launch)
+      child = spawn(wrapped.command, wrapped.args, {
         cwd: run.cwd,
-        env,
+        env: { ...env, ...wrapped.env },
         stdio: ['ignore', logFd, logFd],
         // Its own process group, so a signal that kills Quuu (a terminal Ctrl-C, say)
         // does not reach the agent.
         detached: true,
-        shell: false
+        shell: false,
+        windowsHide: true
       })
     } catch (err) {
       closeSync(logFd)

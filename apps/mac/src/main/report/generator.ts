@@ -1,5 +1,7 @@
 import { spawn } from 'node:child_process'
 import { closeSync, openSync, writeSync } from 'node:fs'
+import { detachedLaunch } from '../platform/detachedLaunch.js'
+import { withPath } from '../platform/processEnv.js'
 import { nowIso } from '../util.js'
 
 /**
@@ -37,12 +39,15 @@ export function spawnReport(launch: ReportLaunch): number {
     // Keep going even if the header could not be written
   }
   try {
-    const child = spawn('/bin/sh', ['-c', WRAPPER, 'Quuu', launch.command, ...launch.args], {
+    const wrapped = detachedLaunch(WRAPPER, 'Quuu', [launch.command, ...launch.args])
+    const child = spawn(wrapped.command, wrapped.args, {
       cwd: launch.cwd,
-      env: launch.env,
+      // Callers set PATH over a spread process.env; on Windows that leaves a `Path` beside it
+      env: { ...(launch.env.PATH === undefined ? launch.env : withPath(launch.env, launch.env.PATH)), ...wrapped.env },
       stdio: ['ignore', fd, fd],
       detached: true,
-      shell: false
+      shell: false,
+      windowsHide: true
     })
     child.unref()
     if (child.pid === undefined) throw new Error('the report generator did not start')

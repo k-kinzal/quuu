@@ -4,7 +4,7 @@
  * User templates describe non-interactive runs and must not be reused for human takeover.
  */
 
-import { cliForCommand, cliForId } from '../agent-clis/registry.js'
+import { cliForCommand, cliForId, commandName } from '../agent-clis/registry.js'
 import type { LogAdapter } from './cliAdapter.js'
 
 
@@ -55,10 +55,6 @@ export interface ResumeSource {
   sessionId?: string | null
 }
 
-/** Pull `claude` out of `/opt/homebrew/bin/claude` (the renderer comes through here too, so no node:path). */
-function basename(command: string): string {
-  return command.split('/').filter(Boolean).pop() ?? ''
-}
 
 /**
  * Same CLI? `/opt/homebrew/bin/claude` and `claude` count as the same thing.
@@ -68,14 +64,14 @@ function basename(command: string): string {
  * "no such conversation". If either side is empty (unknown), they cannot be called the same.
  */
 export function sameCli(a: string, b: string): boolean {
-  const x = basename(a.trim())
-  const y = basename(b.trim())
+  const x = commandName(a)
+  const y = commandName(b)
   return x.length > 0 && x === y
 }
 
 /** The CLI's name as shown on screen. An unknown command is returned as-is. */
 export function cliLabel(command: string): string {
-  const name = basename(command.trim())
+  const name = commandName(command)
   return cliForCommand(name)?.name ?? name
 }
 

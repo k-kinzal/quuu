@@ -12,6 +12,8 @@ export async function openExternalLink(href: string): Promise<void> {
   try {
     if (/^file:/i.test(href)) path = fileURLToPath(href)
     else if (/^\/(?!\/)/.test(href)) path = decodeURIComponent(href)
+    // A Windows drive path would otherwise read as a URL whose scheme is the drive letter
+    else if (process.platform === 'win32' && /^[A-Za-z]:[\\/]/.test(href)) path = decodeURIComponent(href)
     else if (href.startsWith('~/')) path = join(homedir(), decodeURIComponent(href.slice(2)))
     else {
       if (!/^(?:https?|mailto):/i.test(href)) throw new Error('Unsupported link')
@@ -29,6 +31,11 @@ export async function openExternalLink(href: string): Promise<void> {
   } catch (cause) {
     throw new Error(t('externalLinks.pathUnavailable', { path }), { cause })
   }
-  if (info.isDirectory()) await launch(['-a', 'Finder', path])
-  else shell.showItemInFolder(path)
+  if (!info.isDirectory()) shell.showItemInFolder(path)
+  else if (process.platform === 'darwin') await launch(['-a', 'Finder', path])
+  else {
+    // Explorer has no `open -a`; the shell's own open of a folder is the same thing there
+    const error = await shell.openPath(path)
+    if (error) throw new Error(error)
+  }
 }

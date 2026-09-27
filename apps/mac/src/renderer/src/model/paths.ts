@@ -7,11 +7,22 @@
  * cutting data-ink to keep non-data ink, so: drop the prefix, always keep the tail.
  */
 
+/** The separator a path was written with. A path from Windows uses `\` and never `/`. */
+function separatorOf(path: string): '/' | '\\' {
+  return path.includes('\\') && !path.includes('/') ? '\\' : '/'
+}
+
+/** The last segment of a path from either platform (`C:\src\app` → `app`). */
+export function lastSegment(path: string): string | undefined {
+  return path.split(/[\\/]/).filter(Boolean).at(-1)
+}
+
 /** Make it relative to the project root. */
 export function relativeToCwd(path: string, cwd: string | null | undefined): string {
   if (!cwd) return path
   if (path === cwd) return '.'
-  const root = cwd.endsWith('/') ? cwd : `${cwd}/`
+  const separator = separatorOf(cwd)
+  const root = cwd.endsWith(separator) ? cwd : `${cwd}${separator}`
   return path.startsWith(root) ? path.slice(root.length) : path
 }
 
@@ -22,17 +33,18 @@ export function relativeToCwd(path: string, cwd: string | null | undefined): str
 export function compactPath(path: string, max = 46): string {
   if (path.length <= max) return path
 
-  const segments = path.split('/')
+  const separator = separatorOf(path)
+  const segments = path.split(separator)
   const file = segments[segments.length - 1]
 
   // When the file name alone overflows, keep the extension and elide the middle
   if (file.length >= max) return middleTruncate(file, max)
 
   for (let keep = segments.length - 2; keep >= 1; keep--) {
-    const candidate = `${segments.slice(0, keep).join('/')}/…/${file}`
+    const candidate = `${segments.slice(0, keep).join(separator)}${separator}…${separator}${file}`
     if (candidate.length <= max) return candidate
   }
-  return `…/${file}`
+  return `…${separator}${file}`
 }
 
 export function middleTruncate(text: string, max: number): string {
@@ -44,7 +56,7 @@ export function middleTruncate(text: string, max: number): string {
 
 /** Take just the file name. */
 export function basename(path: string): string {
-  const segments = path.split('/')
+  const segments = path.split(/[\\/]/)
   return segments[segments.length - 1] || path
 }
 

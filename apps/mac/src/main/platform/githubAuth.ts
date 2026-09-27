@@ -14,6 +14,7 @@ import runtimeSource from './githubAuthRuntime.mjs?raw'
 import { githubAppJwt, writeGitHubHosts } from './githubAuthRuntime.mjs'
 import { botLogin, hasGitHubAppAuthentication } from '../settings/commitIdentity.js'
 import type { CommitIdentity } from '../settings/identity.js'
+import { GIT } from './executables.js'
 
 export { githubAppJwt } from './githubAuthRuntime.mjs'
 
@@ -37,6 +38,7 @@ export async function saveGitHubAppPrivateKey(
   pem: string,
   keychainPath?: string
 ): Promise<void> {
+  assertKeychain()
   if (!/^\d+$/.test(appId)) throw new Error('Could not read the GitHub App ID')
   if (!pem.includes('BEGIN') || !pem.includes('PRIVATE KEY')) {
     throw new Error('Could not read the GitHub App private key')
@@ -88,6 +90,13 @@ export async function saveGitHubAppPrivateKey(
   const savedPem = Buffer.from(saved, 'base64').toString()
   if (savedPem !== pem) throw new Error('Could not save the GitHub App private key to the Keychain')
   githubAppJwt(appId, savedPem)
+}
+
+/** The private key has nowhere to live but the macOS Keychain yet. */
+function assertKeychain(): void {
+  if (process.platform !== 'darwin') {
+    throw new Error('The GitHub App identity keeps its private key in the macOS Keychain and is available only on macOS.')
+  }
 }
 
 async function runSecurity(args: string[], input = ''): Promise<string> {
@@ -149,6 +158,8 @@ export function prepareGitHubAuthEnvironment(
   const repository = remote ? githubRepositoryFromRemote(remote) : null
   if (!repository) return { env: {}, dir: null }
 
+  // Refusing beats running under the human's gh login, which is what skipping would amount to
+  assertKeychain()
   const appId = identity.appId!.trim()
   const dir = mkdtempSync(join(tmpdir(), 'quuu-github-'))
   try {
@@ -215,7 +226,7 @@ export function cleanupGitHubAuth(dir: string | null): void {
 
 function gitOrigin(projectPath: string): string | null {
   try {
-    const result = requireExecFile('/usr/bin/git', [
+    const result = requireExecFile(GIT, [
       '-C',
       projectPath,
       'config',

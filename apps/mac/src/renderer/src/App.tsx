@@ -29,6 +29,7 @@ import { openWithCommand } from './interaction/openWith.js'
 import { startNewTask } from './interaction/taskLink.js'
 import { useOrderedTasks } from './interaction/useTasks.js'
 import { isJapanese, t } from './model/i18n/index.js'
+import { lastSegment } from './model/paths.js'
 import { useCursorTask, useStore } from './state/store.js'
 import { buildTheme } from './ui/theme.js'
 import { SettingsShell } from './views/SettingsShell.js'
@@ -189,7 +190,7 @@ function Shell(): JSX.Element {
         case 'project.add': {
           const path = await window.quuu.system.pickDirectory()
           if (!path) return
-          const name = path.split('/').filter(Boolean).pop() ?? 'project'
+          const name = lastSegment(path) ?? 'project'
           const created = await window.quuu.projects.create({ name, path })
           setSection({ kind: 'project', id: created.id })
           openProjectSettings(true)
