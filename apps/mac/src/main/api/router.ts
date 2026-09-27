@@ -11,6 +11,11 @@ import { savePromptFiles } from '../platform/promptFiles.js'
 import { t } from '../i18n/index.js'
 import type { OperationHost } from './host.js'
 
+interface DocumentRequest {
+  generation: number
+  validation?: { projectId: string; url: string; allowed: Promise<boolean> }
+}
+
 export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<Owner>) {
   const os = implement(contract).$context<{ owner: Owner }>().use(async ({ context, next, path }) => {
     host.authorize(context.owner)
@@ -23,8 +28,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   const sessions = new Map<Owner, SessionView>()
   const releaseSessions = new Map<Owner, () => void>()
   const terminals = new Map<Owner, Set<string>>()
-  const documentRequests = new Map<Owner, { generation: number }>()
-  const documentRequest = (owner: Owner): { generation: number } => {
+  const documentRequests = new Map<Owner, DocumentRequest>()
+  const documentRequest = (owner: Owner): DocumentRequest => {
     let state = documentRequests.get(owner)
     if (!state) {
       state = { generation: 0 }
@@ -477,13 +482,19 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       show: os.documents.show.handler(async ({ input, context }) => {
         const state = documentRequest(context.owner)
         const generation = ++state.generation
-        const documents = await listProjectDocuments(app.db, input.projectId)
+        if (state.validation?.projectId !== input.projectId || state.validation.url !== input.url) {
+          state.validation = { projectId: input.projectId, url: input.url,
+            allowed: listProjectDocuments(app.db, input.projectId).then(documents => documents.websites.some(link => link.url === input.url)) }
+        }
+        const allowed = await state.validation.allowed
         if (generation !== state.generation) return { ok: true }
-        if (!documents.websites.some(link => link.url === input.url)) throw new Error(t('documents.notFound'))
+        if (!allowed) throw new Error(t('documents.notFound'))
         return host.desktopFor(context.owner).showDocument(input)
       }),
       hide: os.documents.hide.handler(({ context }) => {
-        documentRequest(context.owner).generation++
+        const state = documentRequest(context.owner)
+        state.generation++
+        state.validation = undefined
         return host.desktopFor(context.owner).hideDocument()
       }),
       navigate: os.documents.navigate.handler(({ input, context }) => host.desktopFor(context.owner).navigateDocument(input))

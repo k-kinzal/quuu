@@ -54,6 +54,24 @@ it('uses a nonstandard origin default and reads it without creating a local bran
   expect(git('branch', '--list', 'trunk')).toBe('')
 })
 
+it('discovers published docs in package READMEs beyond the first twenty and labels their package', async () => {
+  writeFileSync(join(cwd, 'README.md'), '# Packages\n')
+  for (let i = 0; i < 22; i++) {
+    const directory = join(cwd, 'packages', `example-${i}`)
+    mkdirSync(directory, { recursive: true })
+    writeFileSync(join(directory, 'README.md'), '# Example\n')
+  }
+  const directory = join(cwd, 'packages', 'sql-semantics')
+  mkdirSync(directory)
+  writeFileSync(join(directory, 'README.md'), `# SQL semantics\n\n${badge}\n`)
+  writeFileSync(join(directory, 'README.ja.md'), badge)
+  git('add', '.')
+  git('commit', '-m', 'Package documentation')
+  git('switch', '-c', 'feature')
+  writeFileSync(join(directory, 'README.md'), '# Uncommitted package')
+  expect((await listProjectDocuments(db, projectId)).websites).toEqual([{ title: 'sql-semantics · Docs', url: website }])
+})
+
 it('reads an immutable revision after the default branch changes and refuses unlisted paths', async () => {
   const docs = await listProjectDocuments(db, projectId)
   writeFileSync(join(cwd, 'README.md'), '# New revision')

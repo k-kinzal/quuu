@@ -64,8 +64,9 @@ files and the currently checked-out feature branch do not affect this view.
 
 The default branch comes from `origin/HEAD`, with `main` / `master` as fallbacks.
 A repository without remotes and with one branch uses that branch. No fetch or
-checkout is performed. Root README variants also contribute published HTTPS
-Docs links, including linked badges. These websites open inside the preview,
+checkout is performed. README variants throughout the repository also contribute
+published HTTPS Docs links, including package badges in monorepos. Package names
+distinguish these sites in the navigation. These websites open inside the preview,
 with page navigation and an action to open the original site in a browser.
 
 The task composer stays below every reading surface, including Documents,

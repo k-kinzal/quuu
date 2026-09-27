@@ -109,11 +109,14 @@ export async function listProjectDocuments(db: Db, projectId: string): Promise<P
   const branch = await documentBranch(cwd)
   const files = await filesAt(cwd, branch.revision)
   const websites = new Map<string, DocumentationLink>()
-  // Root README variants carry the project's published documentation entry points.
-  for (const file of files.filter(file => !file.path.includes('/') && readme.test(file.path)).slice(0, 20)) {
+  // Monorepos publish separate documentation from each package's README.
+  for (const file of files.filter(file => readme.test(file.path))) {
     const size = Number((await checked(cwd, ['cat-file', '-s', `${branch.revision}:${file.path}`])).trim())
     if (size > MAX_DOCUMENT_BYTES) continue
-    for (const link of documentationLinks(await contentAt(cwd, branch.revision, file.path))) websites.set(link.url, link)
+    const directory = file.path.split('/').slice(0, -1).at(-1)
+    for (const link of documentationLinks(await contentAt(cwd, branch.revision, file.path))) {
+      if (!websites.has(link.url)) websites.set(link.url, { ...link, title: directory ? `${directory} · ${link.title}` : link.title })
+    }
   }
   return { ...branch, files, websites: [...websites.values()] }
 }
