@@ -3,376 +3,330 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Quuu — Let the agents keep working. Go live a little.</title>
+  <title>Quuu — Let the agents keep working.</title>
   <meta name="description" content="Quuu brings Claude Code, Codex, Cursor and more into one macOS workspace. Queue work across projects, let agents run unattended, and review when you're ready.">
-  <meta name="theme-color" content="#F2EFE9">
+  <meta name="theme-color" content="#121316">
+  <meta name="color-scheme" content="dark">
   <meta property="og:type" content="website">
-  <meta property="og:title" content="Quuu — Let the agents keep working. Go live a little.">
+  <meta property="og:title" content="Quuu — Let the agents keep working.">
   <meta property="og:description" content="One macOS workspace for every AI coding agent. Queue it, walk away, review when you're back.">
   <meta property="og:image" content="https://k-kinzal.github.io/quuu/assets/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="assets/favicon-64.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500&display=swap&text=%E4%BA%BA%E9%96%93%E3%82%89%E3%81%97%E3%81%8F%E3%80%81%E7%94%9F%E3%81%8D%E3%82%8B%E3%81%9F%E3%82%81%E3%81%AB%E3%80%82%E5%AE%8C%E4%BA%86%E3%81%AF%E3%81%82%E3%81%AA%E3%81%9F%E3%81%A0%E3%81%91%E3%81%8C%E6%8A%BC%E3%81%9B%E3%82%8B">
+  <!-- Fallbacks only: Apple platforms render SF Pro / SF Mono, exactly as the app does. -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
+  <canvas class="ambient" data-ambient aria-hidden="true"></canvas>
+  <div class="spot" aria-hidden="true"></div>
 
   <header class="nav" data-nav>
-    <a class="nav__brand" href="#top" aria-label="Quuu home">
-      <img src="assets/icon-256.png" alt="" width="28" height="28">
-      <span>Quuu</span>
-    </a>
+    <a class="nav__brand" href="#top"><img src="assets/icon-256.png" alt="" width="22" height="22"><span>Quuu</span></a>
     <nav class="nav__links" aria-label="Sections">
-      <a href="#flow">Flow</a>
+      <a href="#day">How it works</a>
       <a href="#agents">Agents</a>
       <a href="#features">Features</a>
-      <a href="#day">A day</a>
     </nav>
-    <a class="btn btn--ink btn--sm" href="https://github.com/k-kinzal/quuu/releases/latest">
-      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 1.5v9m0 0L4.5 7M8 10.5 11.5 7M2.5 14h11" /></svg>
-      Download
-    </a>
+    <a class="btn btn--primary btn--sm" data-magnet href="https://github.com/k-kinzal/quuu/releases/latest">Download</a>
   </header>
 
   <main id="top">
-    <!-- ───────────────────────── HERO ───────────────────────── -->
-    <section class="hero" data-hero>
-      <div class="hero__copy">
-        <p class="eyebrow"><span class="dot dot--live"></span> Quuu AI for macOS</p>
-        <h1 class="hero__title">
-          <span class="line"><span>Let the agents</span></span>
-          <span class="line"><span>keep working.</span></span>
-          <span class="line line--serif"><span><em>Go live a little.</em></span></span>
-        </h1>
-        <p class="hero__lede">
-          One Mac workspace for Claude Code, Codex, Cursor and friends.
-          Write the work down, queue it across every project, and step away.
-          The queue keeps running while you're gone.
-        </p>
-        <div class="hero__cta">
-          <a class="btn btn--ink" href="https://github.com/k-kinzal/quuu/releases/latest">
-            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.2 8.4c0-1.7 1.4-2.5 1.5-2.6-.8-1.2-2.1-1.3-2.5-1.3-1.1-.1-2.1.6-2.6.6-.6 0-1.4-.6-2.3-.6C4.1 4.5 3 5.2 2.4 6.3c-1.3 2.2-.3 5.5.9 7.3.6.9 1.3 1.8 2.2 1.8.9 0 1.2-.6 2.3-.6s1.4.6 2.3.6c1 0 1.6-.9 2.1-1.8.7-1 1-1.9 1-2-.1 0-2-.7-2-3.2ZM9.5 3.4c.5-.6.8-1.4.7-2.2-.7 0-1.5.5-2 1.1-.4.5-.8 1.3-.7 2.1.8.1 1.5-.4 2-1Z" fill="currentColor" stroke="none"/></svg>
-            Download for Mac
-          </a>
-          <a class="btn btn--ghost" href="https://github.com/k-kinzal/quuu">
-            View source <span aria-hidden="true">↗</span>
-          </a>
+    <!-- ── Hero: the copy recedes and the real window rises to meet you ── -->
+    <section class="hero" data-pin="hero">
+      <div class="pin">
+        <div class="hero__copy" data-hero-copy>
+          <p class="kicker"><img src="assets/icon-256.png" alt="" width="18" height="18">Quuu for macOS</p>
+          <h1 class="hero__title">
+            <span class="split" data-split>Let the agents</span>
+            <span class="split" data-split>keep working.</span>
+            <span class="split dim" data-split>Go live a little.</span>
+          </h1>
+          <p class="hero__lede">One Mac workspace for Claude Code, Codex, Cursor and more. Write the work down, queue it across every project, and step away — the queue keeps running while you're gone.</p>
+          <div class="hero__cta">
+            <a class="btn btn--primary" data-magnet href="https://github.com/k-kinzal/quuu/releases/latest">Download for Mac</a>
+            <a class="btn btn--quiet" data-magnet href="https://github.com/k-kinzal/quuu">View source</a>
+          </div>
         </div>
-        <p class="hero__meta mono">Apple Silicon &amp; Intel · MIT · Free</p>
-      </div>
 
-      <div class="hero__stage" data-tilt>
-        <div class="hero__glow" aria-hidden="true"></div>
-        <img class="hero__q" src="assets/hero-q.webp" alt="The Quuu mark rendered as a sculpture of frosted blue and violet glass" width="1536" height="1024" fetchpriority="high">
-        <!-- live cards orbit the mark -->
-        <div class="float-card float-card--a glass" style="--d:0s">
-          <span class="state state--running"><i></i>Running</span>
-          <strong>Rotate logs by date</strong>
-          <span class="mono muted">runtime-tools · Codex · <span data-clock>14m 57s</span></span>
-        </div>
-        <div class="float-card float-card--b glass" style="--d:-2s">
-          <span class="state state--review"><i></i>Review</span>
-          <strong>Rebuild the color tokens in OKLCH</strong>
-          <span class="mono muted">Quuu · Opus → Codex</span>
-        </div>
-        <div class="float-card float-card--c glass" style="--d:-4s">
-          <span class="state state--limit"><i></i>Limit · resets 3pm</span>
-          <strong>Fable → Opus</strong>
-          <span class="mono muted">handed off, nobody asked</span>
-        </div>
-      </div>
-
-      <div class="statusbar glass mono" aria-label="Example scheduler status">
-        <span>Running <b data-count="run">3</b><span class="muted"> / 3</span>
-          <span class="slots"><i class="on"></i><i class="on"></i><i class="on"></i></span></span>
-        <span>Queued <b data-count="queued">7</b></span>
-        <span>Review <b class="c-review" data-count="review">4</b></span>
-        <span>Failed <b class="c-failed">0</b></span>
-        <span class="statusbar__right"><span class="dot dot--live"></span> Scheduler running · window closed</span>
+        <figure class="win win--hero" data-hero-win data-tilt>
+          <div class="win__lights" aria-hidden="true"><i></i><i></i><i></i></div>
+          <img src="assets/ui-chat.webp" width="2400" height="1366" fetchpriority="high"
+               alt="Quuu: projects in the sidebar, tasks grouped by Review, Failed, Running, Queued, Held and Draft, an agent conversation, and task details with run history">
+          <div class="glare" aria-hidden="true"></div>
+          <figcaption class="notes" aria-hidden="true">
+            <span class="note" style="--x:16%;--y:7.2%;--at:.56"><b>Review first</b>What needs you is always on top.</span>
+            <span class="note note--up" style="--x:43%;--y:88.5%;--at:.66"><b>Send back</b>Follow up in the same session.</span>
+            <span class="note note--r" style="--x:85.5%;--y:19.4%;--at:.74"><b>Opus → Codex</b>A fallback chain, per project.</span>
+            <span class="note note--r" style="--x:94.4%;--y:2.7%;--at:.82"><b>Done</b>Only you press it.</span>
+          </figcaption>
+        </figure>
       </div>
     </section>
 
-    <!-- ───────────────────────── MANIFESTO ───────────────────────── -->
-    <section class="manifesto" aria-labelledby="manifesto-title">
-      <p class="eyebrow" id="manifesto-title">Why it exists</p>
-      <p class="manifesto__text" data-words>
-        He keeps a dozen-odd projects. His days went to handing what he had written in a notepad
-        to whichever AI was free. No rest — all of it so the AIs would keep running at peak
-        efficiency.
-      </p>
-      <p class="manifesto__text manifesto__text--answer" data-words>
-        Quuu takes the handing-off. <em>You take the day back.</em>
-      </p>
-      <p class="tate" lang="ja" aria-label="To live more like a human">人間らしく、生きるために。</p>
+    <!-- ── Why: the words come up to full strength as you read ── -->
+    <section class="why" data-pin="why">
+      <div class="pin">
+        <p class="label">Why it exists</p>
+        <p class="why__text" data-words>He keeps a dozen-odd projects. His days went to handing what he had written in a notepad to whichever AI was free. No rest — all of it so the AIs would keep running at peak efficiency.</p>
+        <p class="why__text why__answer" data-words>Quuu takes the handing-off. You take the day back.</p>
+      </div>
     </section>
 
-    <!-- ───────────────────────── PRODUCT ───────────────────────── -->
-    <section class="product" aria-labelledby="product-title">
-      <div class="product__head">
-        <p class="eyebrow eyebrow--dim">The workspace</p>
-        <h2 id="product-title" class="display">Every agent. Every project.<br><em>One calm window.</em></h2>
+    <!-- ── One day of the queue, scrubbed by scroll ── -->
+    <section class="day" id="day" data-pin="day">
+      <div class="pin">
+        <div class="day__side">
+          <p class="label">One day of the queue</p>
+          <p class="clock" data-clock>08:40</p>
+          <ol class="steps" data-steps>
+            <li><h3>Write it down.</h3><p>Last night's notes become tasks. A title, a project, a priority — nothing else to decide.</p></li>
+            <li><h3>Queue it.</h3><p>Across every project, in priority order. Dependencies wait for what they depend on.</p></li>
+            <li><h3>It runs, three at a time.</h3><p>Concurrency per project and per agent. Everything else waits its turn.</p></li>
+            <li><h3>A limit is a handoff.</h3><p>Quuu reads the reset time straight from the CLI and continues the same session on the next agent.</p></li>
+            <li><h3>Nobody is watching.</h3><p>Finished work lands in Review. Nothing is marked done behind your back.</p></li>
+            <li><h3>You decide what's done.</h3><p>Read the conversation, the changes, the pull request. Send it back, or press Done.</p></li>
+            <li><h3>Done is a human privilege.</h3><p>Neither the scheduler, the agents, nor the error handlers ever write it. That button is yours.</p></li>
+          </ol>
+          <div class="ticks" data-ticks aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+
+        <div class="win win--list" data-list aria-label="A replica of Quuu's task list, advancing through the day">
+          <div class="list__head">
+            <span class="list__title">All tasks <b data-total>6</b></span>
+            <span class="list__cols"><span>Project</span><span>Agent</span><span>Status</span></span>
+          </div>
+          <div class="list__body" data-rows></div>
+          <div class="composer"><span data-composer>Task title…</span><span class="composer__meta"><i class="pdot" style="--c:#5eabf1"></i>Quuu<span class="sep"></span>Opus → Codex<span class="sep"></span><b>P0</b><b>P1</b><b class="on">P2</b><b>P3</b></span></div>
+          <div class="status">
+            <span>Running <b data-s="running">0</b><span class="t3"> / 3</span><span class="slots" data-slots><i></i><i></i><i></i></span></span>
+            <span>Queued <b data-s="queued">0</b></span>
+            <span>Review <b class="c-amber" data-s="review">0</b></span>
+            <span>Done <b class="c-green" data-s="done">0</b></span>
+            <span class="status__r"><i class="live"></i>Scheduler running</span>
+          </div>
+        </div>
       </div>
-      <figure class="window" data-scale>
-        <div class="window__bar" aria-hidden="true"><i></i><i></i><i></i><span class="mono">Quuu</span></div>
-        <img src="assets/app-overview.webp" loading="lazy" width="2400" height="1360"
-             alt="Quuu in dark mode: projects in the left rail, tasks grouped by Review, Failed, Running, Queued, Held and Draft, an agent conversation in the middle and run details on the right">
-        <figcaption class="callout callout--1 glass"><b>Grouped by state</b>Review first. What needs you is always on top.</figcaption>
-        <figcaption class="callout callout--2 glass"><b>The whole conversation</b>Chat, changes, commits and PRs in context.</figcaption>
-        <figcaption class="callout callout--3 glass"><b>Run history</b>Every attempt, every fallback, every exit code.</figcaption>
+    </section>
+
+    <!-- ── The state machine, drawn as you scroll ── -->
+    <section class="rule" data-pin="rule">
+      <div class="pin">
+        <h2 class="display">Done is a human privilege.</h2>
+        <p class="sub">An agent's best day ends in Review. Everything after that is yours.</p>
+        <svg class="machine" viewBox="0 0 1120 300" role="img" aria-label="Draft to Queued to Running to Review. Limits and errors go to Failed and return to the queue. Only a person moves Review to Done." data-machine>
+          <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 10 5 0 10z" fill="#4d515a"/></marker>
+            <marker id="ahb" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0 10 5 0 10z" fill="#5ea8f9"/></marker></defs>
+          <g class="m-lines" fill="none" stroke="#4d515a" stroke-width="1.25" marker-end="url(#ah)">
+            <path d="M162 130 H238"/><path d="M392 130 H468"/><path d="M622 130 H698"/>
+            <path d="M545 158 C545 214 560 236 600 236 H690"/>
+            <path d="M690 266 H340 C312 266 314 240 314 160" stroke-dasharray="4 5"/>
+            <path d="M300 102 C300 58 280 40 236 40" stroke-dasharray="4 5"/>
+          </g>
+          <path class="m-human" d="M852 130 H924" fill="none" stroke="#5ea8f9" stroke-width="2.5" marker-end="url(#ahb)"/>
+          <g class="m-nodes">
+            <g><rect x="12" y="108" width="150" height="44" rx="7"/><circle class="mk-draft" cx="40" cy="130" r="5.5"/><text x="58" y="135">Draft</text></g>
+            <g><rect x="242" y="108" width="150" height="44" rx="7"/><circle class="mk-queued" cx="270" cy="130" r="5.5"/><text x="288" y="135">Queued</text></g>
+            <g><rect x="472" y="108" width="150" height="44" rx="7"/><circle class="mk-running" cx="500" cy="130" r="5.5"/><text x="518" y="135">Running</text></g>
+            <g><rect x="702" y="108" width="150" height="44" rx="7"/><rect class="mk-review" x="725" y="125" width="9" height="9" transform="rotate(45 729.5 129.5)"/><text x="748" y="135">Review</text></g>
+            <g class="m-done"><rect x="930" y="104" width="178" height="52" rx="10"/><path class="mk-done" d="M958 130 l6 6 12 -13"/><text x="988" y="136">Done</text></g>
+            <g><rect x="694" y="214" width="166" height="44" rx="7"/><path class="mk-failed" d="M717 231 l10 10 m0 -10 l-10 10"/><text x="740" y="241">Failed / Limit</text></g>
+            <g class="m-held"><rect x="112" y="18" width="124" height="44" rx="7"/><path class="mk-held" d="M136 34 v12 m6 -12 v12"/><text x="158" y="45">Held</text></g>
+          </g>
+          <text class="m-label" x="560" y="208">limit / error</text>
+          <text class="m-label" x="380" y="289">auto-retry · send back · next agent</text>
+          <text class="m-you" x="888" y="116">you</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ── Agents: a limit hits, the next one picks it up ── -->
+    <section class="agents" id="agents" data-pin="agents">
+      <div class="pin">
+        <div class="agents__copy">
+          <p class="label">Agents</p>
+          <h2 class="display">Seven CLIs.<br><span class="dim">One queue.</span></h2>
+          <p class="sub">Claude Code, Codex, Cursor, Grok, GitHub Copilot, Antigravity and opencode. When one hits its limit, Quuu cools it for exactly as long as the CLI said — and hands the same session to the next.</p>
+          <p class="agents__event mono" data-agent-event>&nbsp;</p>
+        </div>
+        <div class="win win--settings">
+          <div class="set__head">Agents</div>
+          <div class="set__group">Agents</div>
+          <table class="set__table" data-agents>
+            <thead><tr><th></th><th>Name</th><th>Command</th><th>Slots</th><th>Fallback</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr data-a="opus"><td><i class="adot"></i></td><td>Claude Opus</td><td class="mono">claude</td><td class="mono" data-slot>0/2</td><td>Codex</td><td data-st>Idle</td></tr>
+              <tr data-a="codex"><td><i class="adot"></i></td><td>Codex</td><td class="mono">codex</td><td class="mono" data-slot>0/1</td><td>—</td><td data-st>Idle</td></tr>
+              <tr data-a="cursor"><td><i class="adot"></i></td><td>Cursor</td><td class="mono">cursor-agent</td><td class="mono" data-slot>0/1</td><td>Opus</td><td data-st>Idle</td></tr>
+              <tr data-a="grok"><td><i class="adot"></i></td><td>Grok</td><td class="mono">grok</td><td class="mono" data-slot>0/1</td><td>Codex</td><td data-st>Idle</td></tr>
+              <tr data-a="copilot"><td><i class="adot"></i></td><td>GitHub Copilot</td><td class="mono">copilot</td><td class="mono" data-slot>0/1</td><td>—</td><td data-st>Idle</td></tr>
+              <tr data-a="agy"><td><i class="adot"></i></td><td>Antigravity</td><td class="mono">agy</td><td class="mono" data-slot>0/1</td><td>—</td><td data-st>Idle</td></tr>
+              <tr data-a="opencode"><td><i class="adot"></i></td><td>opencode</td><td class="mono">opencode</td><td class="mono" data-slot>0/1</td><td>—</td><td data-st>Idle</td></tr>
+            </tbody>
+          </table>
+          <div class="set__group">Groups</div>
+          <table class="set__table set__table--groups">
+            <thead><tr><th></th><th>Name</th><th>Members</th><th>Strategy</th></tr></thead>
+            <tbody><tr data-group><td><i class="adot adot--blue"></i></td><td>Opus <span class="arrow">→</span> Codex <span class="t3">· Default</span></td><td class="mono">2</td><td>First free slot in defined order</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Restart: scroll to quit the app; the agents keep going ── -->
+    <section class="restart" data-pin="restart">
+      <div class="pin">
+        <div class="restart__copy">
+          <p class="label">Restarts are routine</p>
+          <h2 class="display">Quit Quuu.<br><span class="dim">The agents don't notice.</span></h2>
+          <p class="sub">Agents run detached, write straight to disk and record their exit code even while Quuu is gone. On launch it re-adopts what's still running and settles what finished.</p>
+        </div>
+        <div class="lanes" data-lanes aria-hidden="true">
+          <div class="lane lane--app"><span class="lane__name">Quuu.app</span><div class="lane__track"><i class="lane__seg" data-seg="app1"></i><i class="lane__seg" data-seg="app2"></i><em class="lane__mark lane__mark--quit">quit</em><em class="lane__mark lane__mark--up">relaunch<b> · re-adopt 3</b></em></div></div>
+          <div class="lane"><span class="lane__name">claude <span class="t3">48211</span></span><div class="lane__track"><i class="lane__seg lane__seg--agent" data-seg="a1"></i></div></div>
+          <div class="lane"><span class="lane__name">codex <span class="t3">48236</span></span><div class="lane__track"><i class="lane__seg lane__seg--agent" data-seg="a2"></i></div></div>
+          <div class="lane"><span class="lane__name">cursor-agent <span class="t3">48290</span></span><div class="lane__track"><i class="lane__seg lane__seg--agent" data-seg="a3"></i><em class="lane__mark lane__mark--exit">exit 0<b> → Review</b></em></div></div>
+          <div class="playhead" data-playhead><span class="mono" data-playtime>10:00</span></div>
+          <pre class="term mono" data-term></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── One set of tokens: move the lens to see the other appearance ── -->
+    <section class="tokens" data-reveal>
+      <div class="tokens__copy">
+        <p class="label">Appearance</p>
+        <h2 class="display">Light and dark,<br><span class="dim">from one set of tokens.</span></h2>
+        <p class="sub">Surfaces sampled from macOS itself. One neutral hue, perceptually even steps, every text color checked at 4.5:1. Move the lens.</p>
+      </div>
+      <figure class="lens" data-lens>
+        <img src="assets/ui-list-dark.webp" width="2400" height="1366" loading="lazy" alt="Quuu's task list in dark appearance">
+        <img class="lens__light" src="assets/ui-list-light.webp" width="2400" height="1366" loading="lazy" alt="" aria-hidden="true">
+        <span class="lens__ring" aria-hidden="true"></span>
       </figure>
     </section>
 
-    <!-- ───────────────────────── LIVE FLOW ───────────────────────── -->
-    <section class="flow" id="flow" aria-labelledby="flow-title">
-      <div class="flow__head">
-        <p class="eyebrow eyebrow--dim">Try it — this queue is running right now</p>
-        <h2 id="flow-title" class="display">Write it down. Queue it.<br><em>Walk away.</em></h2>
-        <p class="flow__lede">Tasks move on their own. Rate limits hand off to the next agent. What finishes waits in Review — and it stays there until <em>you</em> press Done.</p>
+    <!-- ── Features ── -->
+    <section class="features" id="features">
+      <div class="features__head" data-reveal>
+        <p class="label">Built for being away</p>
+        <h2 class="display">Quiet machinery.</h2>
       </div>
-
-      <div class="board glass-dark" data-board>
-        <div class="board__toolbar mono">
-          <button class="chip" type="button" data-pause aria-pressed="false"><span class="dot dot--live"></span><span data-pause-label>Scheduler running</span></button>
-          <label class="slider">Concurrency
-            <input type="range" min="1" max="4" value="3" data-concurrency aria-label="Concurrency">
-            <output data-concurrency-out>3</output>
-          </label>
-          <button class="chip" type="button" data-add>+ Queue a task</button>
-          <span class="board__log" data-log aria-live="polite"></span>
-        </div>
-        <div class="lanes">
-          <div class="lane" data-lane="queued"><h3 class="mono">Queued <b data-lane-count></b></h3><div class="lane__cards"></div></div>
-          <div class="lane" data-lane="running"><h3 class="mono">Running <b data-lane-count></b></h3><div class="lane__cards"></div></div>
-          <div class="lane lane--review" data-lane="review"><h3 class="mono">Review <b data-lane-count></b></h3><div class="lane__cards"></div></div>
-          <div class="lane lane--done" data-lane="done"><h3 class="mono">Done <b data-lane-count></b></h3><div class="lane__cards"></div>
-            <p class="lane__hint" data-done-hint>Nothing is done until you say so.</p></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ───────────────────────── HUMAN PRIVILEGE ───────────────────────── -->
-    <section class="privilege" aria-labelledby="privilege-title">
-      <p class="eyebrow">The core rule</p>
-      <h2 id="privilege-title" class="privilege__title">Done is a<br><em>human privilege.</em></h2>
-      <p class="privilege__body">Neither the scheduler, nor the agents, nor the error handlers write <span class="mono">done</span>. An agent's best day ends in Review. Everything after that is yours.</p>
-      <svg class="statechart" viewBox="0 0 1100 300" role="img" aria-label="Draft goes to Queued, Queued to Running, Running to Review. Limits and errors go to Failed, which returns to the queue. Only a human moves Review to Done." data-draw>
-        <defs>
-          <linearGradient id="g-human" gradientUnits="userSpaceOnUse" x1="800" y1="0" x2="885" y2="0"><stop offset="0" stop-color="#2F5BFF"/><stop offset="1" stop-color="#8A5CFF"/></linearGradient>
-          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="currentColor"/></marker>
-          <marker id="arrow-human" viewBox="0 0 10 10" refX="7" refY="5" markerUnits="userSpaceOnUse" markerWidth="14" markerHeight="14" orient="auto"><path d="M0 0 10 5 0 10z" fill="#8A5CFF"/></marker>
-        </defs>
-        <g class="sc-lines" fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)">
-          <path d="M150 120 H225"/>
-          <path d="M365 120 H440"/>
-          <path d="M580 120 H655"/>
-          <path d="M510 150 C510 215 520 235 560 238 H640"/>
-          <path d="M640 262 H330 C300 262 295 240 295 160" stroke-dasharray="5 6"/>
-          <path d="M300 94 C300 45 270 30 216 30" stroke-dasharray="5 6"/>
-        </g>
-        <path class="sc-human" d="M800 120 H878" fill="none" stroke="url(#g-human)" stroke-width="3.4" stroke-linecap="round" marker-end="url(#arrow-human)"/>
-        <g class="sc-nodes mono">
-          <g><rect x="20" y="95" width="130" height="50" rx="25"/><text x="85" y="126">Draft</text></g>
-          <g><rect x="230" y="95" width="135" height="50" rx="25"/><text x="297" y="126">Queued</text></g>
-          <g class="is-run"><rect x="445" y="95" width="135" height="50" rx="25"/><text x="512" y="126">Running</text></g>
-          <g class="is-review"><rect x="660" y="95" width="135" height="50" rx="25"/><text x="727" y="126">Review</text></g>
-          <g class="is-done"><rect x="890" y="88" width="190" height="64" rx="32"/><text x="985" y="127">Done</text></g>
-          <g class="is-failed"><rect x="645" y="222" width="150" height="46" rx="23"/><text x="720" y="251">Failed / Limit</text></g>
-          <g class="is-held"><rect x="100" y="12" width="110" height="36" rx="18"/><text x="155" y="35">Held</text></g>
-        </g>
-        <text class="sc-label mono" x="555" y="210">limit / error</text>
-        <text class="sc-label mono" x="360" y="287">auto-retry · send back · next agent</text>
-        <text class="sc-label sc-label--human" x="842" y="100">you</text>
-      </svg>
-      <p class="tate tate--right" lang="ja" aria-label="Only you can press Done">完了は、あなただけが押せる。</p>
-    </section>
-
-    <!-- ───────────────────────── AGENTS ───────────────────────── -->
-    <section class="agents" id="agents" aria-labelledby="agents-title">
-      <div class="agents__head">
-        <p class="eyebrow">Bring the agents you already pay for</p>
-        <h2 id="agents-title" class="display">Seven CLIs.<br><em>One queue.</em></h2>
-      </div>
-      <div class="marquee" aria-label="Supported agents: Claude Code, Codex, Cursor, Grok, GitHub Copilot, Antigravity, opencode">
-        <div class="marquee__track" aria-hidden="true">
-          <span>Claude Code</span><i>✳</i><span>Codex</span><i>✳</i><span>Cursor</span><i>✳</i><span>Grok</span><i>✳</i><span>GitHub Copilot</span><i>✳</i><span>Antigravity</span><i>✳</i><span>opencode</span><i>✳</i>
-          <span>Claude Code</span><i>✳</i><span>Codex</span><i>✳</i><span>Cursor</span><i>✳</i><span>Grok</span><i>✳</i><span>GitHub Copilot</span><i>✳</i><span>Antigravity</span><i>✳</i><span>opencode</span><i>✳</i>
-        </div>
-      </div>
-
-      <div class="fallback">
-        <div class="fallback__copy">
-          <h3 class="h3">When one hits its limit,<br>the next one picks it up.</h3>
-          <p>Quuu reads “try again at 7:13 PM” and “resets 3pm” straight out of the CLI, cools that agent for exactly that long, and continues the same session on the next agent in the chain. Nobody gets asked. Nothing gets lost.</p>
-        </div>
-        <ol class="chain mono" data-chain>
-          <li><span class="chain__name">Fable</span><span class="chain__state state state--limit"><i></i>Limit · weekly</span></li>
-          <li><span class="chain__name">Opus</span><span class="chain__state state state--limit"><i></i>Limit · resets 3pm</span></li>
-          <li class="is-active"><span class="chain__name">Codex</span><span class="chain__state state state--running"><i></i>Running · same session</span></li>
-        </ol>
-      </div>
-    </section>
-
-    <!-- ───────────────────────── FEATURES ───────────────────────── -->
-    <section class="features" id="features" aria-labelledby="features-title">
-      <div class="features__head">
-        <p class="eyebrow">Built for being away</p>
-        <h2 id="features-title" class="display">Quiet machinery.<br><em>Loud results.</em></h2>
-      </div>
-
-      <div class="bento">
-        <article class="tile tile--restart glass-dark">
-          <p class="tile__kicker mono">Restarts are routine</p>
-          <h3 class="h3">Quit the app. The agents don't notice.</h3>
-          <pre class="term mono" aria-label="Terminal example"><span class="c">$</span> kill -TERM $(pgrep -x Quuu)
-<span class="d">Quuu exited · 3 agents still running</span>
-<span class="c">$</span> open -a Quuu
-<span class="ok">↺ re-adopted pid 48211 · 48236 · 48290</span>
-<span class="ok">✓ settled run 7f3a from exit code → Review</span></pre>
-          <div class="lifelines mono" aria-hidden="true">
-            <div class="ll ll--app"><span>Quuu.app</span><div class="ll__track"><i class="seg" style="left:0;width:38%"></i><i class="mark" style="left:38%">quit</i><i class="mark mark--b" style="left:58%">relaunch<b> · re-adopt</b></i><i class="seg" style="left:58%;width:42%"></i></div></div>
-            <div class="ll"><span>claude · 48211</span><div class="ll__track"><i class="seg seg--agent" style="left:6%;width:94%"></i></div></div>
-            <div class="ll"><span>codex · 48236</span><div class="ll__track"><i class="seg seg--agent" style="left:18%;width:82%"></i></div></div>
-            <div class="ll"><span>cursor · 48290</span><div class="ll__track"><i class="seg seg--agent" style="left:24%;width:26%"></i><i class="exit" style="left:50%">exit 0<b> → Review</b></i></div></div>
-            <div class="ll__head"></div>
+      <div class="grid">
+        <article class="tile tile--rule" data-reveal>
+          <div class="tile__text"><p class="label">Automation</p><h3>Queue work while you sleep.</h3><p>“At 3:00, when nothing is queued, burn down one issue.” A cron time is a deadline, not an alarm — a busy night never skips the day.</p></div>
+          <div class="tile__shot" data-parallax><img src="assets/ui-rule.webp" width="1400" height="1452" loading="lazy" alt="Quuu's automation rule editor: task name, prompt, priority, cron expression and statuses that block enqueueing"></div>
+        </article>
+        <article class="tile" data-reveal>
+          <p class="label">Priority</p><h3>P0 keeps its slot.</h3>
+          <div class="mini">
+            <div class="mini__row"><b class="c-amber">P0</b>Recover the chat from a long launch<span class="t3 mono">holds slot</span></div>
+            <div class="mini__row"><b>P1</b>Tighten the tool-row verb column</div>
+            <div class="mini__row t3"><b>P2</b>Generate the API reference<span class="mono">after ↑ is done</span></div>
           </div>
-          <p class="tile__body">Detached processes, logs written straight to disk, exit codes recorded even while Quuu is gone. It lives in the menu bar with the window closed.</p>
+          <p>Iterating on one big task? P0 pins the project and agent slot to it until you mark it done.</p>
         </article>
-
-        <article class="tile tile--order glass">
-          <p class="tile__kicker mono">Priorities &amp; dependencies</p>
-          <h3 class="h3">P0 keeps its slot.</h3>
-          <ul class="prio mono">
-            <li class="p0"><b>P0</b> Recover the chat from a long launch <em>holds slot</em></li>
-            <li><b>P1</b> Tighten the tool-row verb column</li>
-            <li class="dep"><b>P2</b> Generate the API reference <em>after ↑ is done</em></li>
-          </ul>
-          <p class="tile__body">Order by project, then task. Chain work with “after this finishes.” Cycles are rejected before they happen.</p>
-        </article>
-
-        <article class="tile tile--report glass">
-          <p class="tile__kicker mono">Change reports</p>
-          <h3 class="h3">A second agent explains the first — <em>a level above the code.</em></h3>
-          <p class="tile__body">Which concept became which, which rule now says something else. One page per task, from the first request to the latest result.</p>
-        </article>
-
-        <article class="tile tile--pr glass">
-          <p class="tile__kicker mono">Pull Request watch</p>
-          <h3 class="h3">Red CI? It goes straight back.</h3>
-          <div class="ci mono" aria-hidden="true">
-            <span><i class="ci--ok"></i>#482 tokens</span>
-            <span><i class="ci--run"></i>#483 toc</span>
-            <span><i class="ci--fail"></i>#484 logs</span>
+        <article class="tile" data-reveal>
+          <p class="label">Pull requests</p><h3>Red CI goes straight back.</h3>
+          <div class="mini">
+            <div class="mini__row"><i class="ci ci--ok"></i>#482 Rebuild the color tokens<span class="t3 mono">passed</span></div>
+            <div class="mini__row"><i class="ci ci--run"></i>#483 Restructure the site TOC<span class="t3 mono">running</span></div>
+            <div class="mini__row"><i class="ci ci--fail"></i>#484 Rotate logs by date<span class="c-red mono">sent back</span></div>
           </div>
-          <p class="tile__body">Failed checks, stuck checks and conflicts are sent back to the same agent with your prompt, <span class="mono">{{url}}</span> and all.</p>
+          <p>Failed checks, stuck checks and conflicts go back to the same agent with your prompt, <span class="mono">{{url}}</span> and all.</p>
         </article>
-
-        <article class="tile tile--auto glass">
-          <p class="tile__kicker mono">Automation</p>
-          <h3 class="h3">“Every weekday, when the queue is empty, burn down one issue.”</h3>
-          <div class="week mono" aria-hidden="true"><span class="on">M</span><span class="on">T</span><span class="on">W</span><span class="on is-now">T</span><span>F</span><span class="off">S</span><span class="off">S</span></div>
-          <p class="tile__body">Cron is a deadline, not an alarm — a busy morning doesn't skip the day, and days off never pile up.</p>
+        <article class="tile" data-reveal>
+          <p class="label">Change reports</p><h3>A second agent explains the first.</h3>
+          <p>Which concept became which, which rule now says something else — written a level above the code, one page per task.</p>
         </article>
-
-        <article class="tile tile--cli glass-dark">
-          <p class="tile__kicker mono">CLI &amp; MCP</p>
-          <h3 class="h3">Agents can queue work for other agents.</h3>
-          <pre class="term mono"><span class="c">$</span> quuu tasks list --project .
-<span class="c">$</span> quuu tasks logs 7f3a --search failed
-<span class="c">$</span> quuu describe rules.create</pre>
+        <article class="tile tile--cli" data-reveal>
+          <p class="label">CLI &amp; MCP</p><h3>Agents can queue work for agents.</h3>
+          <pre class="term mono"><span class="t3">$</span> quuu tasks list --project .
+<span class="t3">$</span> quuu tasks logs 7f3a --search failed
+<span class="t3">$</span> quuu describe rules.create</pre>
         </article>
-
-        <article class="tile tile--import glass">
-          <p class="tile__kicker mono">Session import</p>
-          <h3 class="h3">Started it in a terminal? It's already here.</h3>
-          <p class="tile__body">Sessions you launched by hand appear as tasks. Pick one up again, still interactive.</p>
+        <article class="tile" data-reveal>
+          <p class="label">Session import</p><h3>Started in a terminal? It's already here.</h3>
+          <p>Sessions you launched by hand show up as tasks. Pick one up again, still interactive.</p>
         </article>
       </div>
     </section>
 
-    <!-- ───────────────────────── A DAY ───────────────────────── -->
-    <section class="day" id="day" aria-labelledby="day-title">
-      <div class="day__head">
-        <p class="eyebrow">A day with Quuu</p>
-        <h2 id="day-title" class="display">The work runs all day.<br><em>You don't have to.</em></h2>
-      </div>
-      <div class="day__grid">
-        <figure class="moment moment--1" data-parallax="-0.06">
-          <div class="moment__img"><img src="assets/life-morning.webp" loading="lazy" width="1024" height="1280" alt="Hands around a ceramic cup of coffee at a window, a notebook beside it"></div>
-          <figcaption><span class="mono">08:40</span><b>Queue it before coffee.</b>Six notes from last night become six tasks across four projects.</figcaption>
-        </figure>
-        <figure class="moment moment--2" data-parallax="0.04">
-          <div class="moment__img"><img src="assets/life-afternoon.webp" loading="lazy" width="1024" height="1280" alt="Someone walking alone along a tree-lined riverside path in the afternoon"></div>
-          <figcaption><span class="mono">13:10</span><b>Nobody's watching the terminal.</b>Two limits hit, two hand-offs made, eleven runs finished.</figcaption>
-        </figure>
-        <figure class="moment moment--3" data-parallax="-0.03">
-          <div class="moment__img"><img src="assets/life-evening.webp" loading="lazy" width="1024" height="1280" alt="Dinner on a small wooden table under a warm lamp"></div>
-          <figcaption><span class="mono">19:30</span><b>Review after dinner. Or tomorrow.</b>Everything is waiting in Review, exactly where you left it.</figcaption>
-        </figure>
+    <!-- ── Wallpaper: the glass shows your day through it ── -->
+    <section class="wall" data-pin="wall">
+      <div class="pin">
+        <div class="wall__bg" aria-hidden="true">
+          <img src="assets/life-morning.webp" alt="" loading="lazy">
+          <img src="assets/life-afternoon.webp" alt="" loading="lazy">
+          <img src="assets/life-evening.webp" alt="" loading="lazy">
+        </div>
+        <div class="wall__copy">
+          <p class="label">A day with Quuu</p>
+          <h2 class="display">The work runs all day.<br><span class="dim">You don't have to.</span></h2>
+          <p class="wall__time mono" data-wall-time>08:40</p>
+          <p class="wall__line" data-wall-line>Queue it before coffee.</p>
+        </div>
+        <div class="mini-win" data-tilt aria-hidden="true">
+          <aside class="mini-win__side">
+            <div class="win__lights"><i></i><i></i><i></i></div>
+            <p class="side__row side__row--on">All tasks <b data-wall-all>6</b></p>
+            <p class="side__row">Needs review <b class="c-amber" data-wall-review>0</b></p>
+            <p class="side__h">Projects</p>
+            <p class="side__row"><i class="pdot" style="--c:#5eabf1"></i>Quuu</p>
+            <p class="side__row"><i class="pdot" style="--c:#5dac7b"></i>design-system</p>
+            <p class="side__row"><i class="pdot" style="--c:#aa8ddd"></i>docs-site</p>
+            <p class="side__row"><i class="pdot" style="--c:#e8a750"></i>runtime-tools</p>
+          </aside>
+          <div class="mini-win__main" data-wall-rows></div>
+        </div>
       </div>
     </section>
 
-    <!-- ───────────────────────── IPHONE ───────────────────────── -->
-    <section class="phone-sec" aria-labelledby="phone-title">
+    <!-- ── iPhone ── -->
+    <section class="phone-sec" data-reveal>
       <div class="phone-sec__copy">
-        <p class="eyebrow">iPhone companion</p>
-        <h2 id="phone-title" class="display">Before bed, in the bath,<br><em>on the move.</em></h2>
-        <p>Read what came back, mark it done, or queue whatever just came to mind. It syncs through a folder in iCloud Drive where every file has exactly one writer — so nothing ever silently overwrites anything.</p>
-        <p class="mono muted small">iOS 18+ · iCloud Drive · build locally with Xcode</p>
+        <p class="label">iPhone</p>
+        <h2 class="display">Before bed, in the bath,<br><span class="dim">on the move.</span></h2>
+        <p class="sub">Read what came back, mark it done, or queue what just came to mind. Everything passes through one iCloud Drive folder where every file has exactly one writer — nothing silently overwrites anything.</p>
       </div>
-      <div class="phone" aria-hidden="true">
+      <div class="phone" data-tilt aria-hidden="true">
         <div class="phone__screen">
           <div class="phone__island"></div>
-          <p class="phone__time mono">23:12</p>
-          <p class="phone__title">Needs review <span>3</span></p>
-          <ul class="phone__list">
-            <li><i class="c-review">◆</i><div><b>Rebuild the color tokens in OKLCH</b><span>Quuu · 26m ago</span></div></li>
-            <li><i class="c-review">◆</i><div><b>Restructure the site TOC by section</b><span>docs-site · 10m ago</span></div></li>
-            <li><i class="c-review">◆</i><div><b>Recover the chat from a long launch</b><span>metrics-pipeline · 1m ago</span></div></li>
-          </ul>
-          <p class="phone__sub">Running <span>2</span></p>
-          <ul class="phone__list">
-            <li><i class="state state--running"><i></i></i><div><b>Rotate logs by date</b><span>runtime-tools · Codex · 15m</span></div></li>
-          </ul>
-          <div class="phone__composer"><span>Queue something for tomorrow…</span><b>↑</b></div>
-          <div class="phone__done">✓ Done</div>
+          <p class="phone__time">23:12</p>
+          <p class="phone__h">Needs review <span class="c-amber">3</span></p>
+          <div class="phone__row"><i class="mk mk--review"></i><div><b>Rebuild the color tokens in OKLCH</b><span>Quuu · 26 minutes ago</span></div></div>
+          <div class="phone__row"><i class="mk mk--review"></i><div><b>Restructure the site TOC by section</b><span>docs-site · 10 minutes ago</span></div></div>
+          <div class="phone__row"><i class="mk mk--review"></i><div><b>Recover the chat from a long launch</b><span>metrics-pipeline · 1 minute ago</span></div></div>
+          <p class="phone__h phone__h--sm">Running <span class="c-blue">1</span></p>
+          <div class="phone__row"><i class="mk mk--running"></i><div><b>Rotate logs by date</b><span>runtime-tools · Codex · 15m</span></div></div>
+          <div class="phone__composer">Queue something for tomorrow…</div>
         </div>
       </div>
     </section>
 
-    <!-- ───────────────────────── HONEST NOTE ───────────────────────── -->
-    <section class="note" aria-labelledby="note-title">
-      <div class="note__card glass">
-        <img class="note__icon" src="assets/icon-256.png" alt="" width="72" height="72" loading="lazy">
-        <p class="eyebrow">A note, honestly</p>
-        <h2 id="note-title" class="h2">Built by kinzal,<br><em>for kinzal.</em></h2>
-        <p>Quuu is one person's tool, shared as-is. Its taste is his. Pull requests aren't accepted, and issues get fixed when they bite him too. If that suits you — it's MIT, and it's yours to use.</p>
+    <!-- ── Note & download ── -->
+    <section class="end" data-pin="end">
+      <div class="pin">
+        <div class="end__note" data-reveal>
+          <p class="label">A note, honestly</p>
+          <p>Quuu is built by kinzal, for kinzal — one person's tool, shared as-is. Pull requests aren't accepted, and issues get fixed when they bite him too. If that suits you, it's MIT and it's yours.</p>
+        </div>
+        <div class="end__icon" data-tilt data-end-icon><img src="assets/icon-256.png" width="256" height="256" alt="Quuu app icon"></div>
+        <h2 class="end__title">Go outside.<br><span class="dim">The queue has it.</span></h2>
+        <div class="end__cta">
+          <a class="btn btn--primary btn--lg" data-magnet href="https://github.com/k-kinzal/quuu/releases/latest">Download for Mac</a>
+          <a class="btn btn--quiet btn--lg" data-magnet href="https://github.com/k-kinzal/quuu/blob/main/docs/guide.md">Read the guide</a>
+        </div>
+        <p class="end__req mono">Apple Silicon or Intel · at least one agent CLI installed and signed in · MIT</p>
       </div>
-    </section>
-
-    <!-- ───────────────────────── CTA ───────────────────────── -->
-    <section class="cta" aria-labelledby="cta-title">
-      <h2 id="cta-title" class="cta__title">Go outside.<br><em>The queue has it.</em></h2>
-      <div class="cta__buttons">
-        <a class="btn btn--light btn--lg" href="https://github.com/k-kinzal/quuu/releases/latest">Download for Apple Silicon</a>
-        <a class="btn btn--ghost-light btn--lg" href="https://github.com/k-kinzal/quuu/releases/latest">Intel</a>
-      </div>
-      <ol class="steps mono">
-        <li><b>01</b>Drag Quuu.app into Applications</li>
-        <li><b>02</b>Enable an agent in Settings → Agents</li>
-        <li><b>03</b>Pick it for a project and start queueing</li>
-      </ol>
-      <p class="cta__req mono">macOS on Apple Silicon or Intel · at least one agent CLI installed and signed in</p>
-      <div class="wordmark" aria-hidden="true">Quuu</div>
     </section>
   </main>
 
   <footer class="footer mono">
-    <span>© 2026 kinzal · MIT</span>
-    <span><a href="https://github.com/k-kinzal/quuu">GitHub</a> · <a href="https://github.com/k-kinzal/quuu/releases">Releases</a> · <a href="https://github.com/k-kinzal/quuu/blob/main/docs/guide.md">Guide</a></span>
+    <span>© 2026 kinzal</span>
+    <span><a href="https://github.com/k-kinzal/quuu">GitHub</a><a href="https://github.com/k-kinzal/quuu/releases">Releases</a><a href="https://github.com/k-kinzal/quuu/blob/main/docs/guide.md">Guide</a></span>
   </footer>
 
   <script src="main.js" type="module"></script>
