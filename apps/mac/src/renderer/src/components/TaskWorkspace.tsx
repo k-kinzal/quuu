@@ -24,6 +24,7 @@ import { useStore } from '../state/store.js'
 import { Check, ICON, Inbox, MoreHorizontal, Play, Undo2, X, iconProps } from '../ui/icons.js'
 import { taskMenuItems } from './TaskMenu.js'
 import { TaskWorkbench } from './TaskWorkbench.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /**
  * The L2 entity (rules A-2 / B / C).
@@ -143,7 +144,7 @@ export function TaskWorkspace({ task }: { task: Task }): JSX.Element {
 
         {task.status === 'queued' && (
           <Button
-            title="⌘R"
+            title={shortcut('Cmd+R')}
             startIcon={<Play size={ICON.sm} {...iconProps} />}
             onClick={() => void runNow()}
           >
@@ -154,7 +155,7 @@ export function TaskWorkspace({ task }: { task: Task }): JSX.Element {
         {reviewable && (
           <Button
             color="success"
-            title={t('workspace.markDoneTitle')}
+            title={t('workspace.markDoneTitle', { shortcut: shortcut('Cmd+Shift+D') })}
             startIcon={<Check size={ICON.sm} {...iconProps} />}
             onClick={() =>
               void markDoneAndAdvance(

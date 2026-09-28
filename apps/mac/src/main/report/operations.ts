@@ -10,6 +10,7 @@ import * as repo from '../db/repo.js'
 import { adapterFor } from '../agent-adapters/registry.js'
 import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
+import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import type { Project } from '../projects/types.js'
 import { changesBetween, inferReviewBaseline, snapshotWorktree } from '../review/git.js'
@@ -219,9 +220,7 @@ export class ReportOperations extends EventEmitter {
         log,
         exitPath,
         env: {
-          ...process.env,
-          ...agent.env,
-          PATH: path,
+          ...withPath({ ...process.env, ...agent.env }, path),
           // Do not leak to the child that it was launched from Electron
           ELECTRON_RUN_AS_NODE: undefined,
           NODE_OPTIONS: undefined,

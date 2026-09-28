@@ -30,7 +30,7 @@ export function detachedLaunch(posixWrapper: string, name: string, launch: strin
  * Where the Windows wrapper is written. Named by its content, so a rebuilt Quuu never rewrites the
  * file an agent started by the previous build is still running from.
  */
-function windowsLauncherPath(): string {
+export function windowsLauncherPath(): string {
   const source = `${windowsLaunchSource}\nawait run()\n`
   const hash = createHash('sha256').update(source).digest('hex').slice(0, 16)
   const dir = join(userDataDir(), 'bin')

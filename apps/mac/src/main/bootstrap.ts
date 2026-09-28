@@ -38,6 +38,7 @@ import type { AppSnapshot, MobileSyncStatus, ToastPayload } from './snapshot.js'
 import { TaskOperations } from './tasks/operations.js'
 import { TerminalOperations } from './terminal/operations.js'
 import { TerminalService } from './terminal/service.js'
+import { sweepGitHubAuth } from './platform/githubAuth.js'
 
 /** What the app menu knows about the running Quuu, for clients without a window. */
 export interface AppControls {
@@ -216,6 +217,8 @@ export class QuuuApp extends EventEmitter {
     this.hooks.start()
     void this.runners.start()
     this.scheduler.reconcile()
+    // GitHub App credentials whose supervisor was stopped by force while Quuu was away
+    sweepGitHubAuth()
     // Right after startup, re-bind the logs of re-adopted Runs to their actual sessions
     this.attachSessions()
     // Right after startup, settle imports that were running when we last quit

@@ -86,11 +86,12 @@ npm run typecheck    # type check
 npm test             # scheduler, parser, lifecycle, and restart tests
 npm run check:architecture # layer, public-entry, and circular-dependency checks
 npm run check        # lint + architecture check + typecheck + tests (run before finishing any work)
-npm run build        # typecheck + bundle
+npm run build        # native helpers + typecheck + bundle
+npm run build:native # the native helpers (macOS: xcrun; Windows: zig cc, x64 + arm64)
 npm run dist         # build the .app into apps/mac/release/
 npm run dist:dmg     # build the dmg
 npm run dist:release # build Release-marked dmg + zip for both Mac architectures
-                     # (on Windows: the x64 installer and zip)
+                     # (on Windows: installers and zips for x64 and arm64)
 npm run app:restart  # quit → rebuild the .app → relaunch
 npm run icon         # regenerate the icon artifacts (only after redrawing)
 npm run storybook    # visual check of the design system
@@ -261,16 +262,18 @@ GitHub Actions ([ci.yml](../.github/workflows/ci.yml)) runs the quality gate
 tests are separate steps so a failure names the layer. The runner is macOS
 because the tests build `quuu-pty` with `xcrun`.
 
-A second job builds on Windows (`npm run build`: typecheck, the ConPTY terminal host,
-the bundle) and runs `tests/windowsPlatform.test.ts`. The rest of the suite drives POSIX
-processes and runs on macOS only.
+A second job builds on Windows (`npm run build`: the native helpers for x64 and arm64
+with `zig cc`, typecheck, the bundle) and runs `tests/windowsPlatform.test.ts`, which
+includes the native process probe. The rest of the suite drives POSIX processes and runs
+on macOS only.
 
 ## Releases
 
 GitHub Actions ([release.yml](../.github/workflows/release.yml)) builds the Mac app and
 puts dmgs, update ZIPs and JSON feeds (arm64 / x64) on the Release you published. A
-Windows runner builds `Quuu-<version>-win-x64-setup.exe` (installer) and
-`Quuu-<version>-win-x64.zip` (no install) and attaches them to the same Release. Publish a GitHub Release (the tag
+Windows runner builds `Quuu-<version>-win-<arch>-setup.exe` (installer) and
+`Quuu-<version>-win-<arch>.zip` (no install) for x64 and arm64, and attaches them with
+their update feeds to the same Release. Publish a GitHub Release (the tag
 is created with it). The tag is the release date, `YYYY.MM.DD`, with no `v` prefix. The
 workflow stamps `apps/mac/package.json` with its numeric version (for example,
 `2026.09.27` becomes `2026.9.27`), then attaches the artifacts. The version in git is not consulted. Title
@@ -295,9 +298,10 @@ installations automatically; automatic updates require a newer dated Release.
 - To use an Apple Developer Program certificate, put `CSC_LINK` (the .p12 certificate,
   base64) and `CSC_KEY_PASSWORD` in the repository Secrets. electron-builder switches to
   proper signing (no notarization is performed)
-- **Windows builds are unsigned.** SmartScreen asks once ("More info" → "Run anyway").
-  Windows has no automatic updates; install a newer Release over the old one. The
-  GitHub App commit identity keeps its key in the macOS Keychain and is macOS-only
+- **Windows signing works the same way.** Put `WIN_CSC_LINK` (the .pfx certificate,
+  base64) and `WIN_CSC_KEY_PASSWORD` in the repository Secrets and electron-builder signs
+  the executables and installers. Without them the build is unsigned and SmartScreen
+  asks once ("More info" → "Run anyway")
 - **The iPhone app is not released.** Signed distribution requires the Apple Developer
   Program, so each user builds and installs it locally (`npm run ios:install`). The
   signing team goes into the gitignored `apps/mobile/ios/Local.xcconfig` as your own
@@ -335,6 +339,18 @@ updating; a mounted DMG is read-only.
 
 References: [Electron autoUpdater](https://www.electronjs.org/docs/latest/api/auto-updater)
 and [Squirrel static update feeds](https://github.com/Squirrel/Squirrel.Mac#update-file-json-format).
+
+### Automatic Windows updates
+
+The same schedule, menu and restart path drive a different engine
+(`apps/mac/src/main/desktop/updateEngines.ts`). Electron's `autoUpdater` on Windows is
+Squirrel.Windows, which cannot update an NSIS install, so Quuu reads
+`RELEASES-win32-<arch>.json` (the same JSON shape), downloads the installer it names,
+checks its SHA-256 and size against the feed, and runs it silently (`--updated /S`) on
+**Restart to Update** or on the next quit, like Squirrel.Mac. A copy signed with
+Authenticode accepts only an installer signed by the same publisher; an unsigned install
+takes the Release's installer as a manual download would. A copy run from the zip has no
+install to replace, so it offers the Releases page instead.
 
 ## Operating tasks from the CLI
 

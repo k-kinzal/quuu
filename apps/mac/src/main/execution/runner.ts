@@ -14,7 +14,7 @@ import { runExitPath, runLogPath } from '../appPaths.js'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
-import { cleanupGitHubAuth, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
+import { cleanupGitHubAuth, prepareGitHubAuthEnvironment, sweepGitHubAuth } from '../platform/githubAuth.js'
 import { clearExitFile, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { detachedLaunch } from '../platform/detachedLaunch.js'
 import { withPath } from '../platform/processEnv.js'
@@ -505,7 +505,11 @@ export class Runner extends EventEmitter {
       afterCommit(this.db, () => {
         if (run.pid !== null) {
           killProcessGroup(run.pid, 'SIGTERM')
-          const grace = setTimeout(() => killProcessGroup(run.pid!, 'SIGKILL'), KILL_GRACE_MS)
+          const grace = setTimeout(() => {
+            killProcessGroup(run.pid!, 'SIGKILL')
+            // This run's credentials were in memory of the Quuu that launched it; clear what a forced stop left
+            sweepGitHubAuth()
+          }, KILL_GRACE_MS)
           grace.unref?.()
         }
         clearExitFile(runExitPath(runId))

@@ -22,6 +22,8 @@ let status: number
 let requests: number
 let tokens: number
 let tokenLifetime: number
+/** Stands in for the launcher Windows puts in runtime.json (Quuu's own runtime + windowsLaunch.mjs). */
+let launcher: string[] | null
 const issuedBodies: string[] = []
 
 beforeEach(async () => {
@@ -32,6 +34,7 @@ beforeEach(async () => {
   requests = 0
   tokens = 0
   tokenLifetime = 15 * 60 * 1000 + 1000
+  launcher = null
   issuedBodies.length = 0
   const pem = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey.export({ type: 'pkcs8', format: 'pem' }).toString()
   const security = join(workdir, 'security')
@@ -68,6 +71,10 @@ beforeEach(async () => {
       .replace('const RETRY_MS = 60 * 1000', 'const RETRY_MS = 100')
       .replace('const POLL_MS = 60 * 1000', 'const POLL_MS = 50')
     writeFileSync(script, source)
+    if (launcher) {
+      const config = join(authDir, 'runtime.json')
+      writeFileSync(config, JSON.stringify({ ...JSON.parse(readFileSync(config, 'utf8')) as object, launcher }))
+    }
     return prepared
   })
   execFileSync('/usr/bin/git', ['init', workdir], { stdio: 'ignore' })
@@ -145,6 +152,33 @@ describe('detached GitHub App authentication', () => {
     writeFileSync(join(workdir, 'finish'), '')
     await waitFor(() => expect(existsSync(runExitPath(run.id))).toBe(true))
     expect(readFileSync(runExitPath(run.id), 'utf8')).toBe('7')
+    expect(existsSync(authDir)).toBe(false)
+  })
+
+  it('leaves nothing behind when the supervisor is killed outright, as every stop on Windows is', async () => {
+    await start(waitingAgent)
+    await waitFor(() => expect(existsSync(join(workdir, 'started'))).toBe(true))
+    const supervisor = Number(readFileSync(join(authDir, 'runtime.pid'), 'utf8'))
+    // A live supervisor's credentials are never touched
+    auth.sweepGitHubAuth()
+    expect(existsSync(authDir)).toBe(true)
+    // Quuu is gone (a restart), so no one is watching the run exit
+    runner.shutdown()
+    killProcessGroup(pid!, 'SIGKILL')
+    await waitFor(() => expect(() => process.kill(supervisor, 0)).toThrow())
+    expect(existsSync(authDir)).toBe(true)
+    auth.sweepGitHubAuth()
+    expect(existsSync(authDir)).toBe(false)
+  })
+
+  it('starts the agent through the launcher it is given, as Node, leaving the exit file to the outer wrapper', async () => {
+    launcher = ['/usr/bin/env']
+    const run = await start("env | /usr/bin/grep -E '^(ELECTRON_RUN_AS_NODE|QUUU_EXIT_FILE|GH_REPO)='; exit 3")
+    await waitFor(() => expect(repo.getRun(run.db, run.id)?.exitCode).toBe(3))
+    const log = readFileSync(run.stdoutLogPath, 'utf8')
+    expect(log).toContain('ELECTRON_RUN_AS_NODE=1')
+    expect(log).toContain('GH_REPO=acme/query-kit')
+    expect(log).not.toContain('QUUU_EXIT_FILE=')
     expect(existsSync(authDir)).toBe(false)
   })
 

@@ -53,9 +53,9 @@ export const workbench: typeof en = {
     review: '要レビュー',
     project: 'プロジェクト',
     allTasks: '全タスク',
-    addTask: 'タスクを追加 (⌘N)',
-    minimize: '一覧を最小化する (⌘⌥2)',
-    listLabel: '{{section}}（↑↓ で選ぶ、⏎ で会話へ、⌘⌥⏎ で操作）',
+    addTask: 'タスクを追加 ({{shortcut}})',
+    minimize: '一覧を最小化する ({{shortcut}})',
+    listLabel: '{{section}}（↑↓ で選ぶ、⏎ で会話へ、{{actions}} で操作）',
     holdMarker: 'P0: 完了まで実行枠を確保する',
     rowTitle: '{{title}}\n（右クリックで実行・完了・削除）'
   },
@@ -88,7 +88,7 @@ export const workbench: typeof en = {
     enqueueTitle: '保留を解いて、実行を待つ状態に戻す',
     enqueue: '待機中にする',
     runNow: 'いま実行',
-    markDoneTitle: '完了にする ⌘⇧D',
+    markDoneTitle: '完了にする {{shortcut}}',
     markDone: '完了',
     reopen: '再オープン',
     moreTitle: 'その他（このタスクへの操作）',
@@ -217,8 +217,8 @@ export const workbench: typeof en = {
     hostTitle: 'このウインドウは {{name}} の Quuu を表示・操作しています'
   },
   rail: {
-    showMenu: 'メニューを開く (⌘⌥1)',
-    hideMenu: 'メニューを閉じる (⌘⌥1)',
+    showMenu: 'メニューを開く ({{shortcut}})',
+    hideMenu: 'メニューを閉じる ({{shortcut}})',
     label: '移動',
     addProjectMenu: 'プロジェクトを追加…',
     showMenuItem: 'メニューを開く',
@@ -226,7 +226,7 @@ export const workbench: typeof en = {
     allTasks: '全タスク',
     review: '要レビュー',
     projects: 'プロジェクト',
-    addProjectTitle: 'プロジェクトを追加 (⌘⇧N)',
+    addProjectTitle: 'プロジェクトを追加 ({{shortcut}})',
     add: '追加する',
     settings: '設定',
     open: '開く',
@@ -237,6 +237,6 @@ export const workbench: typeof en = {
     label: '左メニュー',
     menuWidth: 'メニューの幅',
     listWidth: 'タスク一覧の幅',
-    restoreList: '一覧を戻す (⌘⌥2)'
+    restoreList: '一覧を戻す ({{shortcut}})'
   }
 }

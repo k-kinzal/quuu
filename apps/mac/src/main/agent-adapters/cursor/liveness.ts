@@ -15,7 +15,6 @@
  * Too long and finished chats keep looking active — 10 minutes is that balance.
  */
 
-import { spawnSync } from 'node:child_process'
 import {
   closeSync,
   openSync,
@@ -25,6 +24,7 @@ import {
 } from 'node:fs'
 import { join } from 'node:path'
 import { cursorAgentLogsDir } from '../../appPaths.js'
+import { processStartedAt } from '../../platform/processProbe.js'
 import { isProcessAlive, NO_LIVENESS, type Probed, type ProviderLiveness } from '../liveness.js'
 export function probeLiveness(now: number): ProviderLiveness {
   const found = probeCursor(now)
@@ -110,15 +110,9 @@ function probeCursor(now: number): CursorProbed {
 
 /** Is the process that created the log still alive — not a pid reuse? */
 function processStartedBeforeFile(pid: number, birthtimeMs: number): boolean {
-  const result = spawnSync('/bin/ps', ['-p', String(pid), '-o', 'lstart='], {
-    encoding: 'utf8',
-    env: { ...process.env, LC_ALL: 'C' },
-    timeout: 500
-  })
-  if (result.error || result.signal || result.status !== 0) return false
-  const startedAt = Date.parse(result.stdout.trim())
+  const startedAt = processStartedAt(pid)
   // ps reports seconds while birthtime is milliseconds, so allow for the rounding.
-  return Number.isFinite(startedAt) && startedAt <= birthtimeMs + 2_000
+  return startedAt !== null && startedAt <= birthtimeMs + 2_000
 }
 
 /** The chat ID this log handles. null when no request has been made yet. */

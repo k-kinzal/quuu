@@ -52,9 +52,9 @@ export const workbench = {
     review: 'Needs review',
     project: 'Project',
     allTasks: 'All tasks',
-    addTask: 'Add Task (⌘N)',
-    minimize: 'Minimize List (⌘⌥2)',
-    listLabel: '{{section}} (↑↓ to select, ⏎ to open the conversation, ⌘⌥⏎ for actions)',
+    addTask: 'Add Task ({{shortcut}})',
+    minimize: 'Minimize List ({{shortcut}})',
+    listLabel: '{{section}} (↑↓ to select, ⏎ to open the conversation, {{actions}} for actions)',
     holdMarker: 'P0: keeps its run slot until done',
     rowTitle: '{{title}}\n(Right-click to run, mark done, or delete)'
   },
@@ -87,7 +87,7 @@ export const workbench = {
     enqueueTitle: 'Release the hold and return to waiting to run',
     enqueue: 'Add to Queue',
     runNow: 'Run Now',
-    markDoneTitle: 'Mark Done ⌘⇧D',
+    markDoneTitle: 'Mark Done {{shortcut}}',
     markDone: 'Done',
     reopen: 'Reopen',
     moreTitle: 'More (actions for this task)',
@@ -216,8 +216,8 @@ export const workbench = {
     hostTitle: 'This window shows and operates the Quuu on {{name}}'
   },
   rail: {
-    showMenu: 'Show Menu (⌘⌥1)',
-    hideMenu: 'Hide Menu (⌘⌥1)',
+    showMenu: 'Show Menu ({{shortcut}})',
+    hideMenu: 'Hide Menu ({{shortcut}})',
     label: 'Navigation',
     addProjectMenu: 'Add Project...',
     showMenuItem: 'Show Menu',
@@ -225,7 +225,7 @@ export const workbench = {
     allTasks: 'All tasks',
     review: 'Needs review',
     projects: 'Projects',
-    addProjectTitle: 'Add Project (⌘⇧N)',
+    addProjectTitle: 'Add Project ({{shortcut}})',
     add: 'Add',
     settings: 'Settings',
     open: 'Open',
@@ -236,6 +236,6 @@ export const workbench = {
     label: 'Left menu',
     menuWidth: 'Menu width',
     listWidth: 'Task list width',
-    restoreList: 'Restore List (⌘⌥2)'
+    restoreList: 'Restore List ({{shortcut}})'
   }
 }

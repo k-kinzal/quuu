@@ -124,9 +124,12 @@ export async function run(argv = process.argv.slice(2), env = process.env) {
       resolve(value)
     }
     try {
+      // Quuu's own executable handed a script is Quuu's runtime running it as Node (the GitHub App
+      // supervisor); anything else is not Quuu and must not run as Node.
+      const own = launch.file.toLowerCase() === process.execPath.toLowerCase()
       const child = spawn(launch.file, launch.args, {
         stdio: 'inherit',
-        env,
+        env: own ? { ...env, ELECTRON_RUN_AS_NODE: '1' } : env,
         windowsHide: true,
         windowsVerbatimArguments: launch.verbatim
       })

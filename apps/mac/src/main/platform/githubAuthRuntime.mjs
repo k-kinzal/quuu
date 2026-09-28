@@ -12,7 +12,7 @@ const REFRESH_MARGIN_MS = 15 * 60 * 1000
 const RETRY_MS = 60 * 1000
 const POLL_MS = 60 * 1000
 const API_ORIGIN = 'https://api.github.com'
-const security = promisify(execFile)
+const execute = promisify(execFile)
 
 export function githubAppJwt(appId, pem, nowMs = Date.now()) {
   if (!/^\d+$/.test(appId)) throw new Error('Could not read the GitHub App ID')
@@ -42,13 +42,35 @@ export function refreshDelay(expiresAt, nowMs = Date.now()) {
   return Math.max(1000, expiresAt - REFRESH_MARGIN_MS - nowMs)
 }
 
+/**
+ * The PowerShell that stands in for `security` on Windows: the key is a file protected with
+ * DPAPI for the signed-in user, readable only by them on this machine. It stays base64 on the
+ * way in and out, so no console code page touches it.
+ */
+export const DPAPI_UNPROTECT = "Add-Type -AssemblyName System.Security; $b = [Convert]::FromBase64String([IO.File]::ReadAllText($env:QUUU_KEY_FILE)); [Console]::Out.Write([Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Unprotect($b, $null, 'CurrentUser')))"
+export const DPAPI_PROTECT = "Add-Type -AssemblyName System.Security; $b = [Convert]::FromBase64String([Console]::In.ReadToEnd().Trim()); [IO.File]::WriteAllText($env:QUUU_KEY_FILE, [Convert]::ToBase64String([Security.Cryptography.ProtectedData]::Protect($b, $null, 'CurrentUser')))"
+
+export function powershellPath() {
+  return join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe')
+}
+
+/** The private key, from wherever this platform keeps it: the Keychain, or a DPAPI-protected file. */
+async function readPrivateKey(config, signal) {
+  const result = config.keyFile
+    ? await execute(powershellPath(), ['-NoProfile', '-NonInteractive', '-Command', DPAPI_UNPROTECT], {
+      encoding: 'utf8', timeout: 30_000, maxBuffer: 16_384, signal, windowsHide: true,
+      env: { ...process.env, QUUU_KEY_FILE: config.keyFile }
+    })
+    : await execute('/usr/bin/security', [
+      'find-generic-password', '-s', config.keychainService, '-a', config.appId, '-w'
+    ], { encoding: 'utf8', timeout: 30_000, maxBuffer: 16_384, signal })
+  return Buffer.from(result.stdout.trim(), 'base64').toString()
+}
+
 export async function issueToken(config, signal) {
   let pem
   try {
-    const result = await security('/usr/bin/security', [
-      'find-generic-password', '-s', config.keychainService, '-a', config.appId, '-w'
-    ], { encoding: 'utf8', timeout: 30_000, maxBuffer: 16_384, signal })
-    pem = Buffer.from(result.stdout.trim(), 'base64').toString()
+    pem = await readPrivateKey(config, signal)
   } catch {
     throw new Error("Quuu's GitHub App private key was not found. Update the App from Settings.")
   }
@@ -117,6 +139,8 @@ export async function run() {
     process.on(name, handler)
   }
   try {
+    // Whoever finds this directory after a forced stop can tell whether its owner is still alive
+    writeFileSync(join(dir, 'runtime.pid'), String(process.pid))
     const config = JSON.parse(readFileSync(join(dir, 'runtime.json'), 'utf8'))
     const refresh = async () => {
       const issued = await issueToken(config, signal)
@@ -132,8 +156,14 @@ export async function run() {
     delete env.GH_TOKEN
     delete env.GITHUB_TOKEN
     env.GH_CONFIG_DIR = configDir
+    // On Windows the agent is started through Quuu's launcher, which knows how to run a `.cmd`
+    // CLI; it runs on Quuu's runtime, and the exit and pid files stay this wrapper's to write.
+    const launcher = Array.isArray(config.launcher) ? config.launcher : []
+    const childEnv = launcher.length === 0 ? env
+      : { ...env, ELECTRON_RUN_AS_NODE: '1', QUUU_EXIT_FILE: undefined, QUUU_HOOK_PID_FILE: undefined }
+    const [file, ...prefix] = [...launcher, ...process.argv.slice(2)]
     const exit = new Promise((resolve, reject) => {
-      child = spawn(process.argv[2], process.argv.slice(3), { env, stdio: 'inherit' })
+      child = spawn(file, prefix, { env: childEnv, stdio: 'inherit', windowsHide: true })
       child.once('error', () => reject(new Error('Could not start the agent.')))
       child.once('exit', (code, name) => resolve(code ?? (128 + (constants.signals[name] ?? 1))))
     })

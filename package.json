@@ -1,7 +1,7 @@
 {
   "name": "quuu-workspace",
   "version": "1.0.0",
-  "description": "Manages AI agent runs \u2014 a macOS app and an iPhone app",
+  "description": "Manages AI agent runs — a macOS app and an iPhone app",
   "author": "k-kinzal",
   "license": "MIT",
   "private": true,
@@ -20,7 +20,7 @@
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p tsconfig.tests.json",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
-    "pretest": "npm run build:pty -w quuu && npm run build:cli && npm run build:runner",
+    "pretest": "npm run build:native -w quuu && npm run build:cli && npm run build:runner",
     "build:runner": "vite build --config apps/mac/runner.vite.config.ts",
     "test": "vitest run",
     "test:watch": "vitest",

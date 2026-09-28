@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
-import { releaseVersion, writeReleaseManifests } from '../scripts/release-manifest.js'
+import { releaseVersion, writeReleaseManifests, writeWindowsManifests } from '../scripts/release-manifest.js'
 
 const { signed } = vi.hoisted(() => ({ signed: vi.fn<() => Promise<boolean>>() }))
 vi.mock('../src/main/updates/signing.js', () => ({ isSignedForUpdates: signed }))
@@ -44,4 +44,20 @@ it('refuses a feed that disagrees with the packaged version or lacks its archive
   await expect(writeReleaseManifests(directory, '2026.09.27', '1.0.0')).rejects.toThrow('do not match')
   await rm(join(directory, 'Quuu-2026.9.27-arm64.zip'))
   await expect(writeReleaseManifests(directory, '2026.09.27', '2026.9.27')).rejects.toThrow('ENOENT')
+})
+it('publishes a Windows feed per architecture naming its installer, signed or not', async () => {
+  for (const arch of ['x64', 'arm64']) await writeFile(join(directory, `Quuu-2026.9.27-win-${arch}-setup.exe`), `setup-${arch}`)
+  signed.mockResolvedValue(false)
+  await writeWindowsManifests(directory, '2026.09.27', '2026.9.27')
+  for (const arch of ['x64', 'arm64']) {
+    expect(JSON.parse(await readFile(join(directory, `RELEASES-win32-${arch}.json`), 'utf8'))).toEqual({
+      currentRelease: '2026.9.27',
+      releases: [{ version: '2026.9.27', updateTo: {
+        version: '2026.9.27', name: 'Quuu 2026.9.27',
+        url: `https://github.com/k-kinzal/quuu/releases/download/2026.09.27/Quuu-2026.9.27-win-${arch}-setup.exe`,
+        sha256: createHash('sha256').update(`setup-${arch}`).digest('hex'), size: `setup-${arch}`.length
+      } }]
+    })
+  }
+  await expect(writeWindowsManifests(directory, '2026.09.27', '1.0.0')).rejects.toThrow('do not match')
 })

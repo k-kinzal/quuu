@@ -44,7 +44,7 @@ mac:
     - from: bin/quuu
       to: bin/quuu
     # Pseudo-terminal host for the built-in terminal. Node pipes cannot handle interactive CLIs or screen size.
-    - from: build/pty/quuu-pty
+    - from: build/native/quuu-pty
       to: bin/quuu-pty
     # Layered icon (Liquid Glass) for macOS 26+. CFBundleIconName resolves to this,
     # so it sits directly under Contents/Resources. Pre-26 falls back to icon.icns.
@@ -64,21 +64,26 @@ mac:
     CFBundleIconName: icon
 dmg:
   artifactName: ${productName}-${version}-${arch}.${ext}
-# Windows: an installer plus a zip to run without installing. x64 only; Windows on Arm runs it emulated.
+# Windows: an installer (which also updates itself) plus a zip to run without installing, per
+# architecture. scripts/package-app.mjs packages one architecture per run, so NSIS never folds
+# both into one installer carrying two copies of Quuu.
 win:
   icon: build/icon.png
   target:
     - target: nsis
-      arch: [x64]
+      arch: [x64, arm64]
     - target: zip
-      arch: [x64]
+      arch: [x64, arm64]
   artifactName: ${productName}-${version}-win-${arch}.${ext}
   extraResources:
     - from: bin/quuu.cmd
       to: bin/quuu.cmd
     # The same pseudo-terminal contract over ConPTY (native/quuu-pty-win.c)
-    - from: build/pty/quuu-pty.exe
+    - from: build/native/quuu-pty-${arch}.exe
       to: bin/quuu-pty.exe
+    # Process start times and file locks, which macOS answers with ps and lockf (native/quuu-probe-win.c)
+    - from: build/native/quuu-probe-${arch}.exe
+      to: bin/quuu-probe.exe
 nsis:
   artifactName: ${productName}-${version}-win-${arch}-setup.${ext}
   oneClick: false

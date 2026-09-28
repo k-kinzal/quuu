@@ -24,5 +24,8 @@ const events: QuuuEvents = {
 }
 contextBridge.exposeInMainWorld('quuuEvents', events)
 
+// Which keyboard the shortcut hints are written for (⌘ on macOS, Ctrl elsewhere)
+contextBridge.exposeInMainWorld('quuuPlatform', process.platform)
+
 // webUtils needs the original DOM File, before IPC structured cloning loses its native path.
 contextBridge.exposeInMainWorld('quuuFiles', { getPathForFile: (file: File): string => webUtils.getPathForFile(file) } satisfies import('../api/schemas/files.js').QuuuFiles)

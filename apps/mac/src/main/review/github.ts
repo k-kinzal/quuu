@@ -6,6 +6,7 @@ import type { AppSettings } from '../settings/types.js'
 import type { CommandResult } from './command.js'
 import { command, git } from './command.js'
 import type { FileChangeKind, PullRequestMergeState, PullRequestState, ReviewPullRequest } from './types.js'
+import { runtimeEnv } from '../platform/processEnv.js'
 
 /** Everything the review reads off one Pull Request. Both the single fetch and the listing ask for it. */
 const PULL_REQUEST_FIELDS = 'number,title,url,headRefName,baseRefName,headRefOid,isDraft,updatedAt,statusCheckRollup,mergeable,mergeStateStatus,state'
@@ -77,7 +78,7 @@ export async function gh(
     const [executable, ...invocation] = [...(prepared.launch ?? []), 'gh', ...args]
     return await command(executable, invocation, {
       cwd,
-      env: { ...process.env, ...prepared.env, ELECTRON_RUN_AS_NODE: undefined, NODE_OPTIONS: undefined },
+      env: { ...process.env, ...prepared.env, ...runtimeEnv(executable), NODE_OPTIONS: undefined },
       timeout
     })
   } finally {

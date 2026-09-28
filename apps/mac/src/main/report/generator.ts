@@ -1,7 +1,6 @@
 import { spawn } from 'node:child_process'
 import { closeSync, openSync, writeSync } from 'node:fs'
 import { detachedLaunch } from '../platform/detachedLaunch.js'
-import { withPath } from '../platform/processEnv.js'
 import { nowIso } from '../util.js'
 
 /**
@@ -42,8 +41,7 @@ export function spawnReport(launch: ReportLaunch): number {
     const wrapped = detachedLaunch(WRAPPER, 'Quuu', [launch.command, ...launch.args])
     const child = spawn(wrapped.command, wrapped.args, {
       cwd: launch.cwd,
-      // Callers set PATH over a spread process.env; on Windows that leaves a `Path` beside it
-      env: { ...(launch.env.PATH === undefined ? launch.env : withPath(launch.env, launch.env.PATH)), ...wrapped.env },
+      env: { ...launch.env, ...wrapped.env },
       stdio: ['ignore', fd, fd],
       detached: true,
       shell: false,

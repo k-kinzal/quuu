@@ -87,10 +87,10 @@ export async function fetchBotUserId(
  *   4. GitHub returns to `/callback?code=...&state=...`
  *   5. `POST /app-manifests/{code}/conversions` exchanges the code for App info
  *   6. Continue straight into installing the App; returns to `/installed`
- *   7. Verify the installation with the App's own JWT, entrust the private key to the Keychain
+ *   7. Verify the installation with the App's own JWT, entrust the private key to the key store
  *
  * Of the secrets the manifest returns we use **only the private key needed to
- * mint installation tokens**. It goes into the macOS Keychain after the browser
+ * mint installation tokens**. It goes into the platform's key store (`githubAppKeyStore`) after the browser
  * flow completes end to end — never into the DB or settings JSON. The client
  * secret and webhook secret are, as before, never accepted.
  */

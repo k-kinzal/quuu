@@ -1,8 +1,8 @@
 # The quality gate (docs/working.md) on every push to main, and a Windows build.
 #
 # - macos-15 because pretest builds quuu-pty with xcrun
-# - The gate's tests drive POSIX processes, so Windows proves the build (typecheck, the ConPTY
-#   host, the bundle) and the Windows launch rules, not the whole suite
+# - The gate's tests drive POSIX processes, so Windows proves the build (typecheck, the native
+#   helpers, the bundle) and the Windows platform rules, not the whole suite
 # - Type-aware ESLint OOMs on the hosted runner's ~2GB default heap
 name: ci
 
@@ -63,15 +63,13 @@ jobs:
           node-version: 26
           cache: npm
 
+      # zig cc builds the native helpers (terminal host, process probe) for x64 and arm64
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+
       - name: Install dependencies
         run: npm ci
-
-      - name: Ensure a C compiler
-        run: |
-          if ! command -v gcc >/dev/null 2>&1; then
-            choco install mingw --no-progress -y
-            echo 'C:\ProgramData\mingw64\mingw64\bin' >> "$GITHUB_PATH"
-          fi
 
       - name: Build
         run: npm run build

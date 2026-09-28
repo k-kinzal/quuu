@@ -1,9 +1,9 @@
-import { spawnSync } from 'node:child_process'
 import {
   readdirSync
 } from 'node:fs'
 import { join } from 'node:path'
 import { codexLocksDir } from '../../appPaths.js'
+import { fileLockHeld } from '../../platform/processProbe.js'
 import { NO_LIVENESS, type Probed, type ProviderLiveness } from '../liveness.js'
 let proven = false
 export function resetLiveness(): void { proven = false }
@@ -16,7 +16,12 @@ export function probeLiveness(): ProviderLiveness {
     confirmed: id => {
       const path = found.paths.get(id)
       if (!path) return false
-      if (!lockStates.has(path)) lockStates.set(path, codexLockHeld(path))
+      /*
+       * Codex's lock is an empty file, so exit cannot be read from its contents. Trusting mere
+       * existence leaves crash debris running forever; cutting on silence alone drops a session
+       * to done mid long tool call. Trying to take the same lock answers it: held means alive.
+       */
+      if (!lockStates.has(path)) lockStates.set(path, fileLockHeld(path))
       return lockStates.get(path) ?? null
     }, authoritative: () => found.present && proven
   }
@@ -45,24 +50,4 @@ function probeCodex(): CodexProbed {
     paths.set(id, join(dir, name))
   }
   return { ids, paths, present: true }
-}
-
-/**
- * Does a Codex process hold the exclusive file lock?
- *
- * Codex's lock is an empty file, so exit cannot be read from its contents. Trusting
- * mere existence leaves crash debris running forever; cutting on silence alone drops
- * a session to done mid long tool call. We try to acquire the same lock with macOS's
- * stock lockf: if it is already held, the session is alive. `-n -k` avoids creating
- * or deleting the file even on contention.
- */
-function codexLockHeld(path: string): boolean | null {
-  const result = spawnSync('/usr/bin/lockf', ['-k', '-n', '-s', '-t', '0', path, '/usr/bin/true'], {
-    stdio: 'ignore',
-    timeout: 500
-  })
-  // EX_TEMPFAIL (75) from sysexits.h is the definitive answer: another process already holds it.
-  if (result.status === 75) return true
-  if (result.status === 0) return false
-  return null
 }

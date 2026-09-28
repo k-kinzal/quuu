@@ -26,6 +26,7 @@ import { projectsByName } from '../model/projectOptions.js'
 import type { Section } from '../state/store.js'
 import { useStore } from '../state/store.js'
 import { CircleCheckBig, ICON, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, iconProps } from '../ui/icons.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /**
  * L0 navigation (rule F).
@@ -77,7 +78,7 @@ export function Rail(): JSX.Element {
 
   const toggle = (
     <IconButton
-      title={collapsed ? t('rail.showMenu') : t('rail.hideMenu')}
+      title={t(collapsed ? 'rail.showMenu' : 'rail.hideMenu', { shortcut: shortcut('Cmd+Alt+1') })}
       icon={
         collapsed ? (
           <PanelLeftOpen size={ICON.md} {...iconProps} />
@@ -168,7 +169,7 @@ export function Rail(): JSX.Element {
             <span>{t('rail.projects')}</span>
             <IconButton
               size="xs"
-              title={t('rail.addProjectTitle')}
+              title={t('rail.addProjectTitle', { shortcut: shortcut('Cmd+Shift+N') })}
               icon={<Plus size={ICON.sm} {...iconProps} />}
               onClick={() => void addProject()}
             />

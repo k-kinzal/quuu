@@ -26,6 +26,7 @@ import { useStore } from '../state/store.js'
 import { ProjectSelect } from '../ui/ProjectSelect.js'
 import { focusAny } from '../interaction/focus.js'
 import { ChevronDown, CirclePause, FilePen, ICON, Play, Plus, iconProps } from '../ui/icons.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /** State the press's outcome in shape too. Never confuse draft, hold, enqueue, and run-now. */
 const ACTION_ICON: Record<AddAction, JSX.Element> = {
@@ -302,7 +303,7 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
           color={ready ? 'primary' : 'neutral'}
           disabled={!ready || creation.isPending || files.busy}
           onClick={() => void submit(false)}
-          title={`${ADD_ACTION_LABEL[action]} (⌘↵)`}
+          title={`${ADD_ACTION_LABEL[action]} (${shortcut('Cmd+Enter')})`}
           startIcon={ACTION_ICON[action]}
           menuTitle={t('taskComposer.addMenuTitle')}
           caret={<ChevronDown size={ICON.sm} {...iconProps} />}

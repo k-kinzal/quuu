@@ -1,10 +1,10 @@
 import { spawn, type ChildProcess } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { EventEmitter } from 'node:events'
-import { existsSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import { basename } from 'node:path'
 import type { Writable } from 'node:stream'
 import { t } from '../i18n/index.js'
+import { nativeHelperPath } from '../platform/nativeHelpers.js'
 import { interactiveShell } from '../platform/shellEnv.js'
 import { discoverProjectTasks, shellQuote, taskCommand } from '../projects/tasks.js'
 import type { TerminalActionResult, TerminalEvent, TerminalSession } from './types.js'
@@ -18,17 +18,8 @@ function terminalDimension(value: number, fallback: number): number {
 
 /** Exported for tests that drive the host directly (the owner-vanishes case has no service left to ask). */
 export function ptyHelperPath(): string {
-  const override = process.env.QUUU_PTY_HELPER
-  if (override) return override
-  const resourcesPath = 'resourcesPath' in process && typeof process.resourcesPath === 'string' ? process.resourcesPath : null
   // Windows gets its own host over ConPTY (native/quuu-pty-win.c); the contract is the same
-  const name = process.platform === 'win32' ? 'quuu-pty.exe' : 'quuu-pty'
-  const candidates = [
-    ...(resourcesPath ? [join(resourcesPath, 'bin', name)] : []),
-    join(process.cwd(), 'build', 'pty', name),
-    join(process.cwd(), 'apps', 'mac', 'build', 'pty', name)
-  ]
-  const helper = candidates.find(existsSync)
+  const helper = process.env.QUUU_PTY_HELPER || nativeHelperPath('quuu-pty')
   if (!helper) throw new Error(t('terminal.ptyHostMissing'))
   return helper
 }

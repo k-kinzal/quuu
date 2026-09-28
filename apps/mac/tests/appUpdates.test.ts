@@ -1,6 +1,8 @@
 import { autoUpdater } from 'electron'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { EventEmitter } from 'node:events'
 import { AppUpdates, RELEASES_URL } from '../src/main/desktop/appUpdates.js'
+import type { UpdateEngine } from '../src/main/desktop/updateEngines.js'
 
 const mocks = vi.hoisted(() => ({
   feed: vi.fn(), check: vi.fn(), install: vi.fn(),
@@ -149,4 +151,27 @@ it('reports where it is to callers other than the menu', async () => {
   expect(updates.status()).toBe('idle')
   updates.check(true)
   expect(updates.status()).toBe('checking')
+})
+
+it("reads the feed its platform's engine names and explains in that engine's words why a copy cannot update", async () => {
+  const updater = Object.assign(new EventEmitter(), { setFeedURL: vi.fn(), checkForUpdates: vi.fn(), quitAndInstall: vi.fn() })
+  const engine = (replaceable: boolean): UpdateEngine => ({
+    feed: 'RELEASES-win32-x64.json', updater, canReplaceItself: () => Promise.resolve(replaceable),
+    manualReason: 'updates.portable', failureReason: 'updates.downloadFailed'
+  })
+  const installed = new AppUpdates(menu, quit, engine(true))
+  await installed.start()
+  expect(updater.setFeedURL).toHaveBeenCalledWith({ url: `${RELEASES_URL}/latest/download/RELEASES-win32-x64.json`, serverType: 'json' })
+  installed.check(true)
+  updater.emit('error', new Error('offline'))
+  await Promise.resolve()
+  expect(mocks.dialog).toHaveBeenLastCalledWith(expect.objectContaining({ message: 'The update could not be checked or downloaded. Try again later, or download the latest release.' }))
+  installed.stop()
+
+  const unzipped = new AppUpdates(menu, quit, engine(false))
+  await unzipped.start()
+  unzipped.check(true)
+  await Promise.resolve()
+  expect(mocks.dialog).toHaveBeenLastCalledWith(expect.objectContaining({ message: expect.stringContaining('was not installed') as unknown }))
+  unzipped.stop()
 })

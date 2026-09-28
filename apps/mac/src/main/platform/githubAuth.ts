@@ -4,14 +4,28 @@ import {
   constants,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
+  readFileSync,
   realpathSync,
   rmSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { delimiter, join } from 'node:path'
+import { basename, delimiter, dirname, join } from 'node:path'
+import { userDataDir } from '../appPaths.js'
 import runtimeSource from './githubAuthRuntime.mjs?raw'
-import { githubAppJwt, writeGitHubHosts } from './githubAuthRuntime.mjs'
+import {
+  DPAPI_PROTECT,
+  DPAPI_UNPROTECT,
+  githubAppJwt,
+  powershellPath,
+  writeGitHubHosts,
+  type GitHubAppKeyStore
+} from './githubAuthRuntime.mjs'
+import { windowsLauncherPath } from './detachedLaunch.js'
+import { withPath } from './processEnv.js'
+import { isProcessAlive } from './runProcess.js'
+import { findWindowsCommand } from './windowsLaunch.mjs'
 import { botLogin, hasGitHubAppAuthentication } from '../settings/commitIdentity.js'
 import type { CommitIdentity } from '../settings/identity.js'
 import { GIT } from './executables.js'
@@ -32,19 +46,32 @@ export interface PreparedGitHubAuth {
   launch?: string[]
 }
 
-/** Entrust to the Keychain the private key handed over exactly once by the manifest conversion. */
+/**
+ * Where this platform keeps the App's private key, in the form the detached runtime reads it:
+ * the login Keychain on macOS, a file protected with DPAPI for the signed-in user on Windows.
+ * Never the DB, and never the run's environment.
+ */
+export function githubAppKeyStore(appId: string): GitHubAppKeyStore {
+  if (process.platform === 'win32') return { keyFile: join(userDataDir(), 'github-app', `${appId}.key`) }
+  return { keychainService: GITHUB_APP_KEYCHAIN_SERVICE }
+}
+
+/** Entrust to the platform's key store the private key handed over exactly once by the manifest conversion. */
 export async function saveGitHubAppPrivateKey(
   appId: string,
   pem: string,
   keychainPath?: string
 ): Promise<void> {
-  assertKeychain()
   if (!/^\d+$/.test(appId)) throw new Error('Could not read the GitHub App ID')
   if (!pem.includes('BEGIN') || !pem.includes('PRIVATE KEY')) {
     throw new Error('Could not read the GitHub App private key')
   }
 
   const encoded = Buffer.from(pem).toString('base64')
+  if (process.platform === 'win32') {
+    await saveProtectedKey(appId, pem, encoded)
+    return
+  }
   const command = [
     'add-generic-password',
     '-U',
@@ -92,17 +119,28 @@ export async function saveGitHubAppPrivateKey(
   githubAppJwt(appId, savedPem)
 }
 
-/** The private key has nowhere to live but the macOS Keychain yet. */
-function assertKeychain(): void {
-  if (process.platform !== 'darwin') {
-    throw new Error('The GitHub App identity keeps its private key in the macOS Keychain and is available only on macOS.')
-  }
+/** DPAPI through PowerShell, then read back the same way the runtime will, as the Keychain path does. */
+async function saveProtectedKey(appId: string, pem: string, encoded: string): Promise<void> {
+  const { keyFile } = githubAppKeyStore(appId)
+  if (!keyFile) throw new Error('Could not save the GitHub App private key')
+  mkdirSync(dirname(keyFile), { recursive: true })
+  const env = { ...process.env, QUUU_KEY_FILE: keyFile }
+  await runProcess(powershellPath(), ['-NoProfile', '-NonInteractive', '-Command', DPAPI_PROTECT], `${encoded}\n`, env)
+  const saved = (await runProcess(powershellPath(), ['-NoProfile', '-NonInteractive', '-Command', DPAPI_UNPROTECT], '', env)).trim()
+  if (Buffer.from(saved, 'base64').toString() !== pem) throw new Error('Could not save the GitHub App private key')
+  githubAppJwt(appId, pem)
 }
 
 async function runSecurity(args: string[], input = ''): Promise<string> {
+  return await runProcess('/usr/bin/security', args, input)
+}
+
+async function runProcess(command: string, args: string[], input: string, env?: NodeJS.ProcessEnv): Promise<string> {
   return await new Promise<string>((resolve, reject) => {
-    const child = spawn('/usr/bin/security', args, {
-      stdio: ['pipe', 'pipe', 'pipe']
+    const child = spawn(command, args, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env,
+      windowsHide: true
     })
     let stdout = ''
     let stderr = ''
@@ -117,7 +155,7 @@ async function runSecurity(args: string[], input = ''): Promise<string> {
     child.once('error', reject)
     child.once('close', (code) => {
       if (code === 0) resolve(stdout)
-      else reject(new Error(stderr.trim() || `security exited with ${String(code)}`))
+      else reject(new Error(stderr.trim() || `${basename(command)} exited with ${String(code)}`))
     })
     child.stdin.end(input)
   })
@@ -158,14 +196,14 @@ export function prepareGitHubAuthEnvironment(
   const repository = remote ? githubRepositoryFromRemote(remote) : null
   if (!repository) return { env: {}, dir: null }
 
-  // Refusing beats running under the human's gh login, which is what skipping would amount to
-  assertKeychain()
   const appId = identity.appId!.trim()
   const dir = mkdtempSync(join(tmpdir(), 'quuu-github-'))
   try {
     const configDir = join(dir, 'config')
     const runtimePath = join(dir, 'runtime.mjs')
-    const realGh = findExecutable(pathEnv, 'gh')
+    const realGh = process.platform === 'win32'
+      ? findWindowsCommand('gh', withPath(inherited, pathEnv))
+      : findExecutable(pathEnv, 'gh')
     if (!realGh) throw new Error('gh was not found. Install GitHub CLI to use the GitHub App.')
     mkdirSync(configDir, { mode: 0o700 })
     // A nonempty sentinel prevents Keychain fallback even before the first issue.
@@ -175,7 +213,9 @@ export function prepareGitHubAuthEnvironment(
       appId,
       repository,
       user: botLogin(identity.appSlug),
-      keychainService: GITHUB_APP_KEYCHAIN_SERVICE,
+      ...githubAppKeyStore(appId),
+      // Windows starts the agent through Quuu's launcher (it can run a `.cmd` CLI); macOS directly
+      launcher: process.platform === 'win32' ? [process.execPath, windowsLauncherPath()] : [],
       apiVersion: GITHUB_API_VERSION
     }), { mode: 0o600 })
 
@@ -213,7 +253,15 @@ export function prepareGitHubAuthEnvironment(
       'ssh://git@github.com/'
     )
 
-    return { env, dir, launch: ['/usr/bin/env', 'ELECTRON_RUN_AS_NODE=1', process.execPath, runtimePath] }
+    /*
+     * The runtime runs on Quuu's own executable as Node. env(1) sets that for it alone on macOS;
+     * Windows has no env(1), and there starting Quuu's executable is itself the sign
+     * (`windowsLaunch.mjs`, `runtimeEnv`).
+     */
+    const launch = process.platform === 'win32'
+      ? [process.execPath, runtimePath]
+      : ['/usr/bin/env', 'ELECTRON_RUN_AS_NODE=1', process.execPath, runtimePath]
+    return { env, dir, launch }
   } catch (err) {
     cleanupGitHubAuth(dir)
     throw err
@@ -222,6 +270,34 @@ export function prepareGitHubAuthEnvironment(
 
 export function cleanupGitHubAuth(dir: string | null): void {
   if (dir) rmSync(dir, { recursive: true, force: true })
+}
+
+/**
+ * Remove what supervisors that are gone left behind.
+ *
+ * A supervisor removes its own directory when its agent exits or it is asked to stop. A forced
+ * stop gives it no chance — and on Windows every stop is forced (`taskkill /F`; there is no
+ * SIGTERM to catch) — so whoever looks next removes the directory of a supervisor that is dead.
+ * One not yet started has no pid marker and belongs to whoever prepared it.
+ */
+export function sweepGitHubAuth(root = tmpdir()): void {
+  let names: string[]
+  try {
+    names = readdirSync(root)
+  } catch {
+    return
+  }
+  for (const name of names) {
+    if (!name.startsWith('quuu-github-')) continue
+    const dir = join(root, name)
+    let pid: number
+    try {
+      pid = Number(readFileSync(join(dir, 'runtime.pid'), 'utf8'))
+    } catch {
+      continue
+    }
+    if (Number.isInteger(pid) && pid > 0 && !isProcessAlive(pid)) cleanupGitHubAuth(dir)
+  }
 }
 
 function gitOrigin(projectPath: string): string | null {

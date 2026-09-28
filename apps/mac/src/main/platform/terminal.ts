@@ -3,6 +3,7 @@ import { chmodSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs
 import { join } from 'node:path'
 import { terminalScriptDir, terminalScriptPath } from '../appPaths.js'
 import { launch } from './launch.js'
+import { withPath } from './processEnv.js'
 import { interactiveShell, resolveLoginPath } from './shellEnv.js'
 import { resolveWindowsLaunch } from './windowsLaunch.mjs'
 
@@ -79,7 +80,7 @@ export function batchQuote(value: string): string {
 export function windowsTerminalScript(
   input: TerminalCommand & { path: string; shell: string }
 ): string {
-  const env = { ...process.env, PATH: input.path }
+  const env = withPath(process.env, input.path)
   const resolved = resolveWindowsLaunch(input.command, input.args, env)
   const argv = resolved.verbatim
     ? `${batchQuote(resolved.file)} ${resolved.args.join(' ').replaceAll('%', '%%')}`

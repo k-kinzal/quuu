@@ -24,7 +24,7 @@ juggling terminals or losing track of sessions.
 
 ## Requirement
 
-- macOS on Apple Silicon or Intel, or Windows 10 (1809) / 11 on x64.
+- macOS on Apple Silicon or Intel, or Windows 10 (1809) / 11 on x64 or Arm.
 - At least one supported agent CLI installed and authenticated.
 
 The optional iPhone companion requires iOS 18+, iCloud Drive, and a local Xcode build.
@@ -42,17 +42,17 @@ The optional iPhone companion requires iOS 18+, iCloud Drive, and a local Xcode 
 
 ### Windows
 
-1. Download `Quuu-<version>-win-x64-setup.exe` from [Releases](https://github.com/k-kinzal/quuu/releases)
-   and run it (or unzip `Quuu-<version>-win-x64.zip` and run `Quuu.exe`).
-2. The build is unsigned: if SmartScreen stops it, choose **More info → Run anyway**.
+1. Download `Quuu-<version>-win-x64-setup.exe` (or `-win-arm64-setup.exe` on Windows on Arm)
+   from [Releases](https://github.com/k-kinzal/quuu/releases) and run it. The zip of the same
+   name runs without installing, but only an installed copy updates itself.
+2. If SmartScreen stops an unsigned build, choose **More info → Run anyway**.
 
-Windows updates by installing a newer Release. Automatic updates and the GitHub App commit
-identity are macOS-only; syncing with the iPhone needs iCloud for Windows.
+Syncing with the iPhone needs iCloud for Windows.
 
 Enable an agent in **Settings → Agents** and select it for your project to start
 queueing work.
 
-Certificate-signed Releases check for updates automatically. Downloaded updates apply
+Certificate-signed Releases on macOS, and installed copies on Windows, check for updates automatically. Downloaded updates apply
 on the next launch, or through **Quuu → Restart to Update**. Local builds are excluded.
 Ad-hoc builds require a manual download; see [automatic updates](docs/guide.md#automatic-mac-updates).
 

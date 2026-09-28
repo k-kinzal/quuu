@@ -8,6 +8,7 @@ import { inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
+import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ToastPayload } from '../snapshot.js'
@@ -155,7 +156,7 @@ export class ProjectReportOperations extends EventEmitter {
       })
       const startedAt = nowIso()
       const pid = spawnReport({ command: agent.command, args, cwd: project.path, log, exitPath,
-        env: { ...process.env, ...agent.env, PATH: path, ELECTRON_RUN_AS_NODE: undefined,
+        env: { ...withPath({ ...process.env, ...agent.env }, path), ELECTRON_RUN_AS_NODE: undefined,
           NODE_OPTIONS: undefined, QUUU_TASK_ID: undefined, QUUU_EXIT_FILE: exitPath } })
       if (writer.value.groupId) repo.advanceGroupRotation(this.db, writer.value.groupId, agent.id)
       repo.openReportSession(this.db, project.path, startedAt, new Date(Date.parse(startedAt) + TIMEOUT_MS).toISOString())

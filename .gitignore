@@ -7,7 +7,7 @@ dist/
 *.tsbuildinfo
 .DS_Store
 .vite/
-apps/mac/build/pty/
+apps/mac/build/native/
 # Signing team (personal Team ID). Kept locally only (apps/mobile/ios/install.sh explains)
 apps/mobile/ios/Local.xcconfig
 # Agent session dumps land in the cwd; git add -A would otherwise commit them

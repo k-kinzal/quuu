@@ -7,6 +7,7 @@ import {
   MotionLayout,
   Panel,
   ThemeProvider,
+  enStrings,
   jaStrings
 } from '@design-system/react'
 import { useEffect } from 'react'
@@ -30,6 +31,7 @@ import { startNewTask } from './interaction/taskLink.js'
 import { useOrderedTasks } from './interaction/useTasks.js'
 import { isJapanese, t } from './model/i18n/index.js'
 import { lastSegment } from './model/paths.js'
+import { keyboardStrings } from './interaction/shortcut.js'
 import { useCursorTask, useStore } from './state/store.js'
 import { buildTheme } from './ui/theme.js'
 import { SettingsShell } from './views/SettingsShell.js'
@@ -47,10 +49,13 @@ import { ProjectDetail } from './views/project/ProjectDetail.js'
  * and the rail and list are surfaces that let the OS blur show through, so each
  * surface paints its own ground.
  */
+/** The design system's own copy: in the app's language, with key hints for this keyboard. */
+const DS_STRINGS = keyboardStrings(isJapanese ? jaStrings : enStrings)
+
 export function App(): JSX.Element {
   const theme = useStore((s) => s.settings?.theme ?? 'dark')
   return (
-    <ThemeProvider colorScheme={theme} buildTheme={buildTheme} translucent strings={isJapanese ? jaStrings : undefined}>
+    <ThemeProvider colorScheme={theme} buildTheme={buildTheme} translucent strings={DS_STRINGS}>
       <RendererBoundary>
         <Shell />
         <AmbientGradient />

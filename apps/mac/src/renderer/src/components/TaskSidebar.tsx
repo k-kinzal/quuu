@@ -42,6 +42,7 @@ import { taskMenuItems } from './TaskMenu.js'
 import { startNewTask } from '../interaction/taskLink.js'
 import { TaskQuickAdd } from './TaskQuickAdd.js'
 import { RecurringTaskListRow } from './RecurringTaskRow.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /**
  * L1 while a detail is open (rule C).
@@ -165,7 +166,7 @@ export function TaskSidebar(): JSX.Element {
 
         {canAdd && (
           <IconButton
-            title={t('sidebar.addTask')}
+            title={t('sidebar.addTask', { shortcut: shortcut('Cmd+N') })}
             icon={<Plus size={ICON.md} {...iconProps} />}
             onClick={() => {
               startNewTask(null)
@@ -174,7 +175,7 @@ export function TaskSidebar(): JSX.Element {
           />
         )}
         <IconButton
-          title={t('sidebar.minimize')}
+          title={t('sidebar.minimize', { shortcut: shortcut('Cmd+Alt+2') })}
           icon={<PanelLeftClose size={ICON.md} {...iconProps} />}
           onClick={() => setLayout({ listMode: 'hidden' })}
         />
@@ -201,7 +202,7 @@ export function TaskSidebar(): JSX.Element {
         ref={listRef}
         {...pane('list', { tab: true })}
         role="listbox"
-        aria-label={t('sidebar.listLabel', { section: sectionTitle })}
+        aria-label={t('sidebar.listLabel', { section: sectionTitle, actions: shortcut('Cmd+Alt+Return') })}
         aria-activedescendant={cursorTaskId ? taskRowId(cursorTaskId) : undefined}
         onKeyDown={(e) => runTaskListKey(e, tasks)}
       >

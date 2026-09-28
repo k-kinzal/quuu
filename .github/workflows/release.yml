@@ -1,13 +1,14 @@
-# Build the Mac and Windows apps and publish installers (and the Mac's automatic-update feeds) on Releases.
+# Build the Mac and Windows apps and publish installers and automatic-update feeds on Releases.
 #
 # - Runs when a GitHub Release is published; attaches the dmg, zip and feeds to that Release,
-#   and the Windows installer and zip beside them
+#   and the Windows installers, zips and feeds (x64 / arm64) beside them
 # - workflow_dispatch creates no Release; it only verifies the build passes and inspects artifacts
 # - Signing defaults to ad-hoc (unsigned distribution). To use an Apple Developer
 #   Program certificate, put CSC_LINK (base64 of the .p12) and CSC_KEY_PASSWORD in
 #   the repo Secrets and electron-builder switches to proper signing (its standard hook)
-# - Windows builds are unsigned (SmartScreen asks once) and update by manual download; the
-#   automatic-update feeds are macOS-only
+# - Windows signing works the same way: WIN_CSC_LINK (base64 of the .pfx) and
+#   WIN_CSC_KEY_PASSWORD in Secrets sign the executables and installers. Without them the
+#   build is unsigned (SmartScreen asks once) and still updates itself
 # - The iPhone app is not released. Signed distribution needs the Apple Developer
 #   Program, so build and install it locally (apps/mobile/ios/install.sh)
 name: release
@@ -105,16 +106,13 @@ jobs:
           node-version: 26
           cache: npm
 
+      # zig cc builds the native helpers (terminal host, process probe) for x64 and arm64
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.14.1
+
       - name: Install dependencies
         run: npm ci
-
-      # The built-in terminal's ConPTY host is C, built with MinGW gcc (native/quuu-pty-win.c).
-      - name: Ensure a C compiler
-        run: |
-          if ! command -v gcc >/dev/null 2>&1; then
-            choco install mingw --no-progress -y
-            echo 'C:\ProgramData\mingw64\mingw64\bin' >> "$GITHUB_PATH"
-          fi
 
       - name: Stamp version from Release tag
         if: github.event_name == 'release'
@@ -122,15 +120,32 @@ jobs:
           TAG: ${{ github.event.release.tag_name }}
         run: npx vite-node -c vitest.config.ts apps/mac/scripts/release-manifest.ts --stamp
 
-      - name: Build (x64 installer and zip)
-        run: npm run dist:release
+      - name: Build (x64 / arm64 installers and zips)
+        env:
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+        run: |
+          # Empty secrets still arrive as "" and electron-builder treats the link as a file path.
+          if [ -z "${WIN_CSC_LINK:-}" ]; then
+            unset WIN_CSC_LINK WIN_CSC_KEY_PASSWORD
+          fi
+          npm run dist:release
 
-      - name: Attach installer and zip to Release
+      - name: Generate automatic-update feeds
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: npx vite-node -c vitest.config.ts apps/mac/scripts/release-manifest.ts --write-windows
+
+      - name: Attach installers and zips, then update feeds to Release
         if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.event.release.tag_name }}
-        run: gh release upload "$TAG" apps/mac/release/Quuu-*-win-x64-setup.exe apps/mac/release/Quuu-*-win-x64.zip --clobber
+        run: |
+          gh release upload "$TAG" apps/mac/release/Quuu-*-win-*-setup.exe apps/mac/release/Quuu-*-win-*.zip --clobber
+          # Publishing feeds last prevents clients from requesting a not-yet-uploaded installer.
+          gh release upload "$TAG" apps/mac/release/RELEASES-win32-*.json --clobber
 
       - name: Upload artifacts
         if: github.event_name == 'workflow_dispatch'
@@ -138,5 +153,5 @@ jobs:
         with:
           name: windows-release
           path: |
-            apps/mac/release/Quuu-*-win-x64-setup.exe
-            apps/mac/release/Quuu-*-win-x64.zip
+            apps/mac/release/Quuu-*-win-*-setup.exe
+            apps/mac/release/Quuu-*-win-*.zip

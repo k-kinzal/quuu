@@ -12,3 +12,12 @@ export function withPath(env: NodeJS.ProcessEnv, path: string): NodeJS.ProcessEn
   next.PATH = path
   return next
 }
+
+/**
+ * ELECTRON_RUN_AS_NODE for a child: set only when the child is Quuu's own executable, which is
+ * then running a script (the GitHub App supervisor) rather than opening a second Quuu. Any other
+ * program launched from Electron must not inherit it.
+ */
+export function runtimeEnv(executable: string): NodeJS.ProcessEnv {
+  return { ELECTRON_RUN_AS_NODE: executable === process.execPath ? '1' : undefined }
+}

@@ -28,6 +28,7 @@ import type { SettingsCategory } from '../state/store.js'
 import { useSettings, useStore } from '../state/store.js'
 import { StatusDot } from '../ui/StatusDot.js'
 import { Bell, Bot, CircleCheckBig, CirclePause, CirclePlay, FolderGit2, ICON, Inbox, Palette, PanelLeftClose, PanelRightClose, Play, Plus, Rows3, Search, Settings, SlidersHorizontal, iconProps } from '../ui/icons.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 type Group = 'tasks' | 'go' | 'projects' | 'actions'
 
@@ -167,7 +168,7 @@ export function CommandPalette(): JSX.Element | null {
         id: 'go:all',
         group: 'go',
         title: t('palette.allTasks'),
-        hint: '⌘1',
+        hint: shortcut('Cmd+1'),
         icon: <Inbox size={ICON.md} {...iconProps} />,
         keywords: t('palette.keywords.allTasks'),
         run: close(() => setSection({ kind: 'all' }))
@@ -177,7 +178,7 @@ export function CommandPalette(): JSX.Element | null {
         group: 'go',
         title: t('palette.review'),
         subtitle: scheduler ? t('palette.count', { count: scheduler.review + scheduler.failed }) : undefined,
-        hint: '⌘2',
+        hint: shortcut('Cmd+2'),
         icon: <CircleCheckBig size={ICON.md} {...iconProps} />,
         keywords: t('palette.keywords.review'),
         run: close(() => setSection({ kind: 'review' }))
@@ -186,7 +187,7 @@ export function CommandPalette(): JSX.Element | null {
         id: 'go:settings',
         group: 'go',
         title: t('palette.settings'),
-        hint: '⌘,',
+        hint: shortcut('Cmd+,'),
         icon: <Settings size={ICON.md} {...iconProps} />,
         keywords: t('palette.keywords.settings'),
         run: close(() => setSection({ kind: 'settings' }))
@@ -246,7 +247,7 @@ export function CommandPalette(): JSX.Element | null {
       id: 'act:addProject',
       group: 'actions',
       title: t('palette.addProject'),
-      hint: '⌘⇧N',
+      hint: shortcut('Cmd+Shift+N'),
       icon: <FolderGit2 size={ICON.md} {...iconProps} />,
       keywords: t('palette.keywords.addProject'),
       run: close(async () => {
@@ -263,7 +264,7 @@ export function CommandPalette(): JSX.Element | null {
       id: 'act:new',
       group: 'actions',
       title: t('palette.newTask'),
-      hint: '⌘N',
+      hint: shortcut('Cmd+N'),
       icon: <Plus size={ICON.md} {...iconProps} />,
       keywords: t('palette.keywords.newTask'),
       run: close(() => {
@@ -278,7 +279,7 @@ export function CommandPalette(): JSX.Element | null {
           id: 'act:run',
           group: 'actions',
           title: t('palette.runNow', { title: cursorTask.title }),
-          hint: '⌘R',
+          hint: shortcut('Cmd+R'),
           icon: <Play size={ICON.md} {...iconProps} />,
           keywords: t('palette.keywords.runNow', { title: cursorTask.title }),
           run: close(() => void window.quuu.tasks.runNow(cursorTask.id))
@@ -310,7 +311,7 @@ export function CommandPalette(): JSX.Element | null {
           id: 'act:done',
           group: 'actions',
           title: t('palette.markDone', { title: cursorTask.title }),
-          hint: '⌘⇧D',
+          hint: shortcut('Cmd+Shift+D'),
           icon: <CircleCheckBig size={ICON.md} {...iconProps} />,
           keywords: t('palette.keywords.done', { title: cursorTask.title }),
           run: close(
@@ -338,7 +339,7 @@ export function CommandPalette(): JSX.Element | null {
         id: 'act:list',
         group: 'actions',
         title: layout.listMode === 'hidden' ? t('palette.restoreList') : t('palette.minimizeList'),
-        hint: '⌘⌥2',
+        hint: shortcut('Cmd+Alt+2'),
         icon: <PanelLeftClose size={ICON.md} {...iconProps} />,
         keywords: t('palette.keywords.list'),
         run: close(() =>
@@ -349,7 +350,7 @@ export function CommandPalette(): JSX.Element | null {
         id: 'act:inspector',
         group: 'actions',
         title: layout.inspectorOpen ? t('palette.hideInfo') : t('palette.showInfo'),
-        hint: '⌘\\',
+        hint: shortcut('Cmd+\\'),
         icon: <PanelRightClose size={ICON.md} {...iconProps} />,
         keywords: t('palette.keywords.inspector'),
         run: close(() => setLayout({ inspectorOpen: !layout.inspectorOpen }))
@@ -360,7 +361,7 @@ export function CommandPalette(): JSX.Element | null {
       id: 'act:menu',
       group: 'actions',
       title: layout.railCollapsed ? t('palette.showMenu') : t('palette.hideMenu'),
-      hint: '⌘⌥1',
+      hint: shortcut('Cmd+Alt+1'),
       icon: <PanelLeftClose size={ICON.md} {...iconProps} />,
       keywords: t('palette.keywords.menu'),
       run: close(() => setLayout({ railCollapsed: !layout.railCollapsed }))

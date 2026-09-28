@@ -26,7 +26,9 @@ export const en = {
     restart: 'Restart to Update',
     current: 'No newer automatic update is available.',
     unsigned: 'This copy cannot update automatically. Install a certificate-signed release from GitHub Releases to enable automatic updates.',
+    portable: 'This copy was not installed, so it cannot update itself. Install Quuu with the installer from GitHub Releases to enable automatic updates.',
     failed: 'The update could not be checked or downloaded. Install Quuu in Applications and try again later, or download the latest release.',
+    downloadFailed: 'The update could not be checked or downloaded. Try again later, or download the latest release.',
     ready: 'An update is ready to install.',
     readyDetail: 'Restart now, or the update will be applied the next time you open the app. Running agents continue during the restart.',
     releases: 'Open Releases',
@@ -470,7 +472,7 @@ If you delete the whole folder, it can be recreated from Quuu's settings on the 
     logoSettings: 'Set it on GitHub',
     createdInstallUnconfirmed: 'Could not confirm the installation of the created GitHub App',
     keyUnreadable: 'Could not read the GitHub App private key',
-    keySaveFailed: 'Could not save the GitHub App private key to the Keychain',
+    keySaveFailed: 'Could not save the GitHub App private key on this computer',
     createButton: 'Create GitHub App'
   }
 }

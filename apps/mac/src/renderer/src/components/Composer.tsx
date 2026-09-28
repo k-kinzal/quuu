@@ -26,6 +26,7 @@ import { taskDraftKey } from '../state/drafts.js'
 import { useStore } from '../state/store.js'
 import { ArrowLeft, Clock, ICON, Send, Square, X, iconProps } from '../ui/icons.js'
 import { PromptAgentChip, PromptComposer } from './PromptComposer.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /**
  * The composer (rule D).
@@ -206,7 +207,7 @@ export function Composer({
           loading={sending}
           disabled={!action.enabled || text.trim().length === 0 || sending || files.busy}
           onClick={submit}
-          title={`${action.label} (⌘↵)`}
+          title={`${action.label} (${shortcut('Cmd+Enter')})`}
           startIcon={
             isRunning ? (
               <Clock size={ICON.sm} {...iconProps} />

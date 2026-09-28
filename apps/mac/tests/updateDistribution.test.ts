@@ -9,11 +9,14 @@ let directory: string
 beforeEach(() => { directory = mkdtempSync(join(tmpdir(), 'quuu-distribution-')) })
 afterEach(() => { rmSync(directory, { recursive: true, force: true }) })
 
-it('enables updates only for a packaged Mac bundle marked as a GitHub Release', () => {
+it('enables updates only for a packaged Mac or Windows app marked as a GitHub Release', () => {
   writeFileSync(join(directory, 'package.json'), JSON.stringify({ quuuDistribution: 'github-release' }))
   expect(isReleaseBuild(true, 'darwin', directory)).toBe(true)
+  expect(isReleaseBuild(true, 'win32', directory)).toBe(true)
   expect(isReleaseBuild(false, 'darwin', directory)).toBe(false)
-  expect(isReleaseBuild(true, 'win32', directory)).toBe(false)
+  expect(isReleaseBuild(false, 'win32', directory)).toBe(false)
+  // No update engine and no feed for anything else
+  expect(isReleaseBuild(true, 'linux', directory)).toBe(false)
 })
 
 it.each([

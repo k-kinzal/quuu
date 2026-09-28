@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { spawn, spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, win32 } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -10,6 +11,10 @@ import { withPath } from '../src/main/platform/processEnv.js'
 import { batchQuote, windowsTerminalScript } from '../src/main/platform/terminal.js'
 import { cmdArgument, findWindowsCommand, resolveWindowsLaunch, shimTarget } from '../src/main/platform/windowsLaunch.mjs'
 import { compactPath, lastSegment, relativeToCwd } from '../src/renderer/src/model/paths.js'
+import { shortcutLabel, stringsForKeyboard } from '../src/renderer/src/model/shortcuts.js'
+import { fileLockHeld, processStartedAt } from '../src/main/platform/processProbe.js'
+import { compareVersions, pendingUpdate, windowsFeedName } from '../src/main/updates/windowsFeed.js'
+import { enStrings } from '@design-system/react'
 
 /**
  * Windows has no /bin/sh, no process groups, and spells one program three ways (`claude`,
@@ -240,5 +245,99 @@ describe('the script an external terminal on Windows runs', () => {
     expect(lines).toContain('title Fix ^<bug^> ^& ship')
     expect(lines).toContain(`"${win32.normalize('C:\\tools\\claude.exe')}" "--resume" "abc"`)
     expect(lines.at(-2)).toBe('"C:\\Program Files\\PowerShell\\7\\pwsh.exe" -NoLogo')
+  })
+})
+
+describe('shortcut hints', () => {
+  const menus = readFileSync(join(import.meta.dirname, '..', 'src/main/menus.ts'), 'utf8')
+  const accelerators = [...new Set([...menus.matchAll(/accelerator: [`']([^`']+)[`']/g)].map((m) => m[1].replace('${value}', '1').replace('${i + 3}', '3')))]
+
+  it('reads the menu (without that, the agreement below means nothing)', () => {
+    expect(accelerators).toContain('Cmd+N')
+    expect(accelerators.length).toBeGreaterThan(20)
+  })
+
+  it('names on Windows exactly the keys the Windows menu answers to', () => {
+    for (const accelerator of accelerators) {
+      expect(shortcutLabel(accelerator, false)).toBe(platformAccelerator(accelerator, 'win32').replace('Return', 'Enter'))
+    }
+  })
+
+  it('keeps the macOS glyphs as they have always read', () => {
+    expect(shortcutLabel('Cmd+N', true)).toBe('⌘N')
+    expect(shortcutLabel('Cmd+Shift+N', true)).toBe('⌘⇧N')
+    expect(shortcutLabel('Cmd+Alt+Return', true)).toBe('⌘⌥⏎')
+    expect(shortcutLabel('Cmd+Enter', true)).toBe('⌘↵')
+    expect(shortcutLabel('Cmd+Enter', false)).toBe('Ctrl+Enter')
+  })
+
+  it("hands the design system its own copy with key names on a Windows keyboard, and untouched on a Mac's", () => {
+    expect(stringsForKeyboard(enStrings, true)).toBe(enStrings)
+    const pc = stringsForKeyboard(enStrings, false)
+    expect(pc.resizer.horizontalTitle('Width')).toBe(enStrings.resizer.horizontalTitle('Width').replace('⇧', 'Shift'))
+    expect(pc.dataTable.columnTitle('Name', true)).not.toMatch(/[⇧⏎]/)
+    expect(pc.toast.dismiss).toBe(enStrings.toast.dismiss)
+  })
+})
+
+describe('the Windows update feed', () => {
+  const feed = (version: string, url = `https://github.com/k-kinzal/quuu/releases/download/x/Quuu-${version}-win-x64-setup.exe`) => ({
+    currentRelease: version,
+    releases: [{ version, updateTo: { version, name: `Quuu ${version}`, url, sha256: 'a'.repeat(64), size: 10 } }]
+  })
+
+  it('sits beside the Mac feeds under its own name per architecture', () => {
+    expect(windowsFeedName('x64')).toBe('RELEASES-win32-x64.json')
+    expect(windowsFeedName('arm64')).toBe('RELEASES-win32-arm64.json')
+  })
+
+  it('compares dated versions as numbers, not text', () => {
+    expect(compareVersions('2026.10.1', '2026.9.30')).toBe(1)
+    expect(compareVersions('2026.9.27', '2026.9.27')).toBe(0)
+    expect(compareVersions('2025.12.31', '2026.1.1')).toBe(-1)
+  })
+
+  it('offers only a newer release', () => {
+    expect(pendingUpdate(feed('2026.10.1'), '2026.9.30')?.version).toBe('2026.10.1')
+    expect(pendingUpdate(feed('2026.9.30'), '2026.9.30')).toBeNull()
+    expect(pendingUpdate(feed('2026.9.1'), '2026.9.30')).toBeNull()
+  })
+
+  it('refuses an installer from anywhere but GitHub', () => {
+    expect(() => pendingUpdate(feed('2026.10.1', 'https://example.com/Quuu-setup.exe'), '2026.9.30')).toThrow()
+  })
+})
+
+describe('whether another process holds a file lock', () => {
+  it('tells a held lock from a free one, which is how a running Codex thread is told from debris', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'quuu-lock-'))
+    const path = join(dir, 'thread.lock')
+    writeFileSync(path, '')
+    try {
+      expect(fileLockHeld(path)).toBe(false)
+      if (process.platform !== 'darwin') return
+      const holder = spawn('/usr/bin/lockf', ['-k', path, '/bin/sleep', '30'], { stdio: 'ignore' })
+      try {
+        await vi.waitFor(() => expect(fileLockHeld(path)).toBe(true), { timeout: 5000 })
+      } finally {
+        holder.kill('SIGKILL')
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
+describe('when another process started', () => {
+  it("reads a live process's start, to tell it from a later process that reused its pid", () => {
+    const started = processStartedAt(process.pid)
+    expect(started).not.toBeNull()
+    // ps reports whole seconds
+    expect(Math.abs(started! - (Date.now() - process.uptime() * 1000))).toBeLessThan(3000)
+  })
+
+  it('has no answer for a process that is gone', () => {
+    const gone = spawnSync(process.execPath, ['-e', '']).pid
+    expect(processStartedAt(gone)).toBeNull()
   })
 })

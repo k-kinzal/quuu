@@ -13,8 +13,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
-    "build": "npm run build:pty && npm run typecheck && electron-vite build && npm run build:cli",
-    "build:pty": "node scripts/build-pty.mjs",
+    "build": "npm run build:native && npm run typecheck && electron-vite build && npm run build:cli",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.preload.json && tsc --noEmit -p tsconfig.web.json && tsc --noEmit -p tsconfig.tests.json",
     "dist": "npm run build && npm run --prefix ../.. mobile:build && node scripts/package-app.mjs --dir",
     "dist:dmg": "npm run build && npm run --prefix ../.. mobile:build && node scripts/package-app.mjs --publish never",
@@ -23,7 +22,8 @@
     "dev:fixture": "vite-node -c ../../vitest.config.ts scripts/dev-fixture.ts -- /tmp/taskd-shot",
     "dev:shot": "QUUU_USER_DATA=/tmp/taskd-shot QUUU_CODEX_SESSIONS_DIR=/tmp/taskd-shot/codex-sessions electron-vite dev --remoteDebuggingPort 9222",
     "shot": "node scripts/shoot.mjs /tmp/taskd-shots 9222",
-    "build:cli": "vite build --config cli.vite.config.ts"
+    "build:cli": "vite build --config cli.vite.config.ts",
+    "build:native": "node scripts/build-native.mjs"
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.15.0",

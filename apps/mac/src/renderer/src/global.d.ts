@@ -7,6 +7,8 @@ declare global {
     quuu: QuuuClient
     quuuEvents: QuuuEvents
     quuuFiles: QuuuFiles
+    /** `process.platform` of the app; absent where the renderer runs outside Electron. */
+    quuuPlatform?: string
   }
 }
 

@@ -6,6 +6,7 @@ import { ChevronRight, ICON, iconProps } from '../ui/icons.js'
 import { ProjectNavigation } from '../views/project/ProjectNavigation.js'
 import { Rail } from './Rail.js'
 import { TaskSidebar } from './TaskSidebar.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /** Project navigation and the companion list share the rail's material and outer edge. */
 export function LeftMenu({ showTasks, project }: { showTasks: boolean; project?: Project }): JSX.Element {
@@ -38,7 +39,7 @@ export function LeftMenu({ showTasks, project }: { showTasks: boolean; project?:
             </>
           ) : (
             <CollapseHandle
-              title={t('leftMenu.restoreList')}
+              title={t('leftMenu.restoreList', { shortcut: shortcut('Cmd+Alt+2') })}
               surface="transparent"
               bordered={false}
               icon={<ChevronRight size={ICON.sm} {...iconProps} />}

@@ -72,6 +72,7 @@ import { sectionMenuItems } from './SectionMenu.js'
 import { TaskFilterBar } from './TaskFilterBar.js'
 import { taskMenuItems } from './TaskMenu.js'
 import { RecurringTaskTableRow } from './RecurringTaskRow.js'
+import { shortcut } from '../interaction/shortcut.js'
 
 /** Actions at the row's right edge. Not a column but margin, so the table owns the fixed width. */
 const ACTIONS_WIDTH = tableMetrics.actionsWidth
@@ -409,7 +410,7 @@ export function TaskOverview(): JSX.Element {
         ref={bodyRef}
         {...pane('list', { tab: true })}
         role="listbox"
-        aria-label={t('taskOverview.listLabel', { title })}
+        aria-label={t('taskOverview.listLabel', { title, actions: shortcut('Cmd+Alt+Return') })}
         aria-activedescendant={cursorTaskId ? taskRowId(cursorTaskId) : undefined}
         onKeyDown={(e) => runTaskListKey(e, tasks)}
       >
@@ -678,7 +679,7 @@ const TaskRow = memo(function TaskRow({
             <Button
               size="xs"
               tabIndex={-1}
-              title={t('taskOverview.runTitle')}
+              title={t('taskOverview.runTitle', { shortcut: shortcut('Cmd+R') })}
               onClick={(e) => {
                 e.stopPropagation()
                 onRun(task.id)
@@ -692,7 +693,7 @@ const TaskRow = memo(function TaskRow({
               size="xs"
               color="success"
               tabIndex={-1}
-              title={t('taskOverview.doneTitle')}
+              title={t('taskOverview.doneTitle', { shortcut: shortcut('Cmd+Shift+D') })}
               onClick={(e) => {
                 e.stopPropagation()
                 onDone(task.id)

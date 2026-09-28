@@ -14,7 +14,7 @@ import { resolveHooks } from '../hooks/config.js'
 import { candidateAgents } from '../execution/agentResolver.js'
 import { t } from '../i18n/index.js'
 import { issueToken } from '../platform/githubAuthRuntime.mjs'
-import { GITHUB_API_VERSION, GITHUB_APP_KEYCHAIN_SERVICE, githubRepositoryFromRemote } from '../platform/githubAuth.js'
+import { GITHUB_API_VERSION, githubAppKeyStore, githubRepositoryFromRemote } from '../platform/githubAuth.js'
 import type { Project } from '../projects/types.js'
 import { botLogin, hasGitHubAppAuthentication, resolveCommitIdentity } from '../settings/commitIdentity.js'
 import { newId, nowIso } from '../util.js'
@@ -219,7 +219,7 @@ export class RunnerOperations extends EventEmitter {
     if (cached && cached.expiresAt > Date.now() + 15 * 60_000) return cached
     let issuing = this.issuing.get(key)
     if (!issuing) {
-      issuing = issueToken({ appId: identity.appId!, repository, keychainService: GITHUB_APP_KEYCHAIN_SERVICE, apiVersion: GITHUB_API_VERSION }, AbortSignal.timeout(30_000))
+      issuing = issueToken({ appId: identity.appId!, repository, ...githubAppKeyStore(identity.appId!), apiVersion: GITHUB_API_VERSION }, AbortSignal.timeout(30_000))
         .then(issued => { const credential = { ...issued, repository, user: botLogin(identity.appSlug) }; this.credentials.set(key, credential); return credential })
         .finally(() => this.issuing.delete(key))
       this.issuing.set(key, issuing)

@@ -27,7 +27,9 @@ export const ja: typeof en = {
     restart: '再起動してアップデート',
     current: '自動更新できる新しいバージョンはありません。',
     unsigned: 'この配布版は自動更新できません。GitHub Releasesから証明書で署名された配布版をインストールすると、自動更新が利用できます。',
+    portable: 'この Quuu はインストールされていないため自動更新できません。GitHub Releases のインストーラーでインストールすると、自動更新が利用できます。',
     failed: 'アップデートを確認またはダウンロードできませんでした。Quuuをアプリケーションフォルダに置いて後で再試行するか、最新の配布版をダウンロードしてください。',
+    downloadFailed: '更新を確認またはダウンロードできませんでした。しばらくしてから再度お試しいただくか、最新の配布版をダウンロードしてください。',
     ready: 'アップデートの準備ができました。',
     readyDetail: '今すぐ再起動するか、次回の起動時に更新を適用できます。再起動中も実行中のエージェントは継続します。',
     releases: 'Releasesを開く',
@@ -470,7 +472,7 @@ Mac の Quuu と iPhone の Quuu が、このフォルダごしにやりとり�
     logoSettings: 'GitHub で設定する',
     createdInstallUnconfirmed: '作成した GitHub App のインストールを確認できませんでした',
     keyUnreadable: 'GitHub App の秘密鍵を読めませんでした',
-    keySaveFailed: 'GitHub App の秘密鍵を Keychain に保存できませんでした',
+    keySaveFailed: 'GitHub App の秘密鍵をこのコンピューターに保存できませんでした',
     createButton: 'GitHub App を作る'
   }
 }
