@@ -229,8 +229,9 @@ Auxiliary runs never enter `runs`, change task lineage, or advance task state.
 The scheduler respects pending hooks per project, and completion waits for its
 before-complete hooks before integrating a managed worktree. Detached shell wrappers
 leave a pid and exit file for restart recovery; an ambiguous start is not replayed.
-Conversation previews use the provider adapters through `session/auxiliary` and keep
-raw command output bounded. Import excludes auxiliary sessions so they do not become
+Expanded conversations use `session/auxiliaryLogs` and the durable session index, with
+bounded pages and separately scoped images. Auxiliary reads create no selected task view
+and derive no task state or review evidence. The original preview API remains compatible. Import excludes auxiliary sessions so they do not become
 new tasks that recursively launch hooks.
 
 ## Remote Runner execution

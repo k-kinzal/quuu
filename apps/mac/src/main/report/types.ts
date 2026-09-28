@@ -6,6 +6,8 @@
  * Quuu owns when one is generated and where it is kept; the page itself is the agent's output.
  */
 
+import type { LogAdapter } from '../agents/cliAdapter.js'
+
 export type ReportStatus = 'generating' | 'ready' | 'failed'
 
 /** What a reader is shown. Nothing here names a process. */
@@ -42,6 +44,8 @@ export interface TaskReport {
  * is what lets the next launch settle a generation that finished while the app was gone.
  */
 export interface StoredReport extends TaskReport {
+  /** The writer's identity and instruction, retained independently of editable agent settings. */
+  conversation?: { adapter: LogAdapter; sessionId: string; input: string }
   /**
    * Where the generator ran, and the half of the key that identifies its row in `report_sessions`
    * (the other half is `startedAt`). That is the record import reads to tell a report apart from

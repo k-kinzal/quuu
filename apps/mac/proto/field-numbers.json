@@ -5323,5 +5323,321 @@
   },
   "ReportHistoryResponse": {
     "value": 1
+  },
+  "HooksConversationRequestValue": {
+    "id": 1,
+    "before": 2,
+    "after": 3,
+    "generation": 4
+  },
+  "HooksConversationRequest": {
+    "value": 1
+  },
+  "HooksConversationResponseValueLogPath": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueTitle": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemTimestamp": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant1": {
+    "kind": 1,
+    "text": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant2": {
+    "kind": 1,
+    "text": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItem": {
+    "text": 1,
+    "status": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlan": {
+    "items": 1
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolTarget": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolResult": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItem": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImages": {
+    "items": 1
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3Tool": {
+    "plan": 1,
+    "id": 2,
+    "name": 3,
+    "input": 4,
+    "target": 5,
+    "result": 6,
+    "isError": 7,
+    "images": 8
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant3": {
+    "kind": 1,
+    "tool": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant4ImageWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant4ImageHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant4Image": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItemVariant4": {
+    "kind": 1,
+    "image": 2
+  },
+  "HooksConversationResponseValueMessagesItemBlocksItem": {
+    "variant1": 1,
+    "variant2": 2,
+    "variant3": 3,
+    "variant4": 4
+  },
+  "HooksConversationResponseValueMessagesItemBlocks": {
+    "items": 1
+  },
+  "HooksConversationResponseValueMessagesItemModel": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksConversationResponseValueMessagesItem": {
+    "id": 1,
+    "role": 2,
+    "isSidechain": 3,
+    "timestamp": 4,
+    "blocks": 5,
+    "model": 6
+  },
+  "HooksConversationResponseValueMessages": {
+    "items": 1
+  },
+  "HooksConversationResponseValue": {
+    "first": 1,
+    "last": 2,
+    "generation": 3,
+    "hasNewer": 4,
+    "indexing": 5,
+    "sessionId": 6,
+    "logPath": 7,
+    "exists": 8,
+    "title": 9,
+    "messages": 10,
+    "hasMore": 11,
+    "totalMessages": 12,
+    "prunedAt": 13,
+    "cwd": 14,
+    "input": 15,
+    "structured": 16
+  },
+  "HooksConversationResponse": {
+    "value": 1
+  },
+  "HooksImageRequestValue": {
+    "id": 1,
+    "imageId": 2
+  },
+  "HooksImageRequest": {
+    "value": 1
+  },
+  "HooksImageResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "HooksImageResponse": {
+    "value": 1
+  },
+  "ReportConversationRequestValue": {
+    "id": 1,
+    "before": 2,
+    "after": 3,
+    "generation": 4
+  },
+  "ReportConversationRequest": {
+    "value": 1
+  },
+  "ReportConversationResponseValueLogPath": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueTitle": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemTimestamp": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant1": {
+    "kind": 1,
+    "text": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant2": {
+    "kind": 1,
+    "text": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItem": {
+    "text": 1,
+    "status": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlan": {
+    "items": 1
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolTarget": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolResult": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItem": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImages": {
+    "items": 1
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3Tool": {
+    "plan": 1,
+    "id": 2,
+    "name": 3,
+    "input": 4,
+    "target": 5,
+    "result": 6,
+    "isError": 7,
+    "images": 8
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant3": {
+    "kind": 1,
+    "tool": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant4ImageWidth": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant4ImageHeight": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant4Image": {
+    "id": 1,
+    "mediaType": 2,
+    "byteSize": 3,
+    "width": 4,
+    "height": 5
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItemVariant4": {
+    "kind": 1,
+    "image": 2
+  },
+  "ReportConversationResponseValueMessagesItemBlocksItem": {
+    "variant1": 1,
+    "variant2": 2,
+    "variant3": 3,
+    "variant4": 4
+  },
+  "ReportConversationResponseValueMessagesItemBlocks": {
+    "items": 1
+  },
+  "ReportConversationResponseValueMessagesItemModel": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportConversationResponseValueMessagesItem": {
+    "id": 1,
+    "role": 2,
+    "isSidechain": 3,
+    "timestamp": 4,
+    "blocks": 5,
+    "model": 6
+  },
+  "ReportConversationResponseValueMessages": {
+    "items": 1
+  },
+  "ReportConversationResponseValue": {
+    "first": 1,
+    "last": 2,
+    "generation": 3,
+    "hasNewer": 4,
+    "indexing": 5,
+    "sessionId": 6,
+    "logPath": 7,
+    "exists": 8,
+    "title": 9,
+    "messages": 10,
+    "hasMore": 11,
+    "totalMessages": 12,
+    "prunedAt": 13,
+    "cwd": 14,
+    "input": 15,
+    "structured": 16
+  },
+  "ReportConversationResponse": {
+    "value": 1
+  },
+  "ReportImageRequestValue": {
+    "id": 1,
+    "imageId": 2
+  },
+  "ReportImageRequest": {
+    "value": 1
+  },
+  "ReportImageResponseValue": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReportImageResponse": {
+    "value": 1
   }
 }

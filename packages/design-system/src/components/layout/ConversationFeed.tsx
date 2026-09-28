@@ -11,7 +11,7 @@ export function conversationBlock(id: string): { 'data-conversation-block': stri
 const Content = styled('div')({ display: 'flow-root' })
 const Scroll = styled(ConversationScroll)({ overflowAnchor: 'none' })
 
-interface Props extends HTMLAttributes<HTMLDivElement> {
+export interface ConversationFeedProps extends HTMLAttributes<HTMLDivElement> {
   /** A data revision, not a clock or disclosure state. */
   revision: unknown
   contextKey: string
@@ -24,7 +24,7 @@ interface Snapshot {
 }
 
 /** Owns arrival motion and its scroll events together so automatic movement cannot detach following. */
-class Feed extends Component<Props & { viewportRef: ForwardedRef<HTMLDivElement> }> {
+class Feed extends Component<ConversationFeedProps & { viewportRef: ForwardedRef<HTMLDivElement> }> {
   private viewport: HTMLDivElement | null = null
   private content = createRef<HTMLDivElement>()
   private frame: number | null = null
@@ -61,7 +61,7 @@ class Feed extends Component<Props & { viewportRef: ForwardedRef<HTMLDivElement>
     this.preference?.removeEventListener('change', this.reduceMotion)
   }
 
-  getSnapshotBeforeUpdate(previous: Props): Snapshot | null {
+  getSnapshotBeforeUpdate(previous: ConversationFeedProps): Snapshot | null {
     if (previous.revision === this.props.revision) return null
     const edge = this.viewport?.getBoundingClientRect().top ?? 0
     return {
@@ -73,7 +73,7 @@ class Feed extends Component<Props & { viewportRef: ForwardedRef<HTMLDivElement>
     }
   }
 
-  componentDidUpdate(previous: Props, _state: unknown, snapshot: Snapshot | null): void {
+  componentDidUpdate(previous: ConversationFeedProps, _state: unknown, snapshot: Snapshot | null): void {
     const navigation = previous.contextKey !== this.props.contextKey || previous.active !== this.props.active
     if (navigation || previous.follow !== this.props.follow) {
       this.stop()
@@ -135,6 +135,7 @@ class Feed extends Component<Props & { viewportRef: ForwardedRef<HTMLDivElement>
 
   private blocks(): HTMLElement[] {
     return Array.from(this.content.current?.querySelectorAll<HTMLElement>('[data-conversation-block]') ?? [])
+      .filter(node => node.closest('[data-conversation-feed]') === this.viewport)
   }
 
   private bottom(): number {
@@ -178,7 +179,7 @@ class Feed extends Component<Props & { viewportRef: ForwardedRef<HTMLDivElement>
   render(): JSX.Element {
     const { revision: _revision, contextKey: _contextKey, follow: _follow, active: _active,
       viewportRef: _viewportRef, children, onScroll, onWheel, onTouchStart, onPointerDown, onKeyDown, ...props } = this.props
-    return <Scroll {...props} ref={this.setViewport}
+    return <Scroll {...props} data-conversation-feed ref={this.setViewport}
       onScroll={event => {
         if (this.target !== null) return
         onScroll?.(event)
@@ -194,6 +195,6 @@ class Feed extends Component<Props & { viewportRef: ForwardedRef<HTMLDivElement>
   }
 }
 
-export const ConversationFeed = forwardRef<HTMLDivElement, Props>(function ConversationFeed({ active = true, ...props }, ref) {
+export const ConversationFeed = forwardRef<HTMLDivElement, ConversationFeedProps>(function ConversationFeed({ active = true, ...props }, ref) {
   return <Feed {...props} active={active} viewportRef={ref} />
 })

@@ -230,7 +230,9 @@ export function getMeta(db: Db, key: string): string | null {
 // ---------------------------------------------------------------------------
 
 function toReport(r: Row): StoredReport {
+  const conversation = JSON.parse(s(r.conversation, '{}')) as StoredReport['conversation']
   return {
+    ...(conversation?.adapter ? { conversation } : {}),
     taskId: s(r.task_id),
     status: s(r.status, 'generating') as ReportStatus,
     revision: s(r.revision),
@@ -260,8 +262,8 @@ export function listGeneratingReports(db: Db): StoredReport[] {
 export function saveTaskReport(db: Db, report: StoredReport): void {
   db.prepare(
     `INSERT OR REPLACE INTO task_reports (task_id, status, revision, path, pending, log_path,
-       exit_path, error, cwd, pid, started_at, ended_at)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+       exit_path, error, cwd, pid, started_at, ended_at, conversation)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     report.taskId,
     report.status,
@@ -274,7 +276,8 @@ export function saveTaskReport(db: Db, report: StoredReport): void {
     report.cwd,
     report.pid,
     report.startedAt,
-    report.endedAt
+    report.endedAt,
+    JSON.stringify(report.conversation ?? {})
   )
 }
 

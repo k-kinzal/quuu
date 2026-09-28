@@ -22,11 +22,13 @@ import { SessionImages } from './SessionImages.js'
 function ToolCluster({
   name,
   tools,
-  cwd
+  cwd,
+  complete
 }: {
   name: string
   tools: ToolCall[]
   cwd: string | null
+  complete: boolean
 }): JSX.Element {
   const id = useId()
   const [openIndex, setOpenIndex] = useState<number | null>(null)
@@ -102,7 +104,7 @@ function ToolCluster({
                     <TranscriptCode
                       label={t('toolCluster.result')}
                       code={
-                        tool.result.length > 6000
+                        !complete && tool.result.length > 6000
                           ? `${tool.result.slice(0, 6000)}\n${t('toolCluster.truncated')}`
                           : tool.result
                       }
@@ -150,11 +152,13 @@ function Thinking({ text }: { text: string }): JSX.Element {
 function Item({
   item,
   role,
-  cwd
+  cwd,
+  complete
 }: {
   item: TurnItem
   role: Turn['role']
   cwd: string | null
+  complete: boolean
 }): JSX.Element {
   switch (item.kind) {
     case 'text':
@@ -169,7 +173,7 @@ function Item({
     case 'images':
       return <SessionImages images={item.images} />
     case 'tools':
-      return <ToolCluster name={item.name} tools={item.tools} cwd={cwd} />
+      return <ToolCluster name={item.name} tools={item.tools} cwd={cwd} complete={complete} />
   }
 }
 
@@ -181,12 +185,17 @@ function Item({
 export function SessionTurn({
   turn,
   cwd,
-  headless
+  headless,
+  embedded = false,
+  roleLabel
 }: {
   turn: Turn
   cwd: string | null
   /** The section heading (`PromptSection`) is already carrying it. Don't draw the same line twice */
   headless?: boolean
+  /** Nested history must not become an anchor in the enclosing task conversation. */
+  embedded?: boolean
+  roleLabel?: string
 }): JSX.Element {
   const prose = turnText(turn)
   const thinking = turn.items
@@ -214,7 +223,7 @@ export function SessionTurn({
     >
       {!headless && (
         <TurnHead>
-          <TurnRole user={turn.role === 'user'}>{ROLE_LABEL[turn.role] ?? turn.role}</TurnRole>
+          <TurnRole user={turn.role === 'user'}>{roleLabel ?? ROLE_LABEL[turn.role] ?? turn.role}</TurnRole>
           {turn.isSidechain && <span>{t('sessionTurn.subagent')}</span>}
           <TurnRule />
           {turn.startedAt && (
@@ -227,7 +236,7 @@ export function SessionTurn({
       )}
       <TurnBody>
         {turn.items.map((item) => (
-          <div key={item.id} data-chat-item={item.id} {...conversationBlock(item.id)}><Item item={item} role={turn.role} cwd={cwd} /></div>
+          <div key={item.id} data-chat-item={embedded ? undefined : item.id} {...conversationBlock(item.id)}><Item item={item} role={turn.role} cwd={cwd} complete={embedded} /></div>
         ))}
       </TurnBody>
     </TurnRoot>

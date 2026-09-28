@@ -1012,6 +1012,223 @@ message HooksLogResponse {
   optional HooksLogResponseValue value = 1;
 }
 
+message HooksConversationRequestValue {
+  optional string id = 1;
+  optional double before = 2;
+  optional double after = 3;
+  optional string generation = 4;
+}
+
+message HooksConversationRequest {
+  optional HooksConversationRequestValue value = 1;
+}
+
+message HooksConversationResponseValueLogPath {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueTitle {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemTimestamp {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant1 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant2 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItem {
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText text = 1;
+  optional string status = 2;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlan {
+  repeated HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItem items = 1;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolTarget {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolResult {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItem {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth width = 4;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight height = 5;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImages {
+  repeated HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItem items = 1;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3Tool {
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolPlan plan = 1;
+  optional string id = 2;
+  optional string name = 3;
+  optional google.protobuf.Value input = 4;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolTarget target = 5;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolResult result = 6;
+  optional bool isError = 7;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3ToolImages images = 8;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant3 {
+  optional string kind = 1;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant3Tool tool = 2;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant4ImageWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant4ImageHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant4Image {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant4ImageWidth width = 4;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant4ImageHeight height = 5;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItemVariant4 {
+  optional string kind = 1;
+  optional HooksConversationResponseValueMessagesItemBlocksItemVariant4Image image = 2;
+}
+
+message HooksConversationResponseValueMessagesItemBlocksItem {
+  oneof kind {
+  HooksConversationResponseValueMessagesItemBlocksItemVariant1 variant1 = 1;
+  HooksConversationResponseValueMessagesItemBlocksItemVariant2 variant2 = 2;
+  HooksConversationResponseValueMessagesItemBlocksItemVariant3 variant3 = 3;
+  HooksConversationResponseValueMessagesItemBlocksItemVariant4 variant4 = 4;
+  }
+}
+
+message HooksConversationResponseValueMessagesItemBlocks {
+  repeated HooksConversationResponseValueMessagesItemBlocksItem items = 1;
+}
+
+message HooksConversationResponseValueMessagesItemModel {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksConversationResponseValueMessagesItem {
+  optional string id = 1;
+  optional string role = 2;
+  optional bool isSidechain = 3;
+  optional HooksConversationResponseValueMessagesItemTimestamp timestamp = 4;
+  optional HooksConversationResponseValueMessagesItemBlocks blocks = 5;
+  optional HooksConversationResponseValueMessagesItemModel model = 6;
+}
+
+message HooksConversationResponseValueMessages {
+  repeated HooksConversationResponseValueMessagesItem items = 1;
+}
+
+message HooksConversationResponseValue {
+  optional double first = 1;
+  optional double last = 2;
+  optional string generation = 3;
+  optional bool hasNewer = 4;
+  optional bool indexing = 5;
+  optional string sessionId = 6;
+  optional HooksConversationResponseValueLogPath logPath = 7;
+  optional bool exists = 8;
+  optional HooksConversationResponseValueTitle title = 9;
+  optional HooksConversationResponseValueMessages messages = 10;
+  optional bool hasMore = 11;
+  optional double totalMessages = 12;
+  optional string prunedAt = 13;
+  optional string cwd = 14;
+  optional string input = 15;
+  optional bool structured = 16;
+}
+
+message HooksConversationResponse {
+  optional HooksConversationResponseValue value = 1;
+}
+
+message HooksImageRequestValue {
+  optional string id = 1;
+  optional string imageId = 2;
+}
+
+message HooksImageRequest {
+  optional HooksImageRequestValue value = 1;
+}
+
+message HooksImageResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message HooksImageResponse {
+  optional HooksImageResponseValue value = 1;
+}
+
 message HooksCancelRequest {
   optional string value = 1;
 }
@@ -6634,6 +6851,223 @@ message ReviewClosePullRequestResponse {
   optional ReviewClosePullRequestResponseValue value = 1;
 }
 
+message ReportConversationRequestValue {
+  optional string id = 1;
+  optional double before = 2;
+  optional double after = 3;
+  optional string generation = 4;
+}
+
+message ReportConversationRequest {
+  optional ReportConversationRequestValue value = 1;
+}
+
+message ReportConversationResponseValueLogPath {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueTitle {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemTimestamp {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant1 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant2 {
+  optional string kind = 1;
+  optional string text = 2;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItem {
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItemText text = 1;
+  optional string status = 2;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlan {
+  repeated ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlanItem items = 1;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolTarget {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolResult {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItem {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemWidth width = 4;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItemHeight height = 5;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImages {
+  repeated ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImagesItem items = 1;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3Tool {
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolPlan plan = 1;
+  optional string id = 2;
+  optional string name = 3;
+  optional google.protobuf.Value input = 4;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolTarget target = 5;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolResult result = 6;
+  optional bool isError = 7;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3ToolImages images = 8;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant3 {
+  optional string kind = 1;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant3Tool tool = 2;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant4ImageWidth {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant4ImageHeight {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant4Image {
+  optional string id = 1;
+  optional string mediaType = 2;
+  optional double byteSize = 3;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant4ImageWidth width = 4;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant4ImageHeight height = 5;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItemVariant4 {
+  optional string kind = 1;
+  optional ReportConversationResponseValueMessagesItemBlocksItemVariant4Image image = 2;
+}
+
+message ReportConversationResponseValueMessagesItemBlocksItem {
+  oneof kind {
+  ReportConversationResponseValueMessagesItemBlocksItemVariant1 variant1 = 1;
+  ReportConversationResponseValueMessagesItemBlocksItemVariant2 variant2 = 2;
+  ReportConversationResponseValueMessagesItemBlocksItemVariant3 variant3 = 3;
+  ReportConversationResponseValueMessagesItemBlocksItemVariant4 variant4 = 4;
+  }
+}
+
+message ReportConversationResponseValueMessagesItemBlocks {
+  repeated ReportConversationResponseValueMessagesItemBlocksItem items = 1;
+}
+
+message ReportConversationResponseValueMessagesItemModel {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportConversationResponseValueMessagesItem {
+  optional string id = 1;
+  optional string role = 2;
+  optional bool isSidechain = 3;
+  optional ReportConversationResponseValueMessagesItemTimestamp timestamp = 4;
+  optional ReportConversationResponseValueMessagesItemBlocks blocks = 5;
+  optional ReportConversationResponseValueMessagesItemModel model = 6;
+}
+
+message ReportConversationResponseValueMessages {
+  repeated ReportConversationResponseValueMessagesItem items = 1;
+}
+
+message ReportConversationResponseValue {
+  optional double first = 1;
+  optional double last = 2;
+  optional string generation = 3;
+  optional bool hasNewer = 4;
+  optional bool indexing = 5;
+  optional string sessionId = 6;
+  optional ReportConversationResponseValueLogPath logPath = 7;
+  optional bool exists = 8;
+  optional ReportConversationResponseValueTitle title = 9;
+  optional ReportConversationResponseValueMessages messages = 10;
+  optional bool hasMore = 11;
+  optional double totalMessages = 12;
+  optional string prunedAt = 13;
+  optional string cwd = 14;
+  optional string input = 15;
+  optional bool structured = 16;
+}
+
+message ReportConversationResponse {
+  optional ReportConversationResponseValue value = 1;
+}
+
+message ReportImageRequestValue {
+  optional string id = 1;
+  optional string imageId = 2;
+}
+
+message ReportImageRequest {
+  optional ReportImageRequestValue value = 1;
+}
+
+message ReportImageResponseValue {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReportImageResponse {
+  optional ReportImageResponseValue value = 1;
+}
+
 message ReportProjectGetRequest {
   optional string value = 1;
 }
@@ -7111,6 +7545,8 @@ service Quuu {
   rpc HooksResolve(HooksResolveRequest) returns (HooksResolveResponse);
   rpc HooksList(HooksListRequest) returns (HooksListResponse);
   rpc HooksLog(HooksLogRequest) returns (HooksLogResponse);
+  rpc HooksConversation(HooksConversationRequest) returns (HooksConversationResponse);
+  rpc HooksImage(HooksImageRequest) returns (HooksImageResponse);
   rpc HooksCancel(HooksCancelRequest) returns (HooksCancelResponse);
   rpc HooksRetry(HooksRetryRequest) returns (HooksRetryResponse);
   rpc ProjectsList(ProjectsListRequest) returns (ProjectsListResponse);
@@ -7192,6 +7628,8 @@ service Quuu {
   rpc ReviewOpenPullRequest(ReviewOpenPullRequestRequest) returns (ReviewOpenPullRequestResponse);
   rpc ReviewHidePullRequest(ReviewHidePullRequestRequest) returns (ReviewHidePullRequestResponse);
   rpc ReviewClosePullRequest(ReviewClosePullRequestRequest) returns (ReviewClosePullRequestResponse);
+  rpc ReportConversation(ReportConversationRequest) returns (ReportConversationResponse);
+  rpc ReportImage(ReportImageRequest) returns (ReportImageResponse);
   rpc ReportProjectGet(ReportProjectGetRequest) returns (ReportProjectGetResponse);
   rpc ReportProjectGenerate(ReportProjectGenerateRequest) returns (ReportProjectGenerateResponse);
   rpc ReportProjectShow(ReportProjectShowRequest) returns (ReportProjectShowResponse);

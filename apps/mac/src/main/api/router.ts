@@ -431,6 +431,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       resolve: os.hooks.resolve.handler(({ input }) => app.hooks.resolve(input.projectId)),
       list: os.hooks.list.handler(({ input }) => app.hooks.list(input)),
       log: os.hooks.log.handler(({ input }) => app.hooks.log(input)),
+      conversation: os.hooks.conversation.handler(({ input }) => app.hooks.conversation(input)),
+      image: os.hooks.image.handler(({ input }) => app.hooks.image(input.id, input.imageId)),
       cancel: os.hooks.cancel.handler(({ input }) => app.hooks.cancel(input)),
       retry: os.hooks.retry.handler(({ input }) => app.hooks.retry(input))
     },
@@ -588,6 +590,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       closePullRequest: reviewClosePullRequest,
     },
     report: {
+      conversation: os.report.conversation.handler(({ input }) => app.reports.conversation(input)),
+      image: os.report.image.handler(({ input }) => app.reports.image(input.id, input.imageId)),
       projectGet: projectReportGet,
       projectGenerate: projectReportGenerate,
       projectShow: projectReportShow,

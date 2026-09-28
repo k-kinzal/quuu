@@ -254,3 +254,19 @@ it('keeps following after a click that does not scroll', () => {
   advance(180)
   expect(viewport().scrollTop).toBe(450)
 })
+
+
+it('leaves blocks inside a nested conversation out of the parent arrival animation', () => {
+  const nested = (count: number): JSX.Element => <ThemeProvider>
+    <ConversationFeed aria-label="Conversation" revision={count} contextKey="outer" follow>
+      <div {...conversationBlock('outer')} data-height="400">Parent</div>
+      <ConversationFeed aria-label="Nested" revision={count} contextKey="inner" follow={false}>
+        {Array.from({ length: count }, (_, i) => <div key={i} {...conversationBlock(`inner-${i}`)} data-height="150">Nested {i}</div>)}
+      </ConversationFeed>
+    </ConversationFeed>
+  </ThemeProvider>
+  const ui = render(nested(1))
+  playbacks = []
+  ui.rerender(nested(2))
+  expect(playbacks.some(playback => playback.node.dataset.conversationBlock?.startsWith('inner'))).toBe(false)
+})

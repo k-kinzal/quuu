@@ -6,6 +6,7 @@ import { alpha } from '@mui/material/styles'
 import { feedbackMetrics, transcriptColor } from '../../theme/feedback.js'
 import { styled } from '@mui/material/styles'
 import { CONVERSATION_PAD } from '../layout/ConversationLayout.js'
+import { ConversationFeed } from '../layout/ConversationFeed.js'
 
 export const TranscriptSession = styled('div')({
   display: 'flex',
@@ -110,6 +111,21 @@ export const TranscriptDetailSection = styled('div')(({ theme }) => ({
   minWidth: 0,
   padding: theme.spacing(3),
   '& > article:last-child': { marginBottom: 0 }
+}))
+
+/** A conversation embedded in an expanded action keeps its own reading position and boundary. */
+export const TranscriptNestedFeed = styled(ConversationFeed)(({ theme }) => ({
+  flex: '0 1 auto',
+  maxHeight: `min(60vh, ${theme.density.row.md * 14}px)`,
+  padding: theme.spacing(3),
+  margin: `0 ${theme.spacing(3)} ${theme.spacing(3)}`,
+  border: `1px solid ${theme.palette.border.subtle}`,
+  borderRadius: theme.radius.sm,
+  background: theme.palette.surface.canvas,
+  overscrollBehavior: 'contain',
+  scrollbarGutter: 'stable',
+  '& > div > article:last-child': { marginBottom: 0 },
+  '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 }
 }))
 
 export const TranscriptTurnText = styled('div', { shouldForwardProp: blockProps('role') })<{

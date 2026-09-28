@@ -51,7 +51,7 @@ function lastEntryAt(messages: SessionMessage[]): string {
 
 /** Durable pages are the read path. Parsing is scheduled separately, even with every window closed. */
 export class SessionIndex extends EventEmitter {
-  private pending = new Map<string, { run: Run; target: SessionReadTarget }>()
+  private pending = new Map<string, { run: Run | null; target: SessionReadTarget; running: boolean }>()
   private readers = new Map<string, Reader>()
   private work: Promise<void> | null = null
   private stopped = false
@@ -100,6 +100,15 @@ export class SessionIndex extends EventEmitter {
   }
 
   request(run: Run, target = sessionReadTarget(this.db, run), priority = false): void {
+    this.enqueue(run, target, run.status === 'running', priority)
+  }
+
+  /** Auxiliary conversations share the durable reader, without deriving task state or evidence. */
+  requestAuxiliary(target: SessionReadTarget, running: boolean): void {
+    this.enqueue(null, target, running, true)
+  }
+
+  private enqueue(run: Run | null, target: SessionReadTarget, running: boolean, priority: boolean): void {
     if (this.stopped) return
     const key = sessionKey(target)
     const stamp = snapshotStamp(target.logPath)
@@ -107,14 +116,22 @@ export class SessionIndex extends EventEmitter {
     const rederive = saved && saved.evidenceVersion !== DERIVATION_VERSION
     if (stamp === '-|-' && !rederive) return
     if (saved?.stamp === stamp && !rederive) {
-      if (run.status !== 'running') this.readers.delete(key)
+      if (!running) this.readers.delete(key)
       return
     }
-    if (priority) this.pending = new Map([[key, { run, target }], ...[...this.pending].filter(([other]) => other !== key)])
-    else this.pending.set(key, { run, target })
-    if (!this.work) {
+    if (priority) this.pending = new Map([[key, { run, target, running }], ...[...this.pending].filter(([other]) => other !== key)])
+    else this.pending.set(key, { run, target, running })
+    this.schedule()
+  }
+
+  private schedule(): void {
+    if (!this.work && !this.stopped && this.pending.size) {
       // The first read must return before any history parsing begins.
-      this.work = yieldToApp().then(() => this.drain()).finally(() => { this.work = null })
+      this.work = yieldToApp().then(() => this.drain()).finally(() => {
+        this.work = null
+        // A reader can enqueue its next page after indexed fires but before drain's promise settles.
+        this.schedule()
+      })
     }
   }
 
@@ -211,7 +228,7 @@ export class SessionIndex extends EventEmitter {
       const [key, job] = this.pending.entries().next().value!
       this.pending.delete(key)
       this.activeKey = key
-      try { await this.ingest(key, job.run, job.target) }
+      try { await this.ingest(key, job.run, job.target, job.running) }
       catch (error) {
         this.readers.delete(key)
         if (!this.stopped) console.warn('Session indexing failed', error)
@@ -221,7 +238,7 @@ export class SessionIndex extends EventEmitter {
     }
   }
 
-  private async ingest(key: string, run: Run, target: SessionReadTarget): Promise<void> {
+  private async ingest(key: string, run: Run | null, target: SessionReadTarget, running: boolean): Promise<void> {
     const stamp = snapshotStamp(target.logPath)
     const saved = repo.getSessionIndex(this.db, key)
     if (saved && saved.evidenceVersion !== DERIVATION_VERSION) {
@@ -231,7 +248,7 @@ export class SessionIndex extends EventEmitter {
        * stays on the task forever if re-reading can only add. Only when there is something to
        * re-derive from - resetting against no durable messages would leave the task with nothing.
        */
-      if (saved.total > 0 && !this.rederived.has(run.taskId)) {
+      if (run && saved.total > 0 && !this.rederived.has(run.taskId)) {
         this.rederived.add(run.taskId)
         for (const derivation of this.derivations) derivation.reset?.(this.db, run.taskId)
       }
@@ -245,10 +262,12 @@ export class SessionIndex extends EventEmitter {
       }
       if (this.stopped) return
       repo.finishSessionEvidence(this.db, key, DERIVATION_VERSION)
-      this.emit('indexed', key, run.taskId)
     }
-    if (stamp === '-|-') return
-    if (repo.getSessionIndex(this.db, key)?.stamp === stamp) return
+    if (stamp === '-|-' || repo.getSessionIndex(this.db, key)?.stamp === stamp) {
+      // Another queued read may already have indexed this version. Every waiter still needs completion.
+      this.emit('indexed', key, run?.taskId)
+      return
+    }
     const stat = statSync(target.logPath)
     let reader = this.readers.get(key)
     if (!reader || reader.inode !== stat.ino || reader.offset > stat.size ||
@@ -306,6 +325,7 @@ export class SessionIndex extends EventEmitter {
       const known = repo.getSessionIndex(this.db, key)
       if (parser.messages.length === 0 && known && known.total > 0) {
         this.readers.delete(key)
+        this.emit('indexed', key, run?.taskId)
         return
       }
       /*
@@ -317,6 +337,7 @@ export class SessionIndex extends EventEmitter {
       if (known?.prunedAt && last && last <= known.updatedAt) {
         repo.markSessionStamp(this.db, key, stamp)
         this.readers.delete(key)
+        this.emit('indexed', key, run?.taskId)
         return
       }
       await persist(result.changedFromIndex, parser.messages)
@@ -355,13 +376,13 @@ export class SessionIndex extends EventEmitter {
     inTransaction(this.db, () => repo.finishSessionIndex(this.db, key, {
       generation, stamp, title: parser.title, total, evidenceVersion: DERIVATION_VERSION, updatedAt
     }))
-    if (run.status !== 'running') this.readers.delete(key)
-    this.emit('indexed', key, run.taskId)
+    if (!running) this.readers.delete(key)
+    this.emit('indexed', key, run?.taskId)
   }
 
   /** Hand one persisted page to every derivation. A task that is gone has nothing to file against. */
-  private derive(run: Run, batch: SessionBatch): void {
-    if (this.derivations.length === 0 || !repo.getTask(this.db, run.taskId)) return
+  private derive(run: Run | null, batch: SessionBatch): void {
+    if (!run || this.derivations.length === 0 || !repo.getTask(this.db, run.taskId)) return
     for (const derivation of this.derivations) derivation.apply(this.db, run, batch)
   }
 

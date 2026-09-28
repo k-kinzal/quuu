@@ -582,3 +582,16 @@ material geometry, cancellation, immediate input, and reduced motion. Computer U
   from the English/Japanese Design System string packs.
 - Verification: searchable select regression cases, task creation and filter
   integration tests, the Field story, and the actual fixture app screens.
+
+
+## 2026-09-28 Read auxiliary conversations inside the parent transcript
+
+- Request: expanding an execution must expose its conversation, including tool results,
+  without sending the reader to a directory of log files.
+- Accepted: `TranscriptNestedFeed` embeds the standard conversation feed inside an action.
+  Its bounded height, canvas surface, subtle rules and independent scrolling preserve the
+  parent reading position. Keyboard focus and scroll containment belong to the kit.
+- Accepted: arrival motion only owns blocks in its own feed; nested messages are not parent
+  arrival targets. Paging, execution identity, status and labels stay in the app.
+- Verification: nested and narrow Transcript stories, fixture hook/report conversations,
+  and regression coverage for independent anchors, paging, final output and full tool results.

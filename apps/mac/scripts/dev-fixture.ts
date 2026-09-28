@@ -1743,18 +1743,37 @@ if (process.env.QUUU_FIXTURE_HOOKS === '1') {
     { type: 'assistant', timestamp: iso(3), message: { role: 'assistant', content: [{ type: 'text', text: 'The conversation is updated and all checks passed. The changes are ready to review.' }] } }
   ].map(line => JSON.stringify(line)).join('\n') + '\n')
   const logPath = join(dir, 'fixture-hook.log')
-  writeFileSync(logPath, 'Inspected the working directory. No changes to commit.\n')
+  const hookSessionId = '01a075da-e8ed-75d0-8354-e1302f5a72c3'
+  const reportSessionId = '01a075da-e8ed-75d0-8354-e1302f5a72c4'
+  const conversation = (prompt: string, command: string, result: string, answer: string): string => [
+    { type: 'session_meta', payload: { cwd } },
+    { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: prompt }] } },
+    { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '変更内容と検証結果を確認します。' }] } },
+    { type: 'response_item', payload: { type: 'function_call', name: 'exec_command', call_id: 'check', arguments: JSON.stringify({ cmd: command }) } },
+    { type: 'response_item', payload: { type: 'function_call_output', call_id: 'check', output: result } },
+    { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: answer }] } }
+  ].map(line => JSON.stringify(line)).join('\n') + '\n'
+  writeFileSync(join(recoveryDay, `rollout-hook-${hookSessionId}.jsonl`), conversation(definition.prompt, 'git status --short',
+    'Working tree clean', '作業ディレクトリを確認しました。変更はすべてコミット済みです。'))
+  writeFileSync(logPath, `OpenAI Codex v0.153.4\n--------\nsession id: ${hookSessionId}\n--------\n`)
   repo.saveHookRun(db, { id: 'fixture-hook', taskId: task.id, taskTitle: task.title, projectId: project.id,
     hookId: definition.id, name: definition.name, event: 'stopped', kind: 'agent', status: 'succeeded', cwd,
     input: definition.prompt, agentId: agent.id, createdAt: iso(2), startedAt: iso(2), endedAt: iso(1), exitCode: 0,
     error: '', logPath, definition: { ...HOOK_DEFAULTS, ...definition }, project, pid: null,
-    exitPath: logPath + '.exit', authDir: null, sessionId: 'fixture-hook-session', logAdapter: 'stdout', limitPatterns: [] })
+    exitPath: logPath + '.exit', authDir: null, sessionId: 'fixture-hook-session', logAdapter: 'codex', limitPatterns: [] })
   const failedLog = join(dir, 'fixture-hook-failed.log')
   writeFileSync(failedLog, 'Documentation check failed: docs/example.md is missing.\n')
   repo.saveHookRun(db, { ...repo.getHookRun(db, 'fixture-hook')!, id: 'fixture-hook-failed', name: 'Validate generated documentation before publishing',
     kind: 'command', input: 'test -f docs/example.md', status: 'failed', event: 'review', createdAt: iso(1), startedAt: iso(1), endedAt: iso(0.9),
     exitCode: 1, error: 'Command exited with code 1', logPath: failedLog, logAdapter: 'stdout' })
-  repo.saveTaskReport(db, { ...repo.getTaskReport(db, reportTaskId)!, taskId: task.id, startedAt: iso(0.8), endedAt: iso(0.5) })
+  const reportLog = join(dir, 'fixture-report.log')
+  const reportInput = '変更の意図と確認結果をまとめたレポートを作成してください。'
+  writeFileSync(join(recoveryDay, `rollout-report-${reportSessionId}.jsonl`), conversation(reportInput, 'git diff --stat HEAD~1',
+    '3 files changed, 48 insertions(+), 12 deletions(-)',
+    'レポートを作成しました。\n\n- フックの実行履歴を会話内に統合\n- コマンドと結果を個別に展開\n- 検証はすべて成功'))
+  writeFileSync(reportLog, `OpenAI Codex v0.153.4\n--------\nsession id: ${reportSessionId}\n--------\n`)
+  repo.saveTaskReport(db, { ...repo.getTaskReport(db, reportTaskId)!, taskId: task.id, cwd, logPath: reportLog,
+    conversation: { adapter: 'codex', sessionId: reportSessionId, input: reportInput }, startedAt: iso(0.8), endedAt: iso(0.5) })
 }
 
 console.log(`fixture: ${dir}`)

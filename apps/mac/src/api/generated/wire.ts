@@ -2272,6 +2272,425 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "hooks.conversation": {
+    "method": "hooksConversation",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "id": {
+          "kind": "string"
+        },
+        "before": {
+          "kind": "number"
+        },
+        "after": {
+          "kind": "number"
+        },
+        "generation": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "first": {
+          "kind": "number"
+        },
+        "last": {
+          "kind": "number"
+        },
+        "generation": {
+          "kind": "string"
+        },
+        "hasNewer": {
+          "kind": "boolean"
+        },
+        "indexing": {
+          "kind": "boolean"
+        },
+        "sessionId": {
+          "kind": "string"
+        },
+        "logPath": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "exists": {
+          "kind": "boolean"
+        },
+        "title": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "messages": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "role": {
+                "kind": "string",
+                "choices": [
+                  "user",
+                  "assistant",
+                  "system"
+                ]
+              },
+              "isSidechain": {
+                "kind": "boolean"
+              },
+              "timestamp": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
+              "blocks": {
+                "kind": "array",
+                "items": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "text"
+                          ]
+                        },
+                        "text": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "text"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "thinking"
+                          ]
+                        },
+                        "text": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "text"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "tool"
+                          ]
+                        },
+                        "tool": {
+                          "kind": "object",
+                          "fields": {
+                            "plan": {
+                              "kind": "array",
+                              "items": {
+                                "kind": "object",
+                                "fields": {
+                                  "text": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "string"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  },
+                                  "status": {
+                                    "kind": "string"
+                                  }
+                                },
+                                "required": [
+                                  "text",
+                                  "status"
+                                ]
+                              }
+                            },
+                            "id": {
+                              "kind": "string"
+                            },
+                            "name": {
+                              "kind": "string"
+                            },
+                            "input": {
+                              "kind": "value"
+                            },
+                            "target": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "string"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "result": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "string"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "isError": {
+                              "kind": "boolean"
+                            },
+                            "images": {
+                              "kind": "array",
+                              "items": {
+                                "kind": "object",
+                                "fields": {
+                                  "id": {
+                                    "kind": "string"
+                                  },
+                                  "mediaType": {
+                                    "kind": "string"
+                                  },
+                                  "byteSize": {
+                                    "kind": "number"
+                                  },
+                                  "width": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "number"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  },
+                                  "height": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "number"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "mediaType",
+                                  "byteSize",
+                                  "width",
+                                  "height"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "input",
+                            "target",
+                            "result",
+                            "isError",
+                            "images"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "tool"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "image"
+                          ]
+                        },
+                        "image": {
+                          "kind": "object",
+                          "fields": {
+                            "id": {
+                              "kind": "string"
+                            },
+                            "mediaType": {
+                              "kind": "string"
+                            },
+                            "byteSize": {
+                              "kind": "number"
+                            },
+                            "width": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "number"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "height": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "number"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "mediaType",
+                            "byteSize",
+                            "width",
+                            "height"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "image"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "model": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "isSidechain",
+              "timestamp",
+              "blocks",
+              "model"
+            ]
+          }
+        },
+        "hasMore": {
+          "kind": "boolean"
+        },
+        "totalMessages": {
+          "kind": "number"
+        },
+        "prunedAt": {
+          "kind": "string"
+        },
+        "cwd": {
+          "kind": "string"
+        },
+        "input": {
+          "kind": "string"
+        },
+        "structured": {
+          "kind": "boolean"
+        }
+      },
+      "required": [
+        "sessionId",
+        "logPath",
+        "exists",
+        "title",
+        "messages",
+        "hasMore",
+        "totalMessages",
+        "cwd",
+        "input",
+        "structured"
+      ]
+    }
+  },
+  "hooks.image": {
+    "method": "hooksImage",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "id": {
+          "kind": "string"
+        },
+        "imageId": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "id",
+        "imageId"
+      ]
+    },
+    "output": {
+      "kind": "union",
+      "variants": [
+        {
+          "kind": "string"
+        },
+        {
+          "kind": "null"
+        }
+      ]
+    }
+  },
   "hooks.cancel": {
     "method": "hooksCancel",
     "input": {
@@ -14881,6 +15300,425 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       },
       "required": [
         "ok"
+      ]
+    }
+  },
+  "report.conversation": {
+    "method": "reportConversation",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "id": {
+          "kind": "string"
+        },
+        "before": {
+          "kind": "number"
+        },
+        "after": {
+          "kind": "number"
+        },
+        "generation": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "first": {
+          "kind": "number"
+        },
+        "last": {
+          "kind": "number"
+        },
+        "generation": {
+          "kind": "string"
+        },
+        "hasNewer": {
+          "kind": "boolean"
+        },
+        "indexing": {
+          "kind": "boolean"
+        },
+        "sessionId": {
+          "kind": "string"
+        },
+        "logPath": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "exists": {
+          "kind": "boolean"
+        },
+        "title": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "messages": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "id": {
+                "kind": "string"
+              },
+              "role": {
+                "kind": "string",
+                "choices": [
+                  "user",
+                  "assistant",
+                  "system"
+                ]
+              },
+              "isSidechain": {
+                "kind": "boolean"
+              },
+              "timestamp": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
+              "blocks": {
+                "kind": "array",
+                "items": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "text"
+                          ]
+                        },
+                        "text": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "text"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "thinking"
+                          ]
+                        },
+                        "text": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "text"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "tool"
+                          ]
+                        },
+                        "tool": {
+                          "kind": "object",
+                          "fields": {
+                            "plan": {
+                              "kind": "array",
+                              "items": {
+                                "kind": "object",
+                                "fields": {
+                                  "text": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "string"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  },
+                                  "status": {
+                                    "kind": "string"
+                                  }
+                                },
+                                "required": [
+                                  "text",
+                                  "status"
+                                ]
+                              }
+                            },
+                            "id": {
+                              "kind": "string"
+                            },
+                            "name": {
+                              "kind": "string"
+                            },
+                            "input": {
+                              "kind": "value"
+                            },
+                            "target": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "string"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "result": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "string"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "isError": {
+                              "kind": "boolean"
+                            },
+                            "images": {
+                              "kind": "array",
+                              "items": {
+                                "kind": "object",
+                                "fields": {
+                                  "id": {
+                                    "kind": "string"
+                                  },
+                                  "mediaType": {
+                                    "kind": "string"
+                                  },
+                                  "byteSize": {
+                                    "kind": "number"
+                                  },
+                                  "width": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "number"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  },
+                                  "height": {
+                                    "kind": "union",
+                                    "variants": [
+                                      {
+                                        "kind": "number"
+                                      },
+                                      {
+                                        "kind": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "id",
+                                  "mediaType",
+                                  "byteSize",
+                                  "width",
+                                  "height"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "name",
+                            "input",
+                            "target",
+                            "result",
+                            "isError",
+                            "images"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "tool"
+                      ]
+                    },
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "kind": {
+                          "kind": "string",
+                          "choices": [
+                            "image"
+                          ]
+                        },
+                        "image": {
+                          "kind": "object",
+                          "fields": {
+                            "id": {
+                              "kind": "string"
+                            },
+                            "mediaType": {
+                              "kind": "string"
+                            },
+                            "byteSize": {
+                              "kind": "number"
+                            },
+                            "width": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "number"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            },
+                            "height": {
+                              "kind": "union",
+                              "variants": [
+                                {
+                                  "kind": "number"
+                                },
+                                {
+                                  "kind": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "id",
+                            "mediaType",
+                            "byteSize",
+                            "width",
+                            "height"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "image"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "model": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "isSidechain",
+              "timestamp",
+              "blocks",
+              "model"
+            ]
+          }
+        },
+        "hasMore": {
+          "kind": "boolean"
+        },
+        "totalMessages": {
+          "kind": "number"
+        },
+        "prunedAt": {
+          "kind": "string"
+        },
+        "cwd": {
+          "kind": "string"
+        },
+        "input": {
+          "kind": "string"
+        },
+        "structured": {
+          "kind": "boolean"
+        }
+      },
+      "required": [
+        "sessionId",
+        "logPath",
+        "exists",
+        "title",
+        "messages",
+        "hasMore",
+        "totalMessages",
+        "cwd",
+        "input",
+        "structured"
+      ]
+    }
+  },
+  "report.image": {
+    "method": "reportImage",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "id": {
+          "kind": "string"
+        },
+        "imageId": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "id",
+        "imageId"
+      ]
+    },
+    "output": {
+      "kind": "union",
+      "variants": [
+        {
+          "kind": "string"
+        },
+        {
+          "kind": "null"
+        }
       ]
     }
   },

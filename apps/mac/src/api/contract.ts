@@ -1,5 +1,6 @@
 import { RunnerConfigSchema, RunnerStatusSchema, RunnerPairingSchema } from './schemas/runners.js'
 import { HookRunSchema, TaskHookSchema } from './schemas/hooks.js'
+import { AuxiliaryPageInputSchema, AuxiliaryPageSchema, AuxiliaryImageInputSchema } from './schemas/auxiliary.js'
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
 import { PromptFileSchema } from './schemas/files.js'
 import { oc } from '@orpc/contract'
@@ -42,6 +43,8 @@ export const contract = {
     resolve: procedure.input(z.object({ projectId: z.string().optional() })).output(TaskHookSchema.required().array()),
     list: procedure.input(z.object({ taskId: z.string().optional(), projectId: z.string().optional(), limit: z.number().int().min(1).max(200).optional() })).output(HookRunSchema.array()),
     log: procedure.input(z.string()).output(z.object({ run: HookRunSchema, output: z.string(), messages: SessionMessageSchema.array() })),
+    conversation: procedure.input(AuxiliaryPageInputSchema).output(AuxiliaryPageSchema),
+    image: procedure.input(AuxiliaryImageInputSchema).output(z.union([z.string(), z.null()])),
     cancel: procedure.input(z.string()).output(z.void()),
     retry: procedure.input(z.string()).output(HookRunSchema)
   },
@@ -209,6 +212,8 @@ export const contract = {
     closePullRequest: procedure.input(z.string()).output(ReviewActionResultSchema),
   },
   report: {
+    conversation: procedure.input(AuxiliaryPageInputSchema).output(AuxiliaryPageSchema),
+    image: procedure.input(AuxiliaryImageInputSchema).output(z.union([z.string(), z.null()])),
     projectGet: procedure.input(z.string()).output(z.union([ProjectReportSchema, z.null()])),
     projectGenerate: procedure.input(z.string()).output(ReviewActionResultSchema),
     projectShow: procedure.input(ProjectReportViewRequestSchema.strict()).output(ReviewActionResultSchema),

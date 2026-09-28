@@ -268,7 +268,8 @@ CREATE TABLE IF NOT EXISTS task_reports (
   error      TEXT NOT NULL DEFAULT '',
   pid        INTEGER,
   started_at TEXT NOT NULL,
-  ended_at   TEXT
+  ended_at   TEXT,
+  conversation TEXT NOT NULL DEFAULT '{}'
 );
 
 /*
@@ -399,7 +400,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 35
+  const target = 36
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -770,6 +771,8 @@ function migrate(db: Db): void {
         FROM project_reports WHERE path <> ''`)
     db.prepare('INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)').run(REVIEW_HISTORY_SINCE, now)
   }
+
+  if (current < 36) addColumnIfMissing(db, 'task_reports', 'conversation', "TEXT NOT NULL DEFAULT '{}'")
 
   setSchemaVersion(db, target)
 }

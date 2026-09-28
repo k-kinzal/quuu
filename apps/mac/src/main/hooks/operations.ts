@@ -1,5 +1,6 @@
 import type { RunnerOperations } from '../runners/operations.js'
 import { auxiliaryMessages } from '../session/auxiliary.js'
+import { AuxiliaryLogs, type AuxiliarySource, type AuxiliaryPageInput } from '../session/auxiliaryLogs.js'
 import { spawn } from 'node:child_process'
 import { closeSync, openSync } from 'node:fs'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -27,12 +28,14 @@ const ACTIVE = new Set(['queued', 'starting', 'running'])
 const WRAPPER = 'printf %s "$$" > "$QUUU_HOOK_PID_FILE"; "$@"; __quuu_code=$?; printf %s "$__quuu_code" > "$QUUU_EXIT_FILE"; exit $__quuu_code'
 
 export class HookOperations {
+  private logs: AuxiliaryLogs
   private timer: NodeJS.Timeout | null = null
   private stopped = false
   private ticking = false
   private report: ((taskId: string) => Promise<void>) | null = null
   setReportHook(report: (taskId: string) => Promise<void>): void { this.report = report }
   constructor(private db: Db, private changed: () => void, private workspace: (id: string) => string | null, private remote?: RunnerOperations) {
+    this.logs = new AuxiliaryLogs(db)
     repo.setLifecycleRecorder(db, (task, event, run) => { this.record(task, event, run) })
   }
 
@@ -72,6 +75,7 @@ export class HookOperations {
     this.timer.unref?.()
   }
   stop(): void {
+    this.logs.stop()
     this.stopped = true
     if (this.timer) clearInterval(this.timer)
     this.timer = null
@@ -94,6 +98,15 @@ export class HookOperations {
     const output = readLogTail(run.logPath)
     const remote = this.remote?.job(id)
     return { run: publicRun(run), output, messages: auxiliaryMessages(run.logAdapter, run.cwd, remote?.result?.sessionId ?? run.sessionId, output, remote?.sessionPath) }
+  }
+  conversation(input: AuxiliaryPageInput) { return this.logs.page(this.logSource(input.id), input) }
+  image(id: string, imageId: string) { return this.logs.image(this.logSource(id), imageId) }
+  private logSource(id: string): AuxiliarySource {
+    const run = this.requireRun(id)
+    const remote = this.remote?.job(id)
+    return { ...run, input: run.kind === 'agent' ? run.input : '', adapter: run.logAdapter, startedAt: run.startedAt ?? run.createdAt,
+      running: ACTIVE.has(run.status), sessionId: remote?.result?.sessionId ?? run.sessionId,
+      mirroredPath: remote ? remote.sessionPath ?? null : undefined }
   }
   cancel(id: string): void {
     const run = this.requireRun(id)

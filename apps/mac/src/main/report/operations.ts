@@ -1,8 +1,9 @@
 import type { RunnerOperations } from '../runners/operations.js'
+import { AuxiliaryLogs, type AuxiliarySource, type AuxiliaryPageInput } from '../session/auxiliaryLogs.js'
 import type { ReviewSnapshot } from '../review/types.js'
 import { EventEmitter } from 'node:events'
 import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import { reportDir, reportRoot } from '../appPaths.js'
 import type { Db } from '../db/database.js'
 import { inTransaction } from '../db/database.js'
@@ -57,7 +58,9 @@ export class ReportOperations extends EventEmitter {
     private getSettings: () => AppSettings,
     private place: (taskId: string) => { dir: string; project: Project },
     private remote?: RunnerOperations
-  ) { super() }
+  ) { super(); this.logs = new AuxiliaryLogs(db) }
+
+  private logs: AuxiliaryLogs
 
   /** Begin settling generations, including any that outlived the last launch. */
   start(): void {
@@ -70,6 +73,7 @@ export class ReportOperations extends EventEmitter {
   }
 
   stop(): void {
+    this.logs.stop()
     this.stopped = true
     if (this.timer) clearInterval(this.timer)
     this.timer = null
@@ -78,6 +82,18 @@ export class ReportOperations extends EventEmitter {
   report(taskId: string): TaskReport | null {
     const stored = repo.getTaskReport(this.db, taskId)
     return stored ? visible(stored) : null
+  }
+
+  conversation(input: AuxiliaryPageInput) { return this.logs.page(this.logSource(input.id), input) }
+  image(id: string, imageId: string) { return this.logs.image(this.logSource(id), imageId) }
+  private logSource(taskId: string): AuxiliarySource {
+    const report = repo.getTaskReport(this.db, taskId)
+    if (!report) throw new Error(t('report.historyNotFound'))
+    const remote = this.remote?.job(basename(report.logPath, '.log'))
+    return { ...report, ...report.conversation, running: report.status === 'generating',
+      adapter: report.conversation?.adapter ?? remote?.spec.adapter,
+      sessionId: remote?.result?.sessionId ?? report.conversation?.sessionId ?? remote?.spec.sessionId,
+      mirroredPath: remote ? remote.sessionPath ?? null : undefined }
   }
 
   /** Every page the task's report has had, newest first, the one shown now marked. */
@@ -200,11 +216,12 @@ export class ReportOperations extends EventEmitter {
         page,
         instructions: settings.reportInstructions
       })
+      const sessionId = newSessionId()
       const { args } = adapterFor(agent.logAdapter).invoke({
         command: agent.command, template: agent.argsTemplate, vars: {
           prompt,
           title: task.title,
-          sessionId: newSessionId(),
+          sessionId,
           projectPath: place.project.path,
           projectName: place.project.name,
           taskId,
@@ -243,6 +260,7 @@ export class ReportOperations extends EventEmitter {
       repo.openReportSession(this.db, place.dir, startedAt, isoAfter(startedAt, TIMEOUT_MS))
       repo.saveTaskReport(this.db, {
         taskId,
+        conversation: { adapter: agent.logAdapter, sessionId, input: prompt },
         status: 'generating',
         cwd: place.dir,
         revision: worktree?.tree ?? '',
@@ -286,12 +304,14 @@ export class ReportOperations extends EventEmitter {
         pullRequests: snapshot.pullRequests.map(pr => pr.url),
         runs: repo.listRunsByTask(this.db, taskId).reverse().map(run => ({ ...run,
           stdoutLogPath: remote.logOnRunner(taskId, run.id), sessionLogPath: null })) }
+      const sessionId = newSessionId()
       remote.enqueue({ id, taskId, projectId: project.id, workspace, action: 'report',
         command: remote.agentCommand(workspace, writer.agent), args: [], env: writer.agent.env,
-        sessionId: newSessionId(), adapter: writer.agent.logAdapter, timeoutSeconds: TIMEOUT_MS / 1000,
+        sessionId, adapter: writer.agent.logAdapter, timeoutSeconds: TIMEOUT_MS / 1000,
         createWorkspace: false, project, report: { request, template: writer.agent.argsTemplate } }, log)
       if (writer.groupId) repo.advanceGroupRotation(this.db, writer.groupId, writer.agent.id)
       repo.saveTaskReport(this.db, { taskId, status: 'generating', cwd: workspace.cwd, revision: snapshot.revision?.head ?? '',
+        conversation: { adapter: writer.agent.logAdapter, sessionId, input: reportPrompt(request) },
         path: previous?.path ?? '', logPath: log, error: '', startedAt: nowIso(), endedAt: null, pid: null,
         pending: page, exitPath: join(dir, `${id}.exit`) })
     } finally { this.starting.delete(taskId) }

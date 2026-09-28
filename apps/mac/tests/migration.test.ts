@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('35')
+    expect(version.value).toBe('36')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('35')
+    expect(version.value).toBe('36')
     db.close()
   })
 
@@ -844,4 +844,25 @@ it('dates indexed sessions from the upgrade, carries current report pages into t
   expect(repo.getMeta(upgraded, 'review_history_since')! >= before).toBe(true)
   expect(repo.listReviewHistory(upgraded, taskId)).toEqual([])
   upgraded.close()
+})
+
+
+it('upgrades existing reports without losing them and keeps the writer identity for inline conversation', () => {
+  const old = openDatabase(path)
+  const agentId = makeAgent(old, { name: 'writer' })
+  const projectId = makeProject(old, { name: 'existing', targetId: agentId })
+  const taskId = makeTask(old, projectId, 'existing report')
+  repo.saveTaskReport(old, { taskId, status: 'ready', revision: 'r1', path: '/report.html', logPath: '/report.log', error: '',
+    startedAt: '2026-09-01T00:00:00.000Z', endedAt: null, cwd: '/work', pid: null, pending: '', exitPath: '' })
+  old.exec("ALTER TABLE task_reports DROP COLUMN conversation; UPDATE meta SET value = '35' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  const report = repo.getTaskReport(upgraded, taskId)!
+  expect(report).toMatchObject({ status: 'ready', path: '/report.html', logPath: '/report.log' })
+  expect(report.conversation).toBeUndefined()
+  repo.saveTaskReport(upgraded, { ...report, conversation: { adapter: 'codex', sessionId: 'writer-session', input: 'Write a report' } })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.getTaskReport(reopened, taskId)?.conversation).toEqual({ adapter: 'codex', sessionId: 'writer-session', input: 'Write a report' })
+  reopened.close()
 })

@@ -9,7 +9,7 @@ import { Text } from './Text.js'
 import { StatusIndicator } from './StatusIndicator.js'
 import { Button } from '../inputs/Button.js'
 import {
-  TranscriptDetailSection, TranscriptInterlude, TranscriptTurnHead, TranscriptTurnRole,
+  TranscriptDetailSection, TranscriptInterlude, TranscriptNestedFeed, TranscriptTurnHead, TranscriptTurnRole,
   TranscriptToolCluster, TranscriptToolDetail, TranscriptToolEntry, TranscriptToolError, TranscriptToolLine, TranscriptToolVerb,
   TranscriptTurn, TranscriptTurnBody, TranscriptTurnText, type TranscriptToolTone
 } from './Transcript.js'
@@ -90,7 +90,7 @@ function BackgroundAction({ name, status = 'Completed' }: { name: string; status
       <TranscriptDetailSection><Text size="xs" tone="secondary">After processing · 21:30 · 12s</Text></TranscriptDetailSection>
       <TranscriptCode label="Command" code="npm run check" language="sh" />
       <TranscriptCode label="Output" code={status === 'Failed' ? 'Validation failed. Check the output and retry.' : 'Validation complete. All checks passed.'} tone={status === 'Failed' ? 'danger' : 'default'} />
-      <TranscriptDetailSection><Button size="xs" variant="ghost">Open full log</Button></TranscriptDetailSection>
+      <TranscriptDetailSection><Button size="xs" variant="ghost">Retry</Button></TranscriptDetailSection>
     </TranscriptToolDetail>}</Reveal>
   </TranscriptToolEntry>
 }
@@ -129,3 +129,38 @@ export const SupportingColors: StoryObj = {
     </TranscriptTurn>
   )
 }
+
+
+function NestedConversationExample(): JSX.Element {
+  const [open, setOpen] = useState(true)
+  const [older, setOlder] = useState(false)
+  return <TranscriptInterlude>
+    <TranscriptTurnHead><TranscriptTurnRole>Background activity</TranscriptTurnRole></TranscriptTurnHead>
+    <TranscriptToolEntry open={open}>
+      <TranscriptToolLine targetKind="text" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <TranscriptToolVerb>AI</TranscriptToolVerb><span data-target>Inspect the changes</span>
+        <Text size="xs" tone="tertiary">Completed</Text>
+      </TranscriptToolLine>
+      <Reveal open={open}>{() => <TranscriptToolDetail>
+        <TranscriptDetailSection><Text size="xs" tone="secondary">After processing · 21:30 · 12s</Text></TranscriptDetailSection>
+        <TranscriptDetailSection><Button variant="ghost" size="xs" onClick={() => setOlder(!older)}>{older ? 'Latest' : 'Earlier'}</Button></TranscriptDetailSection>
+        <TranscriptNestedFeed key={String(older)} role="region" aria-label="Execution conversation" tabIndex={0} revision={older} contextKey="example" follow={false}>
+          {older ? Array.from({ length: 12 }, (_, i) => <TranscriptTurn key={i}>
+            <TranscriptTurnHead><TranscriptTurnRole>Assistant</TranscriptTurnRole></TranscriptTurnHead>
+            <TranscriptTurnText><Markdown>{`Earlier step ${i + 1}. The embedded conversation scrolls independently, keeping the parent message in place.`}</Markdown></TranscriptTurnText>
+          </TranscriptTurn>) : <>
+            <TranscriptTurn><TranscriptTurnHead><TranscriptTurnRole user>Instruction</TranscriptTurnRole></TranscriptTurnHead>
+              <TranscriptTurnText role="user"><Markdown>Inspect the changes, run the checks, and describe what changed.</Markdown></TranscriptTurnText></TranscriptTurn>
+            <TranscriptTurn><TranscriptTurnHead><TranscriptTurnRole>Assistant</TranscriptTurnRole></TranscriptTurnHead>
+              <TranscriptTurnBody><TranscriptTurnText><Markdown>I will inspect the changes and check the result.</Markdown></TranscriptTurnText>
+                <Action verb="Run" target="npm run check" tone="success" input="npm run check" language="sh" result="All checks passed." />
+                <TranscriptTurnText><Markdown>The update is ready. **All checks passed.** The details stay in this conversation.</Markdown></TranscriptTurnText>
+              </TranscriptTurnBody></TranscriptTurn>
+          </>}
+        </TranscriptNestedFeed>
+      </TranscriptToolDetail>}</Reveal>
+    </TranscriptToolEntry>
+  </TranscriptInterlude>
+}
+export const NestedConversation: StoryObj = { render: () => <NestedConversationExample /> }
+export const NarrowNestedConversation: StoryObj = { render: () => <div style={{ maxWidth: 340 }}><NestedConversationExample /></div> }

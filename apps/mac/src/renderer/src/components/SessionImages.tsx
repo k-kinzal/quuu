@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import type { SessionImage } from '../../../api/schemas/session.js'
 import { t } from '../model/i18n/index.js'
 import { ImageFrame, ImageMissing, ImageStrip } from '../ui/session.js'
+
+export const SessionImageReader = createContext((id: string) => window.quuu.session.image(id))
 
 /**
  * Images that appeared in the conversation.
@@ -11,6 +13,7 @@ import { ImageFrame, ImageMissing, ImageStrip } from '../ui/session.js'
  * the moment the conversation opens stalls the UI for images never seen.
  */
 function Image({ image }: { image: SessionImage }): JSX.Element {
+  const readImage = useContext(SessionImageReader)
   const frameRef = useRef<HTMLButtonElement>(null)
   const [src, setSrc] = useState<string | null>(null)
   const [missing, setMissing] = useState(false)
@@ -22,11 +25,11 @@ function Image({ image }: { image: SessionImage }): JSX.Element {
     let alive = true
 
     const fetchImage = (): void => {
-      void window.quuu.session.image(image.id).then((data) => {
+      void readImage(image.id).then((data) => {
         if (!alive) return
         if (data) setSrc(data)
         else setMissing(true)
-      })
+      }).catch(() => { if (alive) setMissing(true) })
     }
 
     // Start fetching as it approaches. Don't show a blank after the scroll arrives
@@ -44,7 +47,7 @@ function Image({ image }: { image: SessionImage }): JSX.Element {
       alive = false
       observer.disconnect()
     }
-  }, [image.id])
+  }, [image.id, readImage])
 
   /*
    * The space held before loading. When dimensions can't be read, assume landscape.
