@@ -1,4 +1,7 @@
 import { Markdown } from '../data-display/Markdown.js'
+import { ExternalLink, FileText } from 'lucide-react'
+import { ItemGroupHeader, ItemList } from '../data-display/ItemList.js'
+import { ResourceItem } from '../data-display/ResourceItem.js'
 import { useId, useState } from 'react'
 import { ContentTabs, ContentTabPanel } from '../navigation/ContentTabs.js'
 import { Composer, ComposerBox, ComposerInput, ComposerToolbar } from '../inputs/Composer.js'
@@ -72,7 +75,15 @@ export const WithPersistentInput: StoryObj = { render: () => <PersistentInputExa
 export const DocumentPreview: StoryObj = {
   render: () => <WorkSurface style={{ height: '100vh' }}>
     <ExplorerLayout>
-      <ExplorerPane><Text>README.md</Text><Text>docs/guide.md</Text></ExplorerPane>
+      <ExplorerPane><ItemList>
+        <ItemGroupHeader>Documentation sites</ItemGroupHeader>
+        <ResourceItem icon={<ExternalLink />} label="schema-binding · API reference" description="example.github.io" />
+        <ResourceItem icon={<ExternalLink />} label="schema-binding · Installation and configuration" description="example.github.io" />
+        <ItemGroupHeader>Repository files</ItemGroupHeader>
+        <ResourceItem icon={<FileText />} label="README.md" selected />
+        <ResourceItem icon={<FileText />} label="guide.md" description="packages/schema-binding/docs" />
+        <ResourceItem icon={<FileText />} label="understanding-schema-binding-and-statement-models.md" description="docs" />
+      </ItemList></ExplorerPane>
       <EditorPane><DocumentBody><Markdown baseUrl="https://example.com/docs/" headingPrefix="doc-" onOpenLink={console.log}>
         {'# Project documentation\n\n[Installation](guide.md#installation)\n\n## Installation\n\n日本語の説明と **structured prose** を読みながら入力できます。\n\n| Option | Meaning |\n| --- | --- |\n| Default | Read the committed documentation |\n\n```ts\nconst message = "Hello"\n```\n\n## Installation\n\nRepeated headings have distinct anchors.'}
       </Markdown></DocumentBody></EditorPane>

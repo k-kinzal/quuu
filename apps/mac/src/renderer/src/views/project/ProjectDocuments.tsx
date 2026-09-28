@@ -1,7 +1,7 @@
 import {
   Alert, DocumentBody, Dot, EditorPane, EmptyState, ExplorerLayout, ExplorerPane, IconButton,
-  ItemBody, ItemGroupHeader, ItemList, ItemRow, Markdown, Panel,
-  PanelHeader, PanelHeading, SearchInput, SourceBlock, Text, Toolbar, WindowDragArea
+  ItemGroupHeader, ItemList, Markdown, Panel,
+  PanelHeader, PanelHeading, ResourceItem, SearchInput, SourceBlock, Text, Toolbar, WindowDragArea
 } from '@design-system/react'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -88,16 +88,14 @@ export function ProjectDocuments({ project }: { project: Project }): JSX.Element
                 value={search} onChange={event => setSearch(event.target.value)} /></Toolbar>
               <ItemList>
                 {websites.length > 0 && <ItemGroupHeader>{t('projectDocuments.websites')}</ItemGroupHeader>}
-                {websites.map(site => <ItemRow key={site.url} type="button" lines={2} selected={selected === site.url}
-                  aria-current={selected === site.url ? 'page' : undefined} title={site.url} onClick={() => choose(site.url)}>
-                  <ExternalLink size={ICON.sm} {...iconProps} /><ItemBody><Text size="sm" truncate>{site.title}</Text>
-                    <Text size="xs" tone="tertiary" truncate>{new URL(site.url).pathname}</Text></ItemBody>
-                </ItemRow>)}
+                {websites.map(site => <ResourceItem key={site.url} selected={selected === site.url}
+                  aria-current={selected === site.url ? 'page' : undefined} title={site.url} onClick={() => choose(site.url)}
+                  icon={<ExternalLink size={ICON.sm} {...iconProps} />} label={site.title} description={new URL(site.url).hostname} />)}
                 {files.length > 0 && <ItemGroupHeader>{t('projectDocuments.files')}</ItemGroupHeader>}
-                {files.map(file => <ItemRow key={file.path} type="button" selected={selected === `file:${file.path}`}
-                  aria-current={selected === `file:${file.path}` ? 'page' : undefined} title={file.path} onClick={() => choose(`file:${file.path}`)}>
-                  <FileText size={ICON.sm} {...iconProps} /><Text size="sm" truncate>{file.path}</Text>
-                </ItemRow>)}
+                {files.map(file => <ResourceItem key={file.path} selected={selected === `file:${file.path}`}
+                  aria-current={selected === `file:${file.path}` ? 'page' : undefined} aria-label={file.path}
+                  title={file.path} onClick={() => choose(`file:${file.path}`)} icon={<FileText size={ICON.sm} {...iconProps} />}
+                  label={file.path.split('/').at(-1)!} description={file.path.split('/').slice(0, -1).join('/')} />)}
                 {files.length + websites.length === 0 && <EmptyState title={t('projectDocuments.noMatches')} />}
               </ItemList>
             </ExplorerPane>

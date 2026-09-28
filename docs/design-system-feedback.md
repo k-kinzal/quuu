@@ -1,5 +1,20 @@
 # Call-site feedback and decisions
 
+## 2026-09-28 Readable resource navigation
+
+- Finding: the document navigation put raw SVGs beside fixed-height list bodies.
+  Long names shrank the icons, displaced the text column, and hid the part of a
+  name that distinguished it. Repeated URL paths competed with the titles.
+- Accepted: `ResourceItem` composes the existing row interaction and selection
+  states with a fixed icon column, a wrapping name, and one secondary context
+  line. Row height follows the content, including unbroken and Japanese names.
+- Site labels, hostnames, file basenames, parent paths, and link destinations
+  remain owned by the app. Full URLs and paths remain available on hover;
+  searching still covers the full identifiers.
+- Verification: resource stories cover narrow, light, dark and comfortable
+  layouts. The document fixture includes many sites and long file names;
+  navigation tests cover duplicate basenames and full-path / URL search.
+
 ## 2026-09-28 Auxiliary execution phases in a conversation
 
 - Request: hook history and the built-in report looked like settings rows appended

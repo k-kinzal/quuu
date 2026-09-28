@@ -1394,6 +1394,15 @@ if (process.env.QUUU_FIXTURE_DOCUMENTS === '1') {
   const git = (...args: string[]): void => { execFileSync('/usr/bin/git', ['-c', 'commit.gpgsign=false', ...args], { cwd }) }
   writeFileSync(join(cwd, 'README.md'), '# Project documentation\n\n[![Docs](https://img.shields.io/badge/docs-sql--semantics-0969da?logo=php&logoColor=white)](https://k-kinzal.github.io/ztd-query-php/k-kinzal/sql-semantics/)\n\nRead the committed documentation while adding a task.\n\n[Getting started](docs/guide.md#installation)\n\n| Source | Content |\n| --- | --- |\n| Default branch | Committed documents |\n| Documentation site | Published API reference |\n')
   writeFileSync(join(cwd, 'docs/guide.md'), '# Getting started\n\n## Installation\n\n日本語の説明もこの画面で確認できます。\n\n```sh\nnpm install\n```\n\n[Back to README](../README.md)\n')
+  // A populated navigation exposes long names and uneven icon columns that a single link cannot.
+  for (const name of ['bison-parser', 'lemon-parser', 'requirements', 'sql-catalog', 'sql-faker', 'sql-fixture',
+    'sql-formatter', 'sql-parser', 'sql-semantics-mysql', 'sql-semantics-postgres', 'sql-semantics-sqlite']) {
+    const packageDir = join(cwd, 'packages', name)
+    mkdirSync(join(packageDir, 'docs'), { recursive: true })
+    writeFileSync(join(packageDir, 'README.md'), `# ${name}\n\n[![Docs](https://img.shields.io/badge/docs-blue)](https://k-kinzal.github.io/ztd-query-php/k-kinzal/${name}/)\n\n[SQL Semantics](https://github.com/k-kinzal/ztd-query-php/tree/main/packages/${name}/docs/)\n`)
+    writeFileSync(join(packageDir, 'docs/understanding-schema-binding-and-statement-models.md'), '# Statement models\n\nA long filename must remain readable in the navigation.\n')
+    writeFileSync(join(packageDir, 'docs/日本語の長いドキュメント名と導入ガイド.md'), '# 導入ガイド\n\n日本語のファイル名も改行して表示します。\n')
+  }
   git('init', '-q', '-b', 'main')
   git('config', 'user.name', 'Fixture')
   git('config', 'user.email', 'fixture@example.invalid')

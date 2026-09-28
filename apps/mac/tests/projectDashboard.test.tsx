@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createRouterClient, implement } from '@orpc/server'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import { SearchPicker } from '../../../packages/design-system/src/components/surfaces/SearchPicker.js'
@@ -141,6 +141,42 @@ describe('project navigation and dashboard', () => {
     fireEvent.click(screen.getByRole('button', { name: 'README.md' }))
     await waitFor(() => expect(hide).toHaveBeenCalled())
     await screen.findByRole('heading', { name: 'Read me' })
+  })
+
+  it('shows file names with parent folders while selecting and searching by the full path', async () => {
+    listDocuments.mockResolvedValueOnce({ branch: 'main', revision: 'a'.repeat(40), websites: [], files: [
+      { path: 'README.md', format: 'markdown' },
+      { path: 'packages/parser/README.md', format: 'markdown' },
+      { path: 'packages/query/README.md', format: 'markdown' }
+    ] })
+    render(<ThemeProvider><ProjectDocuments project={{ ...project, id: 'file-labels' }} /></ThemeProvider>)
+    const parser = await screen.findByRole('button', { name: 'packages/parser/README.md' })
+    expect(within(parser).getByText('README.md')).toBeTruthy()
+    expect(within(parser).getByText('packages/parser')).toBeTruthy()
+    expect(parser.getAttribute('title')).toBe('packages/parser/README.md')
+    fireEvent.click(screen.getByRole('button', { name: 'packages/query/README.md' }))
+    await waitFor(() => expect(readDocument).toHaveBeenLastCalledWith('packages/query/README.md'))
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'packages/parser' } })
+    expect(screen.getByRole('button', { name: 'packages/parser/README.md' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'packages/query/README.md' })).toBeNull()
+  })
+
+  it('uses the hostname as site context while retaining full URLs for search and tooltips', async () => {
+    const title = 'sql-semantics-mysql · SQL Semantics'
+    const url = 'https://example.com/project/packages/sql-semantics-mysql/docs/'
+    listDocuments.mockResolvedValueOnce({ branch: 'main', revision: 'a'.repeat(40), files: [], websites: [
+      { title, url }, { title, url: 'https://reference.example.org/docs/' }
+    ] })
+    render(<ThemeProvider><ProjectDocuments project={{ ...project, id: 'site-labels' }} /></ThemeProvider>)
+    const site = await screen.findByRole('button', { name: `${title} example.com` })
+    expect(within(site).getByText(title)).toBeTruthy()
+    expect(site.getAttribute('title')).toBe(url)
+    expect(screen.queryByText('/project/packages/sql-semantics-mysql/docs/')).toBeNull()
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '/packages/sql-semantics-mysql/' } })
+    expect(screen.getByRole('button', { name: `${title} example.com` })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: `${title} reference.example.org` })).toBeNull()
+    fireEvent.click(site)
+    await waitFor(() => expect(show).toHaveBeenCalled())
   })
 
   it('hides the dashboard when report AI or the project report setting is off', () => {
