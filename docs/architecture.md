@@ -64,7 +64,8 @@ apps/mac/src/
 apps/mac/proto/          Generated .proto and permanent field-number registry
 skills/quuu/            Agent instructions for the installed CLI and MCP server; SKILL.md indexes
                         use-case references/. Bundled into the app as QuuuAI's workspace
-apps/mac/quuu-ai/       QuuuAI's workspace in a checkout (links skills/); packaged as Resources/quuu-ai
+apps/mac/quuu-ai/       QuuuAI's workspace: its own AGENTS.md / CLAUDE.md for operating Quuu through
+                        the CLI (not the repository's), and a link to skills/; packaged as Resources/quuu-ai
 ```
 
 ```mermaid

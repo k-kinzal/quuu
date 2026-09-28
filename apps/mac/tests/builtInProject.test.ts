@@ -1,6 +1,6 @@
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { QuuuApp } from '../src/main/bootstrap.js'
@@ -110,6 +110,18 @@ describe('the built-in QuuuAI project', () => {
     expect(projectsByName(app.projects.listProjects()).map(p => p.name)).toEqual(['QuuuAI', 'Alpha'])
   })
 
+  it('ships its own agent instructions, separate from the repository’s, and points them at the skill', () => {
+    const checkout = resolve(import.meta.dirname, '../quuu-ai')
+    expect(readFileSync(join(checkout, 'AGENTS.md'), 'utf8')).toContain('skills/quuu/SKILL.md')
+    expect(readFileSync(join(checkout, 'CLAUDE.md'), 'utf8').trim()).toBe('@AGENTS.md')
+    expect(readFileSync(join(checkout, 'skills', 'quuu', 'SKILL.md'), 'utf8')).toContain('references/')
+
+    // The bundle carries exactly these, not whatever else sits in the checkout's workspace
+    const builder = readFileSync(resolve(import.meta.dirname, '../electron-builder.yml'), 'utf8')
+    expect(builder).toMatch(/- from: quuu-ai\n\s+to: quuu-ai\n\s+filter:\n\s+- AGENTS\.md\n\s+- CLAUDE\.md/)
+    expect(builder).toMatch(/- from: \.\.\/\.\.\/skills\n\s+to: quuu-ai\/skills/)
+  })
+
   it('lives inside the packaged app, next to the bundled CLI', () => {
     expect(quuuWorkspaceDir(true, '/Applications/Quuu.app/Contents/Resources', '/ignored')).toBe('/Applications/Quuu.app/Contents/Resources/quuu-ai')
   })
@@ -136,6 +148,7 @@ describe('a run in QuuuAI', () => {
     const [prompt] = prepare(app, project.id, 'initial')
 
     expect(prompt.startsWith('Register ~/src/api as a project\n')).toBe(true)
+    expect(prompt).toContain(join(workspace, 'AGENTS.md'))
     expect(prompt).toContain(join(workspace, 'skills', 'quuu', 'SKILL.md'))
     expect(prompt).toContain(join(workdir, 'Resources', 'bin', 'quuu'))
   })

@@ -31,6 +31,11 @@ export function quuuBinDir(project: Pick<Project, 'path'>): string {
   return resolve(project.path, '..', 'bin')
 }
 
+/** QuuuAI's own agent instructions (`AGENTS.md`, with `CLAUDE.md` pointing at it). */
+export function quuuInstructionsPath(project: Pick<Project, 'path'>): string {
+  return join(project.path, 'AGENTS.md')
+}
+
 export function quuuSkillPath(project: Pick<Project, 'path'>): string {
   return join(project.path, 'skills', 'quuu', 'SKILL.md')
 }
@@ -82,19 +87,17 @@ export function assertBuiltInEdit(project: Project, patch: Partial<Pick<Project,
 /**
  * The instruction a fresh conversation in the built-in project ends with.
  *
- * A slash command would reach one CLI; a path every agent can read reaches all of them. The
- * skill ships inside the app, so the absolute path is what tells the agent which copy is current.
- * A continued conversation already read it, so follow-ups go out as the human wrote them.
+ * The rules live in the workspace's AGENTS.md (CLAUDE.md for Claude Code), which most CLIs read
+ * on their own. Naming both files by absolute path here reaches the ones that do not, and a slash
+ * command would reach only one CLI. The files ship inside the app, so the path is also what
+ * tells the agent which copy is current. A continued conversation already read them, so
+ * follow-ups go out as the human wrote them.
  */
 export function builtInPrompt(project: Project, message: string): string {
   if (!project.builtIn) return message
   return `${message.trimEnd()}
 
 ---
-This task runs in Quuu's built-in ${QUUU_PROJECT_NAME} project: it asks you to operate Quuu itself (its settings, projects, agents, tasks and automation) through the \`quuu\` CLI.
-- Before acting, read ${quuuSkillPath(project)} and the references it lists for this request.
-- \`quuu\` is on PATH (${join(quuuBinDir(project), 'quuu')}). Never edit Quuu's database or data directory by hand.
-- The working directory is inside the Quuu app. Do not write files there; use a temporary directory.
-- A request that needs a change to some project's code becomes a task in that project, not an edit here.
-- Finish with a short report: what you changed (with IDs), what you left alone, and what needs the human.`
+This task runs in Quuu's built-in ${QUUU_PROJECT_NAME} project: operate Quuu itself through the \`quuu\` CLI (on PATH: ${join(quuuBinDir(project), 'quuu')}).
+Before acting, follow ${quuuInstructionsPath(project)} and read ${quuuSkillPath(project)} with the references it lists for this request.`
 }

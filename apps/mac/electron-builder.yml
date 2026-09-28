@@ -16,8 +16,14 @@ extraResources:
   # CLI that calls the local API from AI agents and the terminal. Its launcher is per platform.
   - from: out/cli
     to: bin
-  # The built-in QuuuAI project runs here (main/projects/builtIn.ts). Its skills are the
-  # repository's own; the checkout reaches them through a symlink, the bundle holds real files.
+  # The built-in QuuuAI project runs here (main/projects/builtIn.ts): its own agent instructions,
+  # separate from the repository's, and the repository's skills. The checkout reaches the skills
+  # through a symlink; the bundle holds real files.
+  - from: quuu-ai
+    to: quuu-ai
+    filter:
+      - AGENTS.md
+      - CLAUDE.md
   - from: ../../skills
     to: quuu-ai/skills
   - from: build

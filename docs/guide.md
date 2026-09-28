@@ -348,10 +348,13 @@ Its tasks are requests about Quuu itself — "register ~/src/api as a project", 
 use it for api", "review failed runs every morning" — and the agent carries them out through the
 `quuu` CLI, the same operations the screen uses.
 
-- It runs in `Quuu.app/Contents/Resources/quuu-ai`, which ships the [quuu skill](../skills/quuu/SKILL.md)
-  and its use-case references. A fresh conversation there ends with an instruction naming that
-  skill's absolute path, so every CLI (not only those with a skill system) reads the copy that
-  matches the running app. Follow-ups go out as written.
+- It runs in `Quuu.app/Contents/Resources/quuu-ai`, which ships QuuuAI's own agent
+  instructions ([AGENTS.md](../apps/mac/quuu-ai/AGENTS.md), with a `CLAUDE.md` that points at it)
+  and the [quuu skill](../skills/quuu/SKILL.md) with its use-case references. These instructions
+  are for operating Quuu through its CLI and are separate from the repository's own AGENTS.md.
+  Most CLIs read them from the working directory; a fresh conversation there also ends with an
+  instruction naming both files by absolute path, so every CLI reads the copy that matches the
+  running app. Follow-ups go out as written.
 - Its runs find the bundled `quuu` first on `PATH`. Without Node.js, the launcher runs the CLI on
   Quuu's own runtime.
 - It cannot be deleted, and its directory and worktree mode are fixed: the operations refuse
