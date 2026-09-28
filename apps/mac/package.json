@@ -45,6 +45,7 @@
   "devDependencies": {
     "@bufbuild/buf": "^1.73.0",
     "@bufbuild/protoc-gen-es": "^2.15.0",
+    "@electron/asar": "^3.4.1",
     "@types/jmespath": "^0.15.2"
   }
 }

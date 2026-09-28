@@ -7,7 +7,10 @@ const designSystem = resolve(process.cwd(), '../../packages/design-system/src/in
 export default defineConfig({
   main: {
     plugins: [
-      externalizeDepsPlugin()
+      // Bundled: electron-builder drops micromark-util-subtokenize from the hoisted tree it
+      // packs, so an external import of it fails on every Mac but the one that built it
+      // (scripts/verify-packaged-modules.mjs)
+      externalizeDepsPlugin({ exclude: ['mdast-util-from-markdown'] })
     ],
     build: {
       rollupOptions: {

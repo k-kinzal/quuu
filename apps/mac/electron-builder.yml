@@ -89,6 +89,7 @@ nsis:
   oneClick: false
   perMachine: false
   allowToChangeInstallationDirectory: true
-# Make the .app launchable even without a certificate (public CI). Rationale in the script.
-afterPack: scripts/adhoc-sign.mjs
+# Fail when app.asar lacks a module the app loads, then make the .app launchable even without
+# a certificate (public CI). Rationale in each script.
+afterPack: scripts/after-pack.mjs
 npmRebuild: false

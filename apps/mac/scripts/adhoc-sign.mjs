@@ -1,5 +1,5 @@
 /*
- * Re-seal the packed .app with an ad-hoc signature (electron-builder afterPack).
+ * Re-seal the packed .app with an ad-hoc signature (electron-builder afterPack, through after-pack.mjs).
  *
  * Why: Apple Silicon refuses to launch unsigned binaries. Swapping resources at
  * pack time breaks the seal that came with the Electron distribution, yet in
