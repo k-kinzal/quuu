@@ -1,5 +1,5 @@
 import { Text, claimContextMenu, useTheme } from '@design-system/react'
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react'
 import { copyItem, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
 import { clockTime } from '../model/format.js'
@@ -23,11 +23,14 @@ import { SessionTurn } from './SessionTurn.js'
 export function PromptSection({
   section,
   cwd,
-  scrollRef
+  scrollRef,
+  after
 }: {
   section: ChatSection
   cwd: string | null
   scrollRef: RefObject<HTMLElement>
+  /** What happened beside the conversation right after a turn, in its place in time. */
+  after?: (turnId: string) => ReactNode
 }): JSX.Element {
   const anchorRef = useRef<HTMLDivElement>(null)
   // Behind the heading is "not visible". Lower the measured top edge by its height
@@ -67,11 +70,15 @@ export function PromptSection({
 
           <SessionTurn turn={head} cwd={cwd} headless />
           <SectionAnchor ref={anchorRef} />
+          {after?.(head.id)}
         </>
       )}
 
       {section.rest.map((turn) => (
-        <SessionTurn key={turn.id} turn={turn} cwd={cwd} />
+        <Fragment key={turn.id}>
+          <SessionTurn turn={turn} cwd={cwd} />
+          {after?.(turn.id)}
+        </Fragment>
       ))}
     </Section>
   )

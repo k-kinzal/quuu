@@ -18,15 +18,26 @@ export function HookHistory(): JSX.Element | null {
 export function HookTranscript({ history, active = true, showTask = false }: {
   history: ReturnType<typeof useHookHistory>; active?: boolean; showTask?: boolean
 }): JSX.Element | null {
-  const id = useId()
-  const entries = [
+  return <HookInterlude entries={hookEntries(history, { active, showTask })} error={history.error} />
+}
+
+/** One auxiliary execution as it sits in a transcript, with the moment it began. */
+export interface HookTranscriptEntry { id: string; at: string; body: JSX.Element }
+
+export function hookEntries(history: ReturnType<typeof useHookHistory>, { active = true, showTask = false }: { active?: boolean; showTask?: boolean } = {}): HookTranscriptEntry[] {
+  return [
     ...(history.runs ?? []).map(run => ({ id: run.id, at: run.createdAt, body: <HookEntry run={run} active={active} showTask={showTask} /> })),
     ...(history.report ? [{ id: `report:${history.report.startedAt}`, at: history.report.startedAt, body: <ReportEntry report={history.report} active={active} /> }] : [])
   ].sort((a, b) => showTask ? b.at.localeCompare(a.at) : a.at.localeCompare(b.at))
-  if (!entries.length && !history.error) return null
+}
+
+/** A run of consecutive executions between two points of the conversation. */
+export function HookInterlude({ entries, error }: { entries: HookTranscriptEntry[]; error?: Error | null }): JSX.Element | null {
+  const id = useId()
+  if (!entries.length && !error) return null
   return <TranscriptInterlude aria-labelledby={id}>
     <TranscriptTurnHead><TranscriptTurnRole id={id}>{t('hooks.activity')}</TranscriptTurnRole></TranscriptTurnHead>
-    {history.error && <FieldHint tone="danger">{history.error.message}</FieldHint>}
+    {error && <FieldHint tone="danger">{error.message}</FieldHint>}
     {entries.map(entry => <div key={entry.id} {...conversationBlock(`hook:${entry.id}`)}>{entry.body}</div>)}
   </TranscriptInterlude>
 }

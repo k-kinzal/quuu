@@ -1,4 +1,4 @@
-import { HookTranscript } from './HookHistory.js'
+import { HookInterlude, hookEntries } from './HookHistory.js'
 import { Alert, Button, ContentInset, Text } from '@design-system/react'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
@@ -11,6 +11,7 @@ import { deliveredInstructions, failureReason, nextSend } from '../model/derive.
 import { clockOrDate } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
 import { buildSections, buildTurns } from '../model/summarize.js'
+import { placeByTime } from '../model/timeline.js'
 import { useStore } from '../state/store.js'
 import { ChevronDown, CircleAlert, ICON, iconProps } from '../ui/icons.js'
 import { ChatIntro, ChatMore, ChatRoot, ChatScroll, ChatViewport, JumpToLatest } from '../ui/panes.js'
@@ -87,7 +88,13 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
    * so placing the next send there makes it unreadable which run it follows.
    */
   const latest = runs.length === 0 || runs[0]?.id === selectedRunId
-  const hooks = useHookHistory({ taskId: task.id, active: active && latest && !session?.hasNewer })
+  const hooks = useHookHistory({ taskId: task.id, active: active && latest })
+  /*
+   * Hooks and the report happen beside the conversation, so each sits where it happened in
+   * time, not gathered at the end. Kept to the latest run, whose conversation they belong to.
+   */
+  const placed = placeByTime(turns, latest && !loading ? hookEntries(hooks, { active }) : [],
+    { older: session?.hasMore === true, newer: session?.hasNewer === true })
   /*
    * What the agent already holds out of the instruction that waits to be sent. Only the end of
    * the conversation can say it, so nothing is claimed while a newer page is still unread.
@@ -275,13 +282,16 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             </ChatMore>
           )}
 
+          <HookInterlude entries={placed.before} />
+
           {/*
             The conversation bundles per instruction. A bundle's heading (the
             instruction's one line) stays pinned while scrolling and gets pushed out
             and replaced when the next instruction arrives
           */}
           {sections.map((section) => (
-            <PromptSection key={section.id} section={section} cwd={cwd} scrollRef={scrollRef} />
+            <PromptSection key={section.id} section={section} cwd={cwd} scrollRef={scrollRef}
+              after={(turnId) => <HookInterlude entries={placed.after.get(turnId) ?? []} />} />
           ))}
 
           {session?.hasNewer && <ChatMore><Button size="xs" disabled={pageLoading} onClick={() => void page('newer')}>{t('chat.loadNewer')}</Button></ChatMore>}
@@ -297,8 +307,8 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             </ContentInset>
           )}
 
+          <HookInterlude key={task.id} entries={placed.end} error={latest && !session?.hasNewer ? hooks.error : null} />
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
-          {latest && !session?.hasNewer && <HookTranscript key={task.id} history={hooks} active={active} />}
           {!session?.hasNewer && next && <PendingTurn task={task} next={next} />}
         </ChatScroll>
 
