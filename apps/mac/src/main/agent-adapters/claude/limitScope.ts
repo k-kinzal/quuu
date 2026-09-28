@@ -1,4 +1,4 @@
-import { accountWide, type LimitScope } from '../limitScope.js'
+import { modelArgument, readLimitScope, type LimitScope } from '../limitScope.js'
 
 /**
  * A limit on one model rather than on the account: "You've reached your **Fable** limit."
@@ -14,8 +14,13 @@ const NOT_A_MODEL = new Set([
   'Spend', 'Credit', 'Credits', 'Organization', 'Token', 'Context'
 ])
 
-/** Which allowance that message says is spent: one model's share, or the account. */
+/** Which allowance that message says is spent: one model's share, the account, or neither. */
 export function claudeLimitScope(message: string): LimitScope {
   const named = MODEL_LIMIT.exec(message)
-  return named !== null && !NOT_A_MODEL.has(named[1]) ? { kind: 'model', model: named[1] } : accountWide()
+  return named !== null && !NOT_A_MODEL.has(named[1]) ? { kind: 'model', model: named[1] } : readLimitScope(message)
+}
+
+/** Claude Code takes the model from `--model`, and otherwise from the environment. */
+export function claudeModel(definition: { argsTemplate: readonly string[]; env: Readonly<Record<string, string>> }): string | null {
+  return modelArgument(definition.argsTemplate) ?? (definition.env.ANTHROPIC_MODEL || null)
 }

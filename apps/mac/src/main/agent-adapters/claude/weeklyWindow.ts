@@ -34,18 +34,20 @@ interface ObservedTurn {
 }
 
 /**
- * The next turn of that agent's week, as an ISO string. null while nothing has been watched yet.
+ * The next turn of that model's week, as an ISO string. null while nothing has been watched yet.
  *
- * Takes the agent's runs newest first - the order the store lists them in. Until a turn has been
+ * Takes the runs of every definition on that model, newest first - the order the store lists them
+ * in - and reads only that model's own limits out of them. Until a turn has been
  * watched the answer is honestly nothing, and the caller falls back to the configured cooldown:
  * probing every quarter of an hour is what buys the first observation, and every later week is
  * predicted off it.
  */
 export function weeklyLimitLiftsAt(
   history: readonly RunOutcome[],
+  model: string,
   now: Date = new Date()
 ): string | null {
-  const turn = lastObservedTurn(history)
+  const turn = lastObservedTurn(history, model)
   if (turn === null) return null
 
   let at = anchor(turn)
@@ -56,7 +58,7 @@ export function weeklyLimitLiftsAt(
   // a week, so it goes back to finding out. (The anchor itself is a run that went through, not a
   // prediction, so there is nothing to disprove on the first week after it.)
   const previous = at - WEEK_MS
-  if (previous > turn.back && limitedWithinHourAfter(history, previous)) return null
+  if (previous > turn.back && limitedWithinHourAfter(history, model, previous)) return null
 
   return new Date(at).toISOString()
 }
@@ -80,7 +82,7 @@ function anchor(turn: ObservedTurn): number {
  * Only a run that succeeded counts as being back. A failure or a timeout says the CLI ran, not
  * that the model answered, and a turn read off one of those would set every later prediction wrong.
  */
-function lastObservedTurn(history: readonly RunOutcome[]): ObservedTurn | null {
+function lastObservedTurn(history: readonly RunOutcome[], model: string): ObservedTurn | null {
   let limited: number | null = null
   let turn: ObservedTurn | null = null
   // Oldest first: a turn is a pair in time order, and the store lists runs newest first
@@ -89,7 +91,7 @@ function lastObservedTurn(history: readonly RunOutcome[]): ObservedTurn | null {
     const at = Date.parse(run.startedAt)
     if (Number.isNaN(at)) continue
     if (run.status === 'limited') {
-      if (spentOneModel(run)) limited = at
+      if (spent(run, model)) limited = at
       continue
     }
     if (run.status !== 'succeeded' || limited === null) continue
@@ -101,15 +103,16 @@ function lastObservedTurn(history: readonly RunOutcome[]): ObservedTurn | null {
 }
 
 /** Did a limit of the same shape land in the hour after that moment? */
-function limitedWithinHourAfter(history: readonly RunOutcome[], at: number): boolean {
+function limitedWithinHourAfter(history: readonly RunOutcome[], model: string, at: number): boolean {
   return history.some((run) => {
-    if (run.status !== 'limited' || !spentOneModel(run)) return false
+    if (run.status !== 'limited' || !spent(run, model)) return false
     const started = Date.parse(run.startedAt)
     return !Number.isNaN(started) && started >= at && started < at + HOUR_MS
   })
 }
 
-/** A limit on one model's share, read the same way the run that just ended was. */
-function spentOneModel(run: RunOutcome): boolean {
-  return claudeLimitScope(run.errorMessage).kind === 'model'
+/** A limit on that model's share, read the same way the run that just ended was. */
+function spent(run: RunOutcome, model: string): boolean {
+  const scope = claudeLimitScope(run.errorMessage)
+  return scope.kind === 'model' && scope.model === model
 }

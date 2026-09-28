@@ -10,7 +10,7 @@ import {
 import { probeLiveness, resetLiveness } from './liveness.js'
 import { ClaudeSessionParser } from './parser.js'
 import { classifyClaudeResult, classifyDetachedClaudeResult } from './result.js'
-import { claudeLimitScope } from './limitScope.js'
+import { claudeLimitScope, claudeModel } from './limitScope.js'
 import { weeklyLimitLiftsAt } from './weeklyWindow.js'
 
 export const claudeAdapter: AgentAdapter = {
@@ -31,6 +31,7 @@ export const claudeAdapter: AgentAdapter = {
   classify: classifyClaudeResult,
   classifyDetached: classifyDetachedClaudeResult,
   limitScope: claudeLimitScope,
+  modelOf: claudeModel,
   // The account's own windows print their moment; a model's share of the week never does
-  retryAt: (scope, history) => scope.kind === 'model' ? weeklyLimitLiftsAt(history) : null
+  retryAt: (scope, history) => scope.kind === 'model' ? weeklyLimitLiftsAt(history, scope.model) : null
 }

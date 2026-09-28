@@ -1,4 +1,5 @@
-import type { LimitScope } from '../agent-adapters/limitScope.js'
+import { drawsOn, type LimitScope } from '../agent-adapters/limitScope.js'
+import { isManagedAgent, type Agent } from '../agents/types.js'
 import type { Project } from '../projects/types.js'
 import type { Task } from '../tasks/types.js'
 import type { Run, RunErrorKind } from './types.js'
@@ -158,25 +159,47 @@ export function slotAvailability(
 }
 
 /**
- * The definition that waits a limit out, and whose runs are the history of the allowance it spent.
+ * Whether two definitions run on the same account: the same CLI, started the same way, with the
+ * same environment.
  *
- * A limit spends an allowance - the account's, or one model's share of it (`LimitScope`) - but a
- * definition has no model of its own: it is a CLI and an argument list, and the model is somewhere
- * in the arguments. So the definition that hit the wall stands in for the allowance. That is decided
- * here, once for each scope, so a new kind of allowance cannot arrive without someone saying who
- * waits for it. Everything that reads a cooldown back (claiming, parking, a reset) reads it by
- * definition too.
+ * A definition has no account of its own; what names one is the CLI's own sign-in, and a different
+ * environment (another config directory, an API key) can point at another. Reading two accounts as
+ * one would idle a definition that still has room, while reading one as two only costs the other
+ * definition a run that meets the same wall - so anything that differs keeps them apart.
  */
-export function limitHolder(agentId: string, scope: LimitScope): string {
+export function sameAccount(a: Pick<Agent, 'logAdapter' | 'command' | 'env'>, b: Pick<Agent, 'logAdapter' | 'command' | 'env'>): boolean {
+  return a.logAdapter === b.logAdapter && a.command === b.command && sameEnv(a.env, b.env)
+}
+
+function sameEnv(a: Readonly<Record<string, string>>, b: Readonly<Record<string, string>>): boolean {
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every((key) => Object.hasOwn(b, key) && a[key] === b[key])
+}
+
+/**
+ * Every definition that waits a limit out, the one that met it first: the definitions drawing on
+ * the allowance it spent, whose runs are also that allowance's history.
+ *
+ * A definition has no model field either - the model is somewhere in its arguments, read by
+ * `modelOf` - so the allowance is found by asking each definition on the same account what it
+ * selects. Decided here once for each scope, so a new kind of allowance cannot arrive without
+ * someone saying who waits for it.
+ */
+export function limitHolders<T extends Agent>(
+  hit: T,
+  agents: readonly T[],
+  scope: LimitScope,
+  modelOf: (agent: T) => string | null
+): T[] {
   switch (scope.kind) {
-    case 'model':
-      // Exact while each definition names one model. Two definitions of the same model each meet
-      // the wall, and watch the week turn, on their own
-      return agentId
+    case 'unstated':
+      // Nothing says whose allowance it was, and it passes; only the definition that met it waits
+      return [hit]
     case 'account':
-      // Narrower than the allowance: the account's other definitions are left free, and each finds
-      // out on its own run and falls back from there
-      return agentId
+    case 'model':
+      // Imported definitions never run, so there is nothing of theirs to hold back
+      return [hit, ...agents.filter((agent) =>
+        agent.id !== hit.id && !isManagedAgent(agent) && sameAccount(agent, hit) && drawsOn(scope, modelOf(agent)))]
   }
 }
 

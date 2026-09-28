@@ -3,7 +3,7 @@ import { invocationFor } from '../../agent-clis/invocation.js'
 import { jsonEscaped } from '../discovery.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
 import { START_GRACE_MS, closestTo } from '../sessionLookup.js'
-import { accountWide } from '../limitScope.js'
+import { modelArgument } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { external } from './external.js'
 import { layout, sessionCandidates } from './layout.js'
@@ -31,8 +31,11 @@ export const cursorAdapter: AgentAdapter = {
   createParser: () => new CursorSessionParser(),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
-  // Cursor's own models and the others are separate allowances, but which one a limit spent is
-  // not in any wording read here yet, so every limit reads as the account's
-  limitScope: accountWide,
+  // Cursor's own models and the others are separate allowances, and its limit wording comes from its
+  // server - no sample has been seen yet. Reading one pool running out as the whole account would
+  // idle the definitions on the other pool that still have room, so a limit holds back only the one
+  // that met it until that wording is known
+  limitScope: () => ({ kind: 'unstated' }),
+  modelOf: definition => modelArgument(definition.argsTemplate),
   retryAt: () => null
 }

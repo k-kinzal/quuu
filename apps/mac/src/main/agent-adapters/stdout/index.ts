@@ -2,7 +2,7 @@ import { invocationFor } from '../../agent-clis/invocation.js'
 import { StdoutSessionParser } from '../../session/stdoutParser.js'
 import { codexSessionId } from '../codex/stdout.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
-import { accountWide } from '../limitScope.js'
+import { modelArgument, readLimitScope } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { layout } from './layout.js'
 const stdoutCli = null
@@ -19,6 +19,7 @@ export const stdoutAdapter: AgentAdapter = {
   createParser: (_namespace, buffer) => new StdoutSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
-  limitScope: accountWide,
+  limitScope: readLimitScope,
+  modelOf: definition => modelArgument(definition.argsTemplate),
   retryAt: () => null
 }

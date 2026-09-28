@@ -7,7 +7,7 @@ import { consumeReservation, recordExecutionState } from '../tasks/execution.js'
 import { holdsSlot } from '../tasks/status.js'
 import type { Task } from '../tasks/types.js'
 import { isFollowupPending } from '../tasks/types.js'
-import { canClaimTask, consecutiveFailures, cooldownUntil, limitHolder, resumeMessage, retryRequirement, runDisposition, shouldRetryRun, slotAvailability } from './conditions.js'
+import { canClaimTask, consecutiveFailures, cooldownUntil, limitHolders, resumeMessage, retryRequirement, runDisposition, sameAccount, shouldRetryRun, slotAvailability } from './conditions.js'
 import type { Classification } from './errorClassifier.js'
 import { ExecutionRecovery } from './recovery.js'
 import type { StartParams } from './runner.js'
@@ -173,8 +173,12 @@ export class Scheduler extends EventEmitter {
         if (retryAt === null) continue
         const until = cooldownUntil('limit', undefined, retryAt, run.endedAt)
         if (until === null || until <= cooldown.until) continue
-        repo.setCooldown(this.db, run.agentId, until, cooldown.reason)
-        cooldown.until = until
+        for (const id of this.sharingLimit(run.agentId)) {
+          const held = cooldowns.get(id)
+          if (!held || until <= held.until) continue
+          repo.setCooldown(this.db, id, until, held.reason)
+          held.until = until
+        }
         changed = true
       }
       if (!changed) return
@@ -679,7 +683,7 @@ export class Scheduler extends EventEmitter {
       // A probe that got through means the account is back. One that is still limited was
       // re-cooled above and parked with the other retries.
       if (probedUntil !== undefined && classification.kind === null) {
-        repo.clearCooldown(this.db, run.agentId)
+        for (const id of this.sharingLimit(run.agentId)) repo.clearCooldown(this.db, id)
         const parked = repo.getTask(this.db, task.id)
         if (parked && probedUntil !== null && parked.scheduledAt !== null && parked.scheduledAt <= probedUntil) {
           repo.setTaskSchedule(this.db, parked.id, null)
@@ -692,21 +696,51 @@ export class Scheduler extends EventEmitter {
   /**
    * Keep automatic claims off whoever cannot answer yet, until they can.
    *
-   * A limit cools the definition standing in for the allowance it spent (`limitHolder`), and when
-   * the CLI never said when that is back, the adapter may work it out from the runs that spent the
-   * same allowance. A sign-in failure cools the definition that ran, the only one it says anything
-   * about.
+   * A limit cools every definition drawing on the allowance it spent (`limitHolders`) - an account
+   * that is out is out for Opus and Sonnet alike, and a spent Fable share is spent for every
+   * definition on Fable - and when the CLI never said when that is back, the adapter may work it out
+   * from the runs of all of them. A sign-in failure cools the definition that ran, the only one it
+   * says anything about.
    */
   private coolDown(run: Run, classification: Classification): void {
     const adapter = adapterFor(run.logAdapter ?? 'stdout')
+    const hit = repo.getAgent(this.db, run.agentId)
     const scope = classification.kind === 'limit' ? adapter.limitScope(classification.message) : null
-    const holder = scope === null ? run.agentId : limitHolder(run.agentId, scope)
+    const holders = scope !== null && hit !== null
+      ? limitHolders(hit, repo.listAgents(this.db), scope, (agent) => adapter.modelOf(agent)).map((agent) => agent.id)
+      : [run.agentId]
     const retryAt = classification.retryAt ??
-      (scope === null ? null : adapter.retryAt(scope, repo.listRunOutcomesByAgent(this.db, holder)))
-    const until = cooldownUntil(classification.kind, repo.getAgent(this.db, holder)?.cooldownSeconds, retryAt, nowIso())
+      (scope === null ? null : adapter.retryAt(scope, repo.listRunOutcomesByAgents(this.db, holders)))
+    const until = cooldownUntil(classification.kind, hit?.cooldownSeconds, retryAt, nowIso())
     if (until === null) return
-    repo.setCooldown(this.db, holder, until,
-      classification.kind === 'auth' ? t('runErrorKind.auth') : classification.message || 'Limit')
+    const reason = classification.kind === 'auth' ? t('runErrorKind.auth') : classification.message || 'Limit'
+    // The definition that met the wall takes what this run said, even when that is sooner than before
+    repo.setCooldown(this.db, run.agentId, until, reason)
+    for (const id of holders) {
+      if (id === run.agentId) continue
+      // A longer wait another definition already holds is not cut short by this one
+      const held = repo.cooldownEnd(this.db, id)
+      if (held === null || held < until) repo.setCooldown(this.db, id, until, reason)
+    }
+  }
+
+  /**
+   * The definitions holding the same Limit as that one: on the same account, cooled for the same
+   * reason until the same moment. `coolDown` cooled them together, so whatever ends or moves one of
+   * them - a probe that got through, a human's reset, a moment read again - ends or moves them all.
+   * A wait of their own, even one worded the same, ends at its own moment and is left alone.
+   */
+  private sharingLimit(agentId: string): string[] {
+    const agent = repo.getAgent(this.db, agentId)
+    const cooldowns = new Map(repo.listCooldowns(this.db).map((cooldown) => [cooldown.agentId, cooldown]))
+    const own = cooldowns.get(agentId)
+    if (!agent || own === undefined) return [agentId]
+    return [agentId, ...repo.listAgents(this.db)
+      .filter((other) => {
+        const held = cooldowns.get(other.id)
+        return other.id !== agentId && held?.reason === own.reason && held.until === own.until && sameAccount(other, agent)
+      })
+      .map((other) => other.id)]
   }
 
   /**
@@ -792,7 +826,8 @@ export class Scheduler extends EventEmitter {
         const until = cooldownClearsAt(this.db, project, this.resolveOptionsFor(task))
         if (until !== null && task.scheduledAt === until) parkedAt.set(task.id, until)
       }
-      repo.clearCooldown(this.db, agentId)
+      // The allowance is back for every definition that was waiting on it, not just the one clicked
+      for (const id of this.sharingLimit(agentId)) repo.clearCooldown(this.db, id)
       for (const task of waiting) {
         const was = parkedAt.get(task.id)
         if (was === undefined) continue

@@ -1,7 +1,7 @@
 import { agyCli } from '../../agent-clis/agy.js'
 import { invocationFor } from '../../agent-clis/invocation.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
-import { accountWide } from '../limitScope.js'
+import { modelArgument, readLimitScope } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { external } from './external.js'
 import { layout } from './layout.js'
@@ -21,6 +21,7 @@ export const agyAdapter: AgentAdapter = {
   createParser: (_namespace, buffer) => new AgySessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
-  limitScope: accountWide,
+  limitScope: readLimitScope,
+  modelOf: definition => modelArgument(definition.argsTemplate),
   retryAt: () => null
 }

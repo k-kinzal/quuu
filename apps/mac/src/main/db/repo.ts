@@ -511,19 +511,20 @@ export function countActiveRuns(db: Db): number {
 }
 
 /**
- * That agent's recent runs, newest first, as outcomes.
+ * The recent runs of those agents, newest first, as outcomes.
  *
- * Read when a limit names no moment, to see where that agent's week last turned. Capped rather
- * than paged: a limit that recurs weekly is settled by the last few weeks, and the ones before
- * that say nothing a newer observation does not say better.
+ * Read when a limit names no moment, to see where the week of the allowance they share last
+ * turned. Capped rather than paged: a limit that recurs weekly is settled by the last few weeks,
+ * and the ones before that say nothing a newer observation does not say better.
  */
-export function listRunOutcomesByAgent(db: Db, agentId: string, limit = 500): RunOutcome[] {
+export function listRunOutcomesByAgents(db: Db, agentIds: readonly string[], limit = 500): RunOutcome[] {
+  if (agentIds.length === 0) return []
   const rows = db
     .prepare(
       `SELECT status, error_message, started_at FROM runs
-       WHERE agent_id = ? ORDER BY started_at DESC, rowid DESC LIMIT ?`
+       WHERE agent_id IN (${agentIds.map(() => '?').join(',')}) ORDER BY started_at DESC, rowid DESC LIMIT ?`
     )
-    .all(agentId, limit) as Row[]
+    .all(...agentIds, limit) as Row[]
   return rows.map((r) => ({
     status: s(r.status) as RunStatus,
     errorMessage: s(r.error_message),

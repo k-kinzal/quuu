@@ -26,6 +26,12 @@ export interface StoreParser extends ConversationParser { reload(path: string, s
 export type SessionParser = StreamParser | StoreParser
 export function isStoreParser(parser: SessionParser): parser is StoreParser { return 'reload' in parser }
 
+/** Where a definition may say which model it runs. */
+export interface ModelSelection {
+  argsTemplate: readonly string[]
+  env: Readonly<Record<string, string>>
+}
+
 /** The only provider contract consumed by Quuu's execution and session services. */
 export interface AgentAdapter {
   id: LogAdapter
@@ -44,8 +50,10 @@ export interface AgentAdapter {
   createParser(imageNamespace?: string, buffer?: MessageBuffer): SessionParser
   classify(input: ClassifyInput): Classification
   classifyDetached(input: { output: string; limitPatterns: string[] }): Classification
-  /** Which allowance a limit's message says was spent: the account's, or one model's share of it. */
+  /** Which allowance a limit's message says was spent: the account's, one model's share of it, or neither. */
   limitScope(message: string): LimitScope
+  /** The model a definition selects, as it spelled it. null when it leaves the choice to the CLI. */
+  modelOf(definition: ModelSelection): string | null
   /** When that allowance is back, worked out from the runs that spent it. null when this provider cannot tell. */
   retryAt(scope: LimitScope, history: readonly RunOutcome[]): string | null
 }

@@ -1,7 +1,7 @@
 import { invocationFor } from '../../agent-clis/invocation.js'
 import { opencodeCli } from '../../agent-clis/opencode.js'
 import { classifyDetachedResult, classifyRunResult } from '../result.js'
-import { accountWide } from '../limitScope.js'
+import { modelArgument, readLimitScope } from '../limitScope.js'
 import type { AgentAdapter } from '../types.js'
 import { external } from './external.js'
 import { findOpencodeSessionId } from './identity.js'
@@ -23,6 +23,7 @@ export const opencodeAdapter: AgentAdapter = {
   createParser: () => new OpencodeSessionParser(),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
-  limitScope: accountWide,
+  limitScope: readLimitScope,
+  modelOf: definition => modelArgument(definition.argsTemplate),
   retryAt: () => null
 }
