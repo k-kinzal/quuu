@@ -1,4 +1,8 @@
-export type Frequency = 'none' | 'daily' | 'weekly' | 'weekdays'
+/**
+ * `continuous` has no period at all: it keeps the project busy by enqueuing whenever the queue
+ * empties, so it always implies the idle gate (without it, it would enqueue on every tick).
+ */
+export type Frequency = 'none' | 'daily' | 'weekly' | 'weekdays' | 'continuous'
 
 export function isCalendarFrequency(value: string): value is Exclude<Frequency, 'none'> {
   return value === 'daily' || value === 'weekly' || value === 'weekdays'
@@ -22,6 +26,10 @@ export function frequencyDueAt(frequency: Exclude<Frequency, 'none'>, lastEnqueu
     while (start.getDay() === 0 || start.getDay() === 6) start.setDate(start.getDate() + 1)
   }
   return start.toISOString()
+}
+
+export function isScheduleFrequency(value: string): value is Exclude<Frequency, 'none'> {
+  return isCalendarFrequency(value) || value === 'continuous'
 }
 
 export function frequencyReady(rule: { frequency: Frequency; lastEnqueuedAt: string | null }, now: Date): boolean {

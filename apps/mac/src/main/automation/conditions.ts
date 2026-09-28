@@ -41,7 +41,7 @@ export interface TaskRule {
    * As a point event, a day that happened to be busy at 3:00 would be skipped entirely.
    */
   cron: string
-  /** A local calendar frequency with no chosen time. Exclusive with cron. */
+  /** A local calendar frequency with no chosen time, or `continuous`. Exclusive with cron. */
   frequency: Frequency
   /**
    * The task statuses that count as a duplicate.
@@ -100,7 +100,12 @@ export function ruleDueState(rule: Pick<TaskRule, 'cron' | 'dueAt'>, now: string
   return rule.dueAt <= now ? 'ready' : 'waiting'
 }
 
+/** A continuous rule is only bounded by the empty queue, so it waits for idle whatever the flag says. */
+export function waitsForIdle(rule: Pick<TaskRule, 'whenIdle' | 'frequency'>): boolean {
+  return rule.whenIdle || rule.frequency === 'continuous'
+}
+
 /** The counts are fetched by the storage layer. Both the idle and duplicate gates must pass. */
-export function canEnqueueRule(rule: Pick<TaskRule, 'whenIdle'>, busyTasks: number, blockingTasks: number): boolean {
-  return (!rule.whenIdle || busyTasks === 0) && blockingTasks === 0
+export function canEnqueueRule(rule: Pick<TaskRule, 'whenIdle' | 'frequency'>, busyTasks: number, blockingTasks: number): boolean {
+  return (!waitsForIdle(rule) || busyTasks === 0) && blockingTasks === 0
 }

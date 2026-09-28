@@ -1,6 +1,6 @@
 import type { Task } from '../tasks/types.js'
 import type { TaskRule } from './conditions.js'
-import { BUSY_TASK_STATUSES, canEnqueueRule, hasRuleCondition, orderTaskRules, ruleDueState } from './conditions.js'
+import { BUSY_TASK_STATUSES, canEnqueueRule, hasRuleCondition, orderTaskRules, ruleDueState, waitsForIdle } from './conditions.js'
 
 import type { Db } from '../db/database.js'
 import { inTransaction } from '../db/database.js'
@@ -9,7 +9,8 @@ import { nextCronDate, parseCron } from './cron.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { truncate } from '../util.js'
-import { frequencyDueAt, frequencyReady, isCalendarFrequency } from './frequency.js'
+import { frequencyDueAt, frequencyReady, isCalendarFrequency, isScheduleFrequency } from './frequency.js'
+import type { Frequency } from './frequency.js'
 import { taskRuleTitle } from './title.js'
 
 /**
@@ -59,14 +60,14 @@ export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
       continue
     }
 
-    if (rule.frequency !== 'none' && (!isCalendarFrequency(rule.frequency) || rule.cron.trim())) {
+    if (rule.frequency !== 'none' && (!isScheduleFrequency(rule.frequency) || rule.cron.trim())) {
       warnings.push(t('automation.frequencyUnreadable'))
       continue
     }
 
     const due = rule.frequency === 'none'
       ? ruleDueState(rule, now.toISOString(), parseCron(rule.cron) !== null)
-      : frequencyReady(rule, now) ? 'ready' : 'waiting'
+      : rule.frequency === 'continuous' || frequencyReady(rule, now) ? 'ready' : 'waiting'
     if (due === 'invalid') {
       warnings.push(t('automation.cronUnreadableFor', { name: truncate(rule.name, 24) }))
       continue
@@ -80,7 +81,7 @@ export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
     if (due === 'waiting') continue
 
     if (!canEnqueueRule(rule,
-      rule.whenIdle ? repo.countProjectTasks(db, project.id, BUSY_TASK_STATUSES) : 0,
+      waitsForIdle(rule) ? repo.countProjectTasks(db, project.id, BUSY_TASK_STATUSES) : 0,
       repo.countRuleTasks(db, rule.id, rule.blockStatuses))) continue
 
     created.push(enqueueFromRule(db, rule, now))
@@ -120,8 +121,15 @@ function enqueueFromRule(db: Db, rule: TaskRule, now: Date): Task {
     })
     repo.updateTaskRule(db, rule.id, {
       lastEnqueuedAt: now.toISOString(),
-      dueAt: rule.frequency === 'none' ? nextDueAt(rule.cron, now) : frequencyDueAt(rule.frequency, now.toISOString(), now)
+      dueAt: scheduleDueAt(rule, now.toISOString(), now)
     })
     return task
   })
+}
+
+/** The next eligible period or cron deadline. A continuous rule has neither. */
+export function scheduleDueAt(rule: { frequency?: Frequency; cron: string }, lastEnqueuedAt: string | null, now: Date): string | null {
+  const frequency = rule.frequency ?? 'none'
+  if (frequency === 'none') return nextDueAt(rule.cron, now)
+  return isCalendarFrequency(frequency) ? frequencyDueAt(frequency, lastEnqueuedAt, now) : null
 }

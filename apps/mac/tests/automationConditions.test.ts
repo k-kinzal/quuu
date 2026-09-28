@@ -4,10 +4,11 @@ import type { TaskRule } from '../src/main/automation/conditions.js'
 
 describe('automatic task gates', () => {
   it('enqueues only when both the idle and the duplicate conditions are satisfied', () => {
-    expect(canEnqueueRule({ whenIdle: true }, 0, 0)).toBe(true)
-    expect(canEnqueueRule({ whenIdle: true }, 1, 0)).toBe(false)
-    expect(canEnqueueRule({ whenIdle: false }, 1, 0)).toBe(true)
-    expect(canEnqueueRule({ whenIdle: false }, 0, 1)).toBe(false)
+    expect(canEnqueueRule({ whenIdle: true, frequency: 'none' }, 0, 0)).toBe(true)
+    expect(canEnqueueRule({ whenIdle: true, frequency: 'none' }, 1, 0)).toBe(false)
+    expect(canEnqueueRule({ whenIdle: false, frequency: 'none' }, 1, 0)).toBe(true)
+    expect(canEnqueueRule({ whenIdle: false, frequency: 'none' }, 0, 1)).toBe(false)
+    expect(canEnqueueRule({ whenIdle: false, frequency: 'continuous' }, 1, 0)).toBe(false)
   })
   it('never loses an overdue occurrence, and distinguishes a missing due time from invalid syntax', () => {
     const now = '2026-09-06T12:00:00.000Z'

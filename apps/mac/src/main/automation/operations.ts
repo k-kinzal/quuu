@@ -5,8 +5,8 @@ import type { Task } from '../tasks/types.js'
 import type { TaskRule, TaskRuleInput } from './conditions.js'
 import { hasRuleCondition } from './conditions.js'
 import { isValidCron, nextCronIso } from './cron.js'
-import { enqueueRuleNow, nextDueAt } from './evaluate.js'
-import { frequencyDueAt, isCalendarFrequency } from './frequency.js'
+import { enqueueRuleNow, scheduleDueAt } from './evaluate.js'
+import { isScheduleFrequency } from './frequency.js'
 
 export class AutomationOperations {
   preview(input: Pick<TaskRuleInput, 'whenIdle' | 'cron' | 'frequency' | 'blockStatuses'>) {
@@ -84,13 +84,12 @@ export class AutomationOperations {
 
   private validSchedule(rule: Pick<TaskRuleInput, 'frequency' | 'cron'>): boolean {
     if (rule.frequency && rule.frequency !== 'none') {
-      return isCalendarFrequency(rule.frequency) && !rule.cron.trim()
+      return isScheduleFrequency(rule.frequency) && !rule.cron.trim()
     }
     return !rule.cron.trim() || isValidCron(rule.cron)
   }
 
   private dueAt(rule: Pick<TaskRuleInput, 'frequency' | 'cron'>, lastEnqueuedAt: string | null): string | null {
-    return rule.frequency && rule.frequency !== 'none'
-      ? frequencyDueAt(rule.frequency, lastEnqueuedAt, new Date()) : nextDueAt(rule.cron)
+    return scheduleDueAt(rule, lastEnqueuedAt, new Date())
   }
 }

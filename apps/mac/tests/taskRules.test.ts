@@ -101,6 +101,7 @@ describe('automatic tasks - dated titles', () => {
     { label: 'weekdays', frequency: 'weekdays', cron: '', suffix: '2026/01/05 06:07:08' },
     { label: 'weekly', frequency: 'weekly', cron: '', suffix: '2026/01/05' },
     { label: 'idle only', frequency: 'none', cron: '', suffix: '2026/01/05 06:07:08' },
+    { label: 'continuous', frequency: 'continuous', cron: '', suffix: '2026/01/05 06:07:08' },
     { label: 'hourly cron', frequency: 'none', cron: '@hourly', suffix: '2026/01/05 06:07:08' },
     { label: 'daily cron', frequency: 'none', cron: '@daily', suffix: '2026/01/05 06:07:08' },
     { label: 'midnight cron', frequency: 'none', cron: '@midnight', suffix: '2026/01/05 06:07:08' },
@@ -406,5 +407,42 @@ describe('automatic tasks - calendar frequency without a time', () => {
     repo.updateTaskRule(db, rule.id, { enabled: true })
     expect(runTaskRules(db, at(21, 23)).created).toHaveLength(0)
     expect(runTaskRules(db, at(22)).created).toHaveLength(1)
+  })
+})
+
+describe('automatic tasks - continuously', () => {
+  const at = (minute: number) => new Date(2026, 8, 21, 12, minute)
+
+  it('queues the next task as soon as the previous one leaves the queue, without waiting for a human', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'continuous', blockStatuses: ['held', 'queued', 'running', 'failed'] })
+    const [first] = runTaskRules(db, at(0)).created
+    expect(first).toBeDefined()
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBeNull()
+    expect(runTaskRules(db, at(1)).created).toHaveLength(0)
+
+    repo.setTaskStatus(db, first.id, 'review')
+    const [second] = runTaskRules(db, at(2)).created
+    expect(second).toBeDefined()
+
+    repo.setTaskStatus(db, second.id, 'failed')
+    expect(runTaskRules(db, at(3)).created).toHaveLength(0)
+  })
+
+  it('waits for the whole project queue to empty even when the idle flag is off', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { frequency: 'continuous', whenIdle: false })
+    const other = makeTask(db, project, 'Someone else')
+    expect(runTaskRules(db, at(0)).created).toHaveLength(0)
+    repo.setTaskStatus(db, other, 'review')
+    expect(runTaskRules(db, at(1)).created).toHaveLength(1)
+  })
+
+  it('refuses a cron expression alongside it rather than enqueuing on an unread schedule', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { frequency: 'continuous', cron: '0 3 * * *' })
+    const result = runTaskRules(db, at(0))
+    expect(result.created).toHaveLength(0)
+    expect(result.warnings).toHaveLength(1)
   })
 })

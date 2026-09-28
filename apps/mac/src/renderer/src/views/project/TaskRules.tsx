@@ -35,8 +35,8 @@ import type { Project } from '../../../../api/schemas/projects.js'
 import type { TaskStatus } from '../../../../api/schemas/tasks.js'
 import { userAgents } from '../../model/agents.js'
 import { t } from '../../model/i18n/index.js'
-import { DEFAULT_BLOCK_STATUSES } from '../../model/ruleDraft.js'
-import { ruleConditionLabel, ruleScheduleLabel, ruleSummaryDetail, scheduleOptions, type ScheduleChoice } from '../../model/ruleSchedule.js'
+import { CONTINUOUS_BLOCK_STATUSES, DEFAULT_BLOCK_STATUSES } from '../../model/ruleDraft.js'
+import { frequencyHint, ruleConditionLabel, ruleScheduleLabel, ruleSummaryDetail, scheduleOptions, type ScheduleChoice } from '../../model/ruleSchedule.js'
 import { OPEN_STATUSES } from '../../model/taskStatus.js'
 
 import { usePreview } from '../../interaction/usePreview.js'
@@ -342,7 +342,7 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
 
         <Section title={t('taskRules.whenSection')}>
           <Field label={t('taskRules.frequency')} width="md"
-            hint={draft.frequency !== 'none' ? t(draft.frequency === 'weekly' ? 'taskRules.weeklyHint' : draft.frequency === 'weekdays' ? 'taskRules.weekdaysHint' : 'taskRules.dailyHint') : undefined}>
+            hint={frequencyHint(draft.frequency)}>
             <Select
               aria-label={t('taskRules.frequency')}
               value={schedule}
@@ -350,16 +350,23 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
               onChange={(e) => {
                 const choice = e.target.value
                 setSchedule(choice)
-                setDraft((d) => ({ ...d, frequency: choice === 'cron' ? 'none' : choice, cron: choice === 'cron' ? d.cron : '' }))
+                setDraft((d) => ({
+                  ...d,
+                  frequency: choice === 'cron' ? 'none' : choice,
+                  cron: choice === 'cron' ? d.cron : '',
+                  // Continuous exists to keep going, so the defaults that stop it at the first review give way
+                  ...(choice === 'continuous' && d.frequency !== 'continuous' ? { whenIdle: true, blockStatuses: CONTINUOUS_BLOCK_STATUSES } : {})
+                }))
                 setDirty(true)
               }}
             />
           </Field>
-          <Checkbox
+          {/* Continuous is the idle gate itself; the checkbox would be a switch that does nothing */}
+          {draft.frequency !== 'continuous' && <Checkbox
             label={t('taskRules.onlyWhenIdle')}
             checked={draft.whenIdle}
             onChange={(v: boolean) => patch('whenIdle', v)}
-          />
+          />}
 
           {schedule === 'cron' && <Field
             label={t('taskRules.cron')}

@@ -8,9 +8,21 @@ export function scheduleOptions(): { value: ScheduleChoice; label: string }[] {
     { value: 'daily', label: t('taskRules.daily') },
     { value: 'weekly', label: t('taskRules.weekly') },
     { value: 'weekdays', label: t('taskRules.weekdays') },
+    { value: 'continuous', label: t('taskRules.continuous') },
     { value: 'none', label: t('taskRules.noFrequency') },
     { value: 'cron', label: t('taskRules.customCron') }
   ]
+}
+
+const FREQUENCY_HINT = {
+  daily: 'taskRules.dailyHint',
+  weekly: 'taskRules.weeklyHint',
+  weekdays: 'taskRules.weekdaysHint',
+  continuous: 'taskRules.continuousHint'
+} as const satisfies Record<Exclude<TaskRule['frequency'], 'none'>, string>
+
+export function frequencyHint(frequency: TaskRule['frequency']): string | undefined {
+  return frequency === 'none' ? undefined : t(FREQUENCY_HINT[frequency])
 }
 
 export function ruleScheduleLabel(rule: TaskRule): string {
@@ -21,7 +33,8 @@ export function ruleScheduleLabel(rule: TaskRule): string {
 
 function ruleConditionParts(rule: TaskRule): string[] {
   const parts: string[] = []
-  if (rule.whenIdle) parts.push(t('taskRules.whenIdle'))
+  // Continuous already says "whenever the queue is empty" in its own column
+  if (rule.whenIdle && rule.frequency !== 'continuous') parts.push(t('taskRules.whenIdle'))
   if (rule.blockStatuses.length > 0) parts.push(t('taskRules.noDuplicates'))
   return parts
 }
@@ -42,7 +55,7 @@ export function ruleSummaryLabel(rule: TaskRule): string {
 export function ruleSummaryDetail(rule: TaskRule): string {
   const parts: string[] = []
   if (rule.frequency !== 'none' || rule.cron) parts.push(ruleScheduleLabel(rule))
-  if (rule.whenIdle) parts.push(t('taskRules.idleDetail'))
+  if (rule.whenIdle || rule.frequency === 'continuous') parts.push(t('taskRules.idleDetail'))
   if (rule.blockStatuses.length > 0) parts.push(t('taskRules.duplicatesDetail', {
     statuses: rule.blockStatuses.map((status) => t(`taskStatus.${status}`)).join(' / ')
   }))

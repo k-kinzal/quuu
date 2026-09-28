@@ -44,7 +44,8 @@ export const TaskRuleSchema = z.object({
    * at 3:00 would be skipped entirely.
    */
   cron: z.string(),
-  frequency: z.enum(['none', 'daily', 'weekly', 'weekdays']),
+  /** `continuous` enqueues whenever the project's queue is empty; it implies `whenIdle`. */
+  frequency: z.enum(['none', 'daily', 'weekly', 'weekdays', 'continuous']),
   /**
    * Task states that count as duplicates.
    *

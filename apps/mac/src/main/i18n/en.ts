@@ -364,7 +364,7 @@ export const en = {
     outsideReports: 'Only generated reports can be shown'
   },
   automation: {
-    frequencyUnreadable: 'Choose a daily, weekly, or weekday frequency without a cron expression',
+    frequencyUnreadable: 'Choose a daily, weekly, weekday, or continuous frequency without a cron expression',
     noConditions: 'Automation "{{name}}" has no conditions',
     cronUnreadableFor: 'The cron expression of automation "{{name}}" cannot be read',
     nameRequired: 'Enter a name',

@@ -520,7 +520,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "none",
                   "daily",
                   "weekly",
-                  "weekdays"
+                  "weekdays",
+                  "continuous"
                 ]
               },
               "blockStatuses": {
@@ -6519,7 +6520,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "none",
               "daily",
               "weekly",
-              "weekdays"
+              "weekdays",
+              "continuous"
             ]
           },
           "blockStatuses": {
@@ -6610,7 +6612,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "none",
             "daily",
             "weekly",
-            "weekdays"
+            "weekdays",
+            "continuous"
           ]
         },
         "blockStatuses": {
@@ -6709,7 +6712,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "none",
             "daily",
             "weekly",
-            "weekdays"
+            "weekdays",
+            "continuous"
           ]
         },
         "blockStatuses": {
@@ -6794,7 +6798,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "none",
             "daily",
             "weekly",
-            "weekdays"
+            "weekdays",
+            "continuous"
           ]
         },
         "blockStatuses": {
@@ -6919,7 +6924,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                 "none",
                 "daily",
                 "weekly",
-                "weekdays"
+                "weekdays",
+                "continuous"
               ]
             },
             "blockStatuses": {
@@ -6999,7 +7005,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "none",
             "daily",
             "weekly",
-            "weekdays"
+            "weekdays",
+            "continuous"
           ]
         },
         "blockStatuses": {
