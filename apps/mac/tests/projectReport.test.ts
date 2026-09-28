@@ -129,7 +129,10 @@ describe('daily project reports', () => {
     finish()
     const second = ops.report(projectId)!
     expect(second.path).not.toBe(first.path)
-    expect(existsSync(first.path)).toBe(false)
+    // The assessment it replaced stays readable, listed after the one shown now
+    expect(existsSync(first.path)).toBe(true)
+    expect(ops.history(projectId).map(entry => [entry.path, entry.current])).toEqual([[second.path, true], [first.path, false]])
+    expect(ops.page(projectId, ops.history(projectId)[1].id)).toBe(first.path)
     yesterday()
     await ops.checkDaily()
     expect(spawnReport).toHaveBeenCalledTimes(2)

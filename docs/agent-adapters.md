@@ -43,8 +43,12 @@ The last two are `SessionDerivation`s (`session/derive.ts`). The index applies t
 transaction that persists each page, so the screen and what was derived from it never
 disagree; when a rule changes, `DERIVATION_VERSION` is bumped and the durable pages are handed
 back to every derivation without parsing a log again. When a parser starts reading something
-new, its `parserVersion` is bumped instead: the session is read again from the provider's file
-and the pages under the old version are dropped at startup.
+new, its `parserVersion` is bumped instead: at startup the pages under the old version move to
+the new key with an empty stamp, so a session whose file still exists is read again under the
+new parser, and one whose file the CLI already deleted keeps the pages it has - they are the
+only copy left. Pages leave only through retention (`retentionDays`, off by default), which
+empties a session that has not changed within the period but keeps its row, its working
+directories and everything it filed against the task.
 
 Whatever a rule needs has to arrive on the record. The working directory is the example: it
 used to be scanned out of the raw file with a regular expression, which matched Claude's

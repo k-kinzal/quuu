@@ -335,6 +335,7 @@ export const en = {
     filePathUnreadable: 'Cannot read the file path',
     outsideProject: 'Files outside the project cannot be opened',
     taskDiffRevisionUnreadable: 'Cannot read the revision of the task diff',
+    historyNotFound: 'No review was kept for that run',
     taskDiffUnreadable: 'Cannot read the task diff',
     fileMissingInRevision: 'The file is not in this revision',
     commitUnreadable: 'Cannot read the commit',
@@ -360,6 +361,7 @@ export const en = {
     timedOut: 'The report did not finish within {{minutes}} minutes',
     oddExit: 'The generator ended with code {{code}}, so the report may be incomplete',
     noPage: 'The generator wrote no report',
+    historyNotFound: 'That report is no longer kept',
     failedExit: 'The generator ended with code {{code}} and wrote no report',
     outsideReports: 'Only generated reports can be shown'
   },

@@ -1452,6 +1452,11 @@ if (process.env.QUUU_FIXTURE_REVIEW === '1') {
   rmSync(join(cwd, 'removed'), { recursive: true })
   git('add', '-A')
   git('commit', '-qm', 'Add, remove and modify files')
+  // The review as the run left it, kept apart from the current projection: the first commit's changes and one Pull Request back then
+  repo.recordReviewHistory(db, id, task.id, { cwd, branch: 'main', repository: 'example/colors', tree: [],
+    changes: [{ path: 'src/index.ts', change: 'modified' }, { path: 'new/components/Row.tsx', change: 'added' }], localChanges: [], stagedChanges: [],
+    revision: { base: baseTree, head: git('rev-parse', 'HEAD^{tree}') }, localRevision: null, stagedRevision: null,
+    commits: [], pullRequests: pulls.slice(0, 1), coverage: null, projectTasks: [] })
   writeFileSync(join(cwd, 'docs/README.md'), '# Updated documentation\n')
   git('add', 'docs/README.md')
   git('commit', '-qm', 'Update documentation')
@@ -1637,6 +1642,15 @@ repo.saveTaskReport(db, {
   exitPath: ''
 })
 writeFileSync(join(reportHome, 'rpt_fixture.log'), '# Quuu report\n# fixture\n')
+// An earlier page the current one replaced. Kept on disk and on record, reachable from the pane's clock
+const earlierReportPage = join(reportHome, 'rpt_fixture_earlier.html')
+writeFileSync(earlierReportPage, `<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><link rel="stylesheet" href="${REPORT_ASSET_HREF}/${REPORT_STYLE_FILE}"><title>以前のレポート</title></head>
+<body><article class="sheet"><p class="eyebrow">変更レポート / 以前の版</p><h1>最初のランが残したもの</h1>
+<p class="stand">この版は次のレポートに置き換えられましたが、履歴から開けます。</p></article></body></html>
+`)
+repo.addReportHistory(db, { taskId: reportTaskId }, { path: earlierReportPage, revision: '', generatedAt: iso(40) })
+repo.addReportHistory(db, { taskId: reportTaskId }, { path: reportPage, revision: '', generatedAt: iso(20) })
 
 // A project assessment is a separate artifact from the task's change report.
 const projectReportHome = join(dir, 'reports', projects[0].id)

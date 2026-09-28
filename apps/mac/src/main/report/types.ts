@@ -54,6 +54,17 @@ export interface StoredReport extends TaskReport {
   exitPath: string
 }
 
+/** A page a generation produced, kept after newer ones replaced it (`report_history`). */
+export interface ReportHistoryEntry {
+  id: string
+  path: string
+  /** The tree the page describes. */
+  revision: string
+  generatedAt: string
+  /** Whether this is the page the report shows now. */
+  current: boolean
+}
+
 /** The last readable project assessment, kept while its replacement is written. */
 export interface ProjectReport extends Omit<TaskReport, 'taskId'> {
   projectId: string

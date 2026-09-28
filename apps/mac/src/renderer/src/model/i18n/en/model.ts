@@ -113,10 +113,14 @@ export const model = {
         comment: 'send the comment',
         openPullRequest: 'open the PR',
         hidePullRequest: 'toggle the PR',
-        closePullRequest: 'close the PR'
+        closePullRequest: 'close the PR',
+        history: 'load the review history',
+        historySnapshot: 'load the review as that run left it'
       },
       report: {
         get: 'load the report',
+        history: 'load earlier reports',
+        projectHistory: 'load earlier assessments',
         generate: 'start writing the report',
         show: 'show the report',
         hide: 'hide the report'

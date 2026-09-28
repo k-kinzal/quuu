@@ -199,7 +199,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('34')
+    expect(version.value).toBe('35')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +267,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('34')
+    expect(version.value).toBe('35')
     db.close()
   })
 
@@ -574,7 +574,7 @@ describe('schema migration', () => {
     // A message that turns out to record nothing takes its row away
     repo.writeSessionWorkDirs(migrated, 'log', 'g1', 1, [])
     expect(repo.readSessionWorkDirs(migrated, 'log', 'g1')).toEqual(['/a'])
-    repo.finishSessionIndex(migrated, 'log', { stamp: 's', generation: 'g2', title: null, total: 1, evidenceVersion: 0 })
+    repo.finishSessionIndex(migrated, 'log', { stamp: 's', generation: 'g2', title: null, total: 1, evidenceVersion: 0, updatedAt: '' })
     expect(repo.readSessionWorkDirs(migrated, 'log', 'g1')).toEqual([])
     expect(repo.readSessionWorkDirs(migrated, 'log', 'g2')).toEqual(['/z'])
     migrated.close()
@@ -809,4 +809,39 @@ it('adds opt-in Runners without rerouting existing projects or losing queued tas
   const reopened = openDatabase(path)
   expect(repo.getProject(reopened, projectId)).toMatchObject({ runnerEnabled: true, gitRemote: 'https://example.test/repository.git' })
   reopened.close()
+})
+
+/*
+ * v34 -> v35: what used to be written over is kept. A session indexed before gets the upgrade as
+ * its age (when its log last changed was never recorded, and retention must not remove on a
+ * guess); the pages reports show now start their history; review history starts from here.
+ */
+it('dates indexed sessions from the upgrade, carries current report pages into their history, and starts review history', () => {
+  const old = openDatabase(path)
+  const agentId = makeAgent(old, { name: 'history migration' })
+  const projectId = makeProject(old, { name: 'existing', targetId: agentId })
+  const taskId = makeTask(old, projectId, 'existing task')
+  repo.saveTaskReport(old, { taskId, status: 'ready', revision: 'r1', path: '/reports/task/rpt_a.html', logPath: '', error: '',
+    startedAt: '2026-09-01T00:00:00.000Z', endedAt: '2026-09-01T00:05:00.000Z', cwd: '/work', pid: null, pending: '', exitPath: '' })
+  repo.saveProjectReport(old, { projectId, status: 'ready', revision: 'p1', pendingRevision: '', path: '/reports/project/rpt_b.html',
+    logPath: '', error: '', startedAt: '2026-09-02T00:00:00.000Z', endedAt: null, cwd: '/work', pid: null, pending: '', exitPath: '',
+    checkedAt: '2026-09-02T00:00:00.000Z' })
+  old.exec(`DROP TABLE task_review_history; DROP TABLE report_history; DROP INDEX idx_session_indexes_updated;
+    ALTER TABLE session_indexes DROP COLUMN updated_at; ALTER TABLE session_indexes DROP COLUMN pruned_at;
+    INSERT INTO session_indexes (log_key, stamp, generation, title, total, evidence_version) VALUES ('v1:claude:/log', 's', 'g', NULL, 1, 0);
+    DELETE FROM meta WHERE key = 'review_history_since';
+    UPDATE meta SET value = '34' WHERE key = 'schema_version'`)
+  old.close()
+
+  const before = new Date().toISOString()
+  const upgraded = openDatabase(path)
+  expect(repo.getSessionIndex(upgraded, 'v1:claude:/log')).toMatchObject({ total: 1, prunedAt: null })
+  expect(repo.getSessionIndex(upgraded, 'v1:claude:/log')!.updatedAt >= before).toBe(true)
+  expect(repo.listReportHistory(upgraded, { taskId })).toMatchObject([
+    { path: '/reports/task/rpt_a.html', revision: 'r1', generatedAt: '2026-09-01T00:05:00.000Z' }])
+  expect(repo.listReportHistory(upgraded, { projectId })).toMatchObject([
+    { path: '/reports/project/rpt_b.html', revision: 'p1', generatedAt: '2026-09-02T00:00:00.000Z' }])
+  expect(repo.getMeta(upgraded, 'review_history_since')! >= before).toBe(true)
+  expect(repo.listReviewHistory(upgraded, taskId)).toEqual([])
+  upgraded.close()
 })

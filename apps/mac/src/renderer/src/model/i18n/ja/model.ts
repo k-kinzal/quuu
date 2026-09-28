@@ -114,10 +114,14 @@ export const model: typeof en = {
         comment: 'コメントの送信',
         openPullRequest: 'PR の表示',
         hidePullRequest: 'PR の表示切替',
-        closePullRequest: 'PR の終了'
+        closePullRequest: 'PR の終了',
+        history: 'レビュー履歴の読み込み',
+        historySnapshot: 'ラン終了時点のレビューの読み込み'
       },
       report: {
         get: 'レポートの読み込み',
+        history: '過去のレポートの読み込み',
+        projectHistory: '過去の評価の読み込み',
         generate: 'レポート作成の開始',
         show: 'レポートの表示',
         hide: 'レポートの非表示'

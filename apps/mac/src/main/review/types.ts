@@ -125,6 +125,15 @@ export interface ReviewSnapshot {
   pullRequestNotice?: string
 }
 
+/** A run whose review was kept as it left it (`task_review_history`). */
+export interface ReviewHistoryPoint {
+  runId: string
+  /** When the run ended - the moment the kept review describes. */
+  endedAt: string
+  /** When the review was looked at and kept, shortly after. */
+  recordedAt: string
+}
+
 /** An immutable pair of Git objects, so the list and the contents are read from the same version. */
 export interface ReviewRevision {
   base: string

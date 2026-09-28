@@ -20,6 +20,7 @@ A project-level setting overrides the app's for that project ([projects](project
 | notifications | `notifyOnReview`, `notifyOnFailure` |
 | isolate new tasks in Git worktrees | `worktreeEnabled` (projects can override with `worktreeMode`) |
 | import sessions started outside Quuu | `importExternalSessions`, `importHistoryDays` (0 = all), `importCreateProjects`; `quuu importer sync` imports now |
+| how long recorded history is kept | `retentionDays`: conversations, the review each run left, replaced report pages (0 = forever, the default) |
 | iPhone sync over iCloud Drive | `mobileSyncEnabled`; `quuu mobile status`, `quuu mobile sync-now` |
 | appearance | `theme`: `dark`, `light`, `system` |
 | default IDE | `editorApp` (absolute `.app` path; `quuu open editors` lists them) |

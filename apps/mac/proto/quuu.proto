@@ -4077,6 +4077,7 @@ message SessionLoadResponseValue {
   optional SessionLoadResponseValueMessages messages = 10;
   optional bool hasMore = 11;
   optional double totalMessages = 12;
+  optional string prunedAt = 13;
 }
 
 message SessionLoadResponse {
@@ -4268,6 +4269,7 @@ message SessionLoadMoreResponseValue {
   optional SessionLoadMoreResponseValueMessages messages = 10;
   optional bool hasMore = 11;
   optional double totalMessages = 12;
+  optional string prunedAt = 13;
 }
 
 message SessionLoadMoreResponse {
@@ -5232,6 +5234,7 @@ message SettingsSetIdentityResponseValue {
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
   optional bool importCreateProjects = 8;
+  optional double retentionDays = 31;
   optional bool commitIdentityEnabled = 9;
   optional SettingsSetIdentityResponseValueCommitIdentity commitIdentity = 10;
   optional string editorApp = 11;
@@ -5301,6 +5304,7 @@ message SettingsGetResponseValue {
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
   optional bool importCreateProjects = 8;
+  optional double retentionDays = 31;
   optional bool commitIdentityEnabled = 9;
   optional SettingsGetResponseValueCommitIdentity commitIdentity = 10;
   optional string editorApp = 11;
@@ -5366,6 +5370,7 @@ message SettingsSetRequestValue {
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
   optional bool importCreateProjects = 8;
+  optional double retentionDays = 31;
   optional bool commitIdentityEnabled = 9;
   optional SettingsSetRequestValueCommitIdentity commitIdentity = 10;
   optional string editorApp = 11;
@@ -5431,6 +5436,7 @@ message SettingsSetResponseValue {
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
   optional bool importCreateProjects = 8;
+  optional double retentionDays = 31;
   optional bool commitIdentityEnabled = 9;
   optional SettingsSetResponseValueCommitIdentity commitIdentity = 10;
   optional string editorApp = 11;
@@ -6204,6 +6210,278 @@ message ReviewRefreshResponse {
   optional ReviewRefreshResponseValue value = 1;
 }
 
+message ReviewHistoryRequest {
+  optional string value = 1;
+}
+
+message ReviewHistoryResponseValueItem {
+  optional string runId = 1;
+  optional string endedAt = 2;
+  optional string recordedAt = 3;
+}
+
+message ReviewHistoryResponseValue {
+  repeated ReviewHistoryResponseValueItem items = 1;
+}
+
+message ReviewHistoryResponse {
+  optional ReviewHistoryResponseValue value = 1;
+}
+
+message ReviewHistorySnapshotRequestValue {
+  optional string taskId = 1;
+  optional string runId = 2;
+}
+
+message ReviewHistorySnapshotRequest {
+  optional ReviewHistorySnapshotRequestValue value = 1;
+}
+
+message ReviewHistorySnapshotResponseValueRepository {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewHistorySnapshotResponseValueTree {
+  repeated google.protobuf.Value items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewHistorySnapshotResponseValueChanges {
+  repeated ReviewHistorySnapshotResponseValueChangesItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueLocalChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewHistorySnapshotResponseValueLocalChanges {
+  repeated ReviewHistorySnapshotResponseValueLocalChangesItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueStagedChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewHistorySnapshotResponseValueStagedChanges {
+  repeated ReviewHistorySnapshotResponseValueStagedChangesItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewHistorySnapshotResponseValueRevision {
+  oneof kind {
+  ReviewHistorySnapshotResponseValueRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewHistorySnapshotResponseValueLocalRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewHistorySnapshotResponseValueLocalRevision {
+  oneof kind {
+  ReviewHistorySnapshotResponseValueLocalRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewHistorySnapshotResponseValueStagedRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewHistorySnapshotResponseValueStagedRevision {
+  oneof kind {
+  ReviewHistorySnapshotResponseValueStagedRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewHistorySnapshotResponseValueCommitsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCommitsItemFiles {
+  repeated ReviewHistorySnapshotResponseValueCommitsItemFilesItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueCommitsItem {
+  optional string sha = 1;
+  optional string shortSha = 2;
+  optional string subject = 3;
+  optional string author = 4;
+  optional string committedAt = 5;
+  optional ReviewHistorySnapshotResponseValueCommitsItemFiles files = 6;
+}
+
+message ReviewHistorySnapshotResponseValueCommits {
+  repeated ReviewHistorySnapshotResponseValueCommitsItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValuePullRequestsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewHistorySnapshotResponseValuePullRequestsItemFiles {
+  repeated ReviewHistorySnapshotResponseValuePullRequestsItemFilesItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValuePullRequestsItem {
+  optional double number = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string headRefName = 4;
+  optional string baseRefName = 5;
+  optional string headSha = 6;
+  optional bool draft = 7;
+  optional string updatedAt = 8;
+  optional string check = 9;
+  optional string mergeState = 10;
+  optional string state = 11;
+  optional ReviewHistorySnapshotResponseValuePullRequestsItemFiles files = 12;
+}
+
+message ReviewHistorySnapshotResponseValuePullRequests {
+  repeated ReviewHistorySnapshotResponseValuePullRequestsItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1Lines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1Functions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1Branches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1Statements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemLines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemFunctions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemBranches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemStatements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemUncoveredLines {
+  repeated double items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1FilesItem {
+  optional string path = 1;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemLines lines = 2;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemFunctions functions = 3;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemBranches branches = 4;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemStatements statements = 5;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemUncoveredLines uncoveredLines = 6;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1Files {
+  repeated ReviewHistorySnapshotResponseValueCoverageVariant1FilesItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValueCoverageVariant1 {
+  optional string source = 1;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1Lines lines = 2;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1Functions functions = 3;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1Branches branches = 4;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1Statements statements = 5;
+  optional ReviewHistorySnapshotResponseValueCoverageVariant1Files files = 6;
+}
+
+message ReviewHistorySnapshotResponseValueCoverage {
+  oneof kind {
+  ReviewHistorySnapshotResponseValueCoverageVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewHistorySnapshotResponseValueProjectTasksItem {
+  optional string id = 1;
+  optional string label = 2;
+  optional string source = 3;
+  optional string command = 4;
+}
+
+message ReviewHistorySnapshotResponseValueProjectTasks {
+  repeated ReviewHistorySnapshotResponseValueProjectTasksItem items = 1;
+}
+
+message ReviewHistorySnapshotResponseValue {
+  optional bool preparing = 1;
+  optional string error = 2;
+  optional string cwd = 3;
+  optional string branch = 4;
+  optional ReviewHistorySnapshotResponseValueRepository repository = 5;
+  optional ReviewHistorySnapshotResponseValueTree tree = 6;
+  optional ReviewHistorySnapshotResponseValueChanges changes = 7;
+  optional ReviewHistorySnapshotResponseValueLocalChanges localChanges = 8;
+  optional ReviewHistorySnapshotResponseValueStagedChanges stagedChanges = 9;
+  optional ReviewHistorySnapshotResponseValueRevision revision = 10;
+  optional ReviewHistorySnapshotResponseValueLocalRevision localRevision = 11;
+  optional ReviewHistorySnapshotResponseValueStagedRevision stagedRevision = 12;
+  optional ReviewHistorySnapshotResponseValueCommits commits = 13;
+  optional ReviewHistorySnapshotResponseValuePullRequests pullRequests = 14;
+  optional ReviewHistorySnapshotResponseValueCoverage coverage = 15;
+  optional ReviewHistorySnapshotResponseValueProjectTasks projectTasks = 16;
+  optional string pullRequestNotice = 17;
+}
+
+message ReviewHistorySnapshotResponse {
+  optional ReviewHistorySnapshotResponseValue value = 1;
+}
+
 message ReviewFileRequestValue {
   optional string taskId = 1;
   optional google.protobuf.Value request = 2;
@@ -6412,6 +6690,7 @@ message ReportProjectShowRequestValueBounds {
 message ReportProjectShowRequestValue {
   optional string projectId = 1;
   optional ReportProjectShowRequestValueBounds bounds = 2;
+  optional string historyId = 3;
 }
 
 message ReportProjectShowRequest {
@@ -6425,6 +6704,26 @@ message ReportProjectShowResponseValue {
 
 message ReportProjectShowResponse {
   optional ReportProjectShowResponseValue value = 1;
+}
+
+message ReportProjectHistoryRequest {
+  optional string value = 1;
+}
+
+message ReportProjectHistoryResponseValueItem {
+  optional string id = 1;
+  optional string path = 2;
+  optional string revision = 3;
+  optional string generatedAt = 4;
+  optional bool current = 5;
+}
+
+message ReportProjectHistoryResponseValue {
+  repeated ReportProjectHistoryResponseValueItem items = 1;
+}
+
+message ReportProjectHistoryResponse {
+  optional ReportProjectHistoryResponseValue value = 1;
 }
 
 message ReportGetRequest {
@@ -6483,6 +6782,7 @@ message ReportShowRequestValueBounds {
 message ReportShowRequestValue {
   optional string taskId = 1;
   optional ReportShowRequestValueBounds bounds = 2;
+  optional string historyId = 3;
 }
 
 message ReportShowRequest {
@@ -6496,6 +6796,26 @@ message ReportShowResponseValue {
 
 message ReportShowResponse {
   optional ReportShowResponseValue value = 1;
+}
+
+message ReportHistoryRequest {
+  optional string value = 1;
+}
+
+message ReportHistoryResponseValueItem {
+  optional string id = 1;
+  optional string path = 2;
+  optional string revision = 3;
+  optional string generatedAt = 4;
+  optional bool current = 5;
+}
+
+message ReportHistoryResponseValue {
+  repeated ReportHistoryResponseValueItem items = 1;
+}
+
+message ReportHistoryResponse {
+  optional ReportHistoryResponseValue value = 1;
 }
 
 message ReportHideRequest {
@@ -6865,6 +7185,8 @@ service Quuu {
   rpc OpenEditors(OpenEditorsRequest) returns (OpenEditorsResponse);
   rpc ReviewSnapshot(ReviewSnapshotRequest) returns (ReviewSnapshotResponse);
   rpc ReviewRefresh(ReviewRefreshRequest) returns (ReviewRefreshResponse);
+  rpc ReviewHistory(ReviewHistoryRequest) returns (ReviewHistoryResponse);
+  rpc ReviewHistorySnapshot(ReviewHistorySnapshotRequest) returns (ReviewHistorySnapshotResponse);
   rpc ReviewFile(ReviewFileRequest) returns (ReviewFileResponse);
   rpc ReviewComment(ReviewCommentRequest) returns (ReviewCommentResponse);
   rpc ReviewOpenPullRequest(ReviewOpenPullRequestRequest) returns (ReviewOpenPullRequestResponse);
@@ -6873,9 +7195,11 @@ service Quuu {
   rpc ReportProjectGet(ReportProjectGetRequest) returns (ReportProjectGetResponse);
   rpc ReportProjectGenerate(ReportProjectGenerateRequest) returns (ReportProjectGenerateResponse);
   rpc ReportProjectShow(ReportProjectShowRequest) returns (ReportProjectShowResponse);
+  rpc ReportProjectHistory(ReportProjectHistoryRequest) returns (ReportProjectHistoryResponse);
   rpc ReportGet(ReportGetRequest) returns (ReportGetResponse);
   rpc ReportGenerate(ReportGenerateRequest) returns (ReportGenerateResponse);
   rpc ReportShow(ReportShowRequest) returns (ReportShowResponse);
+  rpc ReportHistory(ReportHistoryRequest) returns (ReportHistoryResponse);
   rpc ReportHide(ReportHideRequest) returns (ReportHideResponse);
   rpc TerminalOpen(TerminalOpenRequest) returns (TerminalOpenResponse);
   rpc TerminalInput(TerminalInputRequest) returns (TerminalInputResponse);

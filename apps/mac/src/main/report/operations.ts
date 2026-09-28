@@ -5,6 +5,7 @@ import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { reportDir, reportRoot } from '../appPaths.js'
 import type { Db } from '../db/database.js'
+import { inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { adapterFor } from '../agent-adapters/registry.js'
 import { t } from '../i18n/index.js'
@@ -20,7 +21,8 @@ import { settleReport, spawnReport } from './generator.js'
 import { REPORT_ASSETS, writeReportAssets } from './assets.js'
 import type { ReportRequest } from './prompt.js'
 import { reportPrompt } from './prompt.js'
-import type { StoredReport, TaskReport } from './types.js'
+import { pruneReportHistory, reportHistory } from './history.js'
+import type { ReportHistoryEntry, StoredReport, TaskReport } from './types.js'
 import type { ReportWriter } from './writer.js'
 import { chooseWriter } from './writer.js'
 
@@ -75,6 +77,27 @@ export class ReportOperations extends EventEmitter {
   report(taskId: string): TaskReport | null {
     const stored = repo.getTaskReport(this.db, taskId)
     return stored ? visible(stored) : null
+  }
+
+  /** Every page the task's report has had, newest first, the one shown now marked. */
+  history(taskId: string): ReportHistoryEntry[] {
+    return reportHistory(this.db, { taskId }, repo.getTaskReport(this.db, taskId)?.path ?? '')
+  }
+
+  /**
+   * Remove pages older than `days` days - task reports and project assessments alike, since they
+   * share one history. 0 keeps everything; the page a report shows now is never removed.
+   */
+  pruneHistory(days: number): number {
+    return pruneReportHistory(this.db, days)
+  }
+
+  /** The page to show: an earlier one by its history entry, or the current one. */
+  page(taskId: string, historyId?: string): string {
+    if (historyId === undefined) return repo.getTaskReport(this.db, taskId)?.path ?? ''
+    const entry = repo.getReportHistory(this.db, { taskId }, historyId)
+    if (!entry) throw new Error(t('report.historyNotFound'))
+    return entry.path
   }
 
   /**
@@ -365,7 +388,6 @@ export class ReportOperations extends EventEmitter {
       if (timedOut && row.pid !== null) killProcessGroup(row.pid, 'SIGTERM')
 
       const ready = result.status === 'ready'
-      const superseded = ready && row.path.length > 0 && row.path !== row.pending ? row.path : null
       /*
        * What the generator said, not what we can infer from an exit code. "It ended with 1" sends
        * a person to the log; "you must acknowledge the model's data policy" is the answer itself.
@@ -375,16 +397,19 @@ export class ReportOperations extends EventEmitter {
       const endedAt = nowIso()
       // Nothing of ours is working there any more, so stop hiding what starts there next
       repo.closeReportSession(this.db, row.cwd, row.startedAt, endedAt)
-      repo.saveTaskReport(this.db, {
-        ...row,
-        status: result.status,
-        path: ready ? row.pending : row.path,
-        error: ready ? reason(result.reason, result.exitCode) : why,
-        endedAt,
-        pid: null,
-        pending: ''
+      inTransaction(this.db, () => {
+        repo.saveTaskReport(this.db, {
+          ...row,
+          status: result.status,
+          path: ready ? row.pending : row.path,
+          error: ready ? reason(result.reason, result.exitCode) : why,
+          endedAt,
+          pid: null,
+          pending: ''
+        })
+        // The page it replaces stays on disk and in the history; only retention removes one.
+        if (ready) repo.addReportHistory(this.db, { taskId: row.taskId }, { path: row.pending, revision: row.revision, generatedAt: endedAt })
       })
-      if (superseded) rmSync(superseded, { force: true })
       if (!ready) this.told(row.taskId, why)
     }
   }

@@ -11,8 +11,8 @@ import { TaskRuleInputSchema, TaskRuleSchema } from "./schemas/automation.js"
 import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./schemas/desktop.js"
 import { RunSchema, SchedulerStatusSchema } from "./schemas/execution.js"
 import { ProjectInputSchema, ProjectSchema } from "./schemas/projects.js"
-import { ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
-import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewSnapshotSchema } from "./schemas/review.js"
+import { ReportHistoryEntrySchema, ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
+import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewHistoryPointSchema, ReviewSnapshotSchema } from "./schemas/review.js"
 import { SessionMessageSchema, SessionSnapshotSchema } from "./schemas/session.js"
 import { NetworkConfigSchema, NetworkPairSchema, NetworkStatusSchema } from "./schemas/network.js"
 import { ServerStatusSchema, AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./schemas/settings.js"
@@ -194,6 +194,8 @@ export const contract = {
   review: {
     snapshot: procedure.input(z.string()).output(ReviewSnapshotSchema),
     refresh: procedure.input(z.string()).output(ReviewSnapshotSchema),
+    history: procedure.input(z.string()).output(ReviewHistoryPointSchema.array()),
+    historySnapshot: procedure.input(z.object({ taskId: z.string(), runId: z.string() })).output(ReviewSnapshotSchema),
     file: procedure.input(z.object({
       taskId: z.string(),
       request: ReviewFileRequestSchema
@@ -210,9 +212,11 @@ export const contract = {
     projectGet: procedure.input(z.string()).output(z.union([ProjectReportSchema, z.null()])),
     projectGenerate: procedure.input(z.string()).output(ReviewActionResultSchema),
     projectShow: procedure.input(ProjectReportViewRequestSchema.strict()).output(ReviewActionResultSchema),
+    projectHistory: procedure.input(z.string()).output(ReportHistoryEntrySchema.array()),
     get: procedure.input(z.string()).output(z.union([TaskReportSchema, z.null()])),
     generate: procedure.input(z.string()).output(ReviewActionResultSchema),
     show: procedure.input(ReportViewRequestSchema.strict()).output(ReviewActionResultSchema),
+    history: procedure.input(z.string()).output(ReportHistoryEntrySchema.array()),
     hide: procedure.output(ReviewActionResultSchema),
   },
   terminal: {

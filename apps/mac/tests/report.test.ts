@@ -7,6 +7,7 @@ import type { Db } from '../src/main/db/database.js'
 import * as repo from '../src/main/db/repo.js'
 import { settleReport } from '../src/main/report/generator.js'
 import { ReportOperations, alreadyReported } from '../src/main/report/operations.js'
+import { pruneReportHistory } from '../src/main/report/history.js'
 import type { StoredReport } from '../src/main/report/types.js'
 import type { Project } from '../src/main/projects/types.js'
 import { REPORT_ASSETS, REPORT_NOTICE_FILE, REPORT_STYLE_FILE, writeReportAssets } from '../src/main/report/assets.js'
@@ -489,7 +490,12 @@ describe('writing one', () => {
     expect(prompt).not.toContain('31947246760')
   }, LAUNCHES)
 
-  it('throws away the page it replaced, so a task keeps one report', async () => {
+  /*
+   * A report is read again later - "what did we say about this back then" - so the page a new
+   * generation replaces is kept, and where it is goes on record. Only the retention a person set
+   * takes one away, and never the page the task shows now.
+   */
+  it('keeps the page it replaced on disk and on record, and shows it only by its entry', async () => {
     const taskId = makeTask(db, projectId, 'Rename the queue')
     await ops.generate(taskId)
     const first = await settled(taskId)
@@ -498,7 +504,32 @@ describe('writing one', () => {
 
     expect(second?.status).toBe('ready')
     expect(second?.path).not.toBe(first?.path)
+    expect(existsSync(first!.path)).toBe(true)
+    const history = ops.history(taskId)
+    expect(history.map(entry => [entry.path, entry.current])).toEqual([[second!.path, true], [first!.path, false]])
+    expect(ops.page(taskId)).toBe(second!.path)
+    expect(ops.page(taskId, history[1].id)).toBe(first!.path)
+    // An entry of another task is not this task's to show
+    const other = makeTask(db, projectId, 'Something else')
+    expect(() => ops.page(other, history[1].id)).toThrow()
+  }, LAUNCHES)
+
+  it('removes pages past the retention period, never the one the task shows now', async () => {
+    const taskId = makeTask(db, projectId, 'Rename the queue')
+    await ops.generate(taskId)
+    const first = await settled(taskId)
+    await ops.generate(taskId)
+    const second = await settled(taskId)
+
+    expect(ops.pruneHistory(0)).toBe(0)
+    expect(ops.pruneHistory(30)).toBe(0)
+    // Pretend a year went by: the replaced page goes with its log, the current one stays
+    const later = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+    expect(pruneReportHistory(db, 30, later)).toBe(1)
     expect(existsSync(first!.path)).toBe(false)
+    expect(existsSync(first!.logPath)).toBe(false)
+    expect(existsSync(second!.path)).toBe(true)
+    expect(ops.history(taskId).map(entry => entry.path)).toEqual([second!.path])
   }, LAUNCHES)
 })
 

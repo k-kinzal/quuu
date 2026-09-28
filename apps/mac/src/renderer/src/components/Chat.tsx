@@ -8,6 +8,7 @@ import { useSessionPaging } from '../interaction/useSessionPaging.js'
 import { useHookHistory } from '../interaction/useHookHistory.js'
 import { focusAny, pane } from '../interaction/focus.js'
 import { deliveredInstructions, failureReason, nextSend } from '../model/derive.js'
+import { clockOrDate } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
 import { buildSections, buildTurns } from '../model/summarize.js'
 import { useStore } from '../state/store.js'
@@ -252,6 +253,17 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
                     {t('chat.openRunLog')}
                   </Button>
               )}
+            </ChatIntro>
+          )}
+
+          {/* Removed by the retention the person set. Saying so keeps an empty pane from reading as a lost log */}
+          {!loading && session?.prunedAt && messages.length === 0 && (
+            <ChatIntro>
+              <ContentInset>
+                <Text block size="md" tone="secondary">
+                  {t('chat.pruned', { date: clockOrDate(session.prunedAt) })}
+                </Text>
+              </ContentInset>
             </ChatIntro>
           )}
 

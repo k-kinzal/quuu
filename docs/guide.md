@@ -448,6 +448,23 @@ what is running now and what has been done" holds.
 Configured in **Settings › General › Session import** (enable, auto-create, days to
 look back, manual run).
 
+### What Quuu keeps
+
+The CLIs delete their own old session logs, so Quuu keeps its own record in the database:
+
+| Record | Written | Kept in |
+|---|---|---|
+| The conversation (structured log) | as each page of the log is read | `session_messages` |
+| Commits and Pull Requests the task produced | as the conversation is read | `task_review_evidence` |
+| The review as each run left it (changes, commits, Pull Requests) | the first projection after a run ends, before the next one starts | `task_review_history` |
+| Every report page (the file stays on disk; the database keeps where it is) | when a generation finishes | `report_history` |
+
+**Settings › General › Records** sets how many days they are kept; `0` (the default) keeps
+everything. Past it, a conversation that has not changed within the period is emptied (the
+screen says so), kept reviews are forgotten, and replaced report pages are deleted — the page a
+report shows now never is. The review pane's clock button opens an earlier point: the review a
+run left, or an earlier report page.
+
 ### Where each CLI keeps things
 
 This is not published specification; it was **verified by measurement** (the

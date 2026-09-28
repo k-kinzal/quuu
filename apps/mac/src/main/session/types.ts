@@ -97,4 +97,6 @@ export interface SessionSnapshot {
   hasMore: boolean
   /** Total messages loaded so far (the whole count, before the head is trimmed). */
   totalMessages: number
+  /** When retention removed this conversation (`AppSettings.retentionDays`). Absent while it is kept. */
+  prunedAt?: string
 }

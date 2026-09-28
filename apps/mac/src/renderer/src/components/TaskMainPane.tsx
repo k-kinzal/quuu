@@ -16,6 +16,7 @@ import {
   ExplorerLayout,
   ExplorerPane,
   IconButton,
+  Menu,
   PaneToolbar,
   WorkSurface,
   Row,
@@ -25,22 +26,25 @@ import {
   TreeView,
   type ContentTabOption,
   type MenuItemSpec,
-  type TreeNode
+  type TreeNode,
+  useMenu
 } from '@design-system/react'
 import { useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { Task } from '../../../api/schemas/tasks.js'
-import type { ReviewFile, ReviewFileRequest, ReviewLocation, ReviewPullRequest, ReviewSnapshot, ReviewTreeNode } from '../../../api/schemas/review.js'
+import type { ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewLocation, ReviewPullRequest, ReviewSnapshot, ReviewTreeNode } from '../../../api/schemas/review.js'
 import type { PullRequestViewBounds } from '../../../api/schemas/workbench.js'
 import { t } from '../model/i18n/index.js'
 import { copyText, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
+import { useReportHistory } from '../interaction/useReportHistory.js'
 import { useTaskReport } from '../interaction/useTaskReport.js'
+import { absoluteTime } from '../model/format.js'
 import { useNativeViewHidden } from '../interaction/useNativeViewHidden.js'
 import { overallCheck } from '../model/pullRequestStatus.js'
 import { buildFileTree, projectReviewTree, treeChange } from '../model/reviewTree.js'
 import { useStore } from '../state/store.js'
-import { ChevronDown, ChevronRight, FileDiff, FileText, FolderGit2, FolderTree, GitCommitHorizontal, GitPullRequest, ICON, MessageSquareText, RefreshCw, ScrollText, Send, iconProps } from '../ui/icons.js'
+import { ChevronDown, ChevronRight, FileDiff, FileText, FolderGit2, FolderTree, GitCommitHorizontal, GitPullRequest, History, ICON, MessageSquareText, RefreshCw, ScrollText, Send, iconProps } from '../ui/icons.js'
 import { changeLabel, changeTone, CheckDot, CheckMark, ConflictMark } from '../ui/workbench.js'
 import { Chat } from './Chat.js'
 import { Composer } from './Composer.js'
@@ -63,6 +67,8 @@ interface TaskMainPaneProps {
   error: string | null
   requestedLine: { line: number } | null
   reveal?: ReviewReveal | null
+  /** The runs whose review was kept as they left it, and which one `snapshot` is (null: now). */
+  history?: { points: ReviewHistoryPoint[]; point: string | null; onPoint(runId: string | null): void }
   onRefresh(): void
   onFile(file: ReviewFile | null): void
 }
@@ -320,6 +326,7 @@ export function TaskMainPane({
   error,
   requestedLine,
   reveal,
+  history,
   onRefresh,
   onFile
 }: TaskMainPaneProps): JSX.Element {
@@ -346,6 +353,10 @@ export function TaskMainPane({
   const fileRequest = useRef(0)
   const handledReveal = useRef<number | null>(null)
   const pullRequestTabs = useRef(new Set<string>())
+  const pointMenu = useMenu()
+  /** An earlier page of the report, by its history entry. null is the one the report shows now. */
+  const [reportPoint, setReportPoint] = useState<string | null>(null)
+  const reviewPoint = history?.point ?? null
 
   useEffect(() => {
     if (mode !== 'chat' && mode !== 'report') lastReviewMode.current = mode
@@ -361,6 +372,18 @@ export function TaskMainPane({
     setCommentLine(null)
     onFile(null)
   }, [taskId, onFile])
+
+  useEffect(() => setReportPoint(null), [taskId])
+
+  // The open files were read at the other point in time; keeping them would show one point's diff under another's list.
+  useEffect(() => {
+    fileRequest.current += 1
+    setFileLoading(false)
+    setTabs((values) => values.filter((tab) => tab.kind === 'pull-request'))
+    setActive(null)
+    setSelectedLine(null)
+    setCommentLine(null)
+  }, [reviewPoint])
 
   useEffect(
     () => () => {
@@ -452,6 +475,8 @@ export function TaskMainPane({
    */
   const { report } = useTaskReport(taskId, true)
   const reportPage = report?.path ?? ''
+  const reportHistory = useReportHistory(taskId, mode === 'report')
+  const shownReport = reportPoint ? reportHistory.find((entry) => entry.id === reportPoint) ?? null : null
 
   const reportViewError = useCallback(
     (reason: string): void => {
@@ -535,6 +560,36 @@ export function TaskMainPane({
     }
   }
 
+  /*
+   * Which point in time the pane shows: the report's earlier pages while reading the report, the
+   * review as each run left it while browsing files. Chat has no earlier point to go to.
+   */
+  const reportPoints = reportHistory.filter((entry) => !entry.current)
+  const reviewPoints = history?.points ?? []
+  const pointItems = (): MenuItemSpec[] => mode === 'report'
+    ? [
+      { label: t('reviewPane.historyNow'), checked: reportPoint === null, onSelect: () => setReportPoint(null) },
+      ...reportPoints.map((entry, index) => ({
+        label: t('reviewPane.historyReport', { time: absoluteTime(entry.generatedAt) }),
+        checked: reportPoint === entry.id,
+        separatorBefore: index === 0,
+        onSelect: () => setReportPoint(entry.id)
+      }))
+    ]
+    : [
+      { label: t('reviewPane.historyNow'), checked: reviewPoint === null, onSelect: () => history?.onPoint(null) },
+      ...reviewPoints.map((point, index) => ({
+        label: t('reviewPane.historyRun', { time: absoluteTime(point.endedAt) }),
+        checked: reviewPoint === point.runId,
+        separatorBefore: index === 0,
+        onSelect: () => history?.onPoint(point.runId)
+      }))
+    ]
+  const hasPoints = mode === 'report' ? reportPoints.length > 0 : mode !== 'chat' && reviewPoints.length > 0
+  const viewing = mode === 'report'
+    ? shownReport?.generatedAt ?? null
+    : mode !== 'chat' ? reviewPoints.find((point) => point.runId === reviewPoint)?.endedAt ?? null : null
+
   const pullCheck = overallCheck(snapshot?.pullRequests ?? [])
   const modeOptions = [
     { value: 'chat', label: t('reviewPane.modeChat'), icon: <MessageSquareText size={ICON.sm} {...iconProps} /> },
@@ -566,25 +621,51 @@ export function TaskMainPane({
           options={modeOptions}
         />
         <Spacer />
-        {snapshot?.branch && (
+        {viewing ? (
+          <Text size="xs" tone="secondary" truncate title={t('reviewPane.historyViewing', { time: absoluteTime(viewing) })}>
+            {t('reviewPane.historyViewing', { time: absoluteTime(viewing) })}
+          </Text>
+        ) : snapshot?.branch && (
           <Text size="xs" tone="tertiary" mono truncate title={snapshot.branch}>
             {snapshot.branch}
           </Text>
         )}
-        <IconButton
-          size="xs"
-          title={t('reviewPane.refresh')}
-          icon={<RefreshCw size={ICON.sm} {...iconProps} />}
-          onClick={onRefresh}
-        />
+        {hasPoints && (
+          <IconButton
+            size="xs"
+            title={t('reviewPane.historyTitle')}
+            menu
+            aria-expanded={pointMenu.isOpen}
+            icon={<History size={ICON.sm} {...iconProps} />}
+            onClick={pointMenu.open}
+          />
+        )}
+        {/* A kept point is a record; there is nothing to look at again */}
+        {!viewing && (
+          <IconButton
+            size="xs"
+            title={t('reviewPane.refresh')}
+            icon={<RefreshCw size={ICON.sm} {...iconProps} />}
+            onClick={onRefresh}
+          />
+        )}
       </PaneToolbar>
+      <Menu
+        open={pointMenu.isOpen}
+        anchorEl={pointMenu.anchorEl}
+        onClose={pointMenu.close}
+        items={pointItems}
+        label={t('reviewPane.historyMenu')}
+      />
 
       {modeOptions.map((option) => (
         <ContentTabPanel key={option.value} idBase={modeTabsId} value={option.value} activeValue={mode}>
           {option.value === 'chat' ? (
             <Chat task={task} project={project} active={mode === 'chat'} />
           ) : option.value === 'report' ? (
-            mode === 'report' && reportPage && <ReportPage taskId={taskId} path={reportPage} onError={reportViewError} />
+            mode === 'report' && reportPage && (
+              <ReportPage taskId={taskId} historyId={shownReport?.id} path={shownReport?.path ?? reportPage} onError={reportViewError} />
+            )
           ) : option.value === mode && (
             <ExplorerLayout>
               <ExplorerPane>

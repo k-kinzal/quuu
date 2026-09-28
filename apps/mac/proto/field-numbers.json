@@ -2465,7 +2465,8 @@
     "title": 9,
     "messages": 10,
     "hasMore": 11,
-    "totalMessages": 12
+    "totalMessages": 12,
+    "prunedAt": 13
   },
   "SessionLoadResponse": {
     "value": 1
@@ -2603,7 +2604,8 @@
     "title": 9,
     "messages": 10,
     "hasMore": 11,
-    "totalMessages": 12
+    "totalMessages": 12,
+    "prunedAt": 13
   },
   "SessionLoadMoreResponse": {
     "value": 1
@@ -2857,7 +2859,8 @@
     "mcpEnabled": 27,
     "mcpPort": 28,
     "worktreeEnabled": 29,
-    "taskHooks": 30
+    "taskHooks": 30,
+    "retentionDays": 31
   },
   "SettingsSetIdentityResponse": {
     "value": 1
@@ -2899,7 +2902,8 @@
     "mcpEnabled": 27,
     "mcpPort": 28,
     "worktreeEnabled": 29,
-    "taskHooks": 30
+    "taskHooks": 30,
+    "retentionDays": 31
   },
   "SettingsGetResponse": {
     "value": 1
@@ -2940,7 +2944,8 @@
     "mcpEnabled": 27,
     "mcpPort": 28,
     "worktreeEnabled": 29,
-    "taskHooks": 30
+    "taskHooks": 30,
+    "retentionDays": 31
   },
   "SettingsSetRequest": {
     "value": 1
@@ -2981,7 +2986,8 @@
     "mcpEnabled": 27,
     "mcpPort": 28,
     "worktreeEnabled": 29,
-    "taskHooks": 30
+    "taskHooks": 30,
+    "retentionDays": 31
   },
   "SettingsSetResponse": {
     "value": 1
@@ -3727,7 +3733,8 @@
   },
   "ReportProjectShowRequestValue": {
     "projectId": 1,
-    "bounds": 2
+    "bounds": 2,
+    "historyId": 3
   },
   "ReportProjectShowRequest": {
     "value": 1
@@ -3781,7 +3788,8 @@
   },
   "ReportShowRequestValue": {
     "taskId": 1,
-    "bounds": 2
+    "bounds": 2,
+    "historyId": 3
   },
   "ReportShowRequest": {
     "value": 1
@@ -5066,5 +5074,254 @@
   "RunnersRevokeRequest": {
     "value": 1
   },
-  "RunnersRevokeResponse": {}
+  "RunnersRevokeResponse": {},
+  "ReviewHistoryRequest": {
+    "value": 1
+  },
+  "ReviewHistoryResponseValueItem": {
+    "runId": 1,
+    "endedAt": 2,
+    "recordedAt": 3
+  },
+  "ReviewHistoryResponseValue": {
+    "items": 1
+  },
+  "ReviewHistoryResponse": {
+    "value": 1
+  },
+  "ReviewHistorySnapshotRequestValue": {
+    "taskId": 1,
+    "runId": 2
+  },
+  "ReviewHistorySnapshotRequest": {
+    "value": 1
+  },
+  "ReviewHistorySnapshotResponseValueRepository": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewHistorySnapshotResponseValueTree": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewHistorySnapshotResponseValueChanges": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueLocalChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewHistorySnapshotResponseValueLocalChanges": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueStagedChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewHistorySnapshotResponseValueStagedChanges": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewHistorySnapshotResponseValueRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewHistorySnapshotResponseValueLocalRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewHistorySnapshotResponseValueLocalRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewHistorySnapshotResponseValueStagedRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewHistorySnapshotResponseValueStagedRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewHistorySnapshotResponseValueCommitsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewHistorySnapshotResponseValueCommitsItemFiles": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueCommitsItem": {
+    "sha": 1,
+    "shortSha": 2,
+    "subject": 3,
+    "author": 4,
+    "committedAt": 5,
+    "files": 6
+  },
+  "ReviewHistorySnapshotResponseValueCommits": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValuePullRequestsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewHistorySnapshotResponseValuePullRequestsItemFiles": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValuePullRequestsItem": {
+    "number": 1,
+    "title": 2,
+    "url": 3,
+    "headRefName": 4,
+    "baseRefName": 5,
+    "headSha": 6,
+    "draft": 7,
+    "updatedAt": 8,
+    "check": 9,
+    "mergeState": 10,
+    "state": 11,
+    "files": 12
+  },
+  "ReviewHistorySnapshotResponseValuePullRequests": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1Lines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1Functions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1Branches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1Statements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemLines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemFunctions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemBranches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemStatements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1FilesItemUncoveredLines": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1FilesItem": {
+    "path": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "uncoveredLines": 6
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1Files": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValueCoverageVariant1": {
+    "source": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "files": 6
+  },
+  "ReviewHistorySnapshotResponseValueCoverage": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewHistorySnapshotResponseValueProjectTasksItem": {
+    "id": 1,
+    "label": 2,
+    "source": 3,
+    "command": 4
+  },
+  "ReviewHistorySnapshotResponseValueProjectTasks": {
+    "items": 1
+  },
+  "ReviewHistorySnapshotResponseValue": {
+    "preparing": 1,
+    "error": 2,
+    "cwd": 3,
+    "branch": 4,
+    "repository": 5,
+    "tree": 6,
+    "changes": 7,
+    "localChanges": 8,
+    "stagedChanges": 9,
+    "revision": 10,
+    "localRevision": 11,
+    "stagedRevision": 12,
+    "commits": 13,
+    "pullRequests": 14,
+    "coverage": 15,
+    "projectTasks": 16,
+    "pullRequestNotice": 17
+  },
+  "ReviewHistorySnapshotResponse": {
+    "value": 1
+  },
+  "ReportProjectHistoryRequest": {
+    "value": 1
+  },
+  "ReportProjectHistoryResponseValueItem": {
+    "id": 1,
+    "path": 2,
+    "revision": 3,
+    "generatedAt": 4,
+    "current": 5
+  },
+  "ReportProjectHistoryResponseValue": {
+    "items": 1
+  },
+  "ReportProjectHistoryResponse": {
+    "value": 1
+  },
+  "ReportHistoryRequest": {
+    "value": 1
+  },
+  "ReportHistoryResponseValueItem": {
+    "id": 1,
+    "path": 2,
+    "revision": 3,
+    "generatedAt": 4,
+    "current": 5
+  },
+  "ReportHistoryResponseValue": {
+    "items": 1
+  },
+  "ReportHistoryResponse": {
+    "value": 1
+  }
 }

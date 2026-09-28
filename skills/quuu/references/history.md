@@ -39,7 +39,14 @@ quuu review refresh TASK_ID         # ask Git/GitHub again
 quuu report get TASK_ID             # the change report, if one was written
 quuu report generate TASK_ID        # write it again (costs an agent run)
 quuu report project-get PROJECT_ID  # the daily project assessment
+quuu review history TASK_ID         # the runs whose review was kept as they left it
+quuu call review.historySnapshot '{"taskId":"TASK_ID","runId":"RUN_ID"}'  # that review
+quuu report history TASK_ID         # every page the report has had, with paths
+quuu report project-history PROJECT_ID
 ```
+
+Kept records past `retentionDays` are removed; a conversation removed that way reads back
+empty with `prunedAt` set - it is not a missing log.
 
 `report show`, `review open-pull-request` and similar operations draw inside the desktop window
 and need its layout; use the `get`/`snapshot` operations from the CLI.

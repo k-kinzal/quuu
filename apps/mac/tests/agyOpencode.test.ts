@@ -9,13 +9,13 @@ import { discoverSessions, startedByProgram } from '../src/main/import/adapters.
 import { SessionImporter, isRunning } from '../src/main/import/importer.js'
 import { probeLiveSessions, resetLivenessMemo } from '../src/main/import/liveness.js'
 import { AgySessionParser } from '../src/main/agent-adapters/agy/parser.js'
-import { sessionKey } from '../src/main/session/index.js'
+import { SessionIndex, sessionKey } from '../src/main/session/index.js'
 import { expectedLogPath, lastWrittenMs, resolveLogPath } from '../src/main/session/logAdapters.js'
 import { OpencodeSessionParser } from '../src/main/agent-adapters/opencode/parser.js'
 import { canRecoverSessionId, findSessionId } from '../src/main/session/sessionIdentity.js'
 import { sessionIdInStdout } from '../src/main/session/stdoutSessionId.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
-import { isolateSessionDirs, memoryDb, releaseSessionDirs } from './helpers.js'
+import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, occupy, releaseSessionDirs } from './helpers.js'
 
 // node:sqlite cannot be imported statically (same reason as vitest.config.ts / database.ts)
 const { DatabaseSync } = createRequire(import.meta.url)('node:sqlite') as typeof import('node:sqlite')
@@ -467,3 +467,49 @@ describe('calling the CLI back', () => {
 function readLines(path: string): string[] {
   return readFileSync(path, 'utf8').split('\n')
 }
+
+/*
+ * opencode keeps every session in one store, so the store changing says nothing about one session.
+ * A session the CLI deleted reads back as empty, and a session retention emptied must not be read
+ * back in just because another conversation in the store moved.
+ */
+describe('opencode sessions kept in the index', () => {
+  async function indexed(sessionId: string): Promise<{ db: ReturnType<typeof memoryDb>; index: SessionIndex; read(): Promise<void>; key: string }> {
+    const db = memoryDb()
+    const agentId = makeAgent(db, { name: 'opencode', logAdapter: 'opencode' })
+    const taskId = makeTask(db, makeProject(db, { name: 'Fixture', path: work, targetId: agentId }), 'Fixture')
+    const run = repo.getRun(db, occupy(db, taskId, agentId))!
+    const target = { sessionId, logPath: opencodeDb, mode: 'opencode' as const, awaitingStructured: false }
+    const index = new SessionIndex(db)
+    const read = async (): Promise<void> => { index.request(run, target); await index.settled() }
+    await read()
+    return { db, index, read, key: sessionKey(target) }
+  }
+  const touch = (at: number): void => utimesSync(opencodeDb, at / 1000, at / 1000)
+
+  it('keeps the pages of a session the CLI deleted from the store', async () => {
+    writeOpencode('ses_gone', '消える作業')
+    const { db, index, read, key } = await indexed('ses_gone')
+    const kept = repo.getSessionIndex(db, key)!.total
+    expect(kept).toBeGreaterThan(0)
+    const store = new DatabaseSync(opencodeDb)
+    store.exec("DELETE FROM session_message WHERE session_id = 'ses_gone'")
+    store.close()
+    touch(Date.now() + 5000)
+    await read()
+    expect(repo.getSessionIndex(db, key)!.total).toBe(kept)
+    index.stop(); db.close()
+  })
+
+  it('does not read a session retention emptied back in when another session moves the store', async () => {
+    writeOpencode('ses_old', '古い作業', { ageMs: 60 * 60 * 1000 })
+    const { db, index, read, key } = await indexed('ses_old')
+    expect(index.prune(1, new Date(Date.now() + 2 * 24 * 60 * 60 * 1000))).toBe(1)
+    writeOpencode('ses_other', '別の作業')
+    touch(Date.now() + 5000)
+    await read()
+    expect(repo.getSessionIndex(db, key)?.total).toBe(0)
+    expect(repo.getSessionIndex(db, key)?.prunedAt).toBeTruthy()
+    index.stop(); db.close()
+  })
+})

@@ -1,9 +1,10 @@
 import { EventEmitter } from 'node:events'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { adapterFor } from '../agent-adapters/registry.js'
 import { reportDir } from '../appPaths.js'
 import type { Db } from '../db/database.js'
+import { inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
@@ -15,7 +16,8 @@ import { writeReportAssets } from './assets.js'
 import { settleReport, spawnReport } from './generator.js'
 import { projectReportPrompt } from './prompt.js'
 import { projectRevision } from './projectRevision.js'
-import type { ProjectReport } from './types.js'
+import { reportHistory } from './history.js'
+import type { ProjectReport, ReportHistoryEntry } from './types.js'
 import { chooseWriter } from './writer.js'
 
 const TIMEOUT_MS = 20 * 60_000
@@ -51,6 +53,19 @@ export class ProjectReportOperations extends EventEmitter {
     this.stopped = true
     if (this.timer) clearInterval(this.timer)
     this.timer = null
+  }
+
+  /** Every assessment the project has had, newest first, the one shown now marked. */
+  history(projectId: string): ReportHistoryEntry[] {
+    return reportHistory(this.db, { projectId }, repo.getProjectReport(this.db, projectId)?.path ?? '')
+  }
+
+  /** The page to show: an earlier one by its history entry, or the current one. */
+  page(projectId: string, historyId?: string): string {
+    if (historyId === undefined) return repo.getProjectReport(this.db, projectId)?.path ?? ''
+    const entry = repo.getReportHistory(this.db, { projectId }, historyId)
+    if (!entry) throw new Error(t('report.historyNotFound'))
+    return entry.path
   }
 
   report(projectId: string): ProjectReport | null {
@@ -167,10 +182,13 @@ export class ProjectReportOperations extends EventEmitter {
           ? t('report.timedOut', { minutes: TIMEOUT_MS / 60_000 }) : t('report.noPage'))
       const endedAt = nowIso()
       repo.closeReportSession(this.db, row.cwd, row.startedAt, endedAt)
-      repo.saveProjectReport(this.db, { ...row, status: result.status,
-        revision: ready ? row.pendingRevision : row.revision, pendingRevision: '',
-        path: ready ? row.pending : row.path, pending: '', error, endedAt, pid: null })
-      if (ready && row.path && row.path !== row.pending) rmSync(row.path, { force: true })
+      inTransaction(this.db, () => {
+        repo.saveProjectReport(this.db, { ...row, status: result.status,
+          revision: ready ? row.pendingRevision : row.revision, pendingRevision: '',
+          path: ready ? row.pending : row.path, pending: '', error, endedAt, pid: null })
+        // The page it replaces stays on disk and in the history; only retention removes one.
+        if (ready) repo.addReportHistory(this.db, { projectId: row.projectId }, { path: row.pending, revision: row.pendingRevision, generatedAt: endedAt })
+      })
       if (!ready) this.emit('notify', {
         id: `project-report-${row.projectId}`, level: 'error',
         message: t('report.failedToast', { title: repo.getProject(this.db, row.projectId)?.name ?? '' }),

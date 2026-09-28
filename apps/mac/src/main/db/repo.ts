@@ -31,11 +31,15 @@ export interface SessionIndexRecord {
   title: string | null
   total: number
   evidenceVersion: number
+  /** When the session last changed. Retention measures its age from here. */
+  updatedAt: string
+  /** When retention removed the pages. null while they are kept. */
+  prunedAt?: string | null
 }
 
 export function getSessionIndex(db: Db, key: string): SessionIndexRecord | null {
   const row = db.prepare('SELECT * FROM session_indexes WHERE log_key = ?').get(key) as Row | undefined
-  return row ? { stamp: s(row.stamp), generation: s(row.generation), title: sn(row.title), total: n(row.total), evidenceVersion: n(row.evidence_version) } : null
+  return row ? { stamp: s(row.stamp), generation: s(row.generation), title: sn(row.title), total: n(row.total), evidenceVersion: n(row.evidence_version), updatedAt: s(row.updated_at), prunedAt: sn(row.pruned_at) } : null
 }
 
 export function writeSessionMessages(db: Db, key: string, generation: string, start: number, messages: SessionMessage[]): void {
@@ -49,28 +53,69 @@ export function readSessionMessages(db: Db, key: string, generation: string, sta
 }
 
 export function finishSessionIndex(db: Db, key: string, record: SessionIndexRecord): void {
-  db.prepare('INSERT OR REPLACE INTO session_indexes (log_key, stamp, generation, title, total, evidence_version) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(key, record.stamp, record.generation, record.title, record.total, record.evidenceVersion)
+  db.prepare(`INSERT OR REPLACE INTO session_indexes (log_key, stamp, generation, title, total, evidence_version, updated_at, pruned_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, NULL)`)
+    .run(key, record.stamp, record.generation, record.title, record.total, record.evidenceVersion, record.updatedAt)
   db.prepare('DELETE FROM session_messages WHERE log_key = ? AND (generation <> ? OR ordinal >= ?)').run(key, record.generation, record.total)
   db.prepare('DELETE FROM session_workdirs WHERE log_key = ? AND (generation <> ? OR ordinal >= ?)').run(key, record.generation, record.total)
 }
 
+const SESSION_TABLES = ['session_indexes', 'session_messages', 'session_images', 'session_workdirs'] as const
+
 /**
- * Drop every page materialized under a key that does not start with one of `keep`.
+ * Move every session materialized under a retired parser version onto the current one.
  *
- * A parser that learned to read something new gets a new version, and with it a new key, so
- * its sessions are read again from the log. What was materialized under the old version is
- * never opened again - and a long session is tens of thousands of rows - so it goes.
+ * A parser that learned to read something new gets a new version, and with it a new key, so its
+ * sessions are read again from the log. But the CLIs delete their own old logs, and for those
+ * the pages are the only copy left: dropping them lost the conversation for good. So the pages
+ * move to the current key with an empty stamp - a log that still exists differs from it and is
+ * read again under the new parser, replacing them; a log that is gone leaves them as they are.
+ *
+ * @param current the parser version each adapter reads with now. A session whose adapter is not
+ * here any more can never be opened again, and neither can one the current key already holds.
  */
-export function dropSessionIndexesOutside(db: Db, keep: string[]): number {
-  if (keep.length === 0) return 0
-  const outside = keep.map(() => 'log_key NOT LIKE ? ESCAPE \'\\\'').join(' AND ')
-  const patterns = keep.map(prefix => `${prefix.replace(/[\\%_]/g, '\\$&')}%`)
+export function carryRetiredSessionIndexes(db: Db, current: Map<string, string>): { carried: number; dropped: number } {
+  let carried = 0
   let dropped = 0
-  for (const table of ['session_indexes', 'session_messages', 'session_images', 'session_workdirs']) {
-    dropped += Number(db.prepare(`DELETE FROM ${table} WHERE ${outside}`).run(...patterns).changes)
+  const keys = (db.prepare('SELECT log_key FROM session_indexes').all() as Row[]).map(row => s(row.log_key))
+  const known = new Set(keys)
+  for (const key of keys) {
+    const match = /^([^:]*):([^:]*):(.*)$/s.exec(key)
+    const version = match ? current.get(match[2]) : undefined
+    if (match && version === match[1]) continue
+    const next = match && version !== undefined ? `${version}:${match[2]}:${match[3]}` : null
+    if (next && !known.has(next)) {
+      for (const table of SESSION_TABLES) db.prepare(`UPDATE ${table} SET log_key = ? WHERE log_key = ?`).run(next, key)
+      db.prepare("UPDATE session_indexes SET stamp = '' WHERE log_key = ?").run(next)
+      known.add(next)
+      carried++
+    } else {
+      for (const table of SESSION_TABLES) db.prepare(`DELETE FROM ${table} WHERE log_key = ?`).run(key)
+      dropped++
+    }
+    known.delete(key)
   }
-  return dropped
+  // Pages or images left under a key with no index row are unreachable: nothing names them.
+  for (const table of SESSION_TABLES.slice(1)) {
+    db.exec(`DELETE FROM ${table} WHERE log_key NOT IN (SELECT log_key FROM session_indexes)`)
+  }
+  return { carried, dropped }
+}
+
+/**
+ * Remove the conversation of every session that has not changed since `before`.
+ *
+ * The index row stays, marked, so an unchanged log is not read straight back in and the screen can
+ * say why the conversation is empty. The working directories stay too: they are a few rows, and
+ * the review and the terminal still open where the agent worked. What the pages filed against the
+ * task (commits, Pull Requests) lives on the task and is not touched.
+ */
+export function pruneSessionPages(db: Db, before: string, now: string): number {
+  const expired = "SELECT log_key FROM session_indexes WHERE pruned_at IS NULL AND updated_at <> '' AND updated_at < ?"
+  db.prepare(`DELETE FROM session_messages WHERE log_key IN (${expired})`).run(before)
+  db.prepare(`DELETE FROM session_images WHERE log_key IN (${expired})`).run(before)
+  return Number(db.prepare(`UPDATE session_indexes SET total = 0, pruned_at = ?
+    WHERE pruned_at IS NULL AND updated_at <> '' AND updated_at < ?`).run(now, before).changes)
 }
 
 /** The directories one message recorded. Nothing is written for a message that recorded none. */
@@ -90,6 +135,11 @@ export function readSessionWorkDirs(db: Db, key: string, generation: string): st
     const dirs = parseJson<unknown>(s(row.dirs), [])
     return Array.isArray(dirs) ? dirs.filter((dir): dir is string => typeof dir === 'string') : []
   })
+}
+
+/** The log was looked at and found to add nothing: remember that, so it is not looked at again. */
+export function markSessionStamp(db: Db, key: string, stamp: string): void {
+  db.prepare('UPDATE session_indexes SET stamp = ? WHERE log_key = ?').run(stamp, key)
 }
 
 export function finishSessionEvidence(db: Db, key: string, version: number): void {
@@ -131,6 +181,48 @@ export function getReviewSnapshot(db: Db, taskId: string): { updatedAt: string; 
 export function saveReviewSnapshot(db: Db, taskId: string, snapshot: ReviewSnapshot): void {
   db.prepare('INSERT OR REPLACE INTO task_review_snapshots (task_id, updated_at, snapshot) VALUES (?, ?, ?)')
     .run(taskId, nowIso(), JSON.stringify(snapshot))
+}
+
+export interface ReviewHistoryEntry {
+  runId: string
+  taskId: string
+  recordedAt: string
+}
+
+export function hasReviewHistory(db: Db, runId: string): boolean {
+  return db.prepare('SELECT 1 FROM task_review_history WHERE run_id = ?').get(runId) !== undefined
+}
+
+export function recordReviewHistory(db: Db, runId: string, taskId: string, snapshot: ReviewSnapshot): void {
+  db.prepare('INSERT OR IGNORE INTO task_review_history (run_id, task_id, recorded_at, snapshot) VALUES (?, ?, ?, ?)')
+    .run(runId, taskId, nowIso(), JSON.stringify(snapshot))
+}
+
+/** Newest first, without the snapshots: a list to pick from. */
+export function listReviewHistory(db: Db, taskId: string): ReviewHistoryEntry[] {
+  return (db.prepare('SELECT run_id, task_id, recorded_at FROM task_review_history WHERE task_id = ? ORDER BY recorded_at DESC')
+    .all(taskId) as Row[]).map(row => ({ runId: s(row.run_id), taskId: s(row.task_id), recordedAt: s(row.recorded_at) }))
+}
+
+export function getReviewHistory(db: Db, taskId: string, runId: string): ReviewSnapshot | null {
+  const row = db.prepare('SELECT snapshot FROM task_review_history WHERE task_id = ? AND run_id = ?').get(taskId, runId) as Row | undefined
+  return row ? JSON.parse(s(row.snapshot)) as ReviewSnapshot : null
+}
+
+/** What retention is about to remove, with where each was projected so its Git refs can go too. */
+export function expiredReviewHistory(db: Db, before: string): Array<ReviewHistoryEntry & { cwd: string }> {
+  return (db.prepare(`SELECT run_id, task_id, recorded_at, json_extract(snapshot, '$.cwd') AS cwd
+    FROM task_review_history WHERE recorded_at < ?`).all(before) as Row[])
+    .map(row => ({ runId: s(row.run_id), taskId: s(row.task_id), recordedAt: s(row.recorded_at), cwd: s(row.cwd) }))
+}
+
+export function deleteReviewHistory(db: Db, runId: string): void {
+  db.prepare('DELETE FROM task_review_history WHERE run_id = ?').run(runId)
+}
+
+export function getMeta(db: Db, key: string): string | null {
+  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as Row | undefined
+  return row ? s(row.value) : null
 }
 
 // ---------------------------------------------------------------------------
@@ -215,6 +307,50 @@ export function saveProjectReport(db: Db, report: StoredProjectReport): void {
 
 export function markProjectReportChecked(db: Db, projectId: string, checkedAt: string): void {
   db.prepare('UPDATE project_reports SET checked_at = ? WHERE project_id = ?').run(checkedAt, projectId)
+}
+
+/** Whose page it is. A task's change report, or a project's daily assessment. */
+export type ReportOwner = { taskId: string; projectId?: never } | { projectId: string; taskId?: never }
+
+export interface ReportHistoryEntry {
+  id: string
+  path: string
+  revision: string
+  generatedAt: string
+}
+
+export function addReportHistory(db: Db, owner: ReportOwner, entry: Omit<ReportHistoryEntry, 'id'>): void {
+  db.prepare('INSERT INTO report_history (id, task_id, project_id, path, revision, generated_at) VALUES (?, ?, ?, ?, ?, ?)')
+    .run(newId('rph'), owner.taskId ?? null, owner.projectId ?? null, entry.path, entry.revision, entry.generatedAt)
+}
+
+const toReportHistory = (row: Row): ReportHistoryEntry =>
+  ({ id: s(row.id), path: s(row.path), revision: s(row.revision), generatedAt: s(row.generated_at) })
+
+/** Newest first. */
+export function listReportHistory(db: Db, owner: ReportOwner): ReportHistoryEntry[] {
+  const [column, id] = owner.taskId !== undefined ? ['task_id', owner.taskId] : ['project_id', owner.projectId]
+  return (db.prepare(`SELECT * FROM report_history WHERE ${column} = ? ORDER BY generated_at DESC, rowid DESC`).all(id) as Row[])
+    .map(toReportHistory)
+}
+
+export function getReportHistory(db: Db, owner: ReportOwner, id: string): ReportHistoryEntry | null {
+  return listReportHistory(db, owner).find(entry => entry.id === id) ?? null
+}
+
+/**
+ * The pages retention may remove: older than `before`, and not the page a report shows now.
+ * The current one is never taken, however old - it is the report the task or project has.
+ */
+export function expiredReportHistory(db: Db, before: string): ReportHistoryEntry[] {
+  return (db.prepare(`SELECT h.* FROM report_history h
+    LEFT JOIN task_reports t ON t.task_id = h.task_id
+    LEFT JOIN project_reports p ON p.project_id = h.project_id
+    WHERE h.generated_at < ? AND h.path <> COALESCE(t.path, p.path, '')`).all(before) as Row[]).map(toReportHistory)
+}
+
+export function deleteReportHistory(db: Db, id: string): void {
+  db.prepare('DELETE FROM report_history WHERE id = ?').run(id)
 }
 
 export interface TaskReviewBase {

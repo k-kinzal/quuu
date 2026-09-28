@@ -10,6 +10,7 @@ export const conversation: typeof en = {
     noPromptYet: 'まだ指示が無い',
     writePrompt: '指示を書く',
     noSessionLog: 'セッションログがまだ無い',
+    pruned: 'この会話は保持期間を過ぎたため削除されました（{{date}}）',
     openRunLog: '実行ログを開く',
     loadEarlier: 'さらに過去を読み込む（全 {{total}} 件）',
     jumpToLatest: '最新へ'

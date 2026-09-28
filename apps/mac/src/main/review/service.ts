@@ -104,14 +104,26 @@ export class ReviewService {
     return { ...local, pullRequests: prs.items, pullRequestNotice: prs.notice }
   }
 
-  /** Saved revisions must remain readable even after Git garbage-collects unreachable objects. */
-  async retain(taskId: string, snapshot: ReviewSnapshot): Promise<void> {
-    const prefix = `refs/quuu/results/${taskId.replace(/[^A-Za-z0-9._-]/g, '-')}`
+  /** Where a task's saved revisions are pinned, and those of one of its runs. */
+  retainedPrefix(taskId: string, runId?: string): string {
+    const name = (id: string): string => id.replace(/[^A-Za-z0-9._-]/g, '-')
+    return `refs/quuu/results/${name(taskId)}${runId ? `/runs/${name(runId)}` : ''}`
+  }
+
+  /**
+   * Saved revisions must remain readable even after Git garbage-collects unreachable objects.
+   *
+   * @param runId pins them under that run as well, for the review kept as the run left it. The
+   * task's own refs move with every projection.
+   */
+  async retain(taskId: string, snapshot: ReviewSnapshot, runId?: string): Promise<void> {
+    const prefix = this.retainedPrefix(taskId, runId)
     const refs = [
       ...(snapshot.revision ? [[`${prefix}/base`, snapshot.revision.base], [`${prefix}/tree`, snapshot.revision.head]] : []),
       ...(snapshot.localRevision ? [[`${prefix}/local-base`, snapshot.localRevision.base], [`${prefix}/local-tree`, snapshot.localRevision.head]] : []),
       ...(snapshot.stagedRevision ? [[`${prefix}/staged-base`, snapshot.stagedRevision.base], [`${prefix}/staged-tree`, snapshot.stagedRevision.head]] : []),
-      ...snapshot.commits.map(commit => [`${prefix}/commits/${commit.sha}`, commit.sha])
+      // Commits are pinned by their SHA under the task, which a run's record shares.
+      ...snapshot.commits.map(commit => [`${this.retainedPrefix(taskId)}/commits/${commit.sha}`, commit.sha])
     ]
     for (const [ref, sha] of refs) {
       const saved = await git(snapshot.cwd, ['update-ref', ref, sha])

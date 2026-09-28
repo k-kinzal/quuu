@@ -372,20 +372,21 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   const projectReportGet = os.report.projectGet.handler(({ input }) => app.projectReports.report(input))
   const projectReportGenerate = os.report.projectGenerate.handler(({ input }) => app.projectReports.generate(input))
   const projectReportShow = os.report.projectShow.handler(({ input, context }) => {
-    const report = app.projectReports.report(input.projectId)
-    if (!report?.path) return { ok: false, reason: t('report.noPage') }
-    return host.desktopFor(context.owner).showReport({ file: report.path, bounds: input.bounds })
+    const page = app.projectReports.page(input.projectId, input.historyId)
+    if (!page) return { ok: false, reason: t('report.noPage') }
+    return host.desktopFor(context.owner).showReport({ file: page, bounds: input.bounds })
   })
   const reportGet = os.report.get.handler(({ input }) => app.reports.report(input))
   const reportGenerate = os.report.generate.handler(({ input }) => app.reports.generate(input))
   /*
-   * The renderer asks for a task's report, never for a path. Which file that is stays main's
-   * answer, so a screen cannot point the view at something no generation produced.
+   * The renderer asks for a task's report - or one of its history entries - never for a path.
+   * Which file that is stays main's answer, so a screen cannot point the view at something no
+   * generation produced.
    */
   const reportShow = os.report.show.handler(({ input, context }) => {
-    const report = app.reports.report(input.taskId)
-    if (!report || report.path.length === 0) return { ok: false, reason: t('report.noPage') }
-    return host.desktopFor(context.owner).showReport({ file: report.path, bounds: input.bounds })
+    const page = app.reports.page(input.taskId, input.historyId)
+    if (page.length === 0) return { ok: false, reason: t('report.noPage') }
+    return host.desktopFor(context.owner).showReport({ file: page, bounds: input.bounds })
   })
   const reportHide = os.report.hide.handler(({ context }) => host.desktopFor(context.owner).hideReport())
   const terminalOpen = os.terminal.open.handler(({ input, context }) => {
@@ -578,6 +579,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
     review: {
       snapshot: reviewSnapshot,
       refresh: os.review.refresh.handler(({ input }) => app.reviews.refresh(input)),
+      history: os.review.history.handler(({ input }) => app.reviews.reviewHistory(input)),
+      historySnapshot: os.review.historySnapshot.handler(({ input }) => app.reviews.reviewHistorySnapshot(input.taskId, input.runId)),
       file: reviewFile,
       comment: reviewComment,
       openPullRequest: reviewOpenPullRequest,
@@ -588,9 +591,11 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       projectGet: projectReportGet,
       projectGenerate: projectReportGenerate,
       projectShow: projectReportShow,
+      projectHistory: os.report.projectHistory.handler(({ input }) => app.projectReports.history(input)),
       get: reportGet,
       generate: reportGenerate,
       show: reportShow,
+      history: os.report.history.handler(({ input }) => app.reports.history(input)),
       hide: reportHide,
     },
     terminal: {

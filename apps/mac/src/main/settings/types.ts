@@ -27,6 +27,14 @@ export interface AppSettings {
   importHistoryDays: number
   /** On import, auto-create projects from unregistered working directories. */
   importCreateProjects: boolean
+  /**
+   * How many days Quuu keeps what it recorded: conversation pages, the review as each run left
+   * it, and report pages that were replaced. 0 keeps everything.
+   *
+   * **Keeps everything by default.** The CLIs delete their own old logs, so these copies are the
+   * record; disk space is a trade a person makes, never one made on their behalf.
+   */
+  retentionDays: number
   /** Pass the GitHub App identity to agents. Can be turned off per project. */
   commitIdentityEnabled: boolean
   /** The default identity. Differs only when a project chose `custom`. */
@@ -111,6 +119,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   importExternalSessions: true,
   importHistoryDays: 14,
   importCreateProjects: true,
+  retentionDays: 0,
   commitIdentityEnabled: false,
   commitIdentity: EMPTY_COMMIT_IDENTITY,
   editorApp: '',

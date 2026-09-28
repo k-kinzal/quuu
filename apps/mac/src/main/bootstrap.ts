@@ -58,6 +58,10 @@ const LIVENESS_TICK_MS = 5_000
 
 
 /** Assembles the features that live for the app's lifetime. Operations connect to each feature's public interface. */
+
+/** Retention is a matter of days, so a few looks a day keep it within hours of the period. */
+const RETENTION_CHECK_MS = 6 * 60 * 60 * 1000
+
 export class QuuuApp extends EventEmitter {
   readonly db: Db
   readonly runners: RunnerOperations
@@ -86,6 +90,7 @@ export class QuuuApp extends EventEmitter {
   private sessionViews = new Set<SessionView>()
   readonly sessions: SessionIndex
   private projectionTimer: NodeJS.Timeout | null = null
+  private retentionTimer: NodeJS.Timeout | null = null
   private projectionRuns = new Map<string, string>()
   private historicalProbeAt = 0
   private builtInWorkspace: string | null = null
@@ -145,6 +150,7 @@ export class QuuuApp extends EventEmitter {
       if (patch.tickIntervalMs !== undefined) this.scheduler.start(settings.tickIntervalMs)
       if (patch.importExternalSessions !== undefined || patch.importHistoryDays !== undefined || patch.importCreateProjects !== undefined) this.startImport()
       if (patch.mobileSyncEnabled !== undefined) this.mobile.configure(settings, this.scheduler.status().running)
+      if (patch.retentionDays !== undefined) this.applyRetention()
       this.emit('settings', settings)
     })
     /*
@@ -225,6 +231,23 @@ export class QuuuApp extends EventEmitter {
     this.refreshProjections()
     this.projectionTimer = setInterval(() => this.refreshProjections(), 5000)
     this.projectionTimer.unref?.()
+    this.applyRetention()
+    this.retentionTimer = setInterval(() => this.applyRetention(), RETENTION_CHECK_MS)
+    this.retentionTimer.unref?.()
+  }
+
+  /**
+   * Remove what is older than the kept period: conversation pages, the review as each run left
+   * it, and replaced report pages. Nothing at all while the period is 0 (the default).
+   */
+  private applyRetention(): void {
+    const days = this.settings.getSettings().retentionDays
+    if (!(days > 0)) return
+    try { this.sessions.prune(days) }
+    catch (error) { console.warn('Cannot remove expired session pages', error) }
+    try { this.reports.pruneHistory(days) }
+    catch (error) { console.warn('Cannot remove expired report pages', error) }
+    this.reviews.prune(days).catch((error: unknown) => { console.warn('Cannot remove expired review history', error) })
   }
 
 
@@ -298,6 +321,7 @@ export class QuuuApp extends EventEmitter {
 
   shutdown(): void {
     if (this.projectionTimer) clearInterval(this.projectionTimer)
+    if (this.retentionTimer) clearInterval(this.retentionTimer)
     this.sessions.stop()
     this.reviews.stop()
     this.hooks.stop()

@@ -336,6 +336,7 @@ export const ja: typeof en = {
     filePathUnreadable: 'ファイルのパスを読めません',
     outsideProject: 'プロジェクトの外にあるファイルは開けません',
     taskDiffRevisionUnreadable: 'タスクの差分の版を読めません',
+    historyNotFound: 'そのランのレビューは残っていません',
     taskDiffUnreadable: 'タスクの差分を読めません',
     fileMissingInRevision: 'この版にファイルがありません',
     commitUnreadable: 'コミットを読めません',
@@ -360,6 +361,7 @@ export const ja: typeof en = {
     timedOut: '{{minutes}} 分以内にレポートが終わりませんでした',
     oddExit: '生成が終了コード {{code}} で終わりました。レポートは不完全かもしれません',
     noPage: 'レポートが生成されませんでした',
+    historyNotFound: 'そのレポートはもう残っていません',
     failedExit: '生成が終了コード {{code}} で終わり、レポートは生成されませんでした',
     outsideReports: '生成されたレポートだけを表示できます'
   },

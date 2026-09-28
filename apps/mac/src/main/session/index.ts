@@ -43,6 +43,12 @@ export function sessionKey(target: SessionReadTarget): string {
   return sharesOneStore(target.mode) ? `${key}:${target.sessionId}` : key
 }
 
+/** When the conversation's last entry was written, as an ISO time. Empty when it does not say. */
+function lastEntryAt(messages: SessionMessage[]): string {
+  const at = Date.parse(messages.at(-1)?.timestamp ?? '')
+  return Number.isFinite(at) ? new Date(at).toISOString() : ''
+}
+
 /** Durable pages are the read path. Parsing is scheduled separately, even with every window closed. */
 export class SessionIndex extends EventEmitter {
   private pending = new Map<string, { run: Run; target: SessionReadTarget }>()
@@ -67,15 +73,30 @@ export class SessionIndex extends EventEmitter {
   constructor(private db: Db, private derivations: SessionDerivation[] = []) { super() }
 
   /**
-   * Drop pages materialized under a parser version no adapter reads any more.
+   * Bring pages materialized under a parser version no adapter reads any more onto the current one.
    *
-   * A key carries the parser version that wrote it, so a bumped parser leaves the old pages
-   * behind, unread and taking up most of the database. Run once at startup, before the sweep
+   * A key carries the parser version that wrote it, so a bumped parser used to leave the old
+   * pages behind and drop them here - losing, for good, every conversation whose log the CLI had
+   * already deleted. They are carried to the current key instead, and read again only where the
+   * log still exists (`repo.carryRetiredSessionIndexes`). Run once at startup, before the sweep
    * that re-reads the sessions under the current version.
    */
-  sweepRetired(): number {
+  sweepRetired(): { carried: number; dropped: number } {
     const adapters: LogAdapter[] = [...IMPORTABLE_ADAPTERS, 'stdout']
-    return repo.dropSessionIndexesOutside(this.db, adapters.map(id => `${adapterFor(id).parserVersion}:${id}:`))
+    const current = new Map(adapters.map(id => [id as string, adapterFor(id).parserVersion]))
+    return inTransaction(this.db, () => repo.carryRetiredSessionIndexes(this.db, current))
+  }
+
+  /**
+   * Remove the conversations of sessions that have not changed in `days` days. 0 keeps everything.
+   *
+   * Pages are the only copy once a CLI deletes its own old logs, so nothing goes unless a person
+   * set how long to keep them (`AppSettings.retentionDays`).
+   */
+  prune(days: number, now = new Date()): number {
+    if (!(days > 0)) return 0
+    const before = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
+    return inTransaction(this.db, () => repo.pruneSessionPages(this.db, before, now.toISOString()))
   }
 
   request(run: Run, target = sessionReadTarget(this.db, run), priority = false): void {
@@ -136,7 +157,8 @@ export class SessionIndex extends EventEmitter {
       sessionId: target.sessionId, logPath: target.logPath, exists: true, title: saved.title,
       messages: repo.readSessionMessages(this.db, key, saved.generation, first, last - first),
       totalMessages: saved.total, hasMore: first > 0, hasNewer: last < saved.total,
-      first, last, generation: saved.generation, indexing: false
+      first, last, generation: saved.generation, indexing: false,
+      ...(saved.prunedAt ? { prunedAt: saved.prunedAt } : {})
     }
   }
 
@@ -276,6 +298,27 @@ export class SessionIndex extends EventEmitter {
         this.emit('failed', key, new Error('Session store is temporarily unreadable'))
         return
       }
+      /*
+       * One store holds every session, so a session the CLI deleted does not make the store go
+       * away - it reads back as empty. A conversation never shrinks to nothing, so that is the
+       * session being gone, and the pages already here are the only copy of it.
+       */
+      const known = repo.getSessionIndex(this.db, key)
+      if (parser.messages.length === 0 && known && known.total > 0) {
+        this.readers.delete(key)
+        return
+      }
+      /*
+       * The store changes whenever any of its sessions does. A session retention emptied that
+       * has nothing newer than when it last changed has not gone on - reading it back in would
+       * undo the retention every time another conversation moved.
+       */
+      const last = lastEntryAt(parser.messages)
+      if (known?.prunedAt && last && last <= known.updatedAt) {
+        repo.markSessionStamp(this.db, key, stamp)
+        this.readers.delete(key)
+        return
+      }
       await persist(result.changedFromIndex, parser.messages)
       reader.offset = stat.size
     } else {
@@ -307,8 +350,10 @@ export class SessionIndex extends EventEmitter {
     }
     if (this.stopped) return
     const total = isStoreParser(parser) ? parser.messages.length : messageBuffer.length
+    // A shared store changes whenever any of its sessions does; the session's own last entry says when it did.
+    const updatedAt = (isStoreParser(parser) ? lastEntryAt(parser.messages) : '') || stat.mtime.toISOString()
     inTransaction(this.db, () => repo.finishSessionIndex(this.db, key, {
-      generation, stamp, title: parser.title, total, evidenceVersion: DERIVATION_VERSION
+      generation, stamp, title: parser.title, total, evidenceVersion: DERIVATION_VERSION, updatedAt
     }))
     if (run.status !== 'running') this.readers.delete(key)
     this.emit('indexed', key, run.taskId)

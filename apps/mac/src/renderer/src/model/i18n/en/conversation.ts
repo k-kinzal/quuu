@@ -8,6 +8,7 @@ export const conversation = {
     noPromptYet: 'No instructions yet',
     writePrompt: 'Write Instructions',
     noSessionLog: 'No session log yet',
+    pruned: 'This conversation passed the retention period and was removed ({{date}})',
     openRunLog: 'Open Run Log',
     loadEarlier: 'Load Earlier Messages ({{total}} total)',
     loadNewer: 'Load Newer Messages',

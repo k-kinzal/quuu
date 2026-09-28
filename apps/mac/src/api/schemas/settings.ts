@@ -70,6 +70,11 @@ export const AppSettingsSchema = z.object({
   importHistoryDays: z.number().int().nonnegative(),
   /** Whether import auto-creates projects from unregistered working directories. */
   importCreateProjects: z.boolean(),
+  /**
+   * How many days recorded history is kept: conversation pages, the review as each run left it,
+   * and replaced report pages. 0 keeps everything (the default).
+   */
+  retentionDays: z.number().int().nonnegative(),
   /** Whether to hand agents the GitHub App identity. Can be turned off per project. */
   commitIdentityEnabled: z.boolean(),
   /** The default identity. Differs only when a project chooses `custom`. */

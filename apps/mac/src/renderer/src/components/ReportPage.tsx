@@ -18,10 +18,13 @@ function viewBounds(element: HTMLElement): PullRequestViewBounds | null {
 export function ReportPage({
   taskId,
   projectId,
+  historyId,
   path,
   onError
 }: {
   path: string
+  /** An earlier page from the history. Absent shows the current one. */
+  historyId?: string
   onError(reason: string): void
 } & ({ taskId: string; projectId?: never } | { projectId: string; taskId?: never })): JSX.Element {
   const host = useRef<HTMLDivElement>(null)
@@ -37,8 +40,8 @@ export function ReportPage({
       const bounds = viewBounds(element)
       if (!bounds) return
       const shown = projectId !== undefined
-        ? window.quuu.report.projectShow({ projectId, bounds })
-        : window.quuu.report.show({ taskId, bounds })
+        ? window.quuu.report.projectShow({ projectId, bounds, historyId })
+        : window.quuu.report.show({ taskId, bounds, historyId })
       void shown
         .then((result) => { if (active && !result.ok) onError(result.reason ?? '') })
         .catch((caught: unknown) => {
@@ -62,7 +65,7 @@ export function ReportPage({
       window.removeEventListener('resize', schedule)
       void window.quuu.report.hide()
     }
-  }, [onError, hidden, path, projectId, taskId])
+  }, [onError, hidden, path, projectId, taskId, historyId])
 
   return <EmbeddedBrowserHost ref={host} aria-label={projectId ? t('projectDashboard.report') : t('reviewPane.modeReport')} />
 }

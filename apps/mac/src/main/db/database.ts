@@ -198,7 +198,11 @@ CREATE TABLE IF NOT EXISTS session_indexes (
   generation TEXT NOT NULL,
   title TEXT,
   total INTEGER NOT NULL,
-  evidence_version INTEGER NOT NULL DEFAULT 0
+  evidence_version INTEGER NOT NULL DEFAULT 0,
+  -- When the session last changed (its log's mtime when read). Retention measures age from here.
+  updated_at TEXT NOT NULL DEFAULT '',
+  -- Set once retention removed the pages. The row stays so an unchanged log is not read back in.
+  pruned_at TEXT
 );
 CREATE TABLE IF NOT EXISTS session_messages (
   log_key TEXT NOT NULL,
@@ -232,6 +236,20 @@ CREATE TABLE IF NOT EXISTS task_review_snapshots (
 );
 
 /*
+ * The review as each run left it.
+ *
+ * task_review_snapshots is the task's **current** projection and is written over on every
+ * refresh, so "what did the second run leave" was gone the moment anything moved. One row per
+ * run, appended by the first projection after that run ended and before another one started.
+ */
+CREATE TABLE IF NOT EXISTS task_review_history (
+  run_id      TEXT PRIMARY KEY,
+  task_id     TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+  recorded_at TEXT NOT NULL,
+  snapshot    TEXT NOT NULL
+);
+
+/*
  * The change report attached to a task.
  *
  * Besides the page, it holds enough about the generator (pid, the page being written, the exit
@@ -251,6 +269,21 @@ CREATE TABLE IF NOT EXISTS task_reports (
   pid        INTEGER,
   started_at TEXT NOT NULL,
   ended_at   TEXT
+);
+
+/*
+ * Every page a report generation produced: where it is, and which tree it describes.
+ *
+ * task_reports / project_reports hold only the page shown now, and a new generation used to
+ * delete the one it replaced. The page itself stays a file; only where it is lives here.
+ */
+CREATE TABLE IF NOT EXISTS report_history (
+  id           TEXT PRIMARY KEY,
+  task_id      TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+  project_id   TEXT REFERENCES projects(id) ON DELETE CASCADE,
+  path         TEXT NOT NULL,
+  revision     TEXT NOT NULL DEFAULT '',
+  generated_at TEXT NOT NULL
 );
 
 /* Project assessments keep their daily check and in-flight generation across restarts. */
@@ -338,6 +371,11 @@ CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status);
 CREATE INDEX IF NOT EXISTS idx_runs_agent  ON runs(agent_id, status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_external ON runs(external_key) WHERE external_key IS NOT NULL;
 
+CREATE INDEX IF NOT EXISTS idx_review_history_task ON task_review_history(task_id, recorded_at DESC);
+CREATE INDEX IF NOT EXISTS idx_report_history_task ON report_history(task_id, generated_at DESC) WHERE task_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_report_history_project ON report_history(project_id, generated_at DESC) WHERE project_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_session_indexes_updated ON session_indexes(updated_at);
+
 CREATE INDEX IF NOT EXISTS idx_sync_intents_device ON sync_intents(device, seq);
 CREATE INDEX IF NOT EXISTS idx_sync_intents_applied ON sync_intents(applied_at DESC);
 `
@@ -361,7 +399,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 34
+  const target = 35
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -711,8 +749,33 @@ function migrate(db: Db): void {
       CREATE INDEX IF NOT EXISTS runner_jobs_active ON runner_jobs(runner_id, status);`)
   }
 
+  /*
+   * v34 -> v35: keep what used to be written over. The history tables are created by SCHEMA.
+   *
+   * A session already indexed gets the upgrade as its age: when its log last changed was never
+   * recorded, and retention must not remove on a guess. The pages a report shows now are carried
+   * into its history. Review history starts here - a run that ended before this cannot be
+   * projected as it was, and filing today's checkout under it would misstate what it left.
+   */
+  if (current < 35) {
+    const now = new Date().toISOString()
+    addColumnIfMissing(db, 'session_indexes', 'updated_at', "TEXT NOT NULL DEFAULT ''")
+    addColumnIfMissing(db, 'session_indexes', 'pruned_at', 'TEXT')
+    db.prepare("UPDATE session_indexes SET updated_at = ? WHERE updated_at = ''").run(now)
+    db.exec(`INSERT INTO report_history (id, task_id, project_id, path, revision, generated_at)
+      SELECT 'rph_' || lower(hex(randomblob(10))), task_id, NULL, path, revision, COALESCE(ended_at, started_at)
+        FROM task_reports WHERE path <> '';
+      INSERT INTO report_history (id, task_id, project_id, path, revision, generated_at)
+      SELECT 'rph_' || lower(hex(randomblob(10))), NULL, project_id, path, revision, COALESCE(ended_at, started_at)
+        FROM project_reports WHERE path <> ''`)
+    db.prepare('INSERT OR IGNORE INTO meta (key, value) VALUES (?, ?)').run(REVIEW_HISTORY_SINCE, now)
+  }
+
   setSchemaVersion(db, target)
 }
+
+/** When runs started being kept as they ended (`task_review_history`). Earlier runs are not. */
+export const REVIEW_HISTORY_SINCE = 'review_history_since'
 
 /**
  * Build the resume arguments from the initial ones. null when they cannot be built.

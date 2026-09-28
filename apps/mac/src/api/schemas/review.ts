@@ -143,6 +143,16 @@ export const ReviewSnapshotSchema = z.object({
 })
 export type ReviewSnapshot = z.infer<typeof ReviewSnapshotSchema>
 
+/** A run whose review was kept as it left it. The snapshot itself is asked for by `runId`. */
+export const ReviewHistoryPointSchema = z.object({
+  runId: z.string(),
+  /** When the run ended - the moment the kept review describes. */
+  endedAt: z.string(),
+  /** When the review was looked at and kept, shortly after. */
+  recordedAt: z.string()
+})
+export type ReviewHistoryPoint = z.infer<typeof ReviewHistoryPointSchema>
+
 export const ReviewLocationSchema = z.union([z.object({
   source: z.literal('working'),
   ref: z.never().optional(),

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as repo from '../src/main/db/repo.js'
 import { extractReviewEvidence } from '../src/main/review/evidence.js'
 import { ReviewOperations } from '../src/main/review/operations.js'
@@ -258,6 +258,78 @@ it('does not watch, and says nothing, when GitHub could not be reached', async (
   expect(operations.watching()).toEqual([])
   expect(projected).toHaveBeenCalledTimes(1)
   expect(projected.mock.calls[0]?.[1]).toMatchObject({ pullRequestNotice: 'offline' })
+})
+
+/*
+ * The current projection is written over on every refresh, so what a run left was gone the moment
+ * anything moved. Each run's is kept - but only from a look that began after the run ended and
+ * before another one started, or the record would carry work that was not that run's.
+ */
+describe('the review as each run left it', () => {
+  const left = (): ReviewSnapshot => ({ ...snapshot(), changes: [{ path: 'left.ts', change: 'added' }],
+    tree: [{ id: 'README.md', name: 'README.md', path: 'README.md', kind: 'file' }],
+    projectTasks: [{ id: 'npm:test', label: 'test', source: 'package', command: 'npm test' }] })
+  const run = (): string => repo.listRunsByTask(db, taskId)[0].id
+  const end = (at = new Date().toISOString()): void => { repo.updateRun(db, run(), { status: 'succeeded', endedAt: at }) }
+
+  it('keeps nothing while the run is still working', async () => {
+    vi.spyOn(service, 'snapshot').mockResolvedValue(left())
+    await operations.refresh(taskId)
+    expect(operations.reviewHistory(taskId)).toEqual([])
+  })
+
+  it('keeps the first look after the run ended, once, without the checkout listing', async () => {
+    end()
+    const compute = vi.spyOn(service, 'snapshot').mockResolvedValue(left())
+    await operations.refresh(taskId)
+    const [point] = operations.reviewHistory(taskId)
+    expect(point).toMatchObject({ runId: run(), endedAt: repo.getRun(db, run())!.endedAt })
+    const kept = operations.reviewHistorySnapshot(taskId, run())
+    expect(kept.changes).toEqual([{ path: 'left.ts', change: 'added' }])
+    expect(kept.tree).toEqual([])
+    expect(kept.projectTasks).toEqual([])
+    // Its trees are pinned under the run too, so they stay readable after the task's refs move on
+    expect(service.retain).toHaveBeenLastCalledWith(taskId, expect.objectContaining({ changes: kept.changes }), run())
+
+    compute.mockResolvedValue({ ...snapshot(), changes: [{ path: 'later.ts', change: 'added' }] })
+    await operations.refresh(taskId)
+    expect(operations.reviewHistory(taskId)).toHaveLength(1)
+    expect(operations.reviewHistorySnapshot(taskId, run()).changes).toEqual(kept.changes)
+    expect(operations.reviewSnapshot(taskId).changes).toEqual([{ path: 'later.ts', change: 'added' }])
+  })
+
+  it('does not file a run that ended before runs were kept', async () => {
+    end('2020-01-01T00:00:00.000Z')
+    vi.spyOn(service, 'snapshot').mockResolvedValue(left())
+    await operations.refresh(taskId)
+    expect(operations.reviewHistory(taskId)).toEqual([])
+  })
+
+  it('does not file a run once the next one has started', async () => {
+    end()
+    occupy(db, taskId, repo.getRun(db, run())!.agentId)
+    vi.spyOn(service, 'snapshot').mockResolvedValue(left())
+    await operations.refresh(taskId)
+    expect(operations.reviewHistory(taskId)).toEqual([])
+  })
+
+  it('does not keep a look that failed', async () => {
+    end()
+    vi.spyOn(service, 'snapshot').mockRejectedValue(new Error('git is gone'))
+    await operations.refresh(taskId)
+    expect(operations.reviewHistory(taskId)).toEqual([])
+  })
+
+  it('forgets runs past the retention period, and nothing while it is 0', async () => {
+    end()
+    vi.spyOn(service, 'snapshot').mockResolvedValue(left())
+    await operations.refresh(taskId)
+    expect(await operations.prune(0)).toBe(0)
+    expect(await operations.prune(30)).toBe(0)
+    expect(await operations.prune(30, new Date(Date.now() + 31 * 24 * 60 * 60 * 1000))).toBe(1)
+    expect(operations.reviewHistory(taskId)).toEqual([])
+    expect(() => operations.reviewHistorySnapshot(taskId, run())).toThrow()
+  })
 })
 
 it('fills in the merge state and openness for a projection saved before they were read', () => {

@@ -19,7 +19,7 @@ export {
   LockOpen, Maximize2, MessageSquareText, Minus, Monitor, MoreHorizontal, Palette, PanelLeftClose,
   PanelLeftOpen, PanelRightClose,
   Paperclip,
-  Pin, Play,
+  History, Pin, Play,
   // Actions
   Plus, RefreshCw, RotateCcw, Rows3, ScrollText, Search, Send, Settings,
   Settings2, ShieldAlert, ShieldCheck, SlidersHorizontal,

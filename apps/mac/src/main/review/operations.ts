@@ -1,12 +1,14 @@
 import type { RunnerOperations } from '../runners/operations.js'
 import { EventEmitter } from 'node:events'
 import type { Db } from '../db/database.js'
+import { REVIEW_HISTORY_SINCE } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import type { Project } from '../projects/types.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ReviewService } from './service.js'
-import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewPullRequest, ReviewSnapshot } from './types.js'
+import { git } from './command.js'
+import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewPullRequest, ReviewSnapshot } from './types.js'
 
 /**
  * How often a Pull Request whose checks are still running is looked at again.
@@ -187,10 +189,13 @@ export class ReviewOperations extends EventEmitter {
   }
 
   private async materialize(taskId: string): Promise<void> {
+    const lookedAt = new Date().toISOString()
     if (this.remote?.workspace(taskId)) {
       const snapshot = await this.remote.inspect(taskId, 'snapshot') as ReviewSnapshot
       if (this.stopped || !repo.getTask(this.db, taskId)) return
       repo.saveReviewSnapshot(this.db, taskId, snapshot)
+      // The runner's checkout is not here, so its trees cannot be pinned from this side.
+      await this.recordRunEnd(taskId, snapshot, lookedAt, false)
       this.watch(taskId, snapshot)
       this.emit('projected', taskId, snapshot)
       return
@@ -233,8 +238,68 @@ export class ReviewOperations extends EventEmitter {
     }
     save(snapshot)
     if (this.stopped || !repo.getTask(this.db, taskId)) return
+    await this.recordRunEnd(taskId, snapshot, lookedAt, true)
     this.watch(taskId, snapshot)
     this.emit('projected', taskId, snapshot)
+  }
+
+  /**
+   * Keep this projection as what the task's latest run left, the first time one can say so.
+   *
+   * Only a look that **began after** that run ended, and only while no later run has started:
+   * before, the checkout was still being worked; after, it carries the next run's work too. A run
+   * that ended before history was kept (`REVIEW_HISTORY_SINCE`) is not filed at all - today's
+   * checkout is not what it left. The file list and the project's commands describe the checkout,
+   * not the result, and are the bulk of a projection, so they are not kept.
+   */
+  private async recordRunEnd(taskId: string, snapshot: ReviewSnapshot, lookedAt: string, local: boolean): Promise<void> {
+    if (snapshot.error || snapshot.preparing) return
+    const latest = repo.listRunsByTask(this.db, taskId)[0]
+    if (!latest?.endedAt || latest.endedAt > lookedAt || repo.hasReviewHistory(this.db, latest.id)) return
+    const since = repo.getMeta(this.db, REVIEW_HISTORY_SINCE)
+    if (since && latest.endedAt < since) return
+    const kept: ReviewSnapshot = { ...snapshot, tree: [], projectTasks: [] }
+    if (local) {
+      // The current refs move with every projection; the run's own keep its trees readable after GC.
+      try { await this.review.retain(taskId, kept, latest.id) }
+      catch (error) { console.warn('Cannot retain the revisions of a run', error) }
+    }
+    if (this.stopped || !repo.getTask(this.db, taskId)) return
+    repo.recordReviewHistory(this.db, latest.id, taskId, kept)
+  }
+
+  /** The runs whose review was kept as they left it, newest first. */
+  reviewHistory(taskId: string): ReviewHistoryPoint[] {
+    const runs = new Map(repo.listRunsByTask(this.db, taskId).map(run => [run.id, run]))
+    return repo.listReviewHistory(this.db, taskId).map(entry => ({
+      runId: entry.runId,
+      recordedAt: entry.recordedAt,
+      endedAt: runs.get(entry.runId)?.endedAt ?? entry.recordedAt
+    }))
+  }
+
+  /** The review as that run left it. Read from the record only; nothing is looked at again. */
+  reviewHistorySnapshot(taskId: string, runId: string): ReviewSnapshot {
+    const snapshot = repo.getReviewHistory(this.db, taskId, runId)
+    if (!snapshot) throw new Error(t('review.historyNotFound'))
+    return { ...snapshot, pullRequests: snapshot.pullRequests.map(completePullRequest) }
+  }
+
+  /** Forget runs recorded more than `days` days ago, with the refs that kept their trees. 0 keeps all. */
+  async prune(days: number, now = new Date()): Promise<number> {
+    if (!(days > 0)) return 0
+    const before = new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString()
+    const expired = repo.expiredReviewHistory(this.db, before)
+    for (const entry of expired) {
+      if (this.stopped) break
+      const prefix = this.review.retainedPrefix(entry.taskId, entry.runId)
+      try {
+        const refs = await git(entry.cwd, ['for-each-ref', '--format=%(refname)', prefix])
+        for (const ref of refs.code === 0 ? refs.stdout.split('\n').filter(Boolean) : []) await git(entry.cwd, ['update-ref', '-d', ref])
+      } catch { /* A checkout that is gone has no refs left to hold anything. */ }
+      repo.deleteReviewHistory(this.db, entry.runId)
+    }
+    return expired.length
   }
 
 

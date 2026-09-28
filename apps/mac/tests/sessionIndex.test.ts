@@ -257,27 +257,108 @@ it('indexes raw output incrementally and patches only its unfinished page', asyn
   expect(writes.mock.calls.reduce((total, call) => total + call[4].length, 0)).toBe(1)
 })
 
+const retiredMessage = { id: 'old', role: 'user' as const, isSidechain: false, timestamp: null, blocks: [], model: null }
+
 /**
- * A parser that learned to read something new gets a new version, and with it a new key. The
- * pages under the old key are never opened again, and a long session is tens of thousands of
- * rows, so they go when the index starts - and nothing under a current key goes with them.
+ * A parser that learned to read something new gets a new version, and with it a new key. Where
+ * the current key already holds the session, the pages under the old one are never opened again,
+ * and a long session is tens of thousands of rows, so they go - and nothing under a current key
+ * goes with them.
  */
-it('drops pages materialized under a retired parser version and keeps the current ones', async () => {
+it('drops pages under a retired parser version once the current version holds the session', async () => {
   writeFileSync(logPath, history(3))
   view.loadSession(runId)
   await index.settled()
   const current = sessionKey(sessionReadTarget(db, repo.getRun(db, runId)!))
   const retired = current.replace(/^v\d+:/, 'v0:')
-  repo.finishSessionIndex(db, retired, { stamp: 's', generation: 'g', title: null, total: 1, evidenceVersion: 0 })
-  repo.writeSessionMessages(db, retired, 'g', 0, [{ id: 'old', role: 'user', isSidechain: false, timestamp: null, blocks: [], model: null }])
+  repo.finishSessionIndex(db, retired, { stamp: 's', generation: 'g', title: null, total: 1, evidenceVersion: 0, updatedAt: '2026-01-01T00:00:00.000Z' })
+  repo.writeSessionMessages(db, retired, 'g', 0, [retiredMessage])
   repo.writeSessionImage(db, retired, 'img', 'data:image/png;base64,aGVsbG8=')
   repo.writeSessionWorkDirs(db, retired, 'g', 0, ['/old'])
 
-  expect(index.sweepRetired()).toBe(4)
+  expect(index.sweepRetired()).toEqual({ carried: 0, dropped: 1 })
   expect(repo.getSessionIndex(db, retired)).toBeNull()
   expect(repo.readSessionMessages(db, retired, 'g', 0, 1)).toEqual([])
   expect(repo.readSessionImage(db, retired, 'img')).toBeNull()
   expect(repo.readSessionWorkDirs(db, retired, 'g')).toEqual([])
   expect(repo.getSessionIndex(db, current)?.total).toBe(3)
-  expect(index.sweepRetired()).toBe(0)
+  expect(index.sweepRetired()).toEqual({ carried: 0, dropped: 0 })
+})
+
+/**
+ * The CLIs delete their own old logs, and then the pages are the only copy of the conversation.
+ * A parser bump used to drop them along with the rest of the retired version - and the
+ * conversation was gone for good.
+ */
+it('carries the pages of a session whose log is gone onto the current version, and keeps showing them', async () => {
+  const current = sessionKey(sessionReadTarget(db, repo.getRun(db, runId)!))
+  const retired = current.replace(/^v\d+:/, 'v0:')
+  repo.finishSessionIndex(db, retired, { stamp: 's', generation: 'g', title: 'Kept', total: 1, evidenceVersion: DERIVATION_VERSION, updatedAt: '2026-01-01T00:00:00.000Z' })
+  repo.writeSessionMessages(db, retired, 'g', 0, [retiredMessage])
+  repo.writeSessionImage(db, retired, 'img', 'data:image/png;base64,aGVsbG8=')
+  repo.writeSessionWorkDirs(db, retired, 'g', 0, ['/old'])
+
+  expect(index.sweepRetired()).toEqual({ carried: 1, dropped: 0 })
+  expect(repo.getSessionIndex(db, retired)).toBeNull()
+  expect(repo.readSessionImage(db, current, 'img')).toBe('data:image/png;base64,aGVsbG8=')
+  expect(repo.readSessionWorkDirs(db, current, 'g')).toEqual(['/old'])
+  const shown = view.loadSession(runId)
+  await index.settled()
+  expect(shown.messages.map(item => item.id)).toEqual(['old'])
+  expect(view.loadSession(runId).messages.map(item => item.id)).toEqual(['old'])
+})
+
+it('reads a carried session again under the current parser while its log still exists', async () => {
+  writeFileSync(logPath, history(3))
+  const current = sessionKey(sessionReadTarget(db, repo.getRun(db, runId)!))
+  const retired = current.replace(/^v\d+:/, 'v0:')
+  repo.finishSessionIndex(db, retired, { stamp: 's', generation: 'g', title: null, total: 1, evidenceVersion: DERIVATION_VERSION, updatedAt: '2026-01-01T00:00:00.000Z' })
+  repo.writeSessionMessages(db, retired, 'g', 0, [retiredMessage])
+
+  expect(index.sweepRetired()).toEqual({ carried: 1, dropped: 0 })
+  view.loadSession(runId)
+  await index.settled()
+  const read = view.loadSession(runId)
+  expect(read.totalMessages).toBe(3)
+  expect(read.messages.map(item => item.id)).toEqual(['m0', 'm1', 'm2'])
+})
+
+/**
+ * Retention removes the conversation of a session that has not changed within the period, and
+ * nothing while the period is 0. The row stays marked, so an unchanged log is not read straight
+ * back in and the screen can say why the pane is empty; what the pages filed against the task
+ * stays on the task.
+ */
+it('removes conversations past the retention period without reading an unchanged log back in', async () => {
+  writeFileSync(logPath, line({ type: 'assistant', uuid: 'receipt', message: { content: [
+    { type: 'tool_use', id: 'commit', name: 'Bash', input: { command: 'git commit -m done' } }] } }) +
+    line({ type: 'user', uuid: 'result', message: { content: [{ type: 'tool_result', tool_use_id: 'commit', content: '[main abcdef1] done' }] } }))
+  view.loadSession(runId)
+  await index.settled()
+  const key = sessionKey(sessionReadTarget(db, repo.getRun(db, runId)!))
+  expect(repo.getSessionIndex(db, key)?.updatedAt).toBeTruthy()
+  expect(repo.reviewEvidence(db, taskId).commits).toEqual(['abcdef1'])
+
+  expect(index.prune(0)).toBe(0)
+  expect(index.prune(30)).toBe(0)
+  const later = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
+  expect(index.prune(30, later)).toBe(1)
+  expect(index.prune(30, later)).toBe(0)
+
+  const parse = vi.spyOn(ClaudeSessionParser.prototype, 'pushLines')
+  index.request(repo.getRun(db, runId)!)
+  await index.settled()
+  expect(parse).not.toHaveBeenCalled()
+  const shown = view.loadSession(runId)
+  expect(shown.messages).toEqual([])
+  expect(shown.prunedAt).toBe(later.toISOString())
+  expect(repo.reviewEvidence(db, taskId).commits).toEqual(['abcdef1'])
+
+  // A session that goes on again is read in full once more
+  appendFileSync(logPath, message(7))
+  index.request(repo.getRun(db, runId)!)
+  await index.settled()
+  const resumed = view.loadSession(runId)
+  expect(resumed.prunedAt).toBeUndefined()
+  expect(resumed.totalMessages).toBeGreaterThan(0)
 })

@@ -99,6 +99,8 @@ export const SessionSnapshotSchema = z.object({
   /** Whether more lines can still be read toward the beginning. */
   hasMore: z.boolean(),
   /** Total messages loaded so far (the full count before head truncation). */
-  totalMessages: z.number()
+  totalMessages: z.number(),
+  /** When retention removed this conversation (`AppSettings.retentionDays`). Absent while it is kept. */
+  prunedAt: z.string().optional()
 })
 export type SessionSnapshot = z.infer<typeof SessionSnapshotSchema>

@@ -29,13 +29,34 @@ export type TaskReport = z.infer<typeof TaskReportSchema>
 export const ProjectReportSchema = TaskReportSchema.omit({ taskId: true }).extend({ projectId: z.string() })
 export type ProjectReport = z.infer<typeof ProjectReportSchema>
 
+/**
+ * A page a generation produced, kept after newer ones replaced it.
+ *
+ * The page is a file; the entry says where it is. The renderer names an entry by `id` to show
+ * it, never by path, so it can only open what main recorded.
+ */
+export const ReportHistoryEntrySchema = z.object({
+  id: z.string(),
+  path: z.string(),
+  /** The tree the page describes. */
+  revision: z.string(),
+  generatedAt: z.string(),
+  /** Whether this is the page the report shows now. */
+  current: z.boolean()
+})
+export type ReportHistoryEntry = z.infer<typeof ReportHistoryEntrySchema>
+
 export const ProjectReportViewRequestSchema = z.object({
   projectId: z.string(),
-  bounds: PullRequestViewBoundsSchema
+  bounds: PullRequestViewBoundsSchema,
+  /** An earlier page from the history. Absent shows the current one. */
+  historyId: z.string().optional()
 })
 
 export const ReportViewRequestSchema = z.object({
   taskId: z.string(),
-  bounds: PullRequestViewBoundsSchema
+  bounds: PullRequestViewBoundsSchema,
+  /** An earlier page from the history. Absent shows the current one. */
+  historyId: z.string().optional()
 })
 export type ReportViewRequest = z.infer<typeof ReportViewRequestSchema>

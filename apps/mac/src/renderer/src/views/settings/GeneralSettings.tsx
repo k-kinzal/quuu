@@ -88,6 +88,23 @@ export function GeneralSettings(): JSX.Element {
       </Section>
 
       {/*
+        How long Quuu keeps what it recorded. The CLIs delete their own old logs, so these copies
+        are the record: forever until a person trades them for disk space
+      */}
+      <Section title={t('generalSettings.retentionSection')}>
+        <Field label={t('generalSettings.retentionDays')} hint={t('generalSettings.retentionHint')} width="xs">
+          <NumberInput
+            min={0}
+            max={3650}
+            unit={t('generalSettings.days')}
+            zeroLabel={t('generalSettings.retentionForever')}
+            value={settings.retentionDays}
+            onChange={(v) => void setSettings({ retentionDays: v })}
+          />
+        </Field>
+      </Section>
+
+      {/*
         Where a task's working directory opens. Each project can name a different one
         (the IDE differs per language, so that is normally decided over there)
       */}

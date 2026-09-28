@@ -16,6 +16,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { ReviewFile, ReviewFileRequest } from '../../../api/schemas/review.js'
 import type { Task } from '../../../api/schemas/tasks.js'
+import { useReviewHistory, useReviewHistorySnapshot } from '../interaction/useReviewHistory.js'
 import { useReviewSnapshot } from '../interaction/useReviewSnapshot.js'
 import type { InspectorTool, WorkTool } from '../interaction/workbench.js'
 import { inspectorTools, useWorkbenchLayout, visibleInspectorTools } from '../interaction/workbench.js'
@@ -71,6 +72,15 @@ export function TaskWorkbench({ task, project }: { task: Task; project: Project 
   const [reviewReveal, setReviewReveal] = useState<ReviewReveal | null>(null)
 
   const [terminalRunRequest, setTerminalRunRequest] = useState<TerminalRunRequest | null>(null)
+  /**
+   * The run whose kept review the main pane shows; absent is the task as it is now. Held with the
+   * task it was picked on, so the render that switches tasks never asks one task for another's run.
+   */
+  const [picked, setPicked] = useState<{ taskId: string; runId: string } | null>(null)
+  const point = picked?.taskId === task.id ? picked.runId : null
+  const setPoint = useCallback((runId: string | null): void => {
+    setPicked(runId ? { taskId: task.id, runId } : null)
+  }, [task.id])
 
   const selectReviewFile = useCallback((file: ReviewFile | null): void => {
     setReviewFile(file)
@@ -90,6 +100,8 @@ export function TaskWorkbench({ task, project }: { task: Task; project: Project 
 
   const { snapshot, loading: snapshotLoading, error: snapshotError, refresh: loadReview } =
     useReviewSnapshot(task.id, needsProjectData)
+  const points = useReviewHistory(task.id, dock.layout.visibleWork.includes('main'))
+  const past = useReviewHistorySnapshot(task.id, point)
 
   const reportTerminalError = useCallback(
     (caught: unknown): void => {
@@ -207,9 +219,10 @@ export function TaskWorkbench({ task, project }: { task: Task; project: Project 
                       key={task.id}
                       task={task}
                       project={project}
-                      snapshot={snapshot}
-                      loading={snapshotLoading}
-                      error={snapshotError}
+                      snapshot={point ? past.snapshot : snapshot}
+                      loading={point ? past.loading : snapshotLoading}
+                      error={point ? past.error : snapshotError}
+                      history={{ points, point, onPoint: setPoint }}
                       requestedLine={requestedLine}
                       reveal={reviewReveal}
                       onRefresh={() => void loadReview()}
