@@ -40,3 +40,12 @@ it('accepts an archive whose imports resolve, including nested and scoped packag
   })
   expect(missingModules(target)).toEqual([])
 })
+
+it('checks dependencies loaded only by a nested main-process chunk on the host platform', async () => {
+  const target = await archive({
+    'out/main/index.js': 'import("./chunks/appUpdates.js")',
+    'out/main/chunks/appUpdates.js': 'import { update } from "@vendor/updater"',
+    'node_modules/@vendor/updater/package.json': manifest({ 'missing-helper': '^1' })
+  })
+  expect(missingModules(target)).toEqual(['missing-helper (needed by @vendor/updater)'])
+})

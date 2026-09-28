@@ -14,7 +14,7 @@
  */
 import { extractFile, listPackage } from '@electron/asar'
 import { builtinModules } from 'node:module'
-import { join, posix } from 'node:path'
+import { join, normalize, posix } from 'node:path'
 
 const specifier = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*)["']([^"']+)["']/g
 const bare = /^((?:@[\w-][\w.-]*\/)?[\w-][\w.-]*)(?:\/[\w./-]+)?$/
@@ -29,7 +29,8 @@ export function archivePath(context) {
 /** Every "package (needed by …)" that Node could not resolve from inside the archive. */
 export function missingModules(archive) {
   const files = new Set(listPackage(archive, { isPack: false }).map(file => file.replaceAll('\\', '/')))
-  const read = file => extractFile(archive, file.slice(1)).toString('utf8')
+  // ASAR traverses with the host separator, even though resolution here uses POSIX paths.
+  const read = file => extractFile(archive, normalize(file.slice(1))).toString('utf8')
   const resolve = (from, name) => {
     for (let dir = from; ; dir = posix.dirname(dir)) {
       const found = posix.join(dir, 'node_modules', name)

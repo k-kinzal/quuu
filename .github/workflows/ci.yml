@@ -74,5 +74,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Windows launch rules
-        run: npx vitest run apps/mac/tests/windowsPlatform.test.ts
+      - name: Windows launch and packaging rules
+        run: npx vitest run apps/mac/tests/windowsPlatform.test.ts apps/mac/tests/packagedModules.test.ts
