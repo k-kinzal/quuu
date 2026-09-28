@@ -88,12 +88,14 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
    * so placing the next send there makes it unreadable which run it follows.
    */
   const latest = runs.length === 0 || runs[0]?.id === selectedRunId
-  const hooks = useHookHistory({ taskId: task.id, active: active && latest })
+  // Resumed runs open the same complete conversation, including its auxiliary work.
+  const latestConversation = latest || Boolean(run?.sessionId && run.sessionId === runs[0]?.sessionId)
+  const hooks = useHookHistory({ taskId: task.id, active: active && latestConversation })
   /*
    * Hooks and the report happen beside the conversation, so each sits where it happened in
-   * time, not gathered at the end. Kept to the latest run, whose conversation they belong to.
+   * time, not gathered at the end. Earlier runs of this conversation show the same entries.
    */
-  const placed = placeByTime(turns, latest && !loading ? hookEntries(hooks, { active }) : [],
+  const placed = placeByTime(turns, latestConversation && !loading ? hookEntries(hooks, { active }) : [],
     { older: session?.hasMore === true, newer: session?.hasNewer === true })
   /*
    * What the agent already holds out of the instruction that waits to be sent. Only the end of
@@ -307,7 +309,7 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             </ContentInset>
           )}
 
-          <HookInterlude key={task.id} entries={placed.end} error={latest && !session?.hasNewer ? hooks.error : null} />
+          <HookInterlude key={task.id} entries={placed.end} error={latestConversation && !session?.hasNewer ? hooks.error : null} />
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
           {!session?.hasNewer && next && <PendingTurn task={task} next={next} />}
         </ChatScroll>

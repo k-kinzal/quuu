@@ -90,7 +90,7 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver', class { observe(): void {} disconnect(): void {} })
   const os = implement(contract)
   Object.defineProperty(window, 'quuu', { configurable: true, value: createRouterClient({
-    hooks: { list: os.hooks.list.handler(() => [hook('late', 'Auto commit', '2026-09-28T02:06:00Z'), hook('early', 'Lint check', '2026-09-28T01:06:00Z')]) },
+    hooks: { list: os.hooks.list.handler(() => [{ ...hook('late', 'Auto commit', '2026-09-28T02:06:00Z'), event: 'completed' }, hook('early', 'Lint check', '2026-09-28T01:06:00Z')]) },
     report: { get: os.report.get.handler(() => null) }
   }) })
 })
@@ -113,4 +113,26 @@ it('shows a hook between the turns it ran between, not under the last one', asyn
   await waitFor(() => expect(follows(screen.getByText('Rebuilt it'), early)).toBe(true))
   expect(follows(early, screen.getByText('Align the rules too'))).toBe(true)
   expect(follows(screen.getByText('Aligned them'), late)).toBe(true)
+})
+
+it('keeps completed hooks visible when an earlier run opens the same conversation', async () => {
+  const earlier = { ...RUN, id: 'earlier', endedAt: '2026-09-28T01:06:00Z' }
+  useStore.setState({ runs: [RUN, earlier], selectedRunId: earlier.id, sessionLoading: false, session: {
+    sessionId: 's1', logPath: '/tmp/s1.jsonl', exists: true, title: null, messages: MESSAGES, hasMore: false, hasNewer: false,
+    totalMessages: MESSAGES.length, first: 0, last: MESSAGES.length, generation: 'g1', indexing: false
+  } })
+  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><Chat task={{ ...TASK, status: 'done' }} project={PROJECT} /></ThemeProvider>)
+  expect(await screen.findByRole('button', { name: /Auto commit/ })).toBeTruthy()
+})
+
+it.each(['different-session', ''])('does not move cached hooks into a past run with session %s', (sessionId) => {
+  const earlier = { ...RUN, id: 'earlier', sessionId }
+  queryClient.setQueryData(['hooks.list', TASK.id, undefined], [hook('late', 'Auto commit', '2026-09-28T02:06:00Z')])
+  useStore.setState({ runs: [{ ...RUN, sessionId: sessionId ? RUN.sessionId : '' }, earlier], selectedRunId: earlier.id, sessionLoading: false, session: {
+    sessionId: sessionId || 'stdout:earlier', logPath: '/tmp/earlier.jsonl', exists: true, title: null, messages: MESSAGES, hasMore: false, hasNewer: false,
+    totalMessages: MESSAGES.length, first: 0, last: MESSAGES.length, generation: 'g1', indexing: false
+  } })
+  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><Chat task={TASK} project={PROJECT} /></ThemeProvider>)
+  expect(screen.getByText('Aligned them')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /Auto commit/ })).toBeNull()
 })
