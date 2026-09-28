@@ -1,19 +1,28 @@
 import { Button, Checkbox, Field, FieldHint, Row, Section, TextInput } from '@design-system/react'
 import { useMutation } from '@tanstack/react-query'
 import { useState } from 'react'
-import type { Project } from '../../../../api/types.js'
+import type { Project, ProjectInput } from '../../../../api/types.js'
 import { t } from '../../model/i18n/index.js'
 import { queryClient } from '../../state/queryClient.js'
 
 export function ProjectRunnerSettings({ project }: { project: Project }): JSX.Element | null {
   const [remote, setRemote] = useState(project.gitRemote ?? '')
-  const save = useMutation({ mutationFn: (patch: { gitRemote?: string; runnerEnabled?: boolean }) =>
-    window.quuu.projects.update({ id: project.id, patch }), onSuccess: updated => setRemote(updated.gitRemote ?? '') }, queryClient)
+  const [labels, setLabels] = useState((project.runnerLabels ?? []).join(', '))
+  const save = useMutation({ mutationFn: (patch: Partial<ProjectInput>) =>
+    window.quuu.projects.update({ id: project.id, patch }) }, queryClient)
+  const selectedLabels = (): string[] => [...new Set(labels.split(',').map(label => label.trim()).filter(Boolean))]
   if (project.builtIn) return null
   return <Section title={t('runnerSettings.title')}>
     <Checkbox label={t('runnerSettings.allowProject')} checked={project.runnerEnabled ?? false} disabled={save.isPending}
-      onChange={enabled => save.mutate({ runnerEnabled: enabled, gitRemote: remote })} />
+      onChange={enabled => save.mutate({ runnerEnabled: enabled, gitRemote: remote, runnerLabels: selectedLabels() })} />
     <FieldHint>{t('runnerSettings.projectHint')}</FieldHint>
+    <Field label={t('runnerSettings.requiredLabels')} width="full">
+      <Row>
+        <TextInput aria-label={t('runnerSettings.requiredLabels')} value={labels} onChange={event => setLabels(event.target.value)} placeholder={t('runnerSettings.labelsPlaceholder')} />
+        <Button disabled={save.isPending} onClick={() => save.mutate({ runnerLabels: selectedLabels() })}>{t('runnerSettings.saveLabels')}</Button>
+      </Row>
+      <FieldHint>{t('runnerSettings.labelsHint')}</FieldHint>
+    </Field>
     <Field label={t('runnerSettings.repository')} width="full">
       <Row>
         <TextInput aria-label={t('runnerSettings.repository')} value={remote} onChange={event => setRemote(event.target.value)} placeholder={t('runnerSettings.detectRemote')} />

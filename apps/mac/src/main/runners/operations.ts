@@ -20,6 +20,7 @@ import { botLogin, hasGitHubAppAuthentication, resolveCommitIdentity } from '../
 import { newId, nowIso } from '../util.js'
 import { listenForRunners } from './listener.js'
 import { projectRepository } from './repository.js'
+import { matchesRunnerLabels } from './labels.js'
 import type { GitCredential, RemoteJob, RemoteJobSpec, RemoteRunner, RunnerConfig, RunnerPoll, RunnerReply, RunnerWorkspace } from './types.js'
 
 const ONLINE_MS = 20_000
@@ -71,7 +72,7 @@ export class RunnerOperations extends EventEmitter {
       fingerprint: this.fingerprint, error: this.error,
       urls: this.server ? Object.values(networkInterfaces()).flatMap(items => (items ?? [])
         .filter(item => item.family === 'IPv4' && !item.internal).map(item => `https://${item.address}:${this.port}`)) : [],
-      runners: repo.listRemoteRunners(this.db).map(({ tokenHash: _tokenHash, ...runner }) => ({ ...runner,
+      runners: repo.listRemoteRunners(this.db).map(({ tokenHash: _tokenHash, ...runner }) => ({ ...runner, labels: runner.labels ?? [],
         online: this.online(runner), active: repo.listRemoteJobs(this.db, runner.id).length })) }
   }
   pairing() {
@@ -79,14 +80,14 @@ export class RunnerOperations extends EventEmitter {
     this.pin = { value: String(randomInt(0, 100_000_000)).padStart(8, '0'), expires: Date.now() + 5 * 60_000, attempts: 0 }
     return { pin: this.pin.value, expiresAt: new Date(this.pin.expires).toISOString(), fingerprint: this.fingerprint, urls: this.status().urls }
   }
-  private pair(input: { version: 1; pin: string; name: string; agents: RemoteRunner['agents']; root: string; capacity: number }) {
+  private pair(input: { version: 1; pin: string; name: string; agents: RemoteRunner['agents']; labels?: string[]; root: string; capacity: number }) {
     const pin = this.pin
     if (!pin || pin.expires < Date.now() || ++pin.attempts > 10 ||
       !timingSafeEqual(Buffer.from(hash(input.pin)), Buffer.from(hash(pin.value)))) throw new Error('Pairing refused')
     this.pin = null
     const token = randomBytes(32).toString('hex')
     const runner: RemoteRunner = { id: newId('runner'), name: input.name, agents: input.agents, root: posix.normalize(input.root),
-      capacity: input.capacity, lastSeen: nowIso(), revoked: false, tokenHash: hash(token) }
+      labels: input.labels ?? [], capacity: input.capacity, lastSeen: nowIso(), revoked: false, tokenHash: hash(token) }
     repo.saveRemoteRunner(this.db, runner)
     this.changed()
     return { id: runner.id, token }
@@ -129,7 +130,7 @@ export class RunnerOperations extends EventEmitter {
       return existing
     }
     if (!project.runnerEnabled || project.builtIn || repo.listRunsByTask(this.db, taskId).some(run => !run.runnerId)) return null
-    const runner = repo.listRemoteRunners(this.db).find(candidate => this.online(candidate) && this.supports(candidate, agent) && (!auxiliary || this.supports(candidate, auxiliary)) &&
+    const runner = repo.listRemoteRunners(this.db).find(candidate => matchesRunnerLabels(candidate, project) && this.online(candidate) && this.supports(candidate, agent) && (!auxiliary || this.supports(candidate, auxiliary)) &&
       this.dependenciesAvailable(candidate, project) && repo.listRemoteJobs(this.db, candidate.id).length < candidate.capacity)
     if (!runner) return null
     const remote = projectRepository(project.path, project.gitRemote)
@@ -150,7 +151,8 @@ export class RunnerOperations extends EventEmitter {
   }
   rankAgent(taskId: string, project: Project, agent: Agent): number {
     if (!project.runnerEnabled || project.builtIn || repo.listRunsByTask(this.db, taskId).some(run => !run.runnerId)) return 1
-    return repo.listRemoteRunners(this.db).some(runner => this.online(runner) && this.supports(runner, agent) &&
+    const existing = this.workspace(taskId)
+    return repo.listRemoteRunners(this.db).some(runner => (existing ? runner.id === existing.runnerId : matchesRunnerLabels(runner, project)) && this.online(runner) && this.supports(runner, agent) &&
       this.dependenciesAvailable(runner, project) && repo.listRemoteJobs(this.db, runner.id).length < runner.capacity) ? 0 : 1
   }
   workspace(taskId: string): RunnerWorkspace | null { return repo.getRunnerWorkspace(this.db, taskId) }
@@ -232,9 +234,10 @@ export class RunnerOperations extends EventEmitter {
     if (!runner || this.polls.has(runner.id)) throw new Error('Runner authentication failed')
     this.polls.add(runner.id)
     try {
-      const connectionChanged = !this.online(runner) || JSON.stringify(runner.agents) !== JSON.stringify(input.agents)
+      const labels = input.labels ?? []
+      const connectionChanged = !this.online(runner) || JSON.stringify(runner.agents) !== JSON.stringify(input.agents) || JSON.stringify(runner.labels ?? []) !== JSON.stringify(labels)
       if (connectionChanged || Date.now() - Date.parse(runner.lastSeen) >= 5000) {
-        repo.saveRemoteRunner(this.db, { ...runner, agents: input.agents, lastSeen: nowIso() })
+        repo.saveRemoteRunner(this.db, { ...runner, agents: input.agents, labels, lastSeen: nowIso() })
       }
       const reply: RunnerReply = { jobs: [], cancel: [], acknowledgements: [], credentials: {} }
       for (const update of input.updates) {

@@ -20,6 +20,26 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
+it('adds empty Runner selectors to existing projects and preserves edits across reopening', () => {
+  const old = openDatabase(path)
+  const agentId = makeAgent(old, { name: 'Runner migration' })
+  const projectId = makeProject(old, { name: 'existing', targetId: agentId })
+  const taskId = makeTask(old, projectId, 'existing task')
+  repo.updateProject(old, projectId, { runnerEnabled: true })
+  old.exec("ALTER TABLE projects DROP COLUMN runner_labels; UPDATE meta SET value = '36' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getProject(upgraded, projectId)).toMatchObject({ runnerEnabled: true, runnerLabels: [] })
+  expect(repo.getTask(upgraded, taskId)?.status).toBe('queued')
+  repo.updateProject(upgraded, projectId, { runnerLabels: ['rust', 'linux'] })
+  repo.updateProject(upgraded, projectId, { name: 'renamed' })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.getProject(reopened, projectId)?.runnerLabels).toEqual(['rust', 'linux'])
+  expect(repo.updateProject(reopened, projectId, { runnerLabels: [] }).runnerLabels).toEqual([])
+  reopened.close()
+})
+
 /** Build a v2-era DB (no ordering-control or import columns). */
 function makeV2Database(): void {
   const db = new DatabaseSync(path)
@@ -199,7 +219,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('36')
+    expect(version.value).toBe('37')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -267,7 +287,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('36')
+    expect(version.value).toBe('37')
     db.close()
   })
 

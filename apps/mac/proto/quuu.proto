@@ -7,6 +7,10 @@ message SnapshotRequest {
 
 }
 
+message SnapshotResponseValueProjectsItemRunnerLabels {
+  repeated string items = 1;
+}
+
 message SnapshotResponseValueProjectsItemTaskHooksItemEvents {
   repeated string items = 1;
 }
@@ -58,6 +62,7 @@ message SnapshotResponseValueProjectsItemCommitIdentity {
 
 message SnapshotResponseValueProjectsItem {
   optional bool runnerEnabled = 30;
+  optional SnapshotResponseValueProjectsItemRunnerLabels runnerLabels = 32;
   optional string gitRemote = 31;
   optional SnapshotResponseValueProjectsItemTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
@@ -490,10 +495,15 @@ message RunnersStatusResponseValueRunnersItemAgents {
   repeated RunnersStatusResponseValueRunnersItemAgentsItem items = 1;
 }
 
+message RunnersStatusResponseValueRunnersItemLabels {
+  repeated string items = 1;
+}
+
 message RunnersStatusResponseValueRunnersItem {
   optional string id = 1;
   optional string name = 2;
   optional RunnersStatusResponseValueRunnersItemAgents agents = 3;
+  optional RunnersStatusResponseValueRunnersItemLabels labels = 10;
   optional double capacity = 4;
   optional string root = 5;
   optional string lastSeen = 6;
@@ -543,10 +553,15 @@ message RunnersConfigureResponseValueRunnersItemAgents {
   repeated RunnersConfigureResponseValueRunnersItemAgentsItem items = 1;
 }
 
+message RunnersConfigureResponseValueRunnersItemLabels {
+  repeated string items = 1;
+}
+
 message RunnersConfigureResponseValueRunnersItem {
   optional string id = 1;
   optional string name = 2;
   optional RunnersConfigureResponseValueRunnersItemAgents agents = 3;
+  optional RunnersConfigureResponseValueRunnersItemLabels labels = 10;
   optional double capacity = 4;
   optional string root = 5;
   optional string lastSeen = 6;
@@ -1298,6 +1313,10 @@ message ProjectsListRequest {
 
 }
 
+message ProjectsListResponseValueItemRunnerLabels {
+  repeated string items = 1;
+}
+
 message ProjectsListResponseValueItemTaskHooksItemEvents {
   repeated string items = 1;
 }
@@ -1349,6 +1368,7 @@ message ProjectsListResponseValueItemCommitIdentity {
 
 message ProjectsListResponseValueItem {
   optional bool runnerEnabled = 30;
+  optional ProjectsListResponseValueItemRunnerLabels runnerLabels = 32;
   optional string gitRemote = 31;
   optional ProjectsListResponseValueItemTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
@@ -1389,6 +1409,10 @@ message ProjectsListResponse {
   optional ProjectsListResponseValue value = 1;
 }
 
+message ProjectsCreateRequestValueRunnerLabels {
+  repeated string items = 1;
+}
+
 message ProjectsCreateRequestValueTargetId {
   oneof kind {
   string variant1 = 1;
@@ -1426,6 +1450,7 @@ message ProjectsCreateRequestValueCommitIdentity {
 
 message ProjectsCreateRequestValue {
   optional bool runnerEnabled = 24;
+  optional ProjectsCreateRequestValueRunnerLabels runnerLabels = 26;
   optional string gitRemote = 25;
   optional string name = 1;
   optional double priority = 2;
@@ -1454,6 +1479,10 @@ message ProjectsCreateRequestValue {
 
 message ProjectsCreateRequest {
   optional ProjectsCreateRequestValue value = 1;
+}
+
+message ProjectsCreateResponseValueRunnerLabels {
+  repeated string items = 1;
 }
 
 message ProjectsCreateResponseValueTaskHooksItemEvents {
@@ -1507,6 +1536,7 @@ message ProjectsCreateResponseValueCommitIdentity {
 
 message ProjectsCreateResponseValue {
   optional bool runnerEnabled = 30;
+  optional ProjectsCreateResponseValueRunnerLabels runnerLabels = 32;
   optional string gitRemote = 31;
   optional ProjectsCreateResponseValueTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;
@@ -1541,6 +1571,10 @@ message ProjectsCreateResponseValue {
 
 message ProjectsCreateResponse {
   optional ProjectsCreateResponseValue value = 1;
+}
+
+message ProjectsUpdateRequestValuePatchRunnerLabels {
+  repeated string items = 1;
 }
 
 message ProjectsUpdateRequestValuePatchTargetId {
@@ -1580,6 +1614,7 @@ message ProjectsUpdateRequestValuePatchCommitIdentity {
 
 message ProjectsUpdateRequestValuePatch {
   optional bool runnerEnabled = 24;
+  optional ProjectsUpdateRequestValuePatchRunnerLabels runnerLabels = 26;
   optional string gitRemote = 25;
   optional string name = 1;
   optional double priority = 2;
@@ -1613,6 +1648,10 @@ message ProjectsUpdateRequestValue {
 
 message ProjectsUpdateRequest {
   optional ProjectsUpdateRequestValue value = 1;
+}
+
+message ProjectsUpdateResponseValueRunnerLabels {
+  repeated string items = 1;
 }
 
 message ProjectsUpdateResponseValueTaskHooksItemEvents {
@@ -1666,6 +1705,7 @@ message ProjectsUpdateResponseValueCommitIdentity {
 
 message ProjectsUpdateResponseValue {
   optional bool runnerEnabled = 30;
+  optional ProjectsUpdateResponseValueRunnerLabels runnerLabels = 32;
   optional string gitRemote = 31;
   optional ProjectsUpdateResponseValueTaskHooks taskHooks = 28;
   optional string worktreeMode = 27;

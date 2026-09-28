@@ -36,6 +36,7 @@ export function RunnerConnections(): JSX.Element {
     {status.data?.runners.filter(runner => !runner.revoked).map(runner => <Column key={runner.id} gap="sm">
       <Row><Text>{runner.name}</Text><Text tone="secondary">{t(runner.online ? 'runnerSettings.online' : 'runnerSettings.offline')}</Text></Row>
       <Text tone="secondary">{t('runnerSettings.capacity', { active: runner.active, capacity: runner.capacity })}</Text>
+      <Text tone="secondary">{t('runnerSettings.labels', { labels: runner.labels?.join(', ') || t('runnerSettings.noLabels') })}</Text>
       <Text>{runner.agents.map(agent => `${agent.name} ${agent.version}`).join(' · ') || t('runnerSettings.noAgents')}</Text>
       <Button disabled={runner.active > 0 || revoke.isPending} onClick={() => revoke.mutate(runner.id)}>{t('runnerSettings.revoke')}</Button>
     </Column>)}

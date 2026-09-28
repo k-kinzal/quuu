@@ -10,6 +10,7 @@ export interface RemoteRunner {
   id: string
   name: string
   agents: RunnerAgent[]
+  labels?: string[]
   capacity: number
   root: string
   lastSeen: string
@@ -83,6 +84,7 @@ export interface RunnerUpdate {
 }
 export interface RunnerPoll {
   version: 1
+  labels?: string[]
   agents: RunnerAgent[]
   updates: RunnerUpdate[]
 }

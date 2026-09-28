@@ -33,6 +33,22 @@ layer. Claude's Linux credential file is `~/.claude/.credentials.json`; Codex us
 `~/.codex/auth.json`; Cursor's Linux authentication uses `~/.config/cursor/auth.json`.
 Persist each agent's session directories too, so follow-ups survive container replacement.
 
+### Rust environment
+
+The Rust Dockerfile is kept at [`.runner-private/Dockerfile.rust`](../../.runner-private/Dockerfile.rust).
+It extends the agent image with Rust 1.92.0, rustfmt, Clippy, native build tools,
+OpenSSL development headers and Python, and advertises `rust,linux`. The compiler
+version can be changed with `--build-arg RUST_VERSION=...`.
+
+```sh
+DOCKER_HOST=tcp://gpu.internal:2375 DOCKER_BUILDKIT=0 \
+  docker build -t quuu-runner-rust:local - < .runner-private/Dockerfile.rust
+```
+
+Build the base and agent images on the same Docker daemon first. Start the Rust
+image using the pairing steps below, with its own persistent data and agent-session
+directories. Keep private environment files and authentication outside Git.
+
 ## Pair
 
 1. In Quuu, open **Settings → Connections → Runners**, enable Runner connections and
@@ -47,6 +63,7 @@ QUUU_CONTROLLER_FINGERPRINT=THE_SHA256_FINGERPRINT_SHOWN_BY_QUUU
 QUUU_RUNNER_PIN=THE_EIGHT_DIGIT_PIN
 QUUU_RUNNER_NAME=Build machine
 QUUU_RUNNER_CAPACITY=2
+QUUU_RUNNER_LABELS=rust,linux
 ```
 
 ```sh
@@ -77,13 +94,21 @@ remote from `origin`, or the only remote if there is no `origin`. You may set a 
 credential-free HTTPS or SSH clone URL. A project inside a Git subdirectory keeps that
 subdirectory inside its Runner checkout.
 
-- A new task prefers an online Runner with capacity and the configured task agent.
+- Set **Required Runner labels** in the project to select its build environment,
+  for example `rust, linux`. Labels are case-sensitive; every requested label must
+  be advertised by the Runner. Empty accepts any Runner. Labels use letters,
+  digits, `.`, `_` and `-`, begin with a letter or digit, and are limited to 32
+  entries of at most 64 characters. The CLI/API project field is `runnerLabels`.
+- A new task prefers an online Runner with matching labels, capacity and the configured task agent.
   Every enabled AI hook and task-report writer must also have an available agent on that
   Runner. Group targets need at least one supported member. CLI executable names match
   across platforms; machine-specific absolute paths are replaced by the advertised command.
 - If no suitable Runner exists, a new task can run locally. Existing local conversations
   stay local. An existing Runner conversation stays on its original Runner and waits if
   that Runner is unavailable. There is no automatic replay on a second machine.
+  Label changes affect new workspaces only; existing conversations and their hooks
+  and reports keep the original Runner. Workers without labels remain compatible
+  with projects whose selector is empty.
 - Each task clones the remote's default branch into `workspaces/<task-id>` and creates
   `quuu/<task-id>`. Commit and push the local input you want to use before dispatching.
   Uncommitted files and local-only branches are not transferred.
@@ -127,12 +152,16 @@ Additional environment variables:
 | `QUUU_RUNNER_SECRETS` | `/run/quuu-runner` in the image | Temporary GitHub credentials |
 | `QUUU_RUNNER_PIN_FILE` | unset | Read initial PIN from a mounted secret instead of an environment variable |
 | `QUUU_RUNNER_AGENTS` | `codex,claude,cursor-agent` | Comma-separated CLI names to probe with `--version` |
+| `QUUU_RUNNER_LABELS` | empty | Comma-separated environment labels, advertised at pairing and on every poll; restart the container after changing them |
 | `QUUU_RUNNER_CAPACITY` | `2` | Concurrent remote jobs, 1–64; fixed at pairing |
 
 `--version` proves installation; it does not prove authentication or model access. Verify
 each agent account before allowing real tasks. Arbitrary command hooks need their tools
 installed too. Codex and Claude structured session logs are mirrored; agents whose native
 history is a database currently show their stdout in Quuu.
+
+Upgrade the controller before starting a worker that advertises labels. Older
+controllers reject unknown pairing and polling fields.
 
 ## Development
 

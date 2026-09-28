@@ -18,6 +18,7 @@ export function isBuiltInProject(id: string): boolean {
 
 export interface Project {
   runnerEnabled?: boolean
+  runnerLabels?: string[]
   gitRemote?: string
   taskHooks: TaskHook[]
   worktreeMode: 'inherit' | 'on' | 'off'

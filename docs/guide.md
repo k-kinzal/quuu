@@ -1027,7 +1027,10 @@ Quuu can dispatch new tasks to a paired Linux Runner when a project permits it.
 Enable Runner connections in Settings → Connections, issue a PIN, and start the
 Runner with Quuu's LAN URL and certificate fingerprint. The project needs a Git
 remote and the Runner needs the task, hook and task-report agents installed and
-authenticated. Eligible Runners are preferred; existing conversations keep their
+authenticated. Set **Required Runner labels** in project settings (for example
+`rust, linux`) to require every label advertised through `QUUU_RUNNER_LABELS`.
+An empty selector accepts any Runner; if no eligible Runner is available, new tasks
+can still run locally. Eligible Runners are preferred; existing conversations keep their
 original computer. A disconnected Runner's work waits for reconnection.
 
 The Runner owns an independent Git clone per task. Quuu owns scheduling, hooks,

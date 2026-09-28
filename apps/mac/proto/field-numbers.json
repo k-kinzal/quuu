@@ -49,7 +49,8 @@
     "taskHooks": 28,
     "builtIn": 29,
     "runnerEnabled": 30,
-    "gitRemote": 31
+    "gitRemote": 31,
+    "runnerLabels": 32
   },
   "SnapshotResponseValueProjects": {
     "items": 1
@@ -383,7 +384,8 @@
     "taskHooks": 28,
     "builtIn": 29,
     "runnerEnabled": 30,
-    "gitRemote": 31
+    "gitRemote": 31,
+    "runnerLabels": 32
   },
   "ProjectsListResponseValue": {
     "items": 1
@@ -426,7 +428,8 @@
     "worktreeMode": 22,
     "taskHooks": 23,
     "runnerEnabled": 24,
-    "gitRemote": 25
+    "gitRemote": 25,
+    "runnerLabels": 26
   },
   "ProjectsCreateRequest": {
     "value": 1
@@ -480,7 +483,8 @@
     "taskHooks": 28,
     "builtIn": 29,
     "runnerEnabled": 30,
-    "gitRemote": 31
+    "gitRemote": 31,
+    "runnerLabels": 32
   },
   "ProjectsCreateResponse": {
     "value": 1
@@ -520,7 +524,8 @@
     "worktreeMode": 22,
     "taskHooks": 23,
     "runnerEnabled": 24,
-    "gitRemote": 25
+    "gitRemote": 25,
+    "runnerLabels": 26
   },
   "ProjectsUpdateRequestValue": {
     "id": 1,
@@ -578,7 +583,8 @@
     "taskHooks": 28,
     "builtIn": 29,
     "runnerEnabled": 30,
-    "gitRemote": 31
+    "gitRemote": 31,
+    "runnerLabels": 32
   },
   "ProjectsUpdateResponse": {
     "value": 1
@@ -4997,7 +5003,8 @@
     "lastSeen": 6,
     "revoked": 7,
     "online": 8,
-    "active": 9
+    "active": 9,
+    "labels": 10
   },
   "RunnersStatusResponseValueRunners": {
     "items": 1
@@ -5041,7 +5048,8 @@
     "lastSeen": 6,
     "revoked": 7,
     "online": 8,
-    "active": 9
+    "active": 9,
+    "labels": 10
   },
   "RunnersConfigureResponseValueRunners": {
     "items": 1
@@ -5639,5 +5647,29 @@
   },
   "ReportImageResponse": {
     "value": 1
+  },
+  "SnapshotResponseValueProjectsItemRunnerLabels": {
+    "items": 1
+  },
+  "RunnersStatusResponseValueRunnersItemLabels": {
+    "items": 1
+  },
+  "RunnersConfigureResponseValueRunnersItemLabels": {
+    "items": 1
+  },
+  "ProjectsListResponseValueItemRunnerLabels": {
+    "items": 1
+  },
+  "ProjectsCreateRequestValueRunnerLabels": {
+    "items": 1
+  },
+  "ProjectsCreateResponseValueRunnerLabels": {
+    "items": 1
+  },
+  "ProjectsUpdateRequestValuePatchRunnerLabels": {
+    "items": 1
+  },
+  "ProjectsUpdateResponseValueRunnerLabels": {
+    "items": 1
   }
 }

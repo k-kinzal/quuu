@@ -1,0 +1,19 @@
+ARG RUNNER_IMAGE=quuu-runner-agents:local
+FROM ${RUNNER_IMAGE}
+ARG RUST_VERSION=1.92.0
+USER root
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential pkg-config libssl-dev clang cmake python3 ripgrep jq unzip zip \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/rustup /opt/cargo \
+    && chown node:node /opt/rustup /opt/cargo
+ENV RUSTUP_HOME=/opt/rustup \
+    CARGO_HOME=/opt/cargo \
+    PATH=/opt/cargo/bin:/home/node/.local/bin:/usr/local/bin:/usr/bin:/bin \
+    QUUU_RUNNER_LABELS=rust,linux
+USER node
+RUN curl --proto '=https' --tlsv1.2 -fsSL https://sh.rustup.rs -o /tmp/rustup.sh \
+    && sh /tmp/rustup.sh -y --no-modify-path --profile minimal \
+       --default-toolchain ${RUST_VERSION} --component rustfmt --component clippy \
+    && rm /tmp/rustup.sh \
+    && rustc --version && cargo --version && cargo fmt --version && cargo clippy --version

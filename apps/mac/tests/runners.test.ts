@@ -14,6 +14,7 @@ import { RunnerOperations } from '../src/main/runners/operations.js'
 import { RunnerWorker } from '../src/main/runners/worker.js'
 import { pinnedRequest } from '../src/main/runners/tls.js'
 import { normalizeRepository, projectRepository } from '../src/main/runners/repository.js'
+import { configuredRunnerLabels } from '../src/main/runners/labels.js'
 import { issueToken } from '../src/main/platform/githubAuthRuntime.mjs'
 import { memoryDb, makeAgent, makeProject, makeTask } from './helpers.js'
 
@@ -27,6 +28,7 @@ beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), 'quuu-runners-'))
   vi.stubEnv('QUUU_USER_DATA', join(dir, 'controller'))
   vi.stubEnv('QUUU_RUNNER_AGENTS', 'bash')
+  vi.stubEnv('QUUU_RUNNER_LABELS', '')
   db = memoryDb()
   remote = new RunnerOperations(db, () => {})
   runner = new Runner(db, remote)
@@ -35,11 +37,12 @@ beforeEach(async () => {
 })
 afterEach(() => { scheduler.stop(); remote.stop(); runner.shutdown(); db.close(); vi.unstubAllEnvs(); rmSync(dir, { recursive: true, force: true }) })
 
-async function pair() {
+async function pair(labels?: string[]) {
   const status = remote.status(), root = join(dir, 'worker')
   const url = `https://127.0.0.1:${status.port}`
   const pairing = remote.pairing()
   const body = { version: 1, pin: pairing.pin, name: 'Test Runner', root, capacity: 3,
+    ...(labels ? { labels } : {}),
     agents: [{ name: 'bash', command: '/bin/bash', version: 'test' }] }
   const grant = await pinnedRequest(url, pairing.fingerprint, '/pair', body) as { id: string; token: string }
   return { worker: new RunnerWorker(root, resolve('out/runner/quuu-runner.mjs'), { ...grant, url, fingerprint: status.fingerprint }), grant, url, body, fingerprint: status.fingerprint }
@@ -83,6 +86,55 @@ it('requires the report and hook agents before preferring a Runner', async () =>
   expect(remote.choose(taskId, prj, agent)).toBeNull()
   repo.saveAppSettings(db, { ...repo.getAppSettings(db), reportEnabled: false })
   expect(remote.choose(taskId, { ...prj, taskHooks: [{ id: 'h', enabled: true, events: ['review'], kind: 'agent', targetKind: 'agent', targetId: 'missing' }] }, agent)).toBeNull()
+})
+
+it('selects only Runners with every project label and ranks agents by that same requirement', async () => {
+  const unlabelled = await pair()
+  const rust = await pair(['rust', 'linux'])
+  const { projectId, agentId } = project()
+  const taskId = makeTask(db, projectId, 'Rust task')
+  const agent = repo.getAgent(db, agentId)!
+  const prj = repo.updateProject(db, projectId, { runnerLabels: ['rust', 'linux'] })
+  expect(remote.choose(taskId, prj, agent)?.runnerId).toBe(rust.grant.id)
+  expect(remote.chooseForHook(taskId, prj, agent)?.runnerId).toBe(rust.grant.id)
+  expect(remote.rankAgent(taskId, prj, agent)).toBe(0)
+  const unavailable = { ...prj, runnerLabels: ['rust', 'windows'] }
+  expect(remote.choose(taskId, unavailable, agent)).toBeNull()
+  expect(remote.chooseForHook(taskId, unavailable, agent)).toBeNull()
+  expect(remote.rankAgent(taskId, unavailable, agent)).toBe(1)
+  expect(remote.choose(taskId, { ...prj, runnerLabels: [] }, agent)?.runnerId).toBe(unlabelled.grant.id)
+  expect(remote.choose(taskId, { ...prj, runnerLabels: ['Rust'] }, agent)).toBeNull()
+})
+
+it('updates advertised labels on reconnect and removes them when an older worker reconnects', async () => {
+  const { worker, grant, url, fingerprint, body } = await pair(['rust'])
+  expect(remote.status().runners[0].labels).toEqual(['rust'])
+  vi.stubEnv('QUUU_RUNNER_LABELS', 'rust, linux, rust,')
+  await worker.tick()
+  expect(remote.status().runners[0].labels).toEqual(['rust', 'linux'])
+  await pinnedRequest(url, fingerprint, '/poll', { version: 1, agents: body.agents, updates: [] }, grant.token)
+  expect(remote.status().runners[0].labels).toEqual([])
+  await expect(pinnedRequest(url, fingerprint, '/poll', { version: 1, labels: ['bad label'], agents: [], updates: [] }, grant.token)).rejects.toThrow('403')
+  vi.stubEnv('QUUU_RUNNER_LABELS', 'bad label')
+  expect(() => configuredRunnerLabels()).toThrow()
+})
+
+it('keeps an assigned workspace on its original Runner after project labels change', async () => {
+  const original = await pair(['rust'])
+  await pair(['python'])
+  const { projectId, agentId } = project()
+  const taskId = makeTask(db, projectId, 'Existing conversation')
+  const agent = repo.getAgent(db, agentId)!
+  const prj = repo.updateProject(db, projectId, { runnerLabels: ['rust'] })
+  const workspace = remote.choose(taskId, prj, agent)!
+  remote.reserve(workspace)
+  const updated = { ...prj, runnerLabels: ['python'] }
+  expect(remote.choose(taskId, updated, agent)).toEqual(workspace)
+  expect(remote.chooseForHook(taskId, updated, agent)).toEqual(workspace)
+  const registered = repo.listRemoteRunners(db).find(item => item.id === original.grant.id)!
+  repo.saveRemoteRunner(db, { ...registered, lastSeen: '2000-01-01T00:00:00Z' })
+  expect(() => remote.choose(taskId, updated, agent)).toThrow()
+  expect(remote.rankAgent(taskId, updated, agent)).toBe(1)
 })
 
 it('clones independently, returns logs, survives controller recovery and keeps follow-ups on the Runner', async () => {

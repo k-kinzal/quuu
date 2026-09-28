@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { RunTargetKindSchema } from './agents.js'
 import { CommitIdentityModeSchema, CommitIdentitySchema, PullRequestPromptModeSchema } from './settings.js'
 import { RecordSourceSchema } from './tasks.js'
+import { RunnerLabelsSchema } from './runners.js'
 
 // ---------------------------------------------------------------------------
 // Projects
@@ -12,6 +13,7 @@ const WorktreeModeSchema = z.enum(['inherit', 'on', 'off'])
 
 export const ProjectSchema = z.object({
   runnerEnabled: z.boolean().optional(),
+  runnerLabels: RunnerLabelsSchema.optional(),
   gitRemote: z.string().optional(),
   taskHooks: TaskHookSchema.array(),
   worktreeMode: WorktreeModeSchema,

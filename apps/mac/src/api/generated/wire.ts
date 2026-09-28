@@ -23,6 +23,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "runnerEnabled": {
                 "kind": "boolean"
               },
+              "runnerLabels": {
+                "kind": "array",
+                "items": {
+                  "kind": "string"
+                }
+              },
               "gitRemote": {
                 "kind": "string"
               },
@@ -1178,6 +1184,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   ]
                 }
               },
+              "labels": {
+                "kind": "array",
+                "items": {
+                  "kind": "string"
+                }
+              },
               "capacity": {
                 "kind": "number"
               },
@@ -1294,6 +1306,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                     "command",
                     "version"
                   ]
+                }
+              },
+              "labels": {
+                "kind": "array",
+                "items": {
+                  "kind": "string"
                 }
               },
               "capacity": {
@@ -2857,6 +2875,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "runnerEnabled": {
             "kind": "boolean"
           },
+          "runnerLabels": {
+            "kind": "array",
+            "items": {
+              "kind": "string"
+            }
+          },
           "gitRemote": {
             "kind": "string"
           },
@@ -3119,6 +3143,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "runnerEnabled": {
           "kind": "boolean"
         },
+        "runnerLabels": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
+        },
         "gitRemote": {
           "kind": "string"
         },
@@ -3315,6 +3345,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "fields": {
         "runnerEnabled": {
           "kind": "boolean"
+        },
+        "runnerLabels": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
         },
         "gitRemote": {
           "kind": "string"
@@ -3583,6 +3619,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "runnerEnabled": {
               "kind": "boolean"
             },
+            "runnerLabels": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
             "gitRemote": {
               "kind": "string"
             },
@@ -3782,6 +3824,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "fields": {
         "runnerEnabled": {
           "kind": "boolean"
+        },
+        "runnerLabels": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
         },
         "gitRemote": {
           "kind": "string"

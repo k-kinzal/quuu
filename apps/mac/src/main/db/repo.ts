@@ -398,6 +398,7 @@ function toAgent(r: Row): Agent {
 function toProject(r: Row): Project {
   return {
     runnerEnabled: i2b(r.runner_enabled),
+    runnerLabels: parseJson(s(r.runner_labels), []),
     gitRemote: s(r.git_remote),
     taskHooks: parseJson(s(r.task_hooks), []),
     id: s(r.id),
@@ -875,8 +876,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
        commit_app_id, commit_setup_version, editor_app, report_enabled,
        pull_request_prompt_mode, pull_request_failure_prompt, pull_request_pending_prompt,
        pull_request_conflict_prompt, pull_request_failure_enabled, pull_request_pending_enabled,
-       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode, task_hooks, runner_enabled, git_remote)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       pull_request_conflict_enabled, source, sort_order, created_at, updated_at, worktree_mode, task_hooks, runner_enabled, git_remote, runner_labels)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   ).run(
     id,
     input.name,
@@ -908,7 +909,8 @@ export function insertProject(db: Db, input: ProjectInput, id = newId('prj')): P
     input.worktreeMode ?? 'inherit',
     JSON.stringify(input.taskHooks ?? []),
     b2i(input.runnerEnabled ?? false),
-    input.gitRemote ?? ''
+    input.gitRemote ?? '',
+    JSON.stringify(input.runnerLabels ?? [])
   )
   return getProject(db, id)!
 }
@@ -923,7 +925,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
        commit_bot_user_id=?, commit_app_id=?, commit_setup_version=?, editor_app=?,
        report_enabled=?, pull_request_prompt_mode=?, pull_request_failure_prompt=?,
        pull_request_pending_prompt=?, pull_request_conflict_prompt=?, pull_request_failure_enabled=?,
-       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?, task_hooks=?, runner_enabled=?, git_remote=?
+       pull_request_pending_enabled=?, pull_request_conflict_enabled=?, sort_order=?, updated_at=?, worktree_mode=?, task_hooks=?, runner_enabled=?, git_remote=?, runner_labels=?
      WHERE id=?`
   ).run(
     next.name,
@@ -954,6 +956,7 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
     JSON.stringify(next.taskHooks),
     b2i(next.runnerEnabled ?? false),
     next.gitRemote ?? '',
+    JSON.stringify(next.runnerLabels ?? []),
     id
   )
   return getProject(db, id)!

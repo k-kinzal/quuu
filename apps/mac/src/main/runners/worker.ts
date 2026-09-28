@@ -9,6 +9,7 @@ import { isStoreParser } from '../agent-adapters/types.js'
 import { killProcessGroup } from '../platform/runProcess.js'
 import { resolveLogPath } from '../session/logAdapters.js'
 import { pinnedRequest } from './tls.js'
+import { configuredRunnerLabels } from './labels.js'
 import { atomicJson, executeJob, jobAuthDir, writeCredential } from './workerJob.js'
 import { recordProcess, recordedProcess } from './processIdentity.js'
 import type { RemoteJobSpec, RemoteResult, RunnerAgent, RunnerReply, RunnerUpdate } from './types.js'
@@ -54,7 +55,7 @@ export class RunnerWorker {
     this.cursor = this.cursor + 2 >= records.length ? 0 : this.cursor + 2
     const updates = batch.map(record => this.update(record))
     const reply = await pinnedRequest(this.connection.url, this.connection.fingerprint, '/poll', {
-      version: 1, agents: this.agents, updates
+      version: 1, labels: configuredRunnerLabels(), agents: this.agents, updates
     }, this.connection.token) as RunnerReply
     for (const [id, credential] of Object.entries(reply.credentials)) {
       if (safeId(id)) writeCredential(this.root, id, credential)
@@ -176,7 +177,7 @@ export async function workerMain(entry: string): Promise<void> {
     const pin = process.env.QUUU_RUNNER_PIN_FILE ? readFileSync(process.env.QUUU_RUNNER_PIN_FILE, 'utf8').trim() : process.env.QUUU_RUNNER_PIN ?? ''
     const capacity = Number(process.env.QUUU_RUNNER_CAPACITY ?? '2')
     const paired = await pinnedRequest(url, fingerprint, '/pair', { version: 1, pin, root,
-      name: process.env.QUUU_RUNNER_NAME ?? hostname(), capacity, agents: await detectRunnerAgents() }) as { id: string; token: string }
+      name: process.env.QUUU_RUNNER_NAME ?? hostname(), capacity, labels: configuredRunnerLabels(), agents: await detectRunnerAgents() }) as { id: string; token: string }
     connection = { url, fingerprint, capacity, ...paired }
     atomicJson(configFile, connection)
   }

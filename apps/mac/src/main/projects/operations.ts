@@ -1,4 +1,5 @@
 import { normalizeRepository, projectRepository } from '../runners/repository.js'
+import { runnerLabels } from '../runners/labels.js'
 import { validateHooks } from '../hooks/config.js'
 import { t } from '../i18n/index.js'
 import { assertWorktreeIdle, discardTaskWorktree, withWorktreeOperation } from '../tasks/worktrees.js'
@@ -21,6 +22,7 @@ export class ProjectOperations {
 
 
   createProject(input: Partial<ProjectInput> & { name: string; path: string }): Project {
+    if (input.runnerLabels) runnerLabels.parse(input.runnerLabels)
     validateHooks(input.taskHooks ?? [])
     if (input.gitRemote?.trim()) input = { ...input, gitRemote: normalizeRepository(input.gitRemote.trim()) }
     if (input.runnerEnabled) input = { ...input, gitRemote: projectRepository(input.path, input.gitRemote).repository }
@@ -82,6 +84,7 @@ export class ProjectOperations {
 
 
   updateProject(id: string, patch: Partial<ProjectInput>): Project {
+    if (patch.runnerLabels) runnerLabels.parse(patch.runnerLabels)
     if (patch.taskHooks) validateHooks(patch.taskHooks)
     if (patch.gitRemote?.trim()) patch = { ...patch, gitRemote: normalizeRepository(patch.gitRemote.trim()) }
     const current = repo.getProject(this.db, id)

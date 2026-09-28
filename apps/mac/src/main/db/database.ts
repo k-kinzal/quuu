@@ -400,7 +400,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 36
+  const target = 37
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -773,6 +773,8 @@ function migrate(db: Db): void {
   }
 
   if (current < 36) addColumnIfMissing(db, 'task_reports', 'conversation', "TEXT NOT NULL DEFAULT '{}'")
+
+  if (current < 37) addColumnIfMissing(db, 'projects', 'runner_labels', "TEXT NOT NULL DEFAULT '[]'")
 
   setSchemaVersion(db, target)
 }
