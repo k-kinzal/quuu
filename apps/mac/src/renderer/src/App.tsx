@@ -200,8 +200,9 @@ function Shell(): JSX.Element {
           if (s.section.kind === 'project') openProjectSettings(true)
           return
         /*
-         * One path focuses the common creation composer (`startNewTask`). Reading
-         * surfaces stay open; settings yields back to a surface that can accept input.
+         * One path opens the creation surface (`startNewTask`): the shell's composer, or
+         * the list's one-line input while the detail is open. Reading surfaces stay
+         * open; settings yields back to a surface that can accept input.
          */
         case 'task.new':
           // No carry-over: don't let a previously chosen target leak into the next task
@@ -404,7 +405,8 @@ function Shell(): JSX.Element {
                 <TaskOverview />
               )}
             </AppShellBody>
-            {!isSettings && !(projectSettingsOpen && project) && (
+            {/* The detail already has the conversation's composer below the chat; a second prompt there reads as one too many */}
+            {!isSettings && !(projectSettingsOpen && project) && !detailOpen && (
               <TaskComposer fixedProjectId={project?.id} />
             )}
             <Footer />

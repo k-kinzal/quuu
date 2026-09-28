@@ -12,8 +12,10 @@ export { LINK_DIRECTION_LABEL, LINK_SUFFIX_LABEL, type LinkDirection, type NewTa
  * Open the queueing surface. If the task is to be linked, pass the link spec
  * with it.
  *
- * The common composer stays beside every reading surface. The signal reaches it
- * after a settings screen has yielded back to its project or the overall list.
+ * The shell's composer stays beside every reading surface except the detail, where
+ * the list's one-line input takes the signal instead (the detail's own composer
+ * speaks to the task being read). The signal reaches whichever is present after a
+ * settings screen has yielded back to its project or the overall list.
  *
  * Passing `null` means "queue a task with no link". A previously chosen spec
  * lingering onto the next task quietly creates queueing nobody asked for.
@@ -27,6 +29,10 @@ export function startNewTask(link: NewTaskLink | null): void {
     state.setSection({ kind: 'all' })
   }
   if (state.projectSettingsOpen) state.openProjectSettings(false)
+  // Don't close the detail. Never lose what was being read in order to queue (same as ⌘N)
+  if (state.detailOpen && state.layout.listMode === 'hidden') {
+    state.setLayout({ listMode: 'compact' })
+  }
 
   /*
    * Queue into the linked task's project.
