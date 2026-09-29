@@ -1,6 +1,6 @@
 import { sessionOptions } from '../src/main/agents/sessionOptions.js'
 import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -778,6 +778,61 @@ describe('liveness checks for running sessions', () => {
     rmSync(lock)
     expect(importer.refreshRunning(Date.now() + 20_000)).toBe(1)
     expect(repo.listTasks(db)[0].status).toBe('done')
+  })
+
+  it('does not keep Codex running after the turn ends just because the app still holds the lock', () => {
+    const db = memoryDb()
+    const when = new Date(Date.now() - 60 * 60 * 1000)
+    const ended = [
+      { id: '019a009a-ddf4-7c71-bbae-73a42f78cc04', title: '中断された作業', end: 'turn_aborted' },
+      { id: '019a009a-ddf4-7c71-bbae-73a42f78cc06', title: '完了した作業', end: 'task_complete' }
+    ]
+    const holders: ChildProcess[] = []
+    const locks: string[] = []
+    for (const session of ended) {
+      const path = writeCodex(session.id, session.title, 60 * 60 * 1000)
+      appendFileSync(path, [
+        line({ type: 'event_msg', payload: { type: 'task_started' } }),
+        line({ type: 'event_msg', payload: { type: session.end } })
+      ].join(''))
+      utimesSync(path, when, when)
+      const lock = writeCodexLock(session.id)
+      locks.push(lock)
+      holders.push(holdCodexLock(lock))
+    }
+
+    const importer = new SessionImporter(db)
+    try {
+      importer.sync(settings)
+      expect(repo.listTasks(db).map((task) => task.status)).toEqual(['done', 'done'])
+      expect(importer.refreshRunning()).toBe(0)
+      expect(repo.listTasks(db).every((task) => task.status === 'done')).toBe(true)
+    } finally {
+      for (const holder of holders) holder.kill()
+      for (const lock of locks) waitUntilCodexLockReleased(lock)
+    }
+  })
+
+  it('keeps a Codex turn running while the lock is held and the rollout has not closed it', () => {
+    const db = memoryDb()
+    const codexSid = '019a009a-ddf4-7c71-bbae-73a42f78cc05'
+    const path = writeCodex(codexSid, 'まだ続いている作業', 60 * 60 * 1000)
+    appendFileSync(path, line({ type: 'event_msg', payload: { type: 'task_started' } }))
+    const when = new Date(Date.now() - 60 * 60 * 1000)
+    utimesSync(path, when, when)
+    const lock = writeCodexLock(codexSid)
+    const holder = holdCodexLock(lock)
+
+    const importer = new SessionImporter(db)
+    try {
+      importer.sync(settings)
+      expect(repo.listTasks(db)[0].status).toBe('running')
+      expect(importer.refreshRunning()).toBe(0)
+      expect(repo.listTasks(db)[0].status).toBe('running')
+    } finally {
+      holder.kill()
+      waitUntilCodexLockReleased(lock)
+    }
   })
 
   it('keeps Codex running through long silence as long as the process holds the lock', () => {

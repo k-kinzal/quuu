@@ -236,7 +236,7 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | `QUUU_CLAUDE_PROJECTS_DIR` | Root of Claude Code session logs (default: `~/.claude/projects`) |
 | `QUUU_CLAUDE_SESSIONS_DIR` | Pid files Claude Code keeps only while running (default: `~/.claude/sessions`) |
 | `QUUU_CODEX_SESSIONS_DIR` | Root of Codex session logs (default: `~/.codex/sessions`) |
-| `QUUU_CODEX_LOCKS_DIR` | Locks Codex keeps only while running (default: `~/.codex/thread-writer-locks`) |
+| `QUUU_CODEX_LOCKS_DIR` | Locks Codex writes for open threads (default: `~/.codex/thread-writer-locks`). A thread whose latest turn has ended is not treated as running |
 | `QUUU_CURSOR_CHATS_DIR` | Root of Cursor chats (default: `~/.cursor/chats`) |
 | `QUUU_GROK_SESSIONS_DIR` | Root of Grok sessions (default: `~/.grok/sessions`) |
 | `QUUU_COPILOT_SESSIONS_DIR` | Root of GitHub Copilot sessions (default: `~/.copilot/session-state`) |
@@ -493,7 +493,7 @@ provider implementations live in
 | CLI | Session log | Can a session ID be passed? | Running detection |
 |-----|---------------|----------------------|-------------|
 | Claude Code | `~/.claude/projects/<slug>/<id>.jsonl` | `--session-id` | `~/.claude/sessions/<pid>.json` (pid liveness also checked) |
-| Codex | `~/.codex/sessions/<date>/rollout-<id>.jsonl` | No | `~/.codex/thread-writer-locks/<id>.lock` |
+| Codex | `~/.codex/sessions/<date>/rollout-<id>.jsonl` | No | `~/.codex/thread-writer-locks/<id>.lock`, unless the rollout's latest turn has already ended (`task_complete` or `turn_aborted`) |
 | Cursor | `~/.cursor/chats/<md5(cwd)>/<id>/store.db` (SQLite) | `--resume` (created even for an unused ID) | No marker → modification time |
 | Grok | `~/.grok/sessions/<percent-encoded cwd>/<id>/chat_history.jsonl` | `--session-id` | No marker → modification time |
 | GitHub Copilot | `~/.copilot/session-state/<id>/events.jsonl` | No | Ended once `session.shutdown` is written |

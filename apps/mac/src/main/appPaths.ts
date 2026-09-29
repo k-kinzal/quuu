@@ -46,7 +46,7 @@ export function codexSessionsDir(): string {
   return process.env.QUUU_CODEX_SESSIONS_DIR ?? join(homedir(), '.codex', 'sessions')
 }
 
-/** Directory where Codex keeps lock files only for running threads. */
+/** Directory where Codex keeps a lock file per open thread. A held lock is not, by itself, a live turn. */
 export function codexLocksDir(): string {
   return process.env.QUUU_CODEX_LOCKS_DIR ?? join(homedir(), '.codex', 'thread-writer-locks')
 }
