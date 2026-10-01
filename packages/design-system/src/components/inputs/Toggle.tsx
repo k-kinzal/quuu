@@ -6,6 +6,8 @@ import MuiSwitch from '@mui/material/Switch'
 import { styled } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
 import { FieldHint } from './Field.js'
+import { fieldWidth } from './Field.js'
+import { useFieldContext } from './FieldContext.js'
 
 export interface CheckboxProps {
   label: string
@@ -45,6 +47,29 @@ export function Checkbox({
       }
     />
   )
+}
+
+const CheckGrid = styled('div')(({ theme }) => ({
+  display: 'grid',
+  gridTemplateColumns: `repeat(auto-fit, minmax(min(100%, ${fieldWidth.sm}px), 1fr))`,
+  gap: theme.spacing(2),
+  '& .MuiFormControlLabel-root': { margin: 0, minHeight: theme.density.control.sm, alignItems: 'center' }
+}))
+
+/** A related multi-selection wraps as a group, with the same reading order at every width. */
+export function CheckboxGroup<T extends string>({ label, options, value, disabled, onChange }: {
+  label: string
+  options: ReadonlyArray<{ value: T; label: string }>
+  value: readonly T[]
+  disabled?: boolean
+  onChange(value: T[]): void
+}): JSX.Element {
+  const field = useFieldContext()
+  return <CheckGrid role="group" aria-label={label} aria-describedby={field?.hintId}>
+    {options.map(option => <Checkbox key={option.value} label={option.label}
+      checked={value.includes(option.value)} disabled={disabled}
+      onChange={checked => onChange(options.filter(item => item.value === option.value ? checked : value.includes(item.value)).map(item => item.value))} />)}
+  </CheckGrid>
 }
 
 export type SwitchProps = Omit<CheckboxProps, 'indeterminate'>

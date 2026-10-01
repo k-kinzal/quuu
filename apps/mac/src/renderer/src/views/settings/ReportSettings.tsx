@@ -1,4 +1,4 @@
-import { Checkbox, Field, FieldHint, Page, Section, Select, TextArea } from '@design-system/react'
+import { SettingToggle, SettingsBlock, SettingRow, FieldHint, Page, SettingsGroup, Select, TextArea } from '@design-system/react'
 import { userAgents } from '../../model/agents.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
@@ -28,13 +28,13 @@ export function ReportSettings(): JSX.Element {
 
   return (
     <Page title={t('reportSettings.title')}>
-      <Section title={t('reportSettings.generationSection')}>
-        <Checkbox
+      <SettingsGroup title={t('reportSettings.generationSection')}>
+        <SettingToggle
           label={t('reportSettings.enabled')}
           checked={settings.reportEnabled}
           onChange={(v: boolean) => void setSettings({ reportEnabled: v })}
         />
-        <Field label={t('reportSettings.target')} width="md">
+        <SettingRow label={t('reportSettings.target')} width="md">
           <Select
             aria-label={t('reportSettings.target')}
             value={target}
@@ -59,31 +59,30 @@ export function ReportSettings(): JSX.Element {
               }))
             ]}
           />
-        </Field>
+        </SettingRow>
         {settings.reportEnabled && settings.reportTargetId.length === 0 && (
-          <FieldHint>{t('reportSettings.targetNeeded')}</FieldHint>
+          <SettingsBlock><FieldHint tone="danger">{t('reportSettings.targetNeeded')}</FieldHint></SettingsBlock>
         )}
-      </Section>
+      </SettingsGroup>
 
-      <Section title={t('reportSettings.projectSection')}>
-        <Field label={t('reportSettings.projectInstructions')} width="full">
+      <SettingsGroup title={t('reportSettings.projectSection')}>
+        <SettingRow label={t('reportSettings.projectInstructions')} hint={t('reportSettings.projectHint')} width="full" layout="stacked">
           <TextArea rows={6} value={settings.projectReportInstructions}
             placeholder={t('reportSettings.projectPlaceholder')}
             onChange={(e) => void setSettings({ projectReportInstructions: e.target.value })} />
-          <FieldHint>{t('reportSettings.projectHint')}</FieldHint>
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
 
-      <Section title={t('reportSettings.instructionsSection')}>
-        <Field label={t('reportSettings.instructions')} width="full">
+      <SettingsGroup title={t('reportSettings.instructionsSection')}>
+        <SettingRow label={t('reportSettings.instructions')} width="full" layout="stacked">
           <TextArea
             rows={8}
             placeholder={t('reportSettings.instructionsPlaceholder')}
             value={settings.reportInstructions}
             onChange={(e) => void setSettings({ reportInstructions: e.target.value })}
           />
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
     </Page>
   )
 }

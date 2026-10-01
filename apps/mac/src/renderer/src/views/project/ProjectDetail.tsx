@@ -10,13 +10,14 @@ import { PROJECT_COLORS } from '../../model/projectDefaults.js'
 
 import {
   Button,
-  Checkbox,
-  Field,
+  SettingToggle,
+  SettingsBlock,
+  InputAction,
+  SettingRow,
   IconButton,
   Page,
   Panel,
-  Row,
-  Section,
+  SettingsGroup,
   Select,
   SwatchGroup,
   TextInput
@@ -114,9 +115,8 @@ export function ProjectDetail({
           </>
         }
       >
-        <ProjectRunnerSettings key={project.id} project={project} />
-        <Section title={t('projectDetail.basicsSection')}>
-          <Field label={t('projectDetail.name')} width="md">
+        <SettingsGroup title={t('projectDetail.basicsSection')}>
+          <SettingRow label={t('projectDetail.name')} width="md">
             {/*
               Uncontrolled and written only on blur, so nothing is written back mid-typing.
               The cost is that **the field keeps the old value when the project changes**,
@@ -126,13 +126,14 @@ export function ProjectDetail({
             */}
             <TextInput
               key={project.id}
+              aria-label={t('projectDetail.name')}
               defaultValue={project.name}
               onBlur={(e) => update({ name: e.target.value.trim() || project.name })}
             />
-          </Field>
+          </SettingRow>
 
-          <Field label={t('projectDetail.directory')} width="full" hint={project.builtIn ? t('projectDetail.builtInDirectory') : undefined}>
-            <Row>
+          <SettingRow label={t('projectDetail.directory')} width="full" layout="stacked" hint={project.builtIn ? t('projectDetail.builtInDirectory') : undefined}>
+            <InputAction>
               <TextInput mono value={project.path} readOnly />
               {!project.builtIn && <Button
                 title={t('projectDetail.repickDirectory')}
@@ -144,14 +145,14 @@ export function ProjectDetail({
               >
                 {t('projectDetail.change')}
               </Button>}
-            </Row>
-          </Field>
+            </InputAction>
+          </SettingRow>
 
           {/*
             The IDE differs per language (GoLand for Go, Xcode for iOS), so this is
             normally where the app to open in is decided. Empty follows the app settings
           */}
-          <Field label={t('projectDetail.editor')} width="md">
+          <SettingRow label={t('projectDetail.editor')} width="md">
             <Select
               aria-label={t('projectDetail.editor')}
               value={project.editorApp}
@@ -176,20 +177,20 @@ export function ProjectDetail({
                   : [])
               ]}
             />
-          </Field>
+          </SettingRow>
 
-          <Field label={t('projectDetail.color')}>
+          <SettingRow label={t('projectDetail.color')} width="auto">
             <SwatchGroup
               label={t('projectDetail.color')}
               colors={PROJECT_COLORS}
               value={project.color}
               onChange={(color) => update({ color })}
             />
-          </Field>
-        </Section>
+          </SettingRow>
+        </SettingsGroup>
 
-        <Section title={t('projectDetail.runSection')}>
-          <Field label={t('projectDetail.target')} width="md">
+        <SettingsGroup title={t('projectDetail.runSection')}>
+          <SettingRow label={t('projectDetail.target')} width="md">
             <Select
               aria-label={t('projectDetail.target')}
               value={targetValue}
@@ -211,69 +212,73 @@ export function ProjectDetail({
                 }))
               ]}
             />
-          </Field>
+          </SettingRow>
 
-          <Row align="start">
+          <>
             {/* Lower goes first. Riding on ranking, an order everyone already knows (1st
                 comes first), saves writing out "lower numbers are worked through first" */}
-            <Field label={t('projectDetail.priority')} width="xs">
+            <SettingRow label={t('projectDetail.priority')} width="xs">
               <TextInput
                 key={project.id}
                 type="number"
                 unit={t('projectDetail.priorityUnit')}
+                aria-label={t('projectDetail.priority')}
                 inputProps={{ min: 0, max: 99 }}
                 defaultValue={project.priority}
                 onBlur={(e) => update({ priority: Math.max(0, Number(e.target.value)) })}
               />
-            </Field>
-            <Field label={t('projectDetail.maxConcurrent')} width="xs">
+            </SettingRow>
+            <SettingRow label={t('projectDetail.maxConcurrent')} width="xs">
               <TextInput
                 key={project.id}
                 type="number"
                 unit={t('projectDetail.maxConcurrentUnit')}
+                aria-label={t('projectDetail.maxConcurrent')}
                 inputProps={{ min: 1, max: 8 }}
                 defaultValue={project.maxConcurrent}
                 onBlur={(e) => update({ maxConcurrent: Math.max(1, Number(e.target.value)) })}
               />
-            </Field>
-          </Row>
+            </SettingRow>
+          </>
 
-          <Checkbox
+          <SettingToggle
             label={t('projectDetail.enabled')}
             checked={project.enabled}
             onChange={(v: boolean) => update({ enabled: v })}
           />
-        </Section>
+        </SettingsGroup>
+
+        <ProjectRunnerSettings key={`runner:${project.id}`} project={project} />
+        <HookEditor key={`hooks:${project.id}`} project={project} />
 
         {/*
           Only shown while reports are on app-wide. A switch for "not for this project" that
           appears before the feature exists reads as a way to turn the feature on, and pressing
           it would do nothing
         */}
-        <HookEditor project={project} />
         {settings.reportEnabled && (
-          <Section title={t('projectDetail.reportSection')}>
-            <Checkbox
+          <SettingsGroup title={t('projectDetail.reportSection')}>
+            <SettingToggle
               label={t('projectDetail.reportEnabled')}
               checked={project.reportEnabled}
               onChange={(v: boolean) => update({ reportEnabled: v })}
             />
-          </Section>
+          </SettingsGroup>
         )}
 
         {/* The built-in workspace is not a repository; its worktrees stay off */}
         {!project.builtIn && (
-          <Section title={t('worktreeSettings.title')}>
-            <Field label={t('worktreeSettings.mode')} width="md">
+          <SettingsGroup title={t('worktreeSettings.title')}>
+            <SettingRow label={t('worktreeSettings.mode')} hint={project.worktreeMode === 'inherit' ? t(settings.worktreeEnabled ? 'worktreeSettings.on' : 'worktreeSettings.off') : undefined} width="md">
               <Select aria-label={t('worktreeSettings.mode')} value={project.worktreeMode}
                 onChange={(event) => update({ worktreeMode: event.target.value })}
                 options={(['inherit', 'on', 'off'] as const).map(value => ({ value, label: t(`worktreeSettings.${value}`) }))} />
-            </Field>
-          </Section>
+            </SettingRow>
+          </SettingsGroup>
         )}
 
-        <Section title={t('projectDetail.pullRequestSection')}>
-          <Field label={t('projectDetail.pullRequestMode')} width="md">
+        <SettingsGroup contained={false} title={t('projectDetail.pullRequestSection')}>
+          <SettingsGroup><SettingRow label={t('projectDetail.pullRequestMode')} width="md">
             <Select
               aria-label={t('projectDetail.pullRequestMode')}
               value={project.pullRequestPromptMode}
@@ -283,14 +288,15 @@ export function ProjectDetail({
                 label: PULL_REQUEST_PROMPT_MODE_LABEL[m]
               }))}
             />
-          </Field>
+          </SettingRow>
+          </SettingsGroup>
           {project.pullRequestPromptMode === 'custom' && (
             <PullRequestPromptFields id={project.id} values={project} controlled={false} onChange={update} />
           )}
-        </Section>
+        </SettingsGroup>
 
-        <Section title={t('projectDetail.identitySection')}>
-          <Field label={t('projectDetail.identityMode')} width="md">
+        <SettingsGroup title={t('projectDetail.identitySection')}>
+          <SettingRow label={t('projectDetail.identityMode')} width="md">
             <Select
               aria-label={t('projectDetail.identityMode')}
               value={project.commitIdentityMode}
@@ -300,23 +306,23 @@ export function ProjectDetail({
                 label: COMMIT_IDENTITY_MODE_LABEL[m]
               }))}
             />
-          </Field>
+          </SettingRow>
 
           {/*
             While inheriting, show the **result**. If it was never filled in on the app side
             this comes up empty, so "I thought I set it, but nothing is signing" is visible
           */}
           {project.commitIdentityMode === 'inherit' && (
-            <CommitIdentityReadout identity={identityPreview?.resolved ?? null} />
+            <SettingsBlock><CommitIdentityReadout identity={identityPreview?.resolved ?? null} /></SettingsBlock>
           )}
           {project.commitIdentityMode === 'custom' && (
-            <CommitIdentityPanel
+            <SettingsBlock><CommitIdentityPanel
               key={project.id}
               value={project.commitIdentity}
               onChange={(v) => update({ commitIdentity: v })}
-            />
+            /></SettingsBlock>
           )}
-        </Section>
+        </SettingsGroup>
 
         <TaskRuleList project={project} onEdit={editRule} />
       </Page>

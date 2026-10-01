@@ -6,6 +6,7 @@ import { styled } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
 import { SearchPicker } from '../surfaces/SearchPicker.js'
 import { useStrings } from '../../theme/strings.js'
+import { useFieldContext } from './FieldContext.js'
 
 export interface TextInputProps extends Omit<OutlinedInputProps, 'size' | 'label'> {
   /** Values whose columns should line up: paths, commands, arguments */
@@ -34,8 +35,16 @@ const Unit = styled('span')(({ theme }) => ({
 }))
 
 /** A single-line input with a frame. */
-export function TextInput({ unit, ...rest }: TextInputProps): JSX.Element {
-  return <InputRoot endAdornment={unit ? <Unit>{unit}</Unit> : undefined} {...rest} />
+export function TextInput({ unit, inputProps, 'aria-label': ariaLabel, 'aria-labelledby': ariaLabelledBy, 'aria-describedby': ariaDescribedBy, ...rest }: TextInputProps): JSX.Element {
+  const field = useFieldContext()
+  return <InputRoot endAdornment={unit ? <Unit>{unit}</Unit> : undefined} error={field?.invalid} {...rest}
+    inputProps={{
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledBy ?? (ariaLabel ? undefined : field?.labelId),
+      'aria-describedby': ariaDescribedBy ?? field?.hintId,
+      'aria-invalid': rest.error || field?.invalid || undefined,
+      ...inputProps
+    }} />
 }
 
 export interface NumberInputProps extends Omit<TextInputProps, 'type' | 'onChange' | 'value'> {
@@ -119,13 +128,15 @@ export interface SelectProps<T extends string> extends Omit<MuiSelectProps<T>, '
  * loaded".
  */
 export function Select<T extends string>({ options, value, defaultValue, onChange, ...rest }: SelectProps<T>): JSX.Element {
+  const field = useFieldContext()
   const strings = useStrings()
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const [uncontrolledValue, setUncontrolledValue] = useState<T | ''>(defaultValue ?? '')
   const selected = value ?? uncontrolledValue
   return (
     <>
-      <MuiSelect<T> fullWidth displayEmpty input={<OutlinedInput />} {...rest}
+      <MuiSelect<T> fullWidth displayEmpty input={<OutlinedInput />}
+        labelId={rest['aria-labelledby'] ?? (rest['aria-label'] ? undefined : field?.labelId)} aria-describedby={field?.hintId} error={field?.invalid} {...rest}
         value={selected} open={false}
         onOpen={event => {
           const trigger = event.currentTarget
@@ -139,7 +150,7 @@ export function Select<T extends string>({ options, value, defaultValue, onChang
         {options.map(option => <MenuItem key={option.value} value={option.value} disabled={option.disabled}>{option.label}</MenuItem>)}
       </MuiSelect>
     <SearchPicker open={Boolean(anchor)} anchorEl={anchor}
-      label={rest['aria-label'] ?? (typeof rest.label === 'string' ? rest.label : strings.selectionSheet.label)}
+      label={rest['aria-label'] ?? (typeof rest.label === 'string' ? rest.label : field?.label ?? strings.selectionSheet.label)}
       options={options} value={selected} onClose={() => setAnchor(null)}
       onChange={next => {
         const option = options.find(option => option.value === next)

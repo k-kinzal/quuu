@@ -1,4 +1,4 @@
-import { Field, Page, Select } from '@design-system/react'
+import { SettingRow, SettingsGroup, Page, SegmentedControl } from '@design-system/react'
 import type { AppSettings } from '../../../../api/schemas/settings.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
@@ -10,18 +10,20 @@ export function AppearanceSettings(): JSX.Element {
 
   return (
     <Page title={t('appearanceSettings.title')}>
-      <Field label={t('appearanceSettings.scheme')} width="sm">
-        <Select<AppSettings['theme']>
-          aria-label={t('appearanceSettings.scheme')}
+      <SettingsGroup>
+      <SettingRow label={t('appearanceSettings.scheme')} width="auto">
+        <SegmentedControl<AppSettings['theme']>
+          label={t('appearanceSettings.scheme')}
           value={settings.theme}
-          onChange={(e) => void setSettings({ theme: e.target.value })}
+          onChange={(theme) => void setSettings({ theme })}
           options={[
             { value: 'dark', label: t('appearanceSettings.dark') },
             { value: 'light', label: t('appearanceSettings.light') },
             { value: 'system', label: t('appearanceSettings.system') }
           ]}
         />
-      </Field>
+      </SettingRow>
+      </SettingsGroup>
     </Page>
   )
 }

@@ -1,4 +1,4 @@
-import { Page, Section } from '@design-system/react'
+import { Page, SettingsGroup } from '@design-system/react'
 import { PullRequestPromptFields } from '../../components/PullRequestPromptFields.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
@@ -16,9 +16,9 @@ export function PullRequestSettings(): JSX.Element {
   const setSettings = useStore((s) => s.setSettings)
   return (
     <Page title={t('pullRequestSettings.title')}>
-      <Section title={t('pullRequestSettings.promptsSection')}>
+      <SettingsGroup contained={false} title={t('pullRequestSettings.promptsSection')}>
         <PullRequestPromptFields id="app" values={settings} controlled onChange={(patch) => void setSettings(patch)} />
-      </Section>
+      </SettingsGroup>
     </Page>
   )
 }

@@ -1,4 +1,4 @@
-import { Button, Checkbox, Column, Field, FieldHint, ListFrame, NumberInput, Row, Section, Select, Text, TextArea, TextInput } from '@design-system/react'
+import { Button, Checkbox, CheckboxGroup, Column, SettingRow, SettingToggle, SettingsGroup, SettingsBlock, FieldHint, ItemList, ItemRow, ListFrame, NumberInput, Row, Select, SegmentedControl, Text, TextArea, TextInput } from '@design-system/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { HookEvent, TaskHook } from '../../../api/schemas/hooks.js'
@@ -48,66 +48,64 @@ export function HookEditor({ project }: { project?: Project }): JSX.Element {
     <Checkbox label={t('hooks.override', { field: label })} checked={local?.[key] !== undefined} disabled={saving}
       onChange={on => field(key, on ? hook[key] : undefined)} /> : null
   const disabled = (key: keyof TaskHook): boolean => saving || (inherited && local?.[key] === undefined)
-  return <Section title={t('hooks.title')}>
-    <FieldHint>{t(project ? 'hooks.projectHint' : 'hooks.globalHint')}</FieldHint>
+  return <>
+  <SettingsGroup contained={false} title={t('hooks.title')} hint={t(project ? 'hooks.projectHint' : 'hooks.globalHint')}>
     <ListFrame bar={<>
       <Button size="xs" disabled={saving} onClick={() => add(false)}>{t('hooks.add')}</Button>
       <Button size="xs" disabled={saving} onClick={() => add(true)}>{t('hooks.addCommit')}</Button>
       {hook && <Button size="xs" disabled={saving || !local} onClick={() => { void save(definitions.filter(item => item.id !== hook.id)); select(null) }}>{t(inherited ? 'hooks.reset' : 'hooks.remove')}</Button>}
-    </>} pad>
-      <Column gap="sm">
-        {(effective.data ?? []).map(item => <Button key={item.id} size="sm" onClick={() => select(item.id)}>
-          {item.name || item.id} · {t(item.enabled ? 'hooks.enabled' : 'hooks.disabled')}
-        </Button>)}
-        <Text tone="secondary">{t('hooks.builtinReport')}</Text>
-        <FieldHint>{t('hooks.builtinHint')}</FieldHint>
-        <Button size="xs" onClick={() => { useStore.getState().setSection({ kind: 'settings' }); useStore.getState().setSettingsCategory('report') }}>{t('hooks.reportSettings')}</Button>
-      </Column>
+    </>}>
+      <ItemList>
+        {(effective.data ?? []).map(item => <ItemRow key={item.id} type="button" selected={selected === item.id}
+          onClick={() => select(selected === item.id ? null : item.id)} aria-expanded={selected === item.id}>
+          <Row grow min justify="between">
+            <Text truncate>{item.name || item.id}</Text>
+            <Text size="xs" tone="secondary">{t(item.enabled ? 'hooks.enabled' : 'hooks.disabled')}</Text>
+          </Row>
+        </ItemRow>)}
+      </ItemList>
     </ListFrame>
     {(mutation.error || effective.error) && <FieldHint tone="danger">{mutation.error?.message || effective.error?.message}</FieldHint>}
-    {hook && <Column gap="md">
-      <Field label={t('hooks.name')}>
-        {override('name', t('hooks.name'))}
+    <SettingsBlock>
+      <Row justify="between" gap="md" wrap>
+        <Column gap="xs"><Text>{t('hooks.builtinReport')}</Text><FieldHint>{t('hooks.builtinHint')}</FieldHint></Column>
+        <Button onClick={() => { useStore.getState().setSection({ kind: 'settings' }); useStore.getState().setSettingsCategory('report') }}>{t('hooks.reportSettings')}</Button>
+      </Row>
+    </SettingsBlock>
+  </SettingsGroup>
+    {hook && <SettingsGroup title={hook.name || hook.id}>
+      <SettingRow label={t('hooks.name')} accessory={override('name', t('hooks.name'))}>
         <TextInput key={`${hook.id}:name:${hook.name}`} aria-label={t('hooks.name')} defaultValue={hook.name} disabled={disabled('name')} onBlur={e => { if (e.target.value !== hook.name) field('name', e.target.value) }} />
-      </Field>
-      {override('enabled', t('hooks.activation'))}
-      <Checkbox label={t('hooks.enabled')} checked={hook.enabled} disabled={disabled('enabled')} onChange={value => field('enabled', value)} />
-      <Field label={t('hooks.kind')}>
-        {override('kind', t('hooks.kind'))}
-        <Select aria-label={t('hooks.kind')} value={hook.kind} disabled={disabled('kind')} options={[{ value: 'agent', label: t('hooks.agent') }, { value: 'command', label: t('hooks.command') }]}
-          onChange={e => field('kind', e.target.value === 'command' ? 'command' : 'agent')} />
-      </Field>
+      </SettingRow>
+      <SettingToggle accessory={override('enabled', t('hooks.activation'))} label={t('hooks.enabled')} checked={hook.enabled} disabled={disabled('enabled')} onChange={value => field('enabled', value)} />
+      <SettingRow label={t('hooks.kind')} width="auto" accessory={override('kind', t('hooks.kind'))}>
+        <SegmentedControl<'agent' | 'command'> label={t('hooks.kind')} value={hook.kind}
+          options={[{ value: 'agent', label: t('hooks.agent'), disabled: disabled('kind') }, { value: 'command', label: t('hooks.command'), disabled: disabled('kind') }]}
+          onChange={value => field('kind', value)} />
+      </SettingRow>
       {hook.kind === 'agent' ? <>
-        <Field label={t('hooks.target')}>
-          {inherited && <Checkbox label={t('hooks.override', { field: t('hooks.target') })} checked={local?.targetId !== undefined} disabled={saving}
-            onChange={on => update(on ? { ...local, id: hook.id, targetKind: hook.targetKind, targetId: hook.targetId } : Object.fromEntries(Object.entries(local ?? { id: hook.id }).filter(([key]) => key !== 'targetKind' && key !== 'targetId')) as TaskHook)} />}
+        <SettingRow label={t('hooks.target')} accessory={inherited && <Checkbox label={t('hooks.override', { field: t('hooks.target') })} checked={local?.targetId !== undefined} disabled={saving}
+            onChange={on => update(on ? { ...local, id: hook.id, targetKind: hook.targetKind, targetId: hook.targetId } : Object.fromEntries(Object.entries(local ?? { id: hook.id }).filter(([key]) => key !== 'targetKind' && key !== 'targetId')) as TaskHook)} />}>
           <Select aria-label={t('hooks.target')} value={hook.targetId ? `${hook.targetKind}:${hook.targetId}` : ''} disabled={disabled('targetId')}
             options={[{ value: '', label: t('reportSettings.unset') },
               ...(hook.targetId && !(hook.targetKind === 'group' ? snapshot?.groups : snapshot?.agents)?.some(item => item.id === hook.targetId) ? [{ value: `${hook.targetKind}:${hook.targetId}`, label: t('hooks.unavailable', { id: hook.targetId }) }] : []), ...(snapshot?.groups ?? []).map(group => ({ value: `group:${group.id}`, label: group.name })),
               ...(snapshot?.agents ?? []).filter(agent => (agent.enabled && agent.source === 'user') || agent.id === hook.targetId).map(agent => ({ value: `agent:${agent.id}`, label: agent.name }))]}
             onChange={e => { const [kind, id] = e.target.value.split(':'); update({ ...local, id: hook.id, targetKind: kind === 'group' ? 'group' : 'agent', targetId: id ?? '' }) }} />
-        </Field>
-        <Field label={t('hooks.prompt')} width="full">
-          {override('prompt', t('hooks.prompt'))}
-          <TextArea key={`${hook.id}:prompt:${hook.prompt}`} aria-label={t('hooks.prompt')} rows={6} defaultValue={hook.prompt} disabled={disabled('prompt')} onBlur={e => { if (e.target.value !== hook.prompt) field('prompt', e.target.value) }} />
-          <FieldHint>{t('hooks.literalHint')}</FieldHint>
-        </Field>
-      </> : <Field label={t('hooks.command')} width="full">
-        {override('command', t('hooks.command'))}
+        </SettingRow>
+        <SettingRow label={t('hooks.prompt')} hint={t('hooks.literalHint')} width="full" layout="stacked" accessory={override('prompt', t('hooks.prompt'))}>
+            <TextArea key={`${hook.id}:prompt:${hook.prompt}`} aria-label={t('hooks.prompt')} rows={6} defaultValue={hook.prompt} disabled={disabled('prompt')} onBlur={e => { if (e.target.value !== hook.prompt) field('prompt', e.target.value) }} />
+        </SettingRow>
+      </> : <SettingRow label={t('hooks.command')} hint={t('hooks.commandHint')} width="full" layout="stacked" accessory={override('command', t('hooks.command'))}>
         <TextArea key={`${hook.id}:command:${hook.command}`} aria-label={t('hooks.command')} rows={5} defaultValue={hook.command} disabled={disabled('command')} onBlur={e => { if (e.target.value !== hook.command) field('command', e.target.value) }} />
-        <FieldHint>{t('hooks.commandHint')}</FieldHint>
-      </Field>}
-      <Field label={t('hooks.events')} width="full">
-        {override('events', t('hooks.events'))}
-        <Row gap="sm" wrap>{EVENTS.map(event => <Checkbox key={event} label={t(`hooks.eventsLabels.${event}`)} checked={hook.events.includes(event)} disabled={disabled('events')}
-          onChange={checked => field('events', checked ? [...hook.events, event] : hook.events.filter(item => item !== event))} />)}</Row>
-        <FieldHint>{t('hooks.eventHint')}</FieldHint>
-      </Field>
-      <Field label={t('hooks.timeout')}>
-        {override('timeoutSeconds', t('hooks.timeout'))}
+      </SettingRow>}
+      <SettingRow label={t('hooks.events')} hint={t('hooks.eventHint')} width="full" layout="stacked" accessory={override('events', t('hooks.events'))}>
+        <CheckboxGroup label={t('hooks.events')} options={EVENTS.map(event => ({ value: event, label: t(`hooks.eventsLabels.${event}`) }))}
+          value={hook.events} disabled={disabled('events')} onChange={events => field('events', events)} />
+      </SettingRow>
+      <SettingRow width="xs" label={t('hooks.timeout')} accessory={override('timeoutSeconds', t('hooks.timeout'))}>
         <Row><NumberInput aria-label={t('hooks.timeout')} min={1} max={86400} value={hook.timeoutSeconds} disabled={disabled('timeoutSeconds')} onChange={value => field('timeoutSeconds', value)} /></Row>
-      </Field>
-      {hook.enabled && (hook.events.length === 0 || (hook.kind === 'agent' && (!hook.targetId || !hook.prompt.trim())) || (hook.kind === 'command' && !hook.command.trim())) && <FieldHint tone="danger">{t('hooks.incomplete')}</FieldHint>}
-    </Column>}
-  </Section>
+      </SettingRow>
+      {hook.enabled && (hook.events.length === 0 || (hook.kind === 'agent' && (!hook.targetId || !hook.prompt.trim())) || (hook.kind === 'command' && !hook.command.trim())) && <SettingsBlock><FieldHint tone="danger">{t('hooks.incomplete')}</FieldHint></SettingsBlock>}
+    </SettingsGroup>}
+  </>
 }

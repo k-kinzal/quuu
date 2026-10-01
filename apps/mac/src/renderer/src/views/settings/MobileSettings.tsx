@@ -1,14 +1,14 @@
 import {
   Button,
-  Checkbox,
+  SettingToggle,
   Column,
-  EmptyState,
+  SettingsBlock,
+  SettingRow,
   FieldHint,
   ItemList,
   ItemRow,
   Page,
-  Row,
-  Section,
+  SettingsGroup,
   Text
 } from '@design-system/react'
 import { useCallback, useEffect, useState } from 'react'
@@ -56,27 +56,24 @@ export function MobileSettings(): JSX.Element {
 
   return (
     <Page title="iPhone">
-      <Section title={t('mobileSettings.syncSection')}>
-        <Checkbox
+      <SettingsGroup title={t('mobileSettings.syncSection')}>
+        <SettingToggle
           label={t('mobileSettings.syncEnable')}
           checked={enabled}
           onChange={(v: boolean) => {
             void setSettings({ mobileSyncEnabled: v }).then(refresh)
           }}
         />
-        <Row gap="md">
+        <SettingRow label={syncLabel(enabled, status)} width="auto">
           <Button disabled={busy || !enabled} onClick={() => void syncNow()}>
             {t('mobileSettings.syncNow')}
           </Button>
-          <Text size="xs" tone="tertiary">
-            {syncLabel(enabled, status)}
-          </Text>
-        </Row>
+        </SettingRow>
         {status && enabled && !status.reachable && (
-          <FieldHint tone="danger">{t('mobileSettings.unreachable')}</FieldHint>
+          <SettingsBlock><FieldHint tone="danger">{t('mobileSettings.unreachable')}</FieldHint></SettingsBlock>
         )}
-        {status?.error && <FieldHint tone="danger">{status.error}</FieldHint>}
-      </Section>
+        {status?.error && <SettingsBlock><FieldHint tone="danger">{status.error}</FieldHint></SettingsBlock>}
+      </SettingsGroup>
 
       {/*
         Crossed wires (what the iPhone assumed when pressed vs. the Mac's actual state).
@@ -84,7 +81,7 @@ export function MobileSettings(): JSX.Element {
         surface them
       */}
       {status && status.conflicts.length > 0 && (
-        <Section title={t('mobileSettings.conflictsSection')}>
+        <SettingsGroup title={t('mobileSettings.conflictsSection')}>
           <ItemList>
             {status.conflicts.map((c) => (
               <ItemRow
@@ -103,12 +100,12 @@ export function MobileSettings(): JSX.Element {
               </ItemRow>
             ))}
           </ItemList>
-        </Section>
+        </SettingsGroup>
       )}
 
       {/* With nothing to show, don't render the section at all (never make anyone read "none") */}
       {status && enabled && status.conflicts.length === 0 && (
-        <EmptyState title={t('mobileSettings.noConflicts')} />
+        <FieldHint>{t('mobileSettings.noConflicts')}</FieldHint>
       )}
     </Page>
   )

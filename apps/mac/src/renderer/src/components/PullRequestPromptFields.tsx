@@ -1,4 +1,4 @@
-import { Checkbox, Field, FieldHint, TextArea } from '@design-system/react'
+import { FieldHint, SettingsBlock, SettingToggle, SettingsGroup, TextArea } from '@design-system/react'
 import { t } from '../model/i18n/index.js'
 import { PULL_REQUEST_PROMPT_KINDS, PULL_REQUEST_PROMPT_VARIABLE_TEXT } from '../model/pullRequestPrompts.js'
 
@@ -22,13 +22,13 @@ export function PullRequestPromptFields({ id, values, controlled, onChange }: {
   return (
     <>
       {PULL_REQUEST_PROMPT_KINDS.map(({ kind, prompt, enabled }) => (
-        <Field key={kind} label={t(`pullRequestSettings.${kind}`)} width="full">
-          <Checkbox
-            label={t('pullRequestSettings.send')}
+        <SettingsGroup key={kind}>
+          <SettingToggle
+            label={t(`pullRequestSettings.${kind}`)}
             checked={values[enabled]}
             onChange={(v: boolean) => onChange({ [enabled]: v })}
           />
-          <TextArea
+          <SettingsBlock><TextArea
             key={`${id}-${kind}`}
             rows={3}
             aria-label={t(`pullRequestSettings.${kind}`)}
@@ -36,8 +36,8 @@ export function PullRequestPromptFields({ id, values, controlled, onChange }: {
             disabled={!values[enabled]}
             {...(controlled ? { value: values[prompt] } : { defaultValue: values[prompt] })}
             onChange={(e) => onChange({ [prompt]: e.target.value })}
-          />
-        </Field>
+          /></SettingsBlock>
+        </SettingsGroup>
       ))}
       <FieldHint>{t('pullRequestSettings.variables', { names: PULL_REQUEST_PROMPT_VARIABLE_TEXT })}</FieldHint>
     </>

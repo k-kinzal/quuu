@@ -1,4 +1,4 @@
-import { Checkbox, Page } from '@design-system/react'
+import { SettingToggle, SettingsGroup, Page } from '@design-system/react'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
 
@@ -14,16 +14,18 @@ export function NotificationSettings(): JSX.Element {
 
   return (
     <Page title={t('notificationSettings.title')}>
-      <Checkbox
+      <SettingsGroup>
+      <SettingToggle
         label={t('notificationSettings.notifyOnReview')}
         checked={settings.notifyOnReview}
         onChange={(v: boolean) => void setSettings({ notifyOnReview: v })}
       />
-      <Checkbox
+      <SettingToggle
         label={t('notificationSettings.notifyOnFailure')}
         checked={settings.notifyOnFailure}
         onChange={(v: boolean) => void setSettings({ notifyOnFailure: v })}
       />
+      </SettingsGroup>
     </Page>
   )
 }

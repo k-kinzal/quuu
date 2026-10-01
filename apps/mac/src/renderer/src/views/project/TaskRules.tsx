@@ -1,7 +1,8 @@
 import {
   Badge,
   Button,
-  Checkbox,
+  CheckboxGroup,
+  SettingToggle,
   DataCell,
   DataRow,
   DataTable,
@@ -9,7 +10,7 @@ import {
   DataTableHead,
   DataTableHeadRow,
   Dot,
-  Field,
+  SettingRow,
   FieldHint,
   HeadCell,
   IconButton,
@@ -18,7 +19,8 @@ import {
   Page,
   Panel,
   Row,
-  Section,
+  SettingsGroup,
+  SettingsBlock,
   Select,
   Text,
   TextArea,
@@ -32,7 +34,6 @@ import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import type { TaskRule } from '../../../../api/schemas/automation.js'
 import type { Project } from '../../../../api/schemas/projects.js'
-import type { TaskStatus } from '../../../../api/schemas/tasks.js'
 import { userAgents } from '../../model/agents.js'
 import { t } from '../../model/i18n/index.js'
 import { CONTINUOUS_BLOCK_STATUSES, DEFAULT_BLOCK_STATUSES } from '../../model/ruleDraft.js'
@@ -116,7 +117,7 @@ export function TaskRuleList({
   ]
 
   return (
-    <Section title={t('taskRules.section')}>
+    <SettingsGroup contained={false} title={t('taskRules.section')}>
       <ListFrame
         bar={
           <ListFrameButton
@@ -183,7 +184,7 @@ export function TaskRuleList({
           </DataTableBody>
         </DataTable>
       </ListFrame>
-    </Section>
+    </SettingsGroup>
   )
 }
 
@@ -216,11 +217,6 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
   const patch = <K extends keyof TaskRule>(key: K, value: TaskRule[K]): void => {
     setDraft((d) => ({ ...d, [key]: value }))
     setDirty(true)
-  }
-
-  const toggleStatus = (status: TaskStatus, on: boolean): void => {
-    const next = OPEN_STATUSES.filter((s) => (s === status ? on : draft.blockStatuses.includes(s)))
-    patch('blockStatuses', next)
   }
 
   const previewInput = { cron: draft.cron, frequency: draft.frequency, whenIdle: draft.whenIdle, blockStatuses: draft.blockStatuses }
@@ -296,16 +292,16 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
           </>
         }
       >
-        <Section title={t('taskRules.whatSection')}>
-          <Field label={t('taskRules.taskName')} width="md">
+        <SettingsGroup title={t('taskRules.whatSection')}>
+          <SettingRow label={t('taskRules.taskName')} width="md">
             <TextInput
               key={rule.id}
               value={draft.name}
               onChange={(e) => patch('name', e.target.value)}
             />
-          </Field>
+          </SettingRow>
           {/* What gets sent when this is empty is shown by the placeholder (the task name itself) */}
-          <Field label={t('taskRules.prompt')} width="full">
+          <SettingRow label={t('taskRules.prompt')} width="full" layout="stacked">
             <TextArea
               key={rule.id}
               rows={6}
@@ -313,9 +309,9 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
               value={draft.prompt}
               onChange={(e) => patch('prompt', e.target.value)}
             />
-          </Field>
-          <Row align="start">
-            <Field label={t('taskRules.priority')} width="xs">
+          </SettingRow>
+          <>
+            <SettingRow label={t('taskRules.priority')} width="xs">
               <Select
                 aria-label={t('taskRules.priority')}
                 value={String(draft.priority)}
@@ -325,8 +321,8 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
                   label: PRIORITY_LABEL[p as 0 | 1 | 2 | 3]
                 }))}
               />
-            </Field>
-            <Field label={t('taskRules.agent')} width="md">
+            </SettingRow>
+            <SettingRow label={t('taskRules.agent')} width="md">
               <Select
                 aria-label={t('taskRules.agent')}
                 value={draft.agentOverrideId ?? ''}
@@ -336,12 +332,12 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
                   ...agents.map((a) => ({ value: a.id, label: a.name }))
                 ]}
               />
-            </Field>
-          </Row>
-        </Section>
+            </SettingRow>
+          </>
+        </SettingsGroup>
 
-        <Section title={t('taskRules.whenSection')}>
-          <Field label={t('taskRules.frequency')} width="md"
+        <SettingsGroup title={t('taskRules.whenSection')}>
+          <SettingRow label={t('taskRules.frequency')} width="md"
             hint={frequencyHint(draft.frequency)}>
             <Select
               aria-label={t('taskRules.frequency')}
@@ -360,15 +356,15 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
                 setDirty(true)
               }}
             />
-          </Field>
+          </SettingRow>
           {/* Continuous is the idle gate itself; the checkbox would be a switch that does nothing */}
-          {draft.frequency !== 'continuous' && <Checkbox
+          {draft.frequency !== 'continuous' && <SettingToggle kind="checkbox"
             label={t('taskRules.onlyWhenIdle')}
             checked={draft.whenIdle}
             onChange={(v: boolean) => patch('whenIdle', v)}
           />}
 
-          {schedule === 'cron' && <Field
+          {schedule === 'cron' && <SettingRow
             label={t('taskRules.cron')}
             error={cronBroken ? t('taskRules.cronError') : undefined}
             hint={cronPreview ? t('taskRules.cronNext', { time: absoluteTime(cronPreview) }) : undefined}
@@ -382,30 +378,23 @@ export function TaskRuleEditor({ rule, onBack }: { rule: TaskRule; onBack(): voi
               value={draft.cron}
               onChange={(e) => patch('cron', e.target.value)}
             />
-          </Field>}
+          </SettingRow>}
 
-          <Field label={t('taskRules.blockStatuses')} width="full">
-            <Row wrap gap="lg">
-              {OPEN_STATUSES.map((status) => (
-                <Checkbox
-                  key={status}
-                  label={TASK_STATUS_LABEL[status]}
-                  checked={draft.blockStatuses.includes(status)}
-                  onChange={(v: boolean) => toggleStatus(status, v)}
-                />
-              ))}
-            </Row>
-          </Field>
+          <SettingRow label={t('taskRules.blockStatuses')} width="full" layout="stacked">
+            <CheckboxGroup label={t('taskRules.blockStatuses')}
+              options={OPEN_STATUSES.map(status => ({ value: status, label: TASK_STATUS_LABEL[status] }))}
+              value={draft.blockStatuses} onChange={statuses => patch('blockStatuses', statuses)} />
+          </SettingRow>
 
-          {noCondition && <FieldHint tone="danger">{t('taskRules.noCondition')}</FieldHint>}
+          {noCondition && <SettingsBlock><FieldHint tone="danger">{t('taskRules.noCondition')}</FieldHint></SettingsBlock>}
 
-          <Checkbox
+          <SettingToggle kind="checkbox"
             label={t('taskRules.enabled')}
             checked={draft.enabled}
             onChange={(v: boolean) => patch('enabled', v)}
           />
-          {saving.error && <FieldHint tone="danger">{failureReason(saving.error)}</FieldHint>}
-        </Section>
+          {saving.error && <SettingsBlock><FieldHint tone="danger">{failureReason(saving.error)}</FieldHint></SettingsBlock>}
+        </SettingsGroup>
       </Page>
     </Panel>
   )

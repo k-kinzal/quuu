@@ -92,6 +92,27 @@ Directories follow MUI's classification.
 | `layout/` | the AppShell set (the main surface and its footer are AppShellMain), GlassPanel / GlassPanelDivider, the Panel set, the ToolPanel set, ScrollArea, Toolbar, Resizer, CollapseHandle, Page, Section, ListFrame, Row, Column, Spacer |
 | `utils/` | VisuallyHidden, Truncate |
 
+## Composing settings
+
+Use `SettingsGroup` for related preferences and `SettingRow` for a label, hint
+and control. `SettingToggle` is an immediate switch; use `kind="checkbox"` in a
+form committed by Save. Use `CheckboxGroup` for multiple independent choices.
+
+`SettingRow` passes its accessible label and hint to `TextInput`, `NumberInput`,
+`TextArea` and `Select`. An explicit input name overrides the group label (for
+example, individual arguments in an ordered editor). `controlId` associates a
+visible label with a particular control when needed.
+
+Choose `width` by the value's character, as with `Field`. Use `layout="stacked"`
+for long text and ordered editors, and `width="auto"` for self-sizing switches,
+swatches or short segments. Ordinary rows stack when the containing pane is
+narrow, regardless of window width. Put browse/apply buttons in `InputAction`
+and readouts or multi-part actions in `SettingsBlock`. `contained={false}` lets
+an existing `ListFrame` own its boundary. Use `accessory` for a per-field
+override rather than adding an unrelated checkbox above the row.
+
+See `Patterns/Settings` in Storybook and the [settings audit](settings-ui.md).
+
 ## Choosing a switcher
 
 - Show one piece of content: `ContentTabs` + `ContentTabPanel`. For switching documents use `appearance="document"`.

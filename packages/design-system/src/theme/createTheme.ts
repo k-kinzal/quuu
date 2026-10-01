@@ -307,7 +307,7 @@ function components(
   t: PaletteTokens,
   densityMode: Density
 ): ThemeOptions['components'] {
-  const { fontSize, density, iconButton, radius } = scales[densityMode]
+  const { fontSize, density, iconButton, iconSize, spacingUnit, radius } = scales[densityMode]
   const { surface, border, text } = t
   const tone = toneValues(t)
 
@@ -601,14 +601,26 @@ function components(
     MuiSwitch: {
       defaultProps: { size: 'small' },
       styleOverrides: {
-        root: { width: 30, height: 18, padding: 0, marginTop: 1 },
+        root: {
+          width: iconSize.md * 2 + spacingUnit * 2,
+          height: density.control.sm,
+          padding: 0,
+          alignItems: 'center',
+          // MUI's small-size rules target these slots from the root. Override
+          // at the same specificity so the thumb stays inside the track.
+          '& .MuiSwitch-switchBase': {
+            padding: spacingUnit / 2,
+            top: (density.control.sm - iconSize.md - spacingUnit) / 2,
+            '&.Mui-checked': { transform: `translateX(${iconSize.md + spacingUnit}px)` }
+          },
+          '& .MuiSwitch-thumb': { width: iconSize.md, height: iconSize.md }
+        },
         switchBase: {
-          padding: 2,
-          '&.Mui-checked': { transform: 'translateX(12px)', color: '#fff' },
+          '&.Mui-checked': { color: '#fff' },
           '&.Mui-checked + .MuiSwitch-track': { background: t.primary, opacity: 1 }
         },
-        thumb: { width: 14, height: 14, boxShadow: 'none' },
-        track: { borderRadius: radius.full, background: border.strong, opacity: 1 }
+        thumb: { boxShadow: 'none' },
+        track: { height: iconSize.md + spacingUnit, borderRadius: radius.full, background: border.strong, opacity: 1 }
       }
     },
     MuiFormControlLabel: {

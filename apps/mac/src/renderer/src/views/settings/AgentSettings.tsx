@@ -1,6 +1,6 @@
 import {
   Button,
-  Checkbox,
+  SettingToggle,
   DataCell,
   DataRow,
   DataTable,
@@ -8,7 +8,7 @@ import {
   DataTableHead,
   DataTableHeadRow,
   Dot,
-  Field,
+  SettingRow,
   HeadCell,
   IconButton,
   ListFrame,
@@ -19,7 +19,7 @@ import {
   RepeatableList,
   RepeatableRow,
   Row,
-  Section,
+  SettingsGroup,
   Select,
   Text,
   TextInput,
@@ -181,7 +181,7 @@ function AgentList(): JSX.Element {
 
   return (
     <Page title={t('agentSettings.title')}>
-      <Section title={t('agentSettings.title')}>
+      <SettingsGroup contained={false} title={t('agentSettings.title')}>
         <ListFrame
           bar={
             <ListFrameButton
@@ -254,9 +254,9 @@ function AgentList(): JSX.Element {
             </DataTableBody>
           </DataTable>
         </ListFrame>
-      </Section>
+      </SettingsGroup>
 
-      <Section title={t('agentSettings.groupsSection')}>
+      <SettingsGroup contained={false} title={t('agentSettings.groupsSection')}>
         <ListFrame
           bar={
             <ListFrameButton
@@ -305,7 +305,7 @@ function AgentList(): JSX.Element {
             </DataTableBody>
           </DataTable>
         </ListFrame>
-      </Section>
+      </SettingsGroup>
     </Page>
   )
 }
@@ -405,34 +405,34 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
         />
       }
     >
-      <Section title={t('agentSettings.basicsSection')}>
-        <Field label={t('agentSettings.name')}>
+      <SettingsGroup title={t('agentSettings.basicsSection')}>
+        <SettingRow label={t('agentSettings.name')}>
           <TextInput value={draft.name} onChange={(e) => patch('name', e.target.value)} />
-        </Field>
-        <Field label={t('agentSettings.description')}>
+        </SettingRow>
+        <SettingRow label={t('agentSettings.description')}>
           <TextInput
             value={draft.description}
             onChange={(e) => patch('description', e.target.value)}
           />
-        </Field>
-        <Checkbox
+        </SettingRow>
+        <SettingToggle kind="checkbox"
           label={t('agentSettings.enabled')}
           checked={draft.enabled}
           onChange={(v: boolean) => patch('enabled', v)}
         />
-      </Section>
+      </SettingsGroup>
 
-      <Section title={t('agentSettings.launchSection')}>
-        <Field label={t('agentSettings.command')}>
+      <SettingsGroup title={t('agentSettings.launchSection')}>
+        <SettingRow label={t('agentSettings.command')}>
           <TextInput
             mono
             value={draft.command}
             placeholder="claude"
             onChange={(e) => patch('command', e.target.value)}
           />
-        </Field>
+        </SettingRow>
 
-        <Field label={t('agentSettings.argsFirst')} width="lg">
+        <SettingRow label={t('agentSettings.argsFirst')} width="lg" layout="stacked">
           <StringListEditor
             noun={t('agentSettings.argNoun')}
             value={draft.argsTemplate}
@@ -440,11 +440,11 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
             variables={TEMPLATE_VARS}
             onChange={(v) => patch('argsTemplate', v)}
           />
-        </Field>
+        </SettingRow>
 
         {/* Emptying this makes resuming impossible. Don't write "can't resume" here —
             main says it the moment you try to follow up (RESUME_UNAVAILABLE) */}
-        <Field label={t('agentSettings.argsResume')} width="lg">
+        <SettingRow label={t('agentSettings.argsResume')} width="lg" layout="stacked">
           <StringListEditor
             noun={t('agentSettings.argNoun')}
             value={draft.resumeArgsTemplate}
@@ -452,24 +452,24 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
             variables={TEMPLATE_VARS}
             onChange={(v) => patch('resumeArgsTemplate', v)}
           />
-        </Field>
+        </SettingRow>
 
-        <Field label={t('agentSettings.env')} width="lg">
+        <SettingRow label={t('agentSettings.env')} width="lg" layout="stacked">
           <EnvEditor value={draft.env} onChange={(v) => patch('env', v)} />
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
 
-      <Section title={t('agentSettings.slotsSection')}>
-        <Row align="start">
-          <Field label={t('agentSettings.concurrency')} width="xs">
+      <SettingsGroup title={t('agentSettings.slotsSection')}>
+        <>
+          <SettingRow label={t('agentSettings.concurrency')} width="xs">
             <NumberInput
               min={1}
               max={16}
               value={draft.concurrency}
               onChange={(v) => patch('concurrency', v)}
             />
-          </Field>
-          <Field label={t('agentSettings.timeout')} width="xs">
+          </SettingRow>
+          <SettingRow label={t('agentSettings.timeout')} width="xs">
             <NumberInput
               min={0}
               unit={t('agentSettings.seconds')}
@@ -477,12 +477,12 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
               value={draft.timeoutSeconds}
               onChange={(v) => patch('timeoutSeconds', v)}
             />
-          </Field>
-        </Row>
-      </Section>
+          </SettingRow>
+        </>
+      </SettingsGroup>
 
-      <Section title={t('agentSettings.limitSection')}>
-        <Field label={t('agentSettings.fallbackAgent')} hint={t('agentSettings.fallbackHint')}>
+      <SettingsGroup title={t('agentSettings.limitSection')}>
+        <SettingRow label={t('agentSettings.fallbackAgent')} hint={t('agentSettings.fallbackHint')}>
           <Select
             aria-label={t('agentSettings.fallbackAgent')}
             value={draft.fallbackAgentId ?? ''}
@@ -494,9 +494,9 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
                 .map((a) => ({ value: a.id, label: a.name }))
             ]}
           />
-        </Field>
+        </SettingRow>
 
-        <Field label={t('agentSettings.limitPatterns')} width="lg">
+        <SettingRow label={t('agentSettings.limitPatterns')} width="lg" layout="stacked">
           <StringListEditor
             noun={t('agentSettings.patternNoun')}
             value={draft.limitPatterns}
@@ -504,20 +504,20 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
             defaults={defaults?.limitPatterns ?? []}
             onChange={(v) => patch('limitPatterns', v)}
           />
-        </Field>
+        </SettingRow>
 
-        <Field label={t('agentSettings.cooldown')} width="xs">
+        <SettingRow label={t('agentSettings.cooldown')} width="xs">
           <NumberInput
             min={0}
             unit={t('agentSettings.seconds')}
             value={draft.cooldownSeconds}
             onChange={(v) => patch('cooldownSeconds', v)}
           />
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
 
-      <Section title={t('agentSettings.logSection')}>
-        <Field label={t('agentSettings.logAdapter')} width="md">
+      <SettingsGroup title={t('agentSettings.logSection')}>
+        <SettingRow label={t('agentSettings.logAdapter')} width="md">
           <Select<LogAdapter>
             aria-label={t('agentSettings.logAdapter')}
             value={draft.logAdapter}
@@ -527,8 +527,8 @@ function AgentEditor({ agent, onBack }: { agent: Agent; onBack(): void }): JSX.E
               label: LOG_ADAPTER_LABEL[k]
             }))}
           />
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
     </Page>
   )
 }
@@ -602,17 +602,17 @@ function GroupEditor({ group, onBack }: { group: AgentGroup; onBack(): void }): 
         />
       }
     >
-      <Section title={t('agentSettings.basicsSection')}>
-        <Field label={t('agentSettings.name')}>
+      <SettingsGroup title={t('agentSettings.basicsSection')}>
+        <SettingRow label={t('agentSettings.name')}>
           <TextInput value={draft.name} onChange={(e) => patch('name', e.target.value)} />
-        </Field>
-        <Field label={t('agentSettings.description')}>
+        </SettingRow>
+        <SettingRow label={t('agentSettings.description')}>
           <TextInput
             value={draft.description}
             onChange={(e) => patch('description', e.target.value)}
           />
-        </Field>
-        <Field label={t('agentSettings.strategy')} width="md">
+        </SettingRow>
+        <SettingRow label={t('agentSettings.strategy')} width="md">
           <Select<GroupStrategy>
             aria-label={t('agentSettings.strategy')}
             value={draft.strategy}
@@ -622,17 +622,17 @@ function GroupEditor({ group, onBack }: { group: AgentGroup; onBack(): void }): 
               label: GROUP_STRATEGY_LABEL[k]
             }))}
           />
-        </Field>
-        <Checkbox
+        </SettingRow>
+        <SettingToggle kind="checkbox"
           label={t('agentSettings.defaultGroup')}
           checked={draft.isDefault}
           onChange={(v: boolean) => patch('isDefault', v)}
         />
-      </Section>
+      </SettingsGroup>
 
       {/* The order is the priority. Drag to move (the numbers exist to read the result of moving) */}
-      <Section title={t('agentSettings.members')}>
-        <Field label={t('agentSettings.memberOrder')} width="md">
+      <SettingsGroup title={t('agentSettings.members')}>
+        <SettingRow label={t('agentSettings.memberOrder')} layout="stacked">
           <RepeatableList
             onReorder={move}
             bar={
@@ -677,8 +677,8 @@ function GroupEditor({ group, onBack }: { group: AgentGroup; onBack(): void }): 
               </RepeatableRow>
             ))}
           </RepeatableList>
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
 
       <SearchPicker
         open={addMember.isOpen}

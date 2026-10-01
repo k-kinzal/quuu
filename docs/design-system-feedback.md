@@ -1,5 +1,26 @@
 # Call-site feedback and decisions
 
+## 2026-10-01 Compound settings controls
+
+- Finding: settings accumulated independent section, field and checkbox margins.
+  Short values, long editors and action buttons shared no composition policy.
+  See the [screen audit and control inventory](settings-ui.md).
+- Accepted: `SettingsGroup`, `SettingRow`, `SettingToggle`, `SettingsBlock`,
+  `InputAction` and `CheckboxGroup`. Related rows share a boundary; label, hint
+  and control are associated; input/action pairs keep compact buttons; long
+  text and ordered editors use the reading width. Rows respond to the pane's
+  width, including when two navigation columns are open.
+- Immediate booleans use switches; explicitly saved choices use checkboxes.
+  Domain labels, inheritance, API calls, save timing and validation stay in the
+  app. Existing repeatable editors, list frames and searchable selects remain
+  the compounds for their respective jobs.
+- Excluded: per-screen spacing overrides, automatic hiding of saved prompt
+  contents, and replacing long inheritance/agent choices with crowded segments.
+- Verification: `Patterns/Settings` covers dark, light, narrow and comfortable
+  layouts; Mac interaction tests cover names, hints, errors, label activation,
+  multiselection and inherited disabled fields. Computer Use checks the isolated
+  app and the rebuilt production app.
+
 ## 2026-09-28 Readable resource navigation
 
 - Finding: the document navigation put raw SVGs beside fixed-height list bodies.

@@ -1,12 +1,14 @@
 import {
   Button,
-  Checkbox,
-  Field,
+  SettingToggle,
+  SettingsBlock,
+  InputAction,
+  SettingRow,
   FieldHint,
   NumberInput,
   Page,
   Row,
-  Section,
+  SettingsGroup,
   Select
 } from '@design-system/react'
 import { useEffect, useState } from 'react'
@@ -36,18 +38,18 @@ export function GeneralSettings(): JSX.Element {
 
   return (
     <Page title={t('generalSettings.title')}>
-      <Section title={t('generalSettings.schedulerSection')}>
-        <Checkbox
+      <SettingsGroup title={t('generalSettings.schedulerSection')}>
+        <SettingToggle
           label={t('generalSettings.autoStart')}
           checked={settings.autoStartScheduler}
           onChange={(v: boolean) => void setSettings({ autoStartScheduler: v })}
         />
-        <Checkbox
+        <SettingToggle
           label={t('generalSettings.keepRunning')}
           checked={settings.keepRunningInBackground}
           onChange={(v: boolean) => void setSettings({ keepRunningInBackground: v })}
         />
-        <Field label={t('generalSettings.tickInterval')} width="xs">
+        <SettingRow label={t('generalSettings.tickInterval')} width="xs">
           <NumberInput
             min={500}
             step={500}
@@ -55,26 +57,26 @@ export function GeneralSettings(): JSX.Element {
             value={settings.tickIntervalMs}
             onChange={(v) => void setSettings({ tickIntervalMs: v })}
           />
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
 
-      <Section title={t('worktreeSettings.title')}>
-        <Checkbox label={t('worktreeSettings.enabled')} checked={settings.worktreeEnabled}
+      <SettingsGroup title={t('worktreeSettings.title')}>
+        <SettingToggle label={t('worktreeSettings.enabled')} checked={settings.worktreeEnabled}
           onChange={(value: boolean) => void setSettings({ worktreeEnabled: value })} />
-      </Section>
+      </SettingsGroup>
 
-      <Section title={t('generalSettings.importSection')}>
-        <Checkbox
+      <SettingsGroup title={t('generalSettings.importSection')}>
+        <SettingToggle
           label={t('generalSettings.importExternal')}
           checked={settings.importExternalSessions}
           onChange={(v: boolean) => void setSettings({ importExternalSessions: v })}
         />
-        <Checkbox
+        <SettingToggle
           label={t('generalSettings.importCreateProjects')}
           checked={settings.importCreateProjects}
           onChange={(v: boolean) => void setSettings({ importCreateProjects: v })}
         />
-        <Field label={t('generalSettings.historyDays')} width="xs">
+        <SettingRow label={t('generalSettings.historyDays')} width="xs">
           <NumberInput
             min={0}
             max={3650}
@@ -83,16 +85,16 @@ export function GeneralSettings(): JSX.Element {
             value={settings.importHistoryDays}
             onChange={(v) => void setSettings({ importHistoryDays: v })}
           />
-        </Field>
-        <ImportNow />
-      </Section>
+        </SettingRow>
+        <SettingsBlock><ImportNow /></SettingsBlock>
+      </SettingsGroup>
 
       {/*
         How long Quuu keeps what it recorded. The CLIs delete their own old logs, so these copies
         are the record: forever until a person trades them for disk space
       */}
-      <Section title={t('generalSettings.retentionSection')}>
-        <Field label={t('generalSettings.retentionDays')} hint={t('generalSettings.retentionHint')} width="xs">
+      <SettingsGroup title={t('generalSettings.retentionSection')}>
+        <SettingRow label={t('generalSettings.retentionDays')} hint={t('generalSettings.retentionHint')} width="xs">
           <NumberInput
             min={0}
             max={3650}
@@ -101,37 +103,39 @@ export function GeneralSettings(): JSX.Element {
             value={settings.retentionDays}
             onChange={(v) => void setSettings({ retentionDays: v })}
           />
-        </Field>
-      </Section>
+        </SettingRow>
+      </SettingsGroup>
 
       {/*
         Where a task's working directory opens. Each project can name a different one
         (the IDE differs per language, so that is normally decided over there)
       */}
-      <Section title={t('generalSettings.editorSection')}>
+      <SettingsGroup title={t('generalSettings.editorSection')}>
         <EditorPicker />
-      </Section>
+      </SettingsGroup>
 
       {/*
         Leave the agent's commits and GitHub actions under the GitHub App's bot identity.
         A project can opt out or use a different App (project settings)
       */}
-      <Section title={t('generalSettings.identitySection')}>
+      <SettingsGroup title={t('generalSettings.identitySection')}>
         {/* Until an identity exists, don't show a toggle that would do nothing when switched on */}
         {identityPreview?.complete && (
-          <Checkbox
+          <SettingToggle
             label={t('generalSettings.identityEnabled')}
             checked={settings.commitIdentityEnabled}
             onChange={(v: boolean) => void setSettings({ commitIdentityEnabled: v })}
           />
         )}
+        <SettingsBlock>
         <CommitIdentityPanel
           value={settings.commitIdentity}
           onChange={(v) => {
             void window.quuu.settings.setIdentity(v).then((settings) => useStore.setState({ settings }))
           }}
         />
-      </Section>
+        </SettingsBlock>
+      </SettingsGroup>
     </Page>
   )
 }
@@ -162,8 +166,8 @@ function EditorPicker(): JSX.Element {
   }
 
   return (
-    <Field label={t('generalSettings.defaultApp')} width="lg">
-      <Row>
+    <SettingRow label={t('generalSettings.defaultApp')} width="md">
+      <InputAction>
         <Select
           aria-label={t('generalSettings.defaultApp')}
           value={current}
@@ -180,8 +184,8 @@ function EditorPicker(): JSX.Element {
         <Button title={t('generalSettings.pickAppTitle')} onClick={() => void pick()}>
           {t('generalSettings.pickApp')}
         </Button>
-      </Row>
-    </Field>
+      </InputAction>
+    </SettingRow>
   )
 }
 
