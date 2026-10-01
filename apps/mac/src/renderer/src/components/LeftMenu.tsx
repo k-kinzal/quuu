@@ -27,9 +27,12 @@ export function LeftMenu({ showTasks, project }: { showTasks: boolean; project?:
       {showTasks || project ? (
         <>
           <GlassPanelDivider>{navigationResizer}</GlassPanelDivider>
-          {project ? <ProjectNavigation project={project} /> : layout.listMode === 'compact' ? (
+          {project && <ProjectNavigation project={project} />}
+          {/* A task opened inside a project keeps the project's own navigation beside the list that queues work */}
+          {project && showTasks && <GlassPanelDivider />}
+          {!showTasks ? null : layout.listMode === 'compact' ? (
             <>
-              <TaskSidebar />
+              <TaskSidebar besideNavigation={Boolean(project)} />
               <Resizer
                 value={layout.list}
                 profile="collection"

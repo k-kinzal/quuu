@@ -386,7 +386,7 @@ function Shell(): JSX.Element {
         >
           <LeftMenu
             showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen}
-            project={detailOpen ? undefined : project}
+            project={project}
           />
           <AppShellMain windowHeader>
             <AppShellBody>

@@ -133,7 +133,7 @@ describe('the single left menu and the footer of the main surface', () => {
     expect(screen.queryByPlaceholderText('Task title...')).toBeNull()
   })
 
-  it.each(['compact', 'hidden'] as const)('shares the project navigation panel and hides it while a task is open with the list %s', async (listMode) => {
+  it.each(['compact', 'hidden'] as const)('shares the project navigation panel and keeps it beside the task list while a task is open with the list %s', async (listMode) => {
     useStore.setState({ ready: true, layout: { ...useStore.getState().layout, listMode } })
     useStore.getState().setSection({ kind: 'project', id: projectId })
     render(<App />)
@@ -145,16 +145,20 @@ describe('the single left menu and the footer of the main surface', () => {
     expect(projectNav()).not.toBeNull()
 
     await act(() => useStore.getState().openTask(readingTaskId))
-    expect(projectNav()).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Project Settings' })).toBeNull()
-    expect(screen.getAllByRole('complementary')).toHaveLength(1)
-    if (listMode === 'compact') expect(within(menu).getByRole('listbox')).toBeTruthy()
-    else expect(within(menu).getByRole('button', { name: 'Restore List (⌘⌥2)' })).toBeTruthy()
-
-    await act(() => useStore.getState().goBack())
     expect(projectNav()).not.toBeNull()
-    await act(() => useStore.getState().goForward())
-    expect(projectNav()).toBeNull()
+    expect(within(projectNav()!).getByRole('button', { name: 'Tasks' }).getAttribute('aria-current')).toBe('page')
+    expect(screen.getAllByRole('complementary')).toHaveLength(1)
+    if (listMode === 'compact') {
+      expect(within(menu).getByRole('listbox')).toBeTruthy()
+      expect(within(menu).getByRole('button', { name: 'Add Task (⌘N)' })).toBeTruthy()
+    } else expect(within(menu).getByRole('button', { name: 'Restore List (⌘⌥2)' })).toBeTruthy()
+
+    fireEvent.click(within(projectNav()!).getByRole('button', { name: 'Project Settings' }))
+    expect(useStore.getState()).toMatchObject({ projectSettingsOpen: true, detailOpen: false })
+    expect(within(menu).queryByRole('listbox')).toBeNull()
+    await act(() => useStore.getState().goBack())
+    expect(useStore.getState().detailOpen).toBe(true)
+    expect(projectNav()).not.toBeNull()
     act(() => useStore.getState().closeDetail())
     expect(projectNav()).not.toBeNull()
     act(() => useStore.getState().setSection({ kind: 'all' }))

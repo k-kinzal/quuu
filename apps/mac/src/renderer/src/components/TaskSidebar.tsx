@@ -66,7 +66,10 @@ import { shortcut } from '../interaction/shortcut.js'
  * stays opaque paper; only the incidental surfaces in front of it (the rail and this list)
  * are translucent, so the quality of the ground says which one is primary.
  */
-export function TaskSidebar(): JSX.Element {
+export function TaskSidebar({ besideNavigation = false }: {
+  /** The project's navigation column already sits between the rail and this list, clear of the window buttons */
+  besideNavigation?: boolean
+} = {}): JSX.Element {
   const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
   const snapshot = useStore((s) => s.snapshot)
   const cursorTaskId = useStore((s) => s.cursorTaskId)
@@ -158,7 +161,7 @@ export function TaskSidebar(): JSX.Element {
     <Panel width={layout.list} surface="transparent" onContextMenu={openSectionMenu} {...motionRegion('collection', 'left')}>
       <PanelHeader
         size="sm"
-        startInset={layout.railCollapsed ? WINDOW_BUTTONS_OVERHANG : undefined}
+        startInset={layout.railCollapsed && !besideNavigation ? WINDOW_BUTTONS_OVERHANG : undefined}
       >
         <PanelHeading title={sectionTitle} count={tasks.length}><span {...motionAnchor('heading')}>{sectionTitle}</span></PanelHeading>
         {/* The empty part of the bar is a drag surface. It gives back what the window loses by having no title bar */}
