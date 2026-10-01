@@ -91,7 +91,10 @@ export const model: typeof en = {
         set: '設定の保存',
         lookupBotUser: 'GitHub のユーザー確認',
         createGitHubApp: 'GitHub App の設定',
-        cancelGitHubApp: 'GitHub App 設定の中止'
+        cancelGitHubApp: 'GitHub App 設定の中止',
+        githubWebStatus: 'GitHub のサインイン確認',
+        githubWebSignIn: 'GitHub へのサインイン',
+        githubWebSignOut: 'GitHub からのサインアウト'
       },
       mobile: {
         status: '同期状態の読み込み',
@@ -116,7 +119,9 @@ export const model: typeof en = {
         hidePullRequest: 'PR の表示切替',
         closePullRequest: 'PR の終了',
         history: 'レビュー履歴の読み込み',
-        historySnapshot: 'ラン終了時点のレビューの読み込み'
+        historySnapshot: 'ラン終了時点のレビューの読み込み',
+        projectPullRequests: "プロジェクトのプルリクエストの読み込み",
+        refreshProjectPullRequests: "プロジェクトのプルリクエストの再確認"
       },
       report: {
         get: 'レポートの読み込み',

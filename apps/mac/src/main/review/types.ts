@@ -67,6 +67,9 @@ export interface ReviewPullRequest {
   files: ReviewChange[]
 }
 
+/** One Pull Request across a project, with every task whose review keeps it. No file list. */
+export type ProjectPullRequest = Omit<ReviewPullRequest, 'files'> & { tasks: Array<{ id: string; title: string }> }
+
 export interface CoverageMetric {
   covered: number
   total: number

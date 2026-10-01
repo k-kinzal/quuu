@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { BrowserWindow, MenuItem, MenuItemConstructorOptions } from 'electron'
 import type { EventEmitter } from 'node:events'
-import { closePullRequestView, hidePullRequestView, showPullRequestView } from '../src/main/platform/pullRequestViews.js'
+import { closePullRequestView, hidePullRequestView, reloadPullRequestViews, showPullRequestView } from '../src/main/platform/pullRequestViews.js'
 
 interface MockViewRecord {
   setBounds: ReturnType<typeof vi.fn>
@@ -24,6 +24,9 @@ interface MockViewRecord {
 
 const electronState = vi.hoisted(() => ({
   views: [] as MockViewRecord[],
+  options: [] as unknown[],
+  partitions: [] as string[],
+  flush: vi.fn().mockResolvedValue(undefined),
   template: [] as MenuItemConstructorOptions[],
   popup: vi.fn(), openExternal: vi.fn().mockResolvedValue(undefined), copy: vi.fn()
 }))
@@ -36,7 +39,8 @@ vi.mock('electron', async () => {
       setWindowOpenHandler: ReturnType<typeof vi.fn>
     }
 
-    constructor() {
+    constructor(options: unknown) {
+      electronState.options.push(options)
       let destroyed = false
       this.webContents = Object.assign(new EventEmitter(), {
         loadURL: vi.fn().mockResolvedValue(undefined),
@@ -59,6 +63,10 @@ vi.mock('electron', async () => {
 
   return {
     BrowserWindow: class { }, WebContentsView,
+    session: { fromPartition: (partition: string) => {
+      electronState.partitions.push(partition)
+      return { partition, setPermissionRequestHandler: vi.fn(), cookies: { flushStore: electronState.flush } }
+    } },
     app: { isPackaged: true }, clipboard: { writeText: electronState.copy },
     shell: { openExternal: electronState.openExternal },
     Menu: { buildFromTemplate: (items: MenuItemConstructorOptions[]) => {
@@ -120,6 +128,27 @@ describe('the embedded Pull Request view', () => {
 
     closePullRequestView(target.window, 'pr-42')
     expect(electronState.views[0].webContents.close).toHaveBeenCalledOnce()
+  })
+
+  /*
+   * The sign-in made in Settings has to reach these pages and outlive a restart. A page in the
+   * app's default session showed GitHub signed out after every `app:restart`.
+   */
+  it('opens the page in the persistent GitHub session, saves the sign-in after it moves, and reloads it on demand', () => {
+    const target = owner()
+    showPullRequestView(target.window, {
+      id: 'session-pr', url: 'https://github.com/openai/quuu/pull/7',
+      bounds: { x: 0, y: 0, width: 500, height: 500 }
+    })
+    const options = electronState.options.at(-1) as { webPreferences: { session: { partition: string } } }
+    expect(options.webPreferences.session.partition).toBe('persist:quuu-github')
+    const contents = electronState.views.at(-1)!.webContents
+    electronState.flush.mockClear()
+    contents.emit('did-navigate')
+    expect(electronState.flush).toHaveBeenCalledOnce()
+    reloadPullRequestViews()
+    expect(contents.reload).toHaveBeenCalledOnce()
+    closePullRequestView(target.window, 'session-pr')
   })
 
   it('refuses a URL that is not a GitHub Pull Request before creating a native view', () => {

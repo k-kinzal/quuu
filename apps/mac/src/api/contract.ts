@@ -9,11 +9,11 @@ import { ProjectDocumentsSchema, DocumentReadSchema, DocumentContentSchema, Docu
 import { z } from 'zod'
 import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./schemas/agents.js"
 import { TaskRuleInputSchema, TaskRuleSchema } from "./schemas/automation.js"
-import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./schemas/desktop.js"
+import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, GitHubWebStatusSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./schemas/desktop.js"
 import { RunSchema, SchedulerStatusSchema } from "./schemas/execution.js"
 import { ProjectInputSchema, ProjectSchema } from "./schemas/projects.js"
 import { ReportHistoryEntrySchema, ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
-import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewHistoryPointSchema, ReviewSnapshotSchema } from "./schemas/review.js"
+import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewHistoryPointSchema, ReviewSnapshotSchema, ProjectPullRequestSchema } from "./schemas/review.js"
 import { SessionMessageSchema, SessionSnapshotSchema } from "./schemas/session.js"
 import { NetworkConfigSchema, NetworkPairSchema, NetworkStatusSchema } from "./schemas/network.js"
 import { ServerStatusSchema, AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./schemas/settings.js"
@@ -171,6 +171,11 @@ export const contract = {
     lookupBotUser: procedure.input(z.string()).output(BotUserResultSchema),
     createGitHubApp: procedure.output(CreateAppResultSchema),
     cancelGitHubApp: procedure.output(z.void()),
+    /** The sign-in the GitHub pages inside Quuu keep, apart from any browser's. */
+    githubWebStatus: procedure.output(GitHubWebStatusSchema),
+    /** Opens GitHub's own sign-in page; answers once it is signed in or the window is closed. */
+    githubWebSignIn: procedure.output(GitHubWebStatusSchema),
+    githubWebSignOut: procedure.output(GitHubWebStatusSchema),
   },
   mobile: {
     status: procedure.output(MobileSyncStatusSchema),
@@ -212,6 +217,10 @@ export const contract = {
     openPullRequest: procedure.input(PullRequestViewRequestSchema.strict()).output(ReviewActionResultSchema),
     hidePullRequest: procedure.input(z.string()).output(ReviewActionResultSchema),
     closePullRequest: procedure.input(z.string()).output(ReviewActionResultSchema),
+    /** Every Pull Request the project's tasks kept in their reviews. Reads only what is saved. */
+    projectPullRequests: procedure.input(z.string()).output(ProjectPullRequestSchema.array()),
+    /** Looks again at the tasks whose Pull Requests are still open, then answers the list. */
+    refreshProjectPullRequests: procedure.input(z.string()).output(ProjectPullRequestSchema.array()),
   },
   report: {
     conversation: procedure.input(AuxiliaryPageInputSchema).output(AuxiliaryPageSchema),

@@ -6,7 +6,8 @@ import { t } from '../i18n/index.js'
 import { popupMenu } from '../nativeMenu.js'
 import { cancelGitHubApp, createGitHubApp, fetchBotUserId } from '../platform/githubApp.js'
 import { openExternalLink } from '../platform/externalLinks.js'
-import { closePullRequestView, hidePullRequestView, showPullRequestView } from '../platform/pullRequestViews.js'
+import { githubWebStatus, signInToGitHubWeb, signOutOfGitHubWeb } from '../platform/githubWeb.js'
+import { closePullRequestView, hidePullRequestView, reloadPullRequestViews, showPullRequestView } from '../platform/pullRequestViews.js'
 import { hideReportView, showReportView } from '../platform/reportViews.js'
 import { showDocumentView, hideDocumentView, navigateDocumentView } from '../platform/documentViews.js'
 import type { DesktopOperations } from '../api/host.js'
@@ -58,6 +59,18 @@ export function desktopOperations(owner: BrowserWindow): DesktopOperations {
     },
     cancelGitHubApp: () => {
       return cancelGitHubApp()
+    },
+    githubWebStatus: () => githubWebStatus(),
+    // Pages already open were drawn under the old sign-in; show them as it now stands.
+    githubWebSignIn: async () => {
+      const status = await signInToGitHubWeb(owner)
+      reloadPullRequestViews()
+      return status
+    },
+    githubWebSignOut: async () => {
+      const status = await signOutOfGitHubWeb()
+      reloadPullRequestViews()
+      return status
     },
     pickDirectory: async () => {
 

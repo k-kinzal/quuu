@@ -73,6 +73,17 @@ export const ReviewPullRequestSchema = z.object({
 })
 export type ReviewPullRequest = z.infer<typeof ReviewPullRequestSchema>
 
+/**
+ * One Pull Request across a project, read off the reviews its tasks already keep.
+ *
+ * The files are left out: the project's list answers "which Pull Requests, and how is CI", and the
+ * file trees are what makes a task's review heavy. Several tasks can have touched the same one.
+ */
+export const ProjectPullRequestSchema = ReviewPullRequestSchema.omit({ files: true }).extend({
+  tasks: z.object({ id: z.string(), title: z.string() }).array()
+})
+export type ProjectPullRequest = z.infer<typeof ProjectPullRequestSchema>
+
 export const CoverageMetricSchema = z.object({
   covered: z.number(),
   total: z.number(),

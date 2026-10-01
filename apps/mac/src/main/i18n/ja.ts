@@ -338,6 +338,10 @@ export const ja: typeof en = {
     appMissing: 'アプリが見つかりません: {{path}}'
   },
 
+  githubWeb: {
+    signInTitle: 'GitHubにサインイン'
+  },
+
   review: {
     recordedPullRequest: 'Pull Request #{{number}}',
     tabUnidentified: 'Pull Request のタブを識別できません',

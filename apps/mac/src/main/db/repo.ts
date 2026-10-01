@@ -178,6 +178,21 @@ export function getReviewSnapshot(db: Db, taskId: string): { updatedAt: string; 
   return row ? { updatedAt: s(row.updated_at), snapshot: JSON.parse(s(row.snapshot)) as ReviewSnapshot } : null
 }
 
+/**
+ * The Pull Requests kept in the reviews of a project's tasks, one row per task and Pull Request.
+ * SQLite picks them out of the saved JSON, so the file trees beside them are never parsed here.
+ */
+export function listProjectPullRequests(db: Db, projectId: string): Array<{ taskId: string; title: string; pullRequest: string }> {
+  const rows = db.prepare(`
+    SELECT t.id AS task_id, t.title AS title, pr.value AS pull_request
+      FROM tasks t
+      JOIN task_review_snapshots s ON s.task_id = t.id,
+           json_each(s.snapshot, '$.pullRequests') AS pr
+     WHERE t.project_id = ? AND t.archived = 0
+     ORDER BY t.seq`).all(projectId) as Row[]
+  return rows.map(row => ({ taskId: s(row.task_id), title: s(row.title), pullRequest: s(row.pull_request) }))
+}
+
 export function saveReviewSnapshot(db: Db, taskId: string, snapshot: ReviewSnapshot): void {
   db.prepare('INSERT OR REPLACE INTO task_review_snapshots (task_id, updated_at, snapshot) VALUES (?, ?, ?)')
     .run(taskId, nowIso(), JSON.stringify(snapshot))

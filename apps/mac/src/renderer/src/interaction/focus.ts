@@ -16,6 +16,7 @@ export type PaneId =
   | 'rail'
   | 'projectNavigation'
   | 'documents'
+  | 'pullRequests'
   | 'list'
   | 'chat'
   | 'review'

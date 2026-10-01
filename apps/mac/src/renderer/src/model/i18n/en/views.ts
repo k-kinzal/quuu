@@ -54,6 +54,20 @@ export const views = {
     detectRemote: "Detect from the project directory",
     runLabel: " · Runner",
   },
+  projectPullRequests: {
+    title: 'Pull Requests', search: 'Find a pull request or task…', refresh: 'Check open pull requests again',
+    refreshFailed: 'Could not check the pull requests again', loading: 'Loading pull requests…',
+    failed: 'Could not load pull requests', empty: 'No task in this project has a pull request yet',
+    noMatches: 'No matching pull requests', select: 'Select a pull request', retry: 'Try again',
+    openTask: 'Open task “{{title}}”',
+    state: { open: 'Open', merged: 'Merged', closed: 'Closed' }
+  },
+  githubWeb: {
+    section: 'GitHub pages',
+    signIn: 'Sign in to GitHub', signOut: 'Sign out',
+    signedIn: 'Signed in to GitHub', signedInAs: 'Signed in to GitHub as {{login}}', signedOut: 'Not signed in to GitHub',
+    hint: 'Kept across restarts, apart from your browser and gh'
+  },
   projectDocuments: {
     title: 'Documents', search: 'Find a document…', files: 'Repository', websites: 'Documentation sites',
     branch: 'Default branch: {{branch}}', refresh: 'Refresh documents', loading: 'Loading documents…',

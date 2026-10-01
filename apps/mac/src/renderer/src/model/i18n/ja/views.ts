@@ -55,6 +55,20 @@ export const views: typeof en = {
     detectRemote: "プロジェクトのディレクトリから検出",
     runLabel: " · Runner",
   },
+  projectPullRequests: {
+    title: 'プルリクエスト', search: 'プルリクエストやタスクを検索…', refresh: 'オープン中のプルリクエストを再確認',
+    refreshFailed: 'プルリクエストを再確認できませんでした', loading: 'プルリクエストを読み込み中…',
+    failed: 'プルリクエストを読み込めませんでした', empty: 'このプロジェクトのタスクにはまだプルリクエストがありません',
+    noMatches: '一致するプルリクエストがありません', select: 'プルリクエストを選択', retry: '再試行',
+    openTask: 'タスク「{{title}}」を開く',
+    state: { open: 'オープン', merged: 'マージ済み', closed: 'クローズ' }
+  },
+  githubWeb: {
+    section: 'GitHubページ',
+    signIn: 'GitHubにサインイン', signOut: 'サインアウト',
+    signedIn: 'GitHubにサインイン済み', signedInAs: '{{login}} としてGitHubにサインイン済み', signedOut: 'GitHubにサインインしていません',
+    hint: '再起動後も保持（ブラウザや gh とは別）'
+  },
   projectDocuments: {
     title: 'ドキュメント', search: 'ドキュメントを検索…', files: 'リポジトリ', websites: 'ドキュメントサイト',
     branch: 'デフォルトブランチ: {{branch}}', refresh: 'ドキュメントを更新', loading: 'ドキュメントを読み込み中…',

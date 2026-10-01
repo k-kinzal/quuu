@@ -8,7 +8,7 @@ import type { Project } from '../projects/types.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ReviewService } from './service.js'
 import { git } from './command.js'
-import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewPullRequest, ReviewSnapshot } from './types.js'
+import type { ProjectPullRequest, ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewPullRequest, ReviewSnapshot } from './types.js'
 
 /**
  * How often a Pull Request whose checks are still running is looked at again.
@@ -119,6 +119,50 @@ export class ReviewOperations extends EventEmitter {
     this.pending.clear()
     for (const watch of this.watches.values()) clearTimeout(watch.timer)
     this.watches.clear()
+  }
+
+  /**
+   * Every Pull Request the project's tasks keep in their reviews, one entry per Pull Request.
+   *
+   * Only what is saved is read. The CI of an open one is already looked at again every minute
+   * while it runs (`watch`), so the project's list stays as current as each task's own tab
+   * without asking GitHub once per task on every read. Where two tasks kept the same one, the
+   * copy GitHub updated last is the one shown.
+   */
+  projectPullRequests(projectId: string): ProjectPullRequest[] {
+    const byUrl = new Map<string, ProjectPullRequest>()
+    for (const row of repo.listProjectPullRequests(this.db, projectId)) {
+      let saved: SavedPullRequest
+      try { saved = JSON.parse(row.pullRequest) as SavedPullRequest } catch { continue }
+      if (!saved.url) continue
+      const { files: _files, ...pullRequest } = completePullRequest(saved)
+      const task = { id: row.taskId, title: row.title }
+      const known = byUrl.get(pullRequest.url)
+      if (!known) byUrl.set(pullRequest.url, { ...pullRequest, tasks: [task] })
+      else {
+        const tasks = known.tasks.some(entry => entry.id === task.id) ? known.tasks : [...known.tasks, task]
+        byUrl.set(pullRequest.url, pullRequest.updatedAt > known.updatedAt ? { ...pullRequest, tasks } : { ...known, tasks })
+      }
+    }
+    return [...byUrl.values()]
+  }
+
+  /**
+   * Look again at the tasks whose Pull Requests are still open, and answer once they were.
+   * Merged and closed ones do not change, so they cost nothing.
+   */
+  async refreshProjectPullRequests(projectId: string): Promise<ProjectPullRequest[]> {
+    const tasks = new Set(this.projectPullRequests(projectId).filter(pr => pr.state === 'open').flatMap(pr => pr.tasks.map(task => task.id)))
+    if (tasks.size > 0) {
+      for (const taskId of tasks) {
+        this.refreshedAt.delete(taskId)
+        this.requestRefresh(taskId)
+      }
+      if (this.timer) { clearTimeout(this.timer); this.timer = null }
+      if (!this.active) this.active = this.drain().finally(() => { this.active = null })
+      await this.active
+    }
+    return this.projectPullRequests(projectId)
   }
 
   /** The tasks whose Pull Request checks are being looked at again on their own. */

@@ -1,6 +1,7 @@
 import { BrowserWindow, WebContentsView } from 'electron'
 import { attachContextMenu } from '../contextMenu.js'
 import { t } from '../i18n/index.js'
+import { githubWebSession, persistGitHubWeb } from './githubWeb.js'
 import type { ReviewActionResult } from '../review/types.js'
 import type { PullRequestViewBounds, PullRequestViewRequest } from '../terminal/types.js'
 
@@ -79,6 +80,8 @@ function dispose(owner: BrowserWindow, entry: PullRequestView): void {
 function createView(owner: BrowserWindow, url: URL): PullRequestView {
   const view = new WebContentsView({
     webPreferences: {
+      // The pages keep the sign-in made in Settings, and keep it across restarts.
+      session: githubWebSession(),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
@@ -95,6 +98,8 @@ function createView(owner: BrowserWindow, url: URL): PullRequestView {
   view.webContents.on('will-navigate', (event, next) => {
     if (!githubUrl(next)) event.preventDefault()
   })
+  // Signing in on the page itself counts as much as signing in from Settings.
+  view.webContents.on('did-navigate', persistGitHubWeb)
   view.webContents.once('destroyed', () => {
     const values = viewsByWindow.get(owner)
     for (const [id, candidate] of values ?? []) {
@@ -160,4 +165,13 @@ export function closePullRequestViews(owner: BrowserWindow): void {
   const values = viewsByWindow.get(owner)
   for (const entry of values?.values() ?? []) dispose(owner, entry)
   viewsByWindow.delete(owner)
+}
+
+/** Show every open page again under the sign-in as it now stands. */
+export function reloadPullRequestViews(): void {
+  for (const values of viewsByWindow.values()) {
+    for (const entry of values.values()) {
+      if (!entry.view.webContents.isDestroyed()) entry.view.webContents.reload()
+    }
+  }
 }

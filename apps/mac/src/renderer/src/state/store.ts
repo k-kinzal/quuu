@@ -181,6 +181,7 @@ interface State {
   projectSettingsOpen: boolean
   projectDashboardOpen: boolean
   projectDocumentsOpen: boolean
+  projectPullRequestsOpen: boolean
   editingRuleId: string | null
   /** Everywhere this window has been, and how far back through it we have stepped (`navigation.ts`). */
   trail: Trail
@@ -248,6 +249,7 @@ interface State {
   openProjectSettings(open: boolean): void
   openProjectDashboard(open: boolean): void
   openProjectDocuments(open: boolean): void
+  openProjectPullRequests(open: boolean): void
   editRule(id: string | null): void
 
   selectRun(runId: string): Promise<void>
@@ -462,7 +464,7 @@ export const useStore = create<State>((set, get) => ({
         editingAgentId: null,
         editingGroupId: null,
         projectSettingsOpen: false,
-        projectDashboardOpen: false, projectDocumentsOpen: false,
+        projectDashboardOpen: false, projectDocumentsOpen: false, projectPullRequestsOpen: false,
         editingRuleId: null,
         // Filters belong to the section. Carried over, the destination becomes an
         // inexplicably short list (a project filter carried into another project shows 0 rows)
@@ -504,7 +506,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async openTask(taskId) {
-    navigate(set, get, () => set({ cursorTaskId: taskId, detailOpen: true, projectSettingsOpen: false, projectDashboardOpen: false, projectDocumentsOpen: false }))
+    navigate(set, get, () => set({ cursorTaskId: taskId, detailOpen: true, projectSettingsOpen: false, projectDashboardOpen: false, projectDocumentsOpen: false, projectPullRequestsOpen: false }))
     await get().refreshRuns(taskId)
   },
 
@@ -556,19 +558,25 @@ export const useStore = create<State>((set, get) => ({
   openProjectDocuments(open) {
     navigate(set, get, () => {
       get().closeDetail()
-      set({ projectDocumentsOpen: open, projectDashboardOpen: false, projectSettingsOpen: false, detailOpen: false, editingRuleId: null })
+      set({ projectDocumentsOpen: open, projectDashboardOpen: false, projectPullRequestsOpen: false, projectSettingsOpen: false, detailOpen: false, editingRuleId: null })
+    })
+  },
+  openProjectPullRequests(open) {
+    navigate(set, get, () => {
+      get().closeDetail()
+      set({ projectPullRequestsOpen: open, projectDocumentsOpen: false, projectDashboardOpen: false, projectSettingsOpen: false, detailOpen: false, editingRuleId: null })
     })
   },
   openProjectDashboard(open) {
     navigate(set, get, () => {
       get().closeDetail()
-      set({ projectDashboardOpen: open, projectDocumentsOpen: false, projectSettingsOpen: false, detailOpen: false, editingRuleId: null })
+      set({ projectDashboardOpen: open, projectDocumentsOpen: false, projectPullRequestsOpen: false, projectSettingsOpen: false, detailOpen: false, editingRuleId: null })
     })
   },
   openProjectSettings(open) {
     navigate(set, get, () => {
       if (open) get().closeDetail()
-      set({ projectSettingsOpen: open, projectDashboardOpen: false, projectDocumentsOpen: false, detailOpen: false, editingRuleId: null })
+      set({ projectSettingsOpen: open, projectDashboardOpen: false, projectDocumentsOpen: false, projectPullRequestsOpen: false, detailOpen: false, editingRuleId: null })
     })
   },
   editRule(id) {

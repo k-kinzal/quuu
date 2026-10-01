@@ -6131,6 +6131,66 @@ message SettingsCancelGitHubAppResponse {
 
 }
 
+message SettingsGithubWebStatusRequest {
+
+}
+
+message SettingsGithubWebStatusResponseValueLogin {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SettingsGithubWebStatusResponseValue {
+  optional bool signedIn = 1;
+  optional SettingsGithubWebStatusResponseValueLogin login = 2;
+}
+
+message SettingsGithubWebStatusResponse {
+  optional SettingsGithubWebStatusResponseValue value = 1;
+}
+
+message SettingsGithubWebSignInRequest {
+
+}
+
+message SettingsGithubWebSignInResponseValueLogin {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SettingsGithubWebSignInResponseValue {
+  optional bool signedIn = 1;
+  optional SettingsGithubWebSignInResponseValueLogin login = 2;
+}
+
+message SettingsGithubWebSignInResponse {
+  optional SettingsGithubWebSignInResponseValue value = 1;
+}
+
+message SettingsGithubWebSignOutRequest {
+
+}
+
+message SettingsGithubWebSignOutResponseValueLogin {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SettingsGithubWebSignOutResponseValue {
+  optional bool signedIn = 1;
+  optional SettingsGithubWebSignOutResponseValueLogin login = 2;
+}
+
+message SettingsGithubWebSignOutResponse {
+  optional SettingsGithubWebSignOutResponseValue value = 1;
+}
+
 message MobileStatusRequest {
 
 }
@@ -7240,6 +7300,78 @@ message ReviewClosePullRequestResponse {
   optional ReviewClosePullRequestResponseValue value = 1;
 }
 
+message ReviewProjectPullRequestsRequest {
+  optional string value = 1;
+}
+
+message ReviewProjectPullRequestsResponseValueItemTasksItem {
+  optional string id = 1;
+  optional string title = 2;
+}
+
+message ReviewProjectPullRequestsResponseValueItemTasks {
+  repeated ReviewProjectPullRequestsResponseValueItemTasksItem items = 1;
+}
+
+message ReviewProjectPullRequestsResponseValueItem {
+  optional double number = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string headRefName = 4;
+  optional string baseRefName = 5;
+  optional string headSha = 6;
+  optional bool draft = 7;
+  optional string updatedAt = 8;
+  optional string check = 9;
+  optional string mergeState = 10;
+  optional string state = 11;
+  optional ReviewProjectPullRequestsResponseValueItemTasks tasks = 12;
+}
+
+message ReviewProjectPullRequestsResponseValue {
+  repeated ReviewProjectPullRequestsResponseValueItem items = 1;
+}
+
+message ReviewProjectPullRequestsResponse {
+  optional ReviewProjectPullRequestsResponseValue value = 1;
+}
+
+message ReviewRefreshProjectPullRequestsRequest {
+  optional string value = 1;
+}
+
+message ReviewRefreshProjectPullRequestsResponseValueItemTasksItem {
+  optional string id = 1;
+  optional string title = 2;
+}
+
+message ReviewRefreshProjectPullRequestsResponseValueItemTasks {
+  repeated ReviewRefreshProjectPullRequestsResponseValueItemTasksItem items = 1;
+}
+
+message ReviewRefreshProjectPullRequestsResponseValueItem {
+  optional double number = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string headRefName = 4;
+  optional string baseRefName = 5;
+  optional string headSha = 6;
+  optional bool draft = 7;
+  optional string updatedAt = 8;
+  optional string check = 9;
+  optional string mergeState = 10;
+  optional string state = 11;
+  optional ReviewRefreshProjectPullRequestsResponseValueItemTasks tasks = 12;
+}
+
+message ReviewRefreshProjectPullRequestsResponseValue {
+  repeated ReviewRefreshProjectPullRequestsResponseValueItem items = 1;
+}
+
+message ReviewRefreshProjectPullRequestsResponse {
+  optional ReviewRefreshProjectPullRequestsResponseValue value = 1;
+}
+
 message ReportConversationRequestValue {
   optional string id = 1;
   optional double before = 2;
@@ -8001,6 +8133,9 @@ service Quuu {
   rpc SettingsLookupBotUser(SettingsLookupBotUserRequest) returns (SettingsLookupBotUserResponse);
   rpc SettingsCreateGitHubApp(SettingsCreateGitHubAppRequest) returns (SettingsCreateGitHubAppResponse);
   rpc SettingsCancelGitHubApp(SettingsCancelGitHubAppRequest) returns (SettingsCancelGitHubAppResponse);
+  rpc SettingsGithubWebStatus(SettingsGithubWebStatusRequest) returns (SettingsGithubWebStatusResponse);
+  rpc SettingsGithubWebSignIn(SettingsGithubWebSignInRequest) returns (SettingsGithubWebSignInResponse);
+  rpc SettingsGithubWebSignOut(SettingsGithubWebSignOutRequest) returns (SettingsGithubWebSignOutResponse);
   rpc MobileStatus(MobileStatusRequest) returns (MobileStatusResponse);
   rpc MobileSyncNow(MobileSyncNowRequest) returns (MobileSyncNowResponse);
   rpc ImporterSync(ImporterSyncRequest) returns (ImporterSyncResponse);
@@ -8019,6 +8154,8 @@ service Quuu {
   rpc ReviewOpenPullRequest(ReviewOpenPullRequestRequest) returns (ReviewOpenPullRequestResponse);
   rpc ReviewHidePullRequest(ReviewHidePullRequestRequest) returns (ReviewHidePullRequestResponse);
   rpc ReviewClosePullRequest(ReviewClosePullRequestRequest) returns (ReviewClosePullRequestResponse);
+  rpc ReviewProjectPullRequests(ReviewProjectPullRequestsRequest) returns (ReviewProjectPullRequestsResponse);
+  rpc ReviewRefreshProjectPullRequests(ReviewRefreshProjectPullRequestsRequest) returns (ReviewRefreshProjectPullRequestsResponse);
   rpc ReportConversation(ReportConversationRequest) returns (ReportConversationResponse);
   rpc ReportImage(ReportImageRequest) returns (ReportImageResponse);
   rpc ReportProjectGet(ReportProjectGetRequest) returns (ReportProjectGetResponse);

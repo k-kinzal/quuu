@@ -14,6 +14,8 @@ import { useStore } from '../src/renderer/src/state/store.js'
 import { ProjectNavigation } from '../src/renderer/src/views/project/ProjectNavigation.js'
 import { ProjectDashboard } from '../src/renderer/src/views/project/ProjectDashboard.js'
 import { ProjectDocuments } from '../src/renderer/src/views/project/ProjectDocuments.js'
+import { ProjectPullRequests } from '../src/renderer/src/views/project/ProjectPullRequests.js'
+import type { ProjectPullRequest } from '../src/api/schemas/review.js'
 import { ReportSettings } from '../src/renderer/src/views/settings/ReportSettings.js'
 import { DocumentWebsite } from '../src/renderer/src/components/DocumentWebsite.js'
 import { ReportPage } from '../src/renderer/src/components/ReportPage.js'
@@ -30,6 +32,16 @@ const generate = vi.fn(() => Promise.resolve({ ok: true }))
 const show = vi.fn(() => Promise.resolve({ ok: true }))
 const hide = vi.fn(() => Promise.resolve({ ok: true }))
 const save = vi.fn()
+const pullRequest = (number: number, over: Partial<ProjectPullRequest> = {}): ProjectPullRequest => ({
+  number, title: `PR ${String(number)}`, url: `https://github.com/owner/repo/pull/${String(number)}`, headRefName: `branch-${String(number)}`,
+  baseRefName: 'main', headSha: 'a'.repeat(40), draft: false, updatedAt: '2026-09-01T00:00:00Z', check: 'success',
+  mergeState: 'clean', state: 'open', tasks: [{ id: `task-${String(number)}`, title: `Task ${String(number)}` }], ...over
+})
+const projectPullRequests = vi.fn<() => Promise<ProjectPullRequest[]>>()
+const openPullRequest = vi.fn(() => Promise.resolve({ ok: true }))
+const closePullRequest = vi.fn(() => Promise.resolve({ ok: true }))
+const githubWebStatus = vi.fn(() => Promise.resolve({ signedIn: false, login: null as string | null }))
+const githubWebSignIn = vi.fn(() => Promise.resolve({ signedIn: true, login: 'octocat' }))
 const listDocuments = vi.fn(() => Promise.resolve({ branch: 'main', revision: 'a'.repeat(40),
   files: [{ path: 'README.md', format: 'markdown' as const }, { path: 'docs/guide.md', format: 'markdown' as const }],
   websites: [{ title: 'Docs', url: 'https://example.com/docs/' }] }))
@@ -40,6 +52,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   queryClient.clear()
   get.mockResolvedValue(null)
+  projectPullRequests.mockResolvedValue([])
   useStore.setState({ ...INITIAL_PLACE, section: { kind: 'project', id: project.id }, trail: INITIAL_TRAIL,
     settings: { ...DEFAULT_SETTINGS, reportEnabled: true }, selectedRunId: null, paletteOpen: false,
     snapshot: { projects: [project], tasks: [], rules: [], runs: [], agents: [], groups: [],
@@ -63,7 +76,18 @@ beforeEach(() => {
       projectShow: os.report.projectShow.handler(() => show()),
       hide: os.report.hide.handler(() => hide())
     },
-    settings: { set: os.settings.set.handler(({ input }) => { save(input); return { ...useStore.getState().settings!, ...input } }) },
+    settings: {
+      set: os.settings.set.handler(({ input }) => { save(input); return { ...useStore.getState().settings!, ...input } }),
+      githubWebStatus: os.settings.githubWebStatus.handler(() => githubWebStatus()),
+      githubWebSignIn: os.settings.githubWebSignIn.handler(() => githubWebSignIn())
+    },
+    review: {
+      projectPullRequests: os.review.projectPullRequests.handler(() => projectPullRequests()),
+      refreshProjectPullRequests: os.review.refreshProjectPullRequests.handler(() => projectPullRequests()),
+      openPullRequest: os.review.openPullRequest.handler(() => openPullRequest()),
+      hidePullRequest: os.review.hidePullRequest.handler(() => ({ ok: true })),
+      closePullRequest: os.review.closePullRequest.handler(() => closePullRequest())
+    },
     session: { close: os.session.close.handler(() => undefined) }
   }) })
 })
@@ -98,7 +122,7 @@ describe('project navigation and dashboard', () => {
   it('navigates between project destinations and restores them with back and forward', async () => {
     render(<ThemeProvider><ProjectNavigation project={project} /></ThemeProvider>)
     const nav = screen.getByRole('navigation', { name: 'Project navigation' })
-    expect(nav.querySelectorAll('button')).toHaveLength(4)
+    expect(nav.querySelectorAll('button')).toHaveLength(5)
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }))
     expect(useStore.getState()).toMatchObject({ projectDashboardOpen: true, projectSettingsOpen: false, detailOpen: false })
     fireEvent.click(screen.getByRole('button', { name: 'Project Settings' }))
@@ -122,6 +146,47 @@ describe('project navigation and dashboard', () => {
     expect(useStore.getState().projectDocumentsOpen).toBe(false)
     await act(() => useStore.getState().goBack())
     expect(useStore.getState().projectDocumentsOpen).toBe(true)
+  })
+
+  it('opens the project’s Pull Requests beside its other destinations and comes back to them', async () => {
+    render(<ThemeProvider><ProjectNavigation project={project} /></ThemeProvider>)
+    fireEvent.click(screen.getByRole('button', { name: 'Pull Requests' }))
+    expect(useStore.getState()).toMatchObject({ projectPullRequestsOpen: true, projectDocumentsOpen: false, projectDashboardOpen: false, projectSettingsOpen: false })
+    fireEvent.click(screen.getByRole('button', { name: 'Documents' }))
+    expect(useStore.getState()).toMatchObject({ projectPullRequestsOpen: false, projectDocumentsOpen: true })
+    await act(() => useStore.getState().goBack())
+    expect(useStore.getState().projectPullRequestsOpen).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Tasks' }))
+    expect(useStore.getState().projectPullRequestsOpen).toBe(false)
+  })
+
+  it('lists the Pull Requests with their CI, shows GitHub’s page for the one clicked and offers the GitHub sign-in', async () => {
+    projectPullRequests.mockResolvedValue([
+      pullRequest(1, { check: 'failure', updatedAt: '2026-09-02T00:00:00Z' }),
+      pullRequest(2, { state: 'merged' }),
+      pullRequest(3, { check: 'pending', mergeState: 'conflicting', tasks: [{ id: 't3', title: 'Parser rewrite' }] })
+    ])
+    const view = render(<ThemeProvider><ProjectPullRequests project={project} /></ThemeProvider>)
+    const tree = (await screen.findByText('#3 PR 3')).closest('[aria-label="Pull Requests"]') as HTMLElement
+    expect(within(tree).getByText('Open')).toBeTruthy()
+    expect(within(tree).getByText('Merged')).toBeTruthy()
+    expect(within(tree).getByLabelText('CI failed')).toBeTruthy()
+    expect(within(tree).getByLabelText('CI running')).toBeTruthy()
+    // Open ones first, the latest update first; the task that made each one under its title.
+    expect(within(tree).getAllByRole('button').map(row => row.textContent)).toEqual([
+      '#1 PR 1Task 1', '#3 PR 3Conflicts with the base branch · Parser rewrite', '#2 PR 2Task 2'
+    ])
+
+    fireEvent.click(within(tree).getByText('#3 PR 3'))
+    await waitFor(() => expect(openPullRequest).toHaveBeenCalled())
+    expect(screen.getByRole('heading', { name: '#3 PR 3' })).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in to GitHub' }))
+    await waitFor(() => expect(githubWebSignIn).toHaveBeenCalled())
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Sign in to GitHub' })).toBeNull())
+
+    view.unmount()
+    await waitFor(() => expect(closePullRequest).toHaveBeenCalled())
   })
 
   it('reads relative document links, filters the navigation and hides a website when returning to a file', async () => {

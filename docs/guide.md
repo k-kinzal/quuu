@@ -70,8 +70,29 @@ published HTTPS Docs links, including package badges in monorepos. Package names
 distinguish these sites in the navigation. These websites open inside the preview,
 with page navigation and an action to open the original site in a browser.
 
+## Project pull requests
+
+Open **Pull Requests** in a project's left navigation. It lists every pull request
+the project's tasks produced — the same ones each task's Pull Request tab shows —
+once each, grouped as open, merged and closed, the latest update first. Each row
+leads with its CI mark, says when the branch conflicts with its base, and names
+the task that made it. Selecting one shows GitHub's own page beside the list;
+the header and right-click open its task or the original page in a browser.
+Archived tasks are left out.
+
+The list reads only what the tasks' reviews already kept, so it opens instantly.
+Opening it (and Refresh) asks GitHub again for the tasks whose pull requests are
+still open; a running check keeps being looked at every minute as on the task.
+
+The GitHub pages inside Quuu keep their own sign-in, separate from any browser
+and from `gh`. Sign in once from **Settings › Pull Requests › GitHub pages** (or
+the button the list shows while signed out): GitHub's own sign-in page opens,
+two-factor and single sign-on included, and closes itself once you are in. Quuu
+never sees the password. The sign-in is written to disk at once and survives
+restarts; **Sign out** there forgets it with everything those pages stored.
+
 The task composer stays below every reading surface, including Documents,
-Dashboard, Needs review and task details. Adding a task keeps the current page
+Pull Requests, Dashboard, Needs review and task details. Adding a task keeps the current page
 open; Shift+⌘+Enter also opens the added task. Global and project settings omit
 the composer. Drafts remain available when returning from settings.
 

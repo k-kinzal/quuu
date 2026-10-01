@@ -90,7 +90,10 @@ export const model = {
         set: 'save settings',
         lookupBotUser: 'look up the GitHub user',
         createGitHubApp: 'set up the GitHub App',
-        cancelGitHubApp: 'cancel the GitHub App setup'
+        cancelGitHubApp: 'cancel the GitHub App setup',
+        githubWebStatus: 'check the GitHub sign-in',
+        githubWebSignIn: 'sign in to GitHub',
+        githubWebSignOut: 'sign out of GitHub'
       },
       mobile: {
         status: 'load sync status',
@@ -115,7 +118,9 @@ export const model = {
         hidePullRequest: 'toggle the PR',
         closePullRequest: 'close the PR',
         history: 'load the review history',
-        historySnapshot: 'load the review as that run left it'
+        historySnapshot: 'load the review as that run left it',
+        projectPullRequests: "load the project's pull requests",
+        refreshProjectPullRequests: "check the project's pull requests again"
       },
       report: {
         get: 'load the report',

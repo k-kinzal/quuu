@@ -13,6 +13,7 @@ const desktop: DesktopOperations = {
   windowLayout: unused, scrollSwipes: unused, pickDirectory: unused, pickApplication: unused,
   confirm: unused, popupMenu: unused, reveal: unused, openExternal: unused, copy: unused,
   lookupBotUser: unused, createGitHubApp: unused, cancelGitHubApp: unused,
+  githubWebStatus: unused, githubWebSignIn: unused, githubWebSignOut: unused,
   openPullRequest: unused, hidePullRequest: unused, closePullRequest: unused,
   showReport: unused, hideReport: unused, showDocument: show, hideDocument: hide, navigateDocument: unused
 }

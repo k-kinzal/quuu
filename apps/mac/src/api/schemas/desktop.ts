@@ -157,3 +157,14 @@ export const RunNowResultSchema = z.object({
   reserved: z.boolean().optional()
 })
 export type RunNowResult = z.infer<typeof RunNowResultSchema>
+
+/**
+ * Whether the GitHub pages Quuu shows are signed in. Read from the cookies GitHub itself sets on
+ * the pages' own session; Quuu never sees or keeps the password.
+ */
+export const GitHubWebStatusSchema = z.object({
+  signedIn: z.boolean(),
+  /** The account name GitHub's page shows itself as signed in to. */
+  login: z.union([z.string(), z.null()])
+})
+export type GitHubWebStatus = z.infer<typeof GitHubWebStatusSchema>

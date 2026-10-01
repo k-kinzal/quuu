@@ -5960,5 +5960,101 @@
   },
   "RunnersSignInResponse": {
     "value": 1
+  },
+  "SettingsGithubWebStatusRequest": {},
+  "SettingsGithubWebStatusResponseValueLogin": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SettingsGithubWebStatusResponseValue": {
+    "signedIn": 1,
+    "login": 2
+  },
+  "SettingsGithubWebStatusResponse": {
+    "value": 1
+  },
+  "SettingsGithubWebSignInRequest": {},
+  "SettingsGithubWebSignInResponseValueLogin": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SettingsGithubWebSignInResponseValue": {
+    "signedIn": 1,
+    "login": 2
+  },
+  "SettingsGithubWebSignInResponse": {
+    "value": 1
+  },
+  "SettingsGithubWebSignOutRequest": {},
+  "SettingsGithubWebSignOutResponseValueLogin": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SettingsGithubWebSignOutResponseValue": {
+    "signedIn": 1,
+    "login": 2
+  },
+  "SettingsGithubWebSignOutResponse": {
+    "value": 1
+  },
+  "ReviewProjectPullRequestsRequest": {
+    "value": 1
+  },
+  "ReviewProjectPullRequestsResponseValueItemTasksItem": {
+    "id": 1,
+    "title": 2
+  },
+  "ReviewProjectPullRequestsResponseValueItemTasks": {
+    "items": 1
+  },
+  "ReviewProjectPullRequestsResponseValueItem": {
+    "number": 1,
+    "title": 2,
+    "url": 3,
+    "headRefName": 4,
+    "baseRefName": 5,
+    "headSha": 6,
+    "draft": 7,
+    "updatedAt": 8,
+    "check": 9,
+    "mergeState": 10,
+    "state": 11,
+    "tasks": 12
+  },
+  "ReviewProjectPullRequestsResponseValue": {
+    "items": 1
+  },
+  "ReviewProjectPullRequestsResponse": {
+    "value": 1
+  },
+  "ReviewRefreshProjectPullRequestsRequest": {
+    "value": 1
+  },
+  "ReviewRefreshProjectPullRequestsResponseValueItemTasksItem": {
+    "id": 1,
+    "title": 2
+  },
+  "ReviewRefreshProjectPullRequestsResponseValueItemTasks": {
+    "items": 1
+  },
+  "ReviewRefreshProjectPullRequestsResponseValueItem": {
+    "number": 1,
+    "title": 2,
+    "url": 3,
+    "headRefName": 4,
+    "baseRefName": 5,
+    "headSha": 6,
+    "draft": 7,
+    "updatedAt": 8,
+    "check": 9,
+    "mergeState": 10,
+    "state": 11,
+    "tasks": 12
+  },
+  "ReviewRefreshProjectPullRequestsResponseValue": {
+    "items": 1
+  },
+  "ReviewRefreshProjectPullRequestsResponse": {
+    "value": 1
   }
 }

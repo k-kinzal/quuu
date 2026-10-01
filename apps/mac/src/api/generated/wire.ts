@@ -13583,6 +13583,93 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "kind": "void"
     }
   },
+  "settings.githubWebStatus": {
+    "method": "settingsGithubWebStatus",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "signedIn": {
+          "kind": "boolean"
+        },
+        "login": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "signedIn",
+        "login"
+      ]
+    }
+  },
+  "settings.githubWebSignIn": {
+    "method": "settingsGithubWebSignIn",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "signedIn": {
+          "kind": "boolean"
+        },
+        "login": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "signedIn",
+        "login"
+      ]
+    }
+  },
+  "settings.githubWebSignOut": {
+    "method": "settingsGithubWebSignOut",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "signedIn": {
+          "kind": "boolean"
+        },
+        "login": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "signedIn",
+        "login"
+      ]
+    }
+  },
   "mobile.status": {
     "method": "mobileStatus",
     "input": {
@@ -16139,6 +16226,196 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "required": [
         "ok"
       ]
+    }
+  },
+  "review.projectPullRequests": {
+    "method": "reviewProjectPullRequests",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "array",
+      "items": {
+        "kind": "object",
+        "fields": {
+          "number": {
+            "kind": "number"
+          },
+          "title": {
+            "kind": "string"
+          },
+          "url": {
+            "kind": "string"
+          },
+          "headRefName": {
+            "kind": "string"
+          },
+          "baseRefName": {
+            "kind": "string"
+          },
+          "headSha": {
+            "kind": "string"
+          },
+          "draft": {
+            "kind": "boolean"
+          },
+          "updatedAt": {
+            "kind": "string"
+          },
+          "check": {
+            "kind": "string",
+            "choices": [
+              "success",
+              "failure",
+              "pending",
+              "neutral"
+            ]
+          },
+          "mergeState": {
+            "kind": "string",
+            "choices": [
+              "clean",
+              "conflicting",
+              "unknown"
+            ]
+          },
+          "state": {
+            "kind": "string",
+            "choices": [
+              "open",
+              "merged",
+              "closed"
+            ]
+          },
+          "tasks": {
+            "kind": "array",
+            "items": {
+              "kind": "object",
+              "fields": {
+                "id": {
+                  "kind": "string"
+                },
+                "title": {
+                  "kind": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            }
+          }
+        },
+        "required": [
+          "number",
+          "title",
+          "url",
+          "headRefName",
+          "baseRefName",
+          "headSha",
+          "draft",
+          "updatedAt",
+          "check",
+          "mergeState",
+          "state",
+          "tasks"
+        ]
+      }
+    }
+  },
+  "review.refreshProjectPullRequests": {
+    "method": "reviewRefreshProjectPullRequests",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "array",
+      "items": {
+        "kind": "object",
+        "fields": {
+          "number": {
+            "kind": "number"
+          },
+          "title": {
+            "kind": "string"
+          },
+          "url": {
+            "kind": "string"
+          },
+          "headRefName": {
+            "kind": "string"
+          },
+          "baseRefName": {
+            "kind": "string"
+          },
+          "headSha": {
+            "kind": "string"
+          },
+          "draft": {
+            "kind": "boolean"
+          },
+          "updatedAt": {
+            "kind": "string"
+          },
+          "check": {
+            "kind": "string",
+            "choices": [
+              "success",
+              "failure",
+              "pending",
+              "neutral"
+            ]
+          },
+          "mergeState": {
+            "kind": "string",
+            "choices": [
+              "clean",
+              "conflicting",
+              "unknown"
+            ]
+          },
+          "state": {
+            "kind": "string",
+            "choices": [
+              "open",
+              "merged",
+              "closed"
+            ]
+          },
+          "tasks": {
+            "kind": "array",
+            "items": {
+              "kind": "object",
+              "fields": {
+                "id": {
+                  "kind": "string"
+                },
+                "title": {
+                  "kind": "string"
+                }
+              },
+              "required": [
+                "id",
+                "title"
+              ]
+            }
+          }
+        },
+        "required": [
+          "number",
+          "title",
+          "url",
+          "headRefName",
+          "baseRefName",
+          "headSha",
+          "draft",
+          "updatedAt",
+          "check",
+          "mergeState",
+          "state",
+          "tasks"
+        ]
+      }
     }
   },
   "report.conversation": {

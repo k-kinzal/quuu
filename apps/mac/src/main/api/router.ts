@@ -496,6 +496,9 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       lookupBotUser: githubBotUser,
       createGitHubApp: githubAppCreate,
       cancelGitHubApp: githubAppCancel,
+      githubWebStatus: os.settings.githubWebStatus.handler(({ context }) => host.desktopFor(context.owner).githubWebStatus()),
+      githubWebSignIn: os.settings.githubWebSignIn.handler(({ context }) => host.desktopFor(context.owner).githubWebSignIn()),
+      githubWebSignOut: os.settings.githubWebSignOut.handler(({ context }) => host.desktopFor(context.owner).githubWebSignOut()),
     },
     projects: {
       list: projectList,
@@ -590,6 +593,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       openPullRequest: reviewOpenPullRequest,
       hidePullRequest: reviewHidePullRequest,
       closePullRequest: reviewClosePullRequest,
+      projectPullRequests: os.review.projectPullRequests.handler(({ input }) => app.reviews.projectPullRequests(input)),
+      refreshProjectPullRequests: os.review.refreshProjectPullRequests.handler(({ input }) => app.reviews.refreshProjectPullRequests(input)),
     },
     report: {
       conversation: os.report.conversation.handler(({ input }) => app.reports.conversation(input)),

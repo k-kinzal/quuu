@@ -337,6 +337,10 @@ export const en = {
     appMissing: 'App not found: {{path}}'
   },
 
+  githubWeb: {
+    signInTitle: 'Sign in to GitHub'
+  },
+
   review: {
     recordedPullRequest: 'Pull request #{{number}}',
     tabUnidentified: 'Cannot identify the pull request tab',

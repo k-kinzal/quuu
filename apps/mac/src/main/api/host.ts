@@ -8,7 +8,7 @@ import type { DocumentViewSchema } from '../../api/schemas/documents.js'
 type LocalCalls<T> = { [K in keyof T]: T[K] extends (input: infer I, ...args: never[]) => Promise<infer O> ? undefined extends I ? (input?: I) => O | Promise<O> : (input: I) => O | Promise<O> : never }
 
 export type DesktopOperations = LocalCalls<Omit<QuuuApi['system'], 'savePromptFiles'>> &
-  LocalCalls<Pick<QuuuApi['settings'], 'lookupBotUser' | 'createGitHubApp' | 'cancelGitHubApp'>> &
+  LocalCalls<Pick<QuuuApi['settings'], 'lookupBotUser' | 'createGitHubApp' | 'cancelGitHubApp' | 'githubWebStatus' | 'githubWebSignIn' | 'githubWebSignOut'>> &
   LocalCalls<Pick<QuuuApi['review'], 'openPullRequest' | 'hidePullRequest' | 'closePullRequest'>> & {
     showReport(request: { file: string; bounds: PullRequestViewBounds }): ReviewActionResult
     hideReport(): ReviewActionResult
@@ -30,6 +30,8 @@ const ANSWERED_HERE = new Set([
   'system.windowLayout', 'system.scrollSwipes', 'system.pickDirectory', 'system.pickApplication', 'system.confirm',
   'system.popupMenu', 'system.openExternal', 'system.copy',
   'settings.lookupBotUser', 'settings.createGitHubApp', 'settings.cancelGitHubApp',
+  // The GitHub pages are shown on this computer's screen, so their sign-in is this computer's too.
+  'settings.githubWebStatus', 'settings.githubWebSignIn', 'settings.githubWebSignOut',
   'review.openPullRequest', 'review.hidePullRequest', 'review.closePullRequest',
   'documents.hide', 'documents.navigate', 'report.hide'
 ])

@@ -1,6 +1,5 @@
 import { ReportPage } from './ReportPage.js'
 import {
-  observeLayoutMotion,
   claimContextMenu,
   Alert,
   Button,
@@ -11,7 +10,6 @@ import {
   EditorPane,
   OverlayViewport as EditorPosition,
   EditorTabBar,
-  EmbeddedContentHost as EmbeddedBrowserHost,
   EmptyState,
   ExplorerLayout,
   ExplorerPane,
@@ -29,24 +27,23 @@ import {
   type TreeNode,
   useMenu
 } from '@design-system/react'
-import { useCallback, useId, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useId, useEffect, useMemo, useRef, useState } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { Task } from '../../../api/schemas/tasks.js'
 import type { ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewLocation, ReviewPullRequest, ReviewSnapshot, ReviewTreeNode } from '../../../api/schemas/review.js'
-import type { PullRequestViewBounds } from '../../../api/schemas/workbench.js'
 import { t } from '../model/i18n/index.js'
 import { copyText, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useReportHistory } from '../interaction/useReportHistory.js'
 import { useTaskReport } from '../interaction/useTaskReport.js'
 import { absoluteTime } from '../model/format.js'
-import { useNativeViewHidden } from '../interaction/useNativeViewHidden.js'
 import { overallCheck } from '../model/pullRequestStatus.js'
 import { buildFileTree, projectReviewTree, treeChange } from '../model/reviewTree.js'
 import { useStore } from '../state/store.js'
 import { ChevronDown, ChevronRight, FileDiff, FileText, FolderGit2, FolderTree, GitCommitHorizontal, GitPullRequest, History, ICON, MessageSquareText, RefreshCw, ScrollText, Send, iconProps } from '../ui/icons.js'
 import { changeLabel, changeTone, CheckDot, CheckMark, ConflictMark } from '../ui/workbench.js'
 import { Chat } from './Chat.js'
+import { PullRequestBrowser } from './PullRequestBrowser.js'
 import { Composer } from './Composer.js'
 
 type MainMode = 'chat' | 'tree' | 'changes' | 'commits' | 'pull-requests' | 'report'
@@ -228,75 +225,6 @@ function pullRequestItems(pullRequest: ReviewPullRequest): MenuItemSpec[] {
   ]
 }
 
-function viewBounds(element: HTMLElement): PullRequestViewBounds | null {
-  const rect = element.getBoundingClientRect()
-  const bounds = {
-    x: Math.round(rect.left),
-    y: Math.round(rect.top),
-    width: Math.round(rect.width),
-    height: Math.round(rect.height)
-  }
-  return bounds.width > 0 && bounds.height > 0 ? bounds : null
-}
-
-function PullRequestBrowser({
-  tab,
-  onError
-}: {
-  tab: PullRequestTab
-  onError(reason: string): void
-}): JSX.Element {
-  const host = useRef<HTMLDivElement>(null)
-  const hidden = useNativeViewHidden()
-
-  useLayoutEffect(() => {
-    const element = host.current
-    if (!element || hidden) return
-    let frame: number | null = null
-    let active = true
-    let reported = false
-    const update = (): void => {
-      frame = null
-      const bounds = viewBounds(element)
-      if (!bounds) return
-      void window.quuu.review
-        .openPullRequest({ id: tab.key, url: tab.pullRequest.url, bounds })
-        .then((result) => {
-          if (!active) return
-          if (result.ok) {
-            reported = false
-          } else if (!reported) {
-            reported = true
-            onError(result.reason ?? t('reviewPane.viewRejected'))
-          }
-        })
-        .catch((caught: unknown) => {
-          if (!active || reported) return
-          reported = true
-          onError(caught instanceof Error ? caught.message : String(caught))
-        })
-    }
-    const schedule = (): void => {
-      if (frame !== null) cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(update)
-    }
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule)
-    const stopFollowingMotion = observeLayoutMotion(element, schedule)
-    observer?.observe(element)
-    window.addEventListener('resize', schedule)
-    schedule()
-    return () => {
-      active = false
-      if (frame !== null) cancelAnimationFrame(frame)
-      observer?.disconnect()
-      stopFollowingMotion()
-      window.removeEventListener('resize', schedule)
-      void window.quuu.review.hidePullRequest(tab.key)
-    }
-  }, [onError, hidden, tab])
-
-  return <EmbeddedBrowserHost ref={host} aria-label={`Pull Request #${String(tab.pullRequest.number)}`} />
-}
 
 /**
  * Where the report view sits.
@@ -753,7 +681,7 @@ export function TaskMainPane({
                           />
                         )}
                         {!fileLoading && current?.kind === 'pull-request' && (
-                          <PullRequestBrowser tab={current} onError={reportPullRequestError} />
+                          <PullRequestBrowser id={current.key} pullRequest={current.pullRequest} onError={reportPullRequestError} />
                         )}
 
                         {current?.kind === 'file' && current.file.pullRequest && commentLine && (
