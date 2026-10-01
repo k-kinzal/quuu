@@ -443,7 +443,7 @@ export class ReportOperations extends EventEmitter {
   private told(taskId: string, detail: string): void {
     const task = repo.getTask(this.db, taskId)
     this.emit('notify', {
-      id: `report-${taskId}`,
+      id: `report-${taskId}`, notificationKind: 'reportFailure',
       level: 'error',
       message: t('report.failedToast', { title: truncate(task?.title ?? '', 50) }),
       detail: truncate(detail, 400),

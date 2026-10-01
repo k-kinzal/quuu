@@ -11900,6 +11900,67 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "notifyOnFailure": {
           "kind": "boolean"
         },
+        "nativeNotifications": {
+          "kind": "boolean"
+        },
+        "sstpEnabled": {
+          "kind": "boolean"
+        },
+        "sstpHost": {
+          "kind": "string"
+        },
+        "sstpPort": {
+          "kind": "number"
+        },
+        "sstpScripts": {
+          "kind": "object",
+          "fields": {
+            "review": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "failure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "followUp": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "reportFailure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "pullRequest": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "syncConflict": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "review",
+            "failure",
+            "followUp",
+            "reportFailure",
+            "pullRequest",
+            "syncConflict"
+          ]
+        },
         "tickIntervalMs": {
           "kind": "number"
         },
@@ -12002,6 +12063,11 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "keepRunningInBackground",
         "notifyOnReview",
         "notifyOnFailure",
+        "nativeNotifications",
+        "sstpEnabled",
+        "sstpHost",
+        "sstpPort",
+        "sstpScripts",
         "tickIntervalMs",
         "importExternalSessions",
         "importHistoryDays",
@@ -12128,6 +12194,67 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "notifyOnFailure": {
           "kind": "boolean"
         },
+        "nativeNotifications": {
+          "kind": "boolean"
+        },
+        "sstpEnabled": {
+          "kind": "boolean"
+        },
+        "sstpHost": {
+          "kind": "string"
+        },
+        "sstpPort": {
+          "kind": "number"
+        },
+        "sstpScripts": {
+          "kind": "object",
+          "fields": {
+            "review": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "failure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "followUp": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "reportFailure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "pullRequest": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "syncConflict": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "review",
+            "failure",
+            "followUp",
+            "reportFailure",
+            "pullRequest",
+            "syncConflict"
+          ]
+        },
         "tickIntervalMs": {
           "kind": "number"
         },
@@ -12230,6 +12357,11 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "keepRunningInBackground",
         "notifyOnReview",
         "notifyOnFailure",
+        "nativeNotifications",
+        "sstpEnabled",
+        "sstpHost",
+        "sstpPort",
+        "sstpScripts",
         "tickIntervalMs",
         "importExternalSessions",
         "importHistoryDays",
@@ -12352,6 +12484,67 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         },
         "notifyOnFailure": {
           "kind": "boolean"
+        },
+        "nativeNotifications": {
+          "kind": "boolean"
+        },
+        "sstpEnabled": {
+          "kind": "boolean"
+        },
+        "sstpHost": {
+          "kind": "string"
+        },
+        "sstpPort": {
+          "kind": "number"
+        },
+        "sstpScripts": {
+          "kind": "object",
+          "fields": {
+            "review": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "failure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "followUp": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "reportFailure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "pullRequest": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "syncConflict": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "review",
+            "failure",
+            "followUp",
+            "reportFailure",
+            "pullRequest",
+            "syncConflict"
+          ]
         },
         "tickIntervalMs": {
           "kind": "number"
@@ -12543,6 +12736,67 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "notifyOnFailure": {
           "kind": "boolean"
         },
+        "nativeNotifications": {
+          "kind": "boolean"
+        },
+        "sstpEnabled": {
+          "kind": "boolean"
+        },
+        "sstpHost": {
+          "kind": "string"
+        },
+        "sstpPort": {
+          "kind": "number"
+        },
+        "sstpScripts": {
+          "kind": "object",
+          "fields": {
+            "review": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "failure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "followUp": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "reportFailure": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "pullRequest": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            },
+            "syncConflict": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "review",
+            "failure",
+            "followUp",
+            "reportFailure",
+            "pullRequest",
+            "syncConflict"
+          ]
+        },
         "tickIntervalMs": {
           "kind": "number"
         },
@@ -12645,6 +12899,11 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "keepRunningInBackground",
         "notifyOnReview",
         "notifyOnFailure",
+        "nativeNotifications",
+        "sstpEnabled",
+        "sstpHost",
+        "sstpPort",
+        "sstpScripts",
         "tickIntervalMs",
         "importExternalSessions",
         "importHistoryDays",

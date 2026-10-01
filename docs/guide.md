@@ -699,6 +699,51 @@ front of you is the only one not moving.
 Nothing changes a priority on its own. Stalling the rest of the queue is a deliberate
 order, so it only takes effect when a human sets P0.
 
+## Notifications
+
+Background events use system notifications, including while Quuu is in front.
+Clicking a task notification opens that task. Input validation, save failures,
+and other immediate operation feedback stay in the bottom-right app popup.
+Settings → Notifications controls review/failure events and the system channel.
+On macOS, delivery follows the app's notification permission and Focus settings.
+
+The optional **Sakura Script Transfer Protocol (SSTP)** channel connects over TCP
+(default `127.0.0.1:9801`). Run an SSTP receiver first, configure its host and port,
+and enable SSTP in Notifications. System and SSTP delivery are independent.
+Review/failure switches apply to both. SSTP is off until enabled; existing
+settings keep system notifications on.
+
+Choose a notification type, add any number of scripts (up to 100), then **Save
+SSTP settings**. Exactly one non-empty script is chosen at random from that type
+for each event. An empty list sends nothing. Turning delivery off preserves the
+scripts. Supported types are `review`, `failure`, `followUp`, `reportFailure`,
+`pullRequest`, and `syncConflict`.
+
+```text
+\0\s[0]{{projectName}} の「{{taskTitle}}」がレビュー待ちです。\e
+\0\s[5]作業が終わりました。\n{{message}}\e
+```
+
+Each example above is a separate alternative for the `review` type.
+
+| Variable | Value |
+|---|---|
+| `{{type}}` | Event key listed above |
+| `{{title}}` | Localized notification heading |
+| `{{message}}`, `{{detail}}` | Notification message and optional detail |
+| `{{taskId}}`, `{{taskTitle}}` | Task ID and full title |
+| `{{projectId}}`, `{{projectName}}` | Project ID and name |
+
+Missing context becomes empty text. Use variables in spoken text, outside Sakura
+Script command arguments. Variable values cannot introduce script commands;
+backslashes and percent signs become literal characters. Actual line breaks in
+both templates and values become `\n`. Unknown variable names remain unchanged.
+
+The sender uses UTF-8 `SEND SSTP/1.4`, CRLF headers, and `Option: notranslate`,
+following [UKADOC's SSTP specification](https://ssp.shillest.net/ukadoc/manual/spec_sstp.html).
+It checks the response and stops after three seconds, without retries. A receiver
+failure is logged and does not interrupt tasks or create recursive app popups.
+
 ## Data
 
 `~/Library/Application Support/taskd/` (Windows: `%APPDATA%\taskd\`)

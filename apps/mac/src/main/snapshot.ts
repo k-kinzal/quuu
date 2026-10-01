@@ -1,3 +1,4 @@
+import type { NotificationKind } from './notifications/types.js'
 import type { Agent, AgentGroup } from './agents/types.js'
 import type { TaskRule } from './automation/conditions.js'
 import type { SchedulerStatus } from './execution/status.js'
@@ -27,6 +28,11 @@ export interface AppSnapshot {
 }
 
 export interface ToastPayload {
+  /** Background events go to OS/SSTP; absent means feedback for an immediate operation. */
+  notificationKind?: NotificationKind
+  taskTitle?: string
+  projectId?: string
+  projectName?: string
   id: string
   level: 'info' | 'warn' | 'error' | 'success'
   message: string

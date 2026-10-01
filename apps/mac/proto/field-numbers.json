@@ -2866,7 +2866,12 @@
     "mcpPort": 28,
     "worktreeEnabled": 29,
     "taskHooks": 30,
-    "retentionDays": 31
+    "retentionDays": 31,
+    "nativeNotifications": 32,
+    "sstpEnabled": 33,
+    "sstpHost": 34,
+    "sstpPort": 35,
+    "sstpScripts": 36
   },
   "SettingsSetIdentityResponse": {
     "value": 1
@@ -2909,7 +2914,12 @@
     "mcpPort": 28,
     "worktreeEnabled": 29,
     "taskHooks": 30,
-    "retentionDays": 31
+    "retentionDays": 31,
+    "nativeNotifications": 32,
+    "sstpEnabled": 33,
+    "sstpHost": 34,
+    "sstpPort": 35,
+    "sstpScripts": 36
   },
   "SettingsGetResponse": {
     "value": 1
@@ -2951,7 +2961,12 @@
     "mcpPort": 28,
     "worktreeEnabled": 29,
     "taskHooks": 30,
-    "retentionDays": 31
+    "retentionDays": 31,
+    "nativeNotifications": 32,
+    "sstpEnabled": 33,
+    "sstpHost": 34,
+    "sstpPort": 35,
+    "sstpScripts": 36
   },
   "SettingsSetRequest": {
     "value": 1
@@ -2993,7 +3008,12 @@
     "mcpPort": 28,
     "worktreeEnabled": 29,
     "taskHooks": 30,
-    "retentionDays": 31
+    "retentionDays": 31,
+    "nativeNotifications": 32,
+    "sstpEnabled": 33,
+    "sstpHost": 34,
+    "sstpPort": 35,
+    "sstpScripts": 36
   },
   "SettingsSetResponse": {
     "value": 1
@@ -5671,5 +5691,109 @@
   },
   "ProjectsUpdateResponseValueRunnerLabels": {
     "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsReview": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsFailure": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsFollowUp": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsReportFailure": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsPullRequest": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsSyncConflict": {
+    "items": 1
+  },
+  "SettingsSetIdentityResponseValueSstpScripts": {
+    "review": 1,
+    "failure": 2,
+    "followUp": 3,
+    "reportFailure": 4,
+    "pullRequest": 5,
+    "syncConflict": 6
+  },
+  "SettingsGetResponseValueSstpScriptsReview": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScriptsFailure": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScriptsFollowUp": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScriptsReportFailure": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScriptsPullRequest": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScriptsSyncConflict": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScripts": {
+    "review": 1,
+    "failure": 2,
+    "followUp": 3,
+    "reportFailure": 4,
+    "pullRequest": 5,
+    "syncConflict": 6
+  },
+  "SettingsSetRequestValueSstpScriptsReview": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScriptsFailure": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScriptsFollowUp": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScriptsReportFailure": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScriptsPullRequest": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScriptsSyncConflict": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScripts": {
+    "review": 1,
+    "failure": 2,
+    "followUp": 3,
+    "reportFailure": 4,
+    "pullRequest": 5,
+    "syncConflict": 6
+  },
+  "SettingsSetResponseValueSstpScriptsReview": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScriptsFailure": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScriptsFollowUp": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScriptsReportFailure": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScriptsPullRequest": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScriptsSyncConflict": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScripts": {
+    "review": 1,
+    "failure": 2,
+    "followUp": 3,
+    "reportFailure": 4,
+    "pullRequest": 5,
+    "syncConflict": 6
   }
 }

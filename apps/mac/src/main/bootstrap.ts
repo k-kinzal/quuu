@@ -163,7 +163,8 @@ export class QuuuApp extends EventEmitter {
     this.mobile = new MobileSync(this.db, this.tasks, ({ applied, conflicts }) => {
       if (applied > 0) this.changed()
       for (const c of conflicts) {
-        this.emit('notify', {
+        this.notify({
+          notificationKind: 'syncConflict',
           id: `sync-${c.intentId}`,
           level: 'warn',
           message: t('mobileSync.intentFailed'),
@@ -184,13 +185,20 @@ export class QuuuApp extends EventEmitter {
       this.mobile.setSchedulerRunning(this.scheduler.status().running)
       this.emit('status', this.scheduler.status())
     })
-    this.scheduler.on('notify', (t: ToastPayload) => this.emit('notify', t))
-    this.projectReports.on('notify', (t: ToastPayload) => this.emit('notify', t))
-    this.reports.on('notify', (t: ToastPayload) => this.emit('notify', t))
-    this.pullRequestFollowUp.on('notify', (t: ToastPayload) => this.emit('notify', t))
+    this.scheduler.on('notify', (t: ToastPayload) => this.notify(t))
+    this.projectReports.on('notify', (t: ToastPayload) => this.notify(t))
+    this.reports.on('notify', (t: ToastPayload) => this.notify(t))
+    this.pullRequestFollowUp.on('notify', (t: ToastPayload) => this.notify(t))
     this.terminals.on('terminal', (event) => this.emit('terminal', event))
   }
 
+
+  private notify(payload: ToastPayload): void {
+    const task = payload.taskId ? repo.getTask(this.db, payload.taskId) : null
+    const projectId = payload.projectId ?? task?.projectId
+    const project = projectId ? repo.getProject(this.db, projectId) : null
+    this.emit('notify', { ...payload, taskTitle: task?.title, projectId, projectName: project?.name } satisfies ToastPayload)
+  }
 
   /**
    * Resolves once the conversation of the task's latest run is in the index. Asking for it here

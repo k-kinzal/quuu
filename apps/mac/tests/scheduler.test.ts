@@ -666,6 +666,8 @@ describe('a finished task stays running while its Pull Request is decided', () =
     const p = makeProject(db, { name: 'p', targetId: agent, maxConcurrent: 1 })
     const runner = new Runner(db)
     const s = new Scheduler(db, runner)
+    const notices: ToastPayload[] = []
+    s.on('notify', (notice: ToastPayload) => notices.push(notice))
     let gate = true
     s.setReviewGate(() => gate)
     const task = makeTask(db, p, 'first')
@@ -675,6 +677,7 @@ describe('a finished task stays running while its Pull Request is decided', () =
     expect(repo.getTask(db, task)?.status).toBe('running')
     expect(s.concludeCheck(task)).toBe(false)
     expect(repo.getTask(db, task)?.status).toBe('review')
+    expect(notices).toEqual([expect.objectContaining({ taskId: task, notificationKind: 'review' })])
     expect(s.claimNext()?.task.id).toBe(next)
     // A second word on a look that is over changes nothing
     expect(s.concludeCheck(task, 'late')).toBe(false)

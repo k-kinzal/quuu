@@ -1,4 +1,6 @@
-import { app, BrowserWindow, nativeImage, nativeTheme, Notification } from 'electron'
+import { deliverNotification } from './notifications/delivery.js'
+import { showNativeNotification } from './desktop/notifications.js'
+import { app, BrowserWindow, nativeImage, nativeTheme } from 'electron'
 import { dirname, join } from 'node:path'
 import { unlinkSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
@@ -6,7 +8,7 @@ import { EVENTS } from '../api/channels.js'
 import { userDataDir } from './appPaths.js'
 import { QuuuApp } from './bootstrap.js'
 import type { SchedulerStatus } from './execution/status.js'
-import { initMainI18n, t } from './i18n/index.js'
+import { initMainI18n } from './i18n/index.js'
 import { broadcast, followHost, registerIpc, showingHost } from './ipc/index.js'
 import { refreshMenuIfProjectsChanged, send, setUpdateMenuItem } from './menus.js'
 import { mobileWebRoot } from './mobile-sync/folder.js'
@@ -70,8 +72,7 @@ function wire(instance: QuuuApp): void {
 
 
   instance.on('notify', (toast: ToastPayload) => {
-    if (!showingHost()) broadcast(EVENTS.toast, toast)
-    notifyNative(instance, toast)
+    void notify(instance, toast)
   })
 }
 
@@ -87,25 +88,14 @@ function applyAppearance(theme: AppSettings['theme']): void {
   nativeTheme.themeSource = theme
 }
 
-function notifyNative(instance: QuuuApp, toast: ToastPayload): void {
-  const settings = instance.settings.getSettings()
-  if (toast.level === 'success' && !settings.notifyOnReview) return
-  if (toast.level === 'error' && !settings.notifyOnFailure) return
-  if (toast.level === 'info' || toast.level === 'warn') return
-  if (!Notification.isSupported()) return
-  // Don't notify while the user is looking at the window (footer and list say enough)
-  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.isFocused()) return
-
-  const notification = new Notification({
-    title: toast.level === 'error' ? t('notification.failedTitle') : t('notification.reviewTitle'),
-    body: toast.detail ? `${toast.message}\n${toast.detail}` : toast.message,
-    silent: false
+function notify(instance: QuuuApp, event: ToastPayload): Promise<void> {
+  return deliverNotification(event, instance.settings.getSettings(), {
+    toast: payload => { if (!showingHost()) broadcast(EVENTS.toast, payload) },
+    native: (payload, title) => showNativeNotification(payload, title, taskId => {
+      showWindow()
+      if (taskId) send('task.open', { taskId })
+    })
   })
-  notification.on('click', () => {
-    showWindow()
-    if (toast.taskId) send('task.open', { taskId: toast.taskId })
-  })
-  notification.show()
 }
 
 // ---------------------------------------------------------------------------
@@ -202,7 +192,7 @@ if (!app.requestSingleInstanceLock()) {
         })
         const controller = servers
         controller.on('satellite', (connected: boolean) => {
-          followHost(connected ? controller.satellite : null)
+          followHost(connected ? controller.satellite : null, payload => { void notify(instance, payload) })
           // Every screen starts over from the side it now shows; nothing of the other side lingers.
           if (!quitting) for (const window of BrowserWindow.getAllWindows()) if (!window.isDestroyed()) window.webContents.reload()
         })

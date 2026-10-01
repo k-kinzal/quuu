@@ -146,6 +146,6 @@ export class PullRequestFollowUp extends EventEmitter {
   }
 
   private notify(toast: ToastPayload): void {
-    this.emit('notify', toast)
+    this.emit('notify', { ...toast, notificationKind: 'pullRequest' } satisfies ToastPayload)
   }
 }

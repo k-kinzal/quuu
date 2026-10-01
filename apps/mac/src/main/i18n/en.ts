@@ -241,6 +241,13 @@ export const en = {
   },
 
   notification: {
+    followUpTitle: 'Quuu - Follow-up sent',
+    reportFailureTitle: 'Quuu - Report failed',
+    pullRequestTitle: 'Quuu - Pull request',
+    syncConflictTitle: 'Quuu - iPhone sync',
+    invalidSstpHost: 'Enter an SSTP hostname or IP address without a scheme or port.',
+    invalidSstpPort: 'SSTP port must be an integer between 1 and 65535.',
+    invalidSstpScripts: 'Use at most 100 scripts per notification type, with at most 16000 characters each and no null characters.',
     failedTitle: 'Quuu - Failed',
     reviewTitle: 'Quuu - Review'
   },

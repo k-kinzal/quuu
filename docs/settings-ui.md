@@ -65,7 +65,8 @@ modes (custom PR prompts, custom identity, selected hooks, custom cron).
 | Hooks: recent execution history | Existing execution list retained without redundant containment |
 | Reports: activation, target, project and task instructions | Switch and select followed by separate full-width instruction groups; warnings remain adjacent |
 | PR: failed CI, pending CI, conflict | Each condition names its switch and contains its prompt; removes repeated ambiguous Send labels |
-| Notifications: review-ready and failed tasks | Independent immediate switch rows within one group |
+| Notifications: review/failure events and system/SSTP delivery | Independent immediate switch rows grouped by responsibility |
+| Notifications: SSTP receiver and scripts | Explicit-save host/port fields, a searchable event selector, and a repeatable script editor; drafts survive failed saves |
 | iPhone: sync enable, status, sync action, errors, conflicts | Switch plus status/action row; errors and conflict resolution retain their existing behavior |
 | Multiple PCs: host, port, address, PIN, devices | Host switch; numeric input plus apply; compact pairing action/readout; device actions beside each device |
 | Multiple PCs: satellite, state, discovered peers, address/PIN | Satellite switch; state/action block; address and PIN with adjacent pairing action |

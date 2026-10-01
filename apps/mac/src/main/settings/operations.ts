@@ -1,3 +1,4 @@
+import { validateNotificationSettings } from '../notifications/settings.js'
 import { validateHooks } from '../hooks/config.js'
 import { EventEmitter } from 'node:events'
 import type { Db } from '../db/database.js'
@@ -30,6 +31,7 @@ export class SettingsOperations extends EventEmitter {
     for (const port of [next.httpPort, next.mcpPort]) {
       if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Port must be between 0 and 65535')
     }
+    validateNotificationSettings(next)
     validateHooks(next.taskHooks)
     repo.saveAppSettings(this.db, next)
     this.value = next

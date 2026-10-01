@@ -191,7 +191,7 @@ export class ProjectReportOperations extends EventEmitter {
         if (ready) repo.addReportHistory(this.db, { projectId: row.projectId }, { path: row.pending, revision: row.pendingRevision, generatedAt: endedAt })
       })
       if (!ready) this.emit('notify', {
-        id: `project-report-${row.projectId}`, level: 'error',
+        id: `project-report-${row.projectId}`, level: 'error', notificationKind: 'reportFailure', projectId: row.projectId,
         message: t('report.failedToast', { title: repo.getProject(this.db, row.projectId)?.name ?? '' }),
         detail: truncate(error, 400)
       } satisfies ToastPayload)

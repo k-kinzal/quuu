@@ -79,7 +79,7 @@ it('sends the prompt exactly as written - nothing appended - and a toast that sa
   expect(followUp.onProjected(taskId, snapshot([pull({ check: 'failure' })]))).toBe('sent')
   expect(ports.sendBack).toHaveBeenCalledWith(taskId, 'CI is red. Read the log and fix it.')
   expect(toasts).toHaveLength(1)
-  expect(toasts[0]).toMatchObject({ level: 'info', taskId })
+  expect(toasts[0]).toMatchObject({ level: 'info', taskId, notificationKind: 'pullRequest' })
   expect(toasts[0].message).toContain('Ship it')
 })
 

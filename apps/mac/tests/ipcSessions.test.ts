@@ -3,7 +3,7 @@ import type { BrowserWindow } from 'electron'
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
-import { createAppRouter, registerIpc } from '../src/main/ipc/index.js'
+import { createAppRouter, followHost, registerIpc } from '../src/main/ipc/index.js'
 import { EVENTS, RPC_CONNECT } from '../src/api/channels.js'
 
 const transport = vi.hoisted(() => ({ handlers: new Map<string, (event: unknown, ...args: unknown[]) => unknown>() }))
@@ -31,7 +31,7 @@ beforeEach(() => {
   app.scheduler.pause()
   router = createAppRouter(app)
 })
-afterEach(() => { app.shutdown(); app.db.close(); vi.restoreAllMocks(); transport.handlers.clear() })
+afterEach(() => { followHost(null); app.shutdown(); app.db.close(); vi.restoreAllMocks(); transport.handlers.clear() })
 
 it('session tailing is owned per window, and updates go only to the window that selected it', async () => {
   const first = new Window(), second = new Window()
@@ -94,4 +94,31 @@ it('a connection from an iframe gets its port closed and no operations exposed',
   expect(port.close).toHaveBeenCalledOnce()
   expect(log).toHaveBeenCalled()
   expect(create).not.toHaveBeenCalled()
+})
+
+
+it('routes a host background notification once per computer while operation feedback stays in its windows', async () => {
+  const deliveries: ((name: string, payload: unknown) => void)[] = []
+  const notify = vi.fn()
+  followHost({ connected: true, session(deliver) {
+    deliveries.push(deliver)
+    return { call: () => Promise.resolve([]), close() {} }
+  } }, notify)
+  const first = new Window(), second = new Window()
+  await client(first).projects.list()
+  await client(second).projects.list()
+  const event = { id: 'remote-review', level: 'success', notificationKind: 'review', message: 'Ready', taskId: 'host-task' }
+  for (const deliver of deliveries) deliver(EVENTS.toast, event)
+  expect(notify).toHaveBeenCalledOnce()
+  expect(notify).toHaveBeenCalledWith(event)
+  expect(first.webContents.send).not.toHaveBeenCalled()
+  expect(second.webContents.send).not.toHaveBeenCalled()
+  const feedback = { id: 'feedback', level: 'warn', message: 'New session' }
+  for (const deliver of deliveries) deliver(EVENTS.toast, feedback)
+  expect(first.webContents.send).toHaveBeenCalledWith(EVENTS.toast, feedback)
+  expect(second.webContents.send).toHaveBeenCalledWith(EVENTS.toast, feedback)
+  first.emit('closed')
+  deliveries[1](EVENTS.toast, { ...event, id: 'second-review' })
+  expect(notify).toHaveBeenCalledTimes(2)
+  second.emit('closed')
 })

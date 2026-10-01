@@ -1815,6 +1815,7 @@ export function getAppSettings(db: Db): AppSettings {
       ...(saved.pullRequestFailureEnabled === undefined ? { pullRequestFailureEnabled: Boolean(saved.pullRequestFailurePrompt?.trim()) } : {}),
       ...(saved.pullRequestPendingEnabled === undefined ? { pullRequestPendingEnabled: Boolean(saved.pullRequestPendingPrompt?.trim()) } : {}),
       ...(saved.pullRequestConflictEnabled === undefined ? { pullRequestConflictEnabled: Boolean(saved.pullRequestConflictPrompt?.trim()) } : {}),
+      sstpScripts: { ...DEFAULT_SETTINGS.sstpScripts, ...saved.sstpScripts },
       // Merge the nested object with the defaults too, not just the top level. Old versions have no appId / setupVersion.
       commitIdentity: {
         ...DEFAULT_SETTINGS.commitIdentity,

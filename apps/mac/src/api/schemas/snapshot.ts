@@ -1,3 +1,4 @@
+import { NotificationKindSchema } from './notifications.js'
 import { z } from 'zod'
 import { AgentGroupSchema, AgentSchema } from './agents.js'
 import { TaskRuleSchema } from './automation.js'
@@ -27,6 +28,11 @@ export const AppSnapshotSchema = z.object({
 export type AppSnapshot = z.infer<typeof AppSnapshotSchema>
 
 export const ToastPayloadSchema = z.object({
+  /** Absent for immediate operation feedback; background events use native/SSTP delivery. */
+  notificationKind: NotificationKindSchema.optional(),
+  taskTitle: z.string().optional(),
+  projectId: z.string().optional(),
+  projectName: z.string().optional(),
   id: z.string(),
   level: z.union([z.literal('info'), z.literal('warn'), z.literal('error'), z.literal('success')]),
   message: z.string(),

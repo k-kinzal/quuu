@@ -242,6 +242,13 @@ export const ja: typeof en = {
   },
 
   notification: {
+    followUpTitle: 'Quuu — 追加指示を送信',
+    reportFailureTitle: 'Quuu — レポート作成失敗',
+    pullRequestTitle: 'Quuu — プルリクエスト',
+    syncConflictTitle: 'Quuu — iPhone 同期',
+    invalidSstpHost: 'SSTP のホスト名か IP アドレスを、スキームやポート番号なしで入力してください。',
+    invalidSstpPort: 'SSTP のポート番号は 1〜65535 の整数で指定してください。',
+    invalidSstpScripts: 'スクリプトは通知種別ごとに100件まで、各16000文字までで、ヌル文字は含められません。',
     failedTitle: 'Quuu — 失敗',
     reviewTitle: 'Quuu — レビュー待ち'
   },

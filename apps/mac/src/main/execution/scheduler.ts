@@ -281,7 +281,7 @@ export class Scheduler extends EventEmitter {
         recordExecutionState(this.db, task.id, 'queued', { pendingMessage: body })
         if (reserved) {
           consumeReservation(this.db, task.id)
-          this.notify('info', t('scheduler.sentReserved', { title: truncate(task.title, 50) }), task.id)
+          this.notify('followUp', 'info', t('scheduler.sentReserved', { title: truncate(task.title, 50) }), task.id)
         }
       } else {
         recordExecutionState(this.db, task.id, 'review')
@@ -302,7 +302,7 @@ export class Scheduler extends EventEmitter {
 
   /** The task is done running for now and waits for a person to read what it did. */
   private announceReview(task: Task): void {
-    this.notify('success', t('scheduler.reviewToast', { title: truncate(task.title, 60) }), task.id)
+    this.notify('review', 'success', t('scheduler.reviewToast', { title: truncate(task.title, 60) }), task.id)
   }
 
   // -------------------------------------------------------------------------
@@ -666,7 +666,7 @@ export class Scheduler extends EventEmitter {
           break
         case 'send-reserved':
           consumeReservation(this.db, task.id)
-          this.notify('info', t('scheduler.sentReserved', { title: truncate(task.title, 50) }), task.id)
+          this.notify('followUp', 'info', t('scheduler.sentReserved', { title: truncate(task.title, 50) }), task.id)
           break
         case 'review':
           /*
@@ -677,7 +677,7 @@ export class Scheduler extends EventEmitter {
           else this.announceReview(task)
           break
         case 'failed':
-          this.notify('error', t('scheduler.failedToast', { title: truncate(task.title, 50) }), task.id, classification.message || undefined)
+          this.notify('failure', 'error', t('scheduler.failedToast', { title: truncate(task.title, 50) }), task.id, classification.message || undefined)
           break
       }
       // A probe that got through means the account is back. One that is still limited was
@@ -999,12 +999,13 @@ export class Scheduler extends EventEmitter {
   }
 
   private notify(
+    notificationKind: NonNullable<ToastPayload['notificationKind']>,
     level: ToastPayload['level'],
     message: string,
     taskId?: string,
     detail?: string
   ): void {
-    afterCommit(this.db, () => this.emit('notify', { id: newId('tst'), level, message, taskId, detail }))
+    afterCommit(this.db, () => this.emit('notify', { id: newId('tst'), notificationKind, level, message, taskId, detail }))
   }
 }
 

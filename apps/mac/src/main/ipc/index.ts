@@ -1,3 +1,4 @@
+import { ToastPayloadSchema } from '../../api/schemas/snapshot.js'
 import { ORPCError } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/message-port'
 import { BrowserWindow, ipcMain } from 'electron'
@@ -39,6 +40,7 @@ export interface HostSource {
   session(deliver: (name: string, payload: unknown) => void): (ForwardedOperations & { close(): void }) | null
 }
 let hostSource: HostSource | null = null
+let hostNotification: ((payload: EventPayloads[typeof EVENTS.toast]) => void) | undefined
 const hostSessions = new Map<BrowserWindow, ForwardedOperations & { close(): void }>()
 
 /** Whether windows are showing a host's data rather than this computer's own. */
@@ -48,8 +50,9 @@ export function showingHost(): boolean { return hostSource?.connected ?? false }
  * Point windows at a host, or back at this computer. Sessions opened against the previous side
  * end here; the caller reloads the windows so each screen starts over from the side it now shows.
  */
-export function followHost(source: HostSource | null): void {
+export function followHost(source: HostSource | null, notify?: typeof hostNotification): void {
   hostSource = source
+  hostNotification = notify
   for (const session of hostSessions.values()) session.close()
   hostSessions.clear()
 }
@@ -61,6 +64,14 @@ function hostSessionFor(owner: BrowserWindow): ForwardedOperations | null {
     const opened = hostSource.session((name, payload) => {
       // A newer host may announce more than this Quuu knows how to show.
       if (!Object.values(EVENTS).includes(name as typeof EVENTS[keyof typeof EVENTS]) || owner.isDestroyed()) return
+      if (name === EVENTS.toast && hostNotification) {
+        const event = ToastPayloadSchema.safeParse(payload)
+        if (event.success && event.data.notificationKind) {
+          // Every window watches the host; deliver the background event only once on this Mac.
+          if (owner === hostSessions.keys().next().value) hostNotification(event.data)
+          return
+        }
+      }
       try { sendEvent(owner, name as keyof EventPayloads, payload as EventPayloads[keyof EventPayloads]) }
       catch (error) { console.warn('Ignoring a host notification this Quuu cannot read', name, error) }
     })

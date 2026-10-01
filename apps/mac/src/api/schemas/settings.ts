@@ -1,3 +1,4 @@
+import { SstpScriptsSchema } from './notifications.js'
 import { TaskHookSchema } from './hooks.js'
 import { z } from 'zod'
 import { RunTargetKindSchema } from './agents.js'
@@ -62,6 +63,11 @@ export const AppSettingsSchema = z.object({
   notifyOnReview: z.boolean(),
   /** Whether to notify on failure. */
   notifyOnFailure: z.boolean(),
+  nativeNotifications: z.boolean(),
+  sstpEnabled: z.boolean(),
+  sstpHost: z.string().trim().min(1).max(253).regex(/^[a-zA-Z0-9.:%_-]+$/),
+  sstpPort: z.number().int().min(1).max(65535),
+  sstpScripts: SstpScriptsSchema,
   /** Scheduler tick interval (milliseconds). */
   tickIntervalMs: z.number().int().positive(),
   /** Whether to import sessions from directly launched AI CLIs (IMPORTABLE_ADAPTERS). */

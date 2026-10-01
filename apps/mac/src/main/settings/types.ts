@@ -1,3 +1,4 @@
+import { EMPTY_SSTP_SCRIPTS, type SstpScripts } from '../notifications/types.js'
 import type { TaskHook } from '../hooks/types.js'
 import type { RunTargetKind } from '../agents/types.js'
 import type { CommitIdentity } from './identity.js'
@@ -19,6 +20,11 @@ export interface AppSettings {
   notifyOnReview: boolean
   /** Notify on failure. */
   notifyOnFailure: boolean
+  nativeNotifications: boolean
+  sstpEnabled: boolean
+  sstpHost: string
+  sstpPort: number
+  sstpScripts: SstpScripts
   /** Scheduler tick interval (milliseconds). */
   tickIntervalMs: number
   /** Import sessions from directly launched AI CLIs (IMPORTABLE_ADAPTERS). */
@@ -115,6 +121,11 @@ export const DEFAULT_SETTINGS: AppSettings = {
   keepRunningInBackground: true,
   notifyOnReview: true,
   notifyOnFailure: true,
+  nativeNotifications: true,
+  sstpEnabled: false,
+  sstpHost: '127.0.0.1',
+  sstpPort: 9801,
+  sstpScripts: EMPTY_SSTP_SCRIPTS,
   tickIntervalMs: 3000,
   importExternalSessions: true,
   importHistoryDays: 14,

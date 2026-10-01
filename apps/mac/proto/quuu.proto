@@ -5469,6 +5469,39 @@ message SettingsSetIdentityResponseValueTaskHooks {
   repeated SettingsSetIdentityResponseValueTaskHooksItem items = 1;
 }
 
+message SettingsSetIdentityResponseValueSstpScriptsReview {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueSstpScriptsFailure {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueSstpScriptsFollowUp {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueSstpScriptsReportFailure {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueSstpScriptsPullRequest {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueSstpScriptsSyncConflict {
+  repeated string items = 1;
+}
+
+message SettingsSetIdentityResponseValueSstpScripts {
+  optional SettingsSetIdentityResponseValueSstpScriptsReview review = 1;
+  optional SettingsSetIdentityResponseValueSstpScriptsFailure failure = 2;
+  optional SettingsSetIdentityResponseValueSstpScriptsFollowUp followUp = 3;
+  optional SettingsSetIdentityResponseValueSstpScriptsReportFailure reportFailure = 4;
+  optional SettingsSetIdentityResponseValueSstpScriptsPullRequest pullRequest = 5;
+  optional SettingsSetIdentityResponseValueSstpScriptsSyncConflict syncConflict = 6;
+}
+
 message SettingsSetIdentityResponseValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -5487,6 +5520,11 @@ message SettingsSetIdentityResponseValue {
   optional bool keepRunningInBackground = 2;
   optional bool notifyOnReview = 3;
   optional bool notifyOnFailure = 4;
+  optional bool nativeNotifications = 32;
+  optional bool sstpEnabled = 33;
+  optional string sstpHost = 34;
+  optional double sstpPort = 35;
+  optional SettingsSetIdentityResponseValueSstpScripts sstpScripts = 36;
   optional double tickIntervalMs = 5;
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
@@ -5539,6 +5577,39 @@ message SettingsGetResponseValueTaskHooks {
   repeated SettingsGetResponseValueTaskHooksItem items = 1;
 }
 
+message SettingsGetResponseValueSstpScriptsReview {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueSstpScriptsFailure {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueSstpScriptsFollowUp {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueSstpScriptsReportFailure {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueSstpScriptsPullRequest {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueSstpScriptsSyncConflict {
+  repeated string items = 1;
+}
+
+message SettingsGetResponseValueSstpScripts {
+  optional SettingsGetResponseValueSstpScriptsReview review = 1;
+  optional SettingsGetResponseValueSstpScriptsFailure failure = 2;
+  optional SettingsGetResponseValueSstpScriptsFollowUp followUp = 3;
+  optional SettingsGetResponseValueSstpScriptsReportFailure reportFailure = 4;
+  optional SettingsGetResponseValueSstpScriptsPullRequest pullRequest = 5;
+  optional SettingsGetResponseValueSstpScriptsSyncConflict syncConflict = 6;
+}
+
 message SettingsGetResponseValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -5557,6 +5628,11 @@ message SettingsGetResponseValue {
   optional bool keepRunningInBackground = 2;
   optional bool notifyOnReview = 3;
   optional bool notifyOnFailure = 4;
+  optional bool nativeNotifications = 32;
+  optional bool sstpEnabled = 33;
+  optional string sstpHost = 34;
+  optional double sstpPort = 35;
+  optional SettingsGetResponseValueSstpScripts sstpScripts = 36;
   optional double tickIntervalMs = 5;
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
@@ -5605,6 +5681,39 @@ message SettingsSetRequestValueTaskHooks {
   repeated SettingsSetRequestValueTaskHooksItem items = 1;
 }
 
+message SettingsSetRequestValueSstpScriptsReview {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueSstpScriptsFailure {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueSstpScriptsFollowUp {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueSstpScriptsReportFailure {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueSstpScriptsPullRequest {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueSstpScriptsSyncConflict {
+  repeated string items = 1;
+}
+
+message SettingsSetRequestValueSstpScripts {
+  optional SettingsSetRequestValueSstpScriptsReview review = 1;
+  optional SettingsSetRequestValueSstpScriptsFailure failure = 2;
+  optional SettingsSetRequestValueSstpScriptsFollowUp followUp = 3;
+  optional SettingsSetRequestValueSstpScriptsReportFailure reportFailure = 4;
+  optional SettingsSetRequestValueSstpScriptsPullRequest pullRequest = 5;
+  optional SettingsSetRequestValueSstpScriptsSyncConflict syncConflict = 6;
+}
+
 message SettingsSetRequestValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -5623,6 +5732,11 @@ message SettingsSetRequestValue {
   optional bool keepRunningInBackground = 2;
   optional bool notifyOnReview = 3;
   optional bool notifyOnFailure = 4;
+  optional bool nativeNotifications = 32;
+  optional bool sstpEnabled = 33;
+  optional string sstpHost = 34;
+  optional double sstpPort = 35;
+  optional SettingsSetRequestValueSstpScripts sstpScripts = 36;
   optional double tickIntervalMs = 5;
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
@@ -5671,6 +5785,39 @@ message SettingsSetResponseValueTaskHooks {
   repeated SettingsSetResponseValueTaskHooksItem items = 1;
 }
 
+message SettingsSetResponseValueSstpScriptsReview {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueSstpScriptsFailure {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueSstpScriptsFollowUp {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueSstpScriptsReportFailure {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueSstpScriptsPullRequest {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueSstpScriptsSyncConflict {
+  repeated string items = 1;
+}
+
+message SettingsSetResponseValueSstpScripts {
+  optional SettingsSetResponseValueSstpScriptsReview review = 1;
+  optional SettingsSetResponseValueSstpScriptsFailure failure = 2;
+  optional SettingsSetResponseValueSstpScriptsFollowUp followUp = 3;
+  optional SettingsSetResponseValueSstpScriptsReportFailure reportFailure = 4;
+  optional SettingsSetResponseValueSstpScriptsPullRequest pullRequest = 5;
+  optional SettingsSetResponseValueSstpScriptsSyncConflict syncConflict = 6;
+}
+
 message SettingsSetResponseValueCommitIdentity {
   optional string appSlug = 1;
   optional string botUserId = 2;
@@ -5689,6 +5836,11 @@ message SettingsSetResponseValue {
   optional bool keepRunningInBackground = 2;
   optional bool notifyOnReview = 3;
   optional bool notifyOnFailure = 4;
+  optional bool nativeNotifications = 32;
+  optional bool sstpEnabled = 33;
+  optional string sstpHost = 34;
+  optional double sstpPort = 35;
+  optional SettingsSetResponseValueSstpScripts sstpScripts = 36;
   optional double tickIntervalMs = 5;
   optional bool importExternalSessions = 6;
   optional double importHistoryDays = 7;
