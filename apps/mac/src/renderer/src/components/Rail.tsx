@@ -9,15 +9,12 @@ import {
   Spacer,
   claimContextMenu,
   motionRegion,
-  useTheme,
-  type MenuItemSpec
+  useTheme
 } from '@design-system/react'
 import { useMemo } from 'react'
-import { copyItem, group } from '../interaction/contextMenu.js'
 import { moveWithinList, pane } from '../interaction/focus.js'
 import { contextMenu } from '../interaction/menu.js'
-import { openWithItems } from '../interaction/openWith.js'
-import { projectStateItems } from '../interaction/projectActions.js'
+import { projectMenuItems } from '../interaction/projectActions.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { openCountByProject, reviewCount } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
@@ -214,25 +211,4 @@ export function Rail(): JSX.Element {
       </NavSection>
     </SideNav>
   )
-}
-
-/** What can be done to a single project. Opens from both a rail row and the list surface. */
-function projectMenuItems(projectId: string): MenuItemSpec[] {
-  const state = useStore.getState()
-  const project = state.snapshot?.projects.find((p) => p.id === projectId)
-  if (!project) return []
-
-  return [
-    { label: t('rail.open'), onSelect: () => state.setSection({ kind: 'project', id: project.id }) },
-    {
-      label: t('rail.projectSettings'),
-      onSelect: () => {
-        state.setSection({ kind: 'project', id: project.id })
-        state.openProjectSettings(true)
-      }
-    },
-    ...group(openWithItems({ kind: 'project', id: project.id })),
-    ...group(copyItem(t('rail.copyDirectory'), project.path)),
-    ...group(projectStateItems(project))
-  ]
 }

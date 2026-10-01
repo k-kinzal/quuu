@@ -1,7 +1,5 @@
 import type { MenuItemSpec } from '@design-system/react'
-import { copyItem, group } from '../interaction/contextMenu.js'
-import { openWithItems } from '../interaction/openWith.js'
-import { projectStateItems } from '../interaction/projectActions.js'
+import { projectItems } from '../interaction/projectActions.js'
 import { t } from '../model/i18n/index.js'
 import { isTableViewDirty } from '../model/table.js'
 import { useStore } from '../state/store.js'
@@ -57,16 +55,11 @@ export function sectionMenuItems(): MenuItemSpec[] {
   }
 
   if (project) {
-    items.push(
-      {
-        label: t('sectionMenu.projectSettings'),
-        separatorBefore: items.length > 0,
-        onSelect: () => state.openProjectSettings(true)
-      },
-      ...group(openWithItems({ kind: 'project', id: project.id })),
-      ...group(copyItem(t('sectionMenu.copyDirectory'), project.path)),
-      ...group(projectStateItems(project))
-    )
+    // A project section always has New Task above, so the project's items open their own group
+    items.push(...projectItems(project, {
+      label: t('sectionMenu.projectSettings'),
+      onSelect: () => state.openProjectSettings(true)
+    }))
   }
 
   return items

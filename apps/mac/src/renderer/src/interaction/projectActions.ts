@@ -2,7 +2,8 @@ import type { MenuItemSpec } from '@design-system/react'
 import type { Project } from '../../../api/schemas/projects.js'
 import { t } from '../model/i18n/index.js'
 import { useStore } from '../state/store.js'
-import { confirmDestructive } from './contextMenu.js'
+import { confirmDestructive, copyItem, group } from './contextMenu.js'
+import { openWithItems } from './openWith.js'
 
 /**
  * Actions that change a project's state.
@@ -50,5 +51,39 @@ export function projectStateItems(project: Project): MenuItemSpec[] {
       separatorBefore: true,
       onSelect: () => confirmDeleteProject(project)
     }
+  ]
+}
+
+/**
+ * What can be done to a single project, after "Open". Opens from both a rail row and the list surface.
+ *
+ * Ordered the way Finder and most desktop tools order a right-click menu: open → copy →
+ * change state → delete, with configuration in the last place — the same place the rail
+ * pins Settings. The groups never move, so the hand learns one menu for both routes.
+ */
+export function projectItems(project: Project, settings: MenuItemSpec): MenuItemSpec[] {
+  return [
+    ...group(openWithItems({ kind: 'project', id: project.id })),
+    ...group(copyItem(t('rail.copyDirectory'), project.path)),
+    ...group(projectStateItems(project)),
+    ...group([settings])
+  ]
+}
+
+/** The rail row's menu. */
+export function projectMenuItems(projectId: string): MenuItemSpec[] {
+  const state = useStore.getState()
+  const project = state.snapshot?.projects.find((p) => p.id === projectId)
+  if (!project) return []
+
+  return [
+    { label: t('rail.open'), onSelect: () => state.setSection({ kind: 'project', id: project.id }) },
+    ...projectItems(project, {
+      label: t('rail.projectSettings'),
+      onSelect: () => {
+        state.setSection({ kind: 'project', id: project.id })
+        state.openProjectSettings(true)
+      }
+    })
   ]
 }
