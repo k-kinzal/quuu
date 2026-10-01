@@ -19,6 +19,10 @@ export const views: typeof en = {
     revoke: "接続を解除",
     allowProject: "新しいタスクではRunner実行を優先する",
     projectHint: "Gitリモートと、タスク・フック・レポート用AIが必要",
+    setupTitle: "Runner実行を設定",
+    setupHint: "Gitリモートが空欄ならプロジェクトから検出します。保存して有効にすると設定が反映されます。",
+    saveAndEnable: "保存して有効にする",
+    cancelSetup: "キャンセル",
     requiredLabels: "Runnerに必要なラベル",
     labelsPlaceholder: "rust, linux",
     saveLabels: "ラベルを保存",
@@ -205,7 +209,7 @@ export const views: typeof en = {
   reportSettings: {
     projectHint: 'Quuuの起動中に1日1回確認し、変更がなければ前回のレポートを維持します。空欄では既定の評価内容を使います。',
     projectPlaceholder: 'AGENTS.mdやREADME.mdに書かれたプロジェクトのビジョンやゴールに対して、現在の実装でどこまで実現できているかを評価します。',
-    projectInstructions: 'レポートに書いてほしい内容',
+    projectInstructions: 'プロジェクトレポートへの指示',
     projectSection: 'プロジェクトダッシュボード',
     title: 'レポート',
     generationSection: '生成',
@@ -216,7 +220,7 @@ export const views: typeof en = {
     agentsGroup: 'エージェント',
     targetNeeded: 'レポートを書くエージェントを選んでください',
     instructionsSection: 'タスクレポート',
-    instructions: '指示に追記する内容',
+    instructions: 'タスクレポートへの追加指示',
     instructionsPlaceholder: '各タスクのレポートに書いてほしいこと'
   },
   pullRequestSettings: {

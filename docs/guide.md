@@ -708,15 +708,16 @@ Settings → Notifications controls review/failure events and the system channel
 On macOS, delivery follows the app's notification permission and Focus settings.
 
 The optional **Sakura Script Transfer Protocol (SSTP)** channel connects over TCP
-(default `127.0.0.1:9801`). Run an SSTP receiver first, configure its host and port,
-and enable SSTP in Notifications. System and SSTP delivery are independent.
+(default `127.0.0.1:9801`). Run an SSTP receiver first, then enable SSTP in
+Notifications to reveal its host, port and script settings. System and SSTP delivery are independent.
 Review/failure switches apply to both. SSTP is off until enabled; existing
 settings keep system notifications on.
 
 Choose a notification type, add any number of scripts (up to 100), then **Save
 SSTP settings**. Exactly one non-empty script is chosen at random from that type
-for each event. An empty list sends nothing. Turning delivery off preserves the
-scripts. Supported types are `review`, `failure`, `followUp`, `reportFailure`,
+for each event. An empty list sends nothing. Turning delivery off hides its
+configuration and preserves saved values; switching off and on within the screen
+also preserves unsaved drafts. Supported types are `review`, `failure`, `followUp`, `reportFailure`,
 `pullRequest`, and `syncConflict`.
 
 ```text

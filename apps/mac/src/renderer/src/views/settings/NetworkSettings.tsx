@@ -32,17 +32,18 @@ function HostSection({ status, apply }: { status: NetworkStatus; apply: (next: N
   const host = status.host
   const expires = host.pairing ? new Date(host.pairing.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
   return <SettingsGroup title={t('networkSettings.host')}>
-    <SettingToggle label={t('networkSettings.enableHost')} hint={t('networkSettings.hostHint')} checked={host.enabled} onChange={enabled => void window.quuu.network.configure({ hostEnabled: enabled }).then(apply)} />
-    <Port key={host.port} value={host.port} save={port => window.quuu.network.configure({ hostPort: port }).then(apply)} />
-    <SettingsBlock>
-    {host.enabled && <Text selectable>{host.addresses.length ? host.addresses.join('  ') : t(host.error ? 'networkSettings.unavailable' : 'networkSettings.starting')}</Text>}
-    {host.error && <FieldHint tone="danger">{host.error}</FieldHint>}
-    <Row gap="md">
-      <Button disabled={!host.enabled || host.addresses.length === 0} onClick={() => void window.quuu.network.openPairing().then(apply)}>{t('networkSettings.pair')}</Button>
-      {host.pairing && <Text selectable mono>{host.pairing.code}</Text>}
-    </Row>
-    {host.pairing && <FieldHint>{t('networkSettings.pairingHint', { time: expires })}</FieldHint>}
-    </SettingsBlock>
+    <SettingToggle label={t('networkSettings.enableHost')} hint={t('networkSettings.hostHint')} checked={host.enabled} onChange={enabled => void window.quuu.network.configure({ hostEnabled: enabled }).then(apply)}>
+      <Port key={host.port} value={host.port} save={port => window.quuu.network.configure({ hostPort: port }).then(apply)} />
+      <SettingsBlock>
+      {host.enabled && <Text selectable>{host.addresses.length ? host.addresses.join('  ') : t(host.error ? 'networkSettings.unavailable' : 'networkSettings.starting')}</Text>}
+      {host.error && <FieldHint tone="danger">{host.error}</FieldHint>}
+      <Row gap="md">
+        <Button disabled={!host.enabled || host.addresses.length === 0} onClick={() => void window.quuu.network.openPairing().then(apply)}>{t('networkSettings.pair')}</Button>
+        {host.pairing && <Text selectable mono>{host.pairing.code}</Text>}
+      </Row>
+      {host.pairing && <FieldHint>{t('networkSettings.pairingHint', { time: expires })}</FieldHint>}
+      </SettingsBlock>
+    </SettingToggle>
     {host.devices.length > 0 && <SettingsBlock>
       <Text tone="tertiary">{t('networkSettings.devices')}</Text>
       {host.devices.map(device => <Row key={device.id} gap="md" justify="between" wrap>

@@ -70,23 +70,24 @@ export function GeneralSettings(): JSX.Element {
           label={t('generalSettings.importExternal')}
           checked={settings.importExternalSessions}
           onChange={(v: boolean) => void setSettings({ importExternalSessions: v })}
-        />
-        <SettingToggle
-          label={t('generalSettings.importCreateProjects')}
-          checked={settings.importCreateProjects}
-          onChange={(v: boolean) => void setSettings({ importCreateProjects: v })}
-        />
-        <SettingRow label={t('generalSettings.historyDays')} width="xs">
-          <NumberInput
-            min={0}
-            max={3650}
-            unit={t('generalSettings.days')}
-            zeroLabel={t('generalSettings.allTime')}
-            value={settings.importHistoryDays}
-            onChange={(v) => void setSettings({ importHistoryDays: v })}
+        >
+          <SettingToggle
+            label={t('generalSettings.importCreateProjects')}
+            checked={settings.importCreateProjects}
+            onChange={(v: boolean) => void setSettings({ importCreateProjects: v })}
           />
-        </SettingRow>
-        <SettingsBlock><ImportNow /></SettingsBlock>
+          <SettingRow label={t('generalSettings.historyDays')} width="xs">
+            <NumberInput
+              min={0}
+              max={3650}
+              unit={t('generalSettings.days')}
+              zeroLabel={t('generalSettings.allTime')}
+              value={settings.importHistoryDays}
+              onChange={(v) => void setSettings({ importHistoryDays: v })}
+            />
+          </SettingRow>
+          <SettingsBlock><ImportNow /></SettingsBlock>
+        </SettingToggle>
       </SettingsGroup>
 
       {/*

@@ -70,7 +70,7 @@ it('discovers published docs in package READMEs beyond the first twenty and labe
   git('switch', '-c', 'feature')
   writeFileSync(join(directory, 'README.md'), '# Uncommitted package')
   expect((await listProjectDocuments(db, projectId)).websites).toEqual([{ title: 'sql-semantics · Docs', url: website }])
-})
+}, 15_000) // This exercises Git against more than twenty packages, not an in-memory index.
 
 it('reads an immutable revision after the default branch changes and refuses unlisted paths', async () => {
   const docs = await listProjectDocuments(db, projectId)

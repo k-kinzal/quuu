@@ -79,4 +79,27 @@ describe('composed settings controls', () => {
     fireEvent.click(screen.getByText('Opened'))
     expect(changed).not.toHaveBeenCalled()
   })
+
+  it('reveals dependent settings with their switch and keeps the draft when switched off and on', () => {
+    function Example() {
+      const [enabled, setEnabled] = useState(false)
+      return <ThemeProvider><SettingsGroup><SettingToggle label="Allow connections" checked={enabled} onChange={setEnabled}>
+        <SettingRow label="Host"><InputAction><TextInput defaultValue="localhost" /><Button>Apply</Button></InputAction></SettingRow>
+      </SettingToggle></SettingsGroup></ThemeProvider>
+    }
+    render(<Example />)
+    const toggle = screen.getByRole('switch', { name: 'Allow connections' })
+    expect(screen.queryByRole('textbox', { name: 'Host' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument()
+    const details = document.getElementById(toggle.getAttribute('aria-controls')!)
+    expect(details).not.toBeVisible()
+    fireEvent.click(toggle)
+    const input = screen.getByRole('textbox', { name: 'Host' })
+    fireEvent.change(input, { target: { value: 'draft.example' } })
+    fireEvent.click(toggle)
+    expect(details).not.toBeVisible()
+    fireEvent.click(toggle)
+    expect(screen.getByRole('textbox', { name: 'Host' })).toHaveValue('draft.example')
+    expect(details).toBeVisible()
+  })
 })

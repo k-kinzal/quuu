@@ -178,7 +178,7 @@ describe('the generated gRPC API', () => {
     await expect(http.api.logs.page({ runId, generation: 'obsolete' })).rejects.toThrow('reindexed')
     const result = await execute(cli, ['tasks', 'logs', task.id, '--all', '--search', 'convention'], { env: { ...process.env, QUUU_CONNECTION_FILE: servers.connectionFile } })
     expect(JSON.parse(result.stdout)).toMatchObject({ taskId: task.id, runId })
-  })
+  }, 15_000) // Include real CLI startup, as in the other CLI integration cases above.
   it('does not present an unavailable session log as an empty successful export', async () => {
     const project = app.projects.createProject({ name: 'logs', path: dir })
     const agentId = makeAgent(app.db, { name: 'test', logAdapter: 'stdout' })

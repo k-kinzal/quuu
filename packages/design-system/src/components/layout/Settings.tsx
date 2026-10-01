@@ -126,8 +126,22 @@ const Accessory = styled('div')(({ theme }) => ({
   '& .MuiFormControlLabel-root': { marginBottom: 0 }
 }))
 
-/** Switches apply immediately; checkboxes belong to an explicitly saved form. */
-export function SettingToggle({ label, hint, checked, disabled, onChange, kind = 'switch', accessory }: {
+const ToggleRoot = styled('div')({ minWidth: 0 })
+const DependentSettings = styled('div')(({ theme }) => ({
+  minWidth: 0,
+  marginLeft: theme.spacing(4),
+  borderLeft: `1px solid ${theme.palette.border.subtle}`,
+  borderTop: `1px solid ${theme.palette.border.subtle}`,
+  '& > :not(style) + :not(style)': { borderTop: `1px solid ${theme.palette.border.subtle}` },
+  '&[hidden]': { display: 'none' }
+}))
+
+/**
+ * Switches apply immediately; checkboxes belong to an explicitly saved form.
+ * Optional children are dependent settings, revealed directly below the enabled toggle.
+ * Keep them mounted while hidden so turning a feature off does not discard its draft.
+ */
+export function SettingToggle({ label, hint, checked, disabled, onChange, kind = 'switch', accessory, children }: {
   label: string
   hint?: ReactNode
   checked: boolean
@@ -135,20 +149,26 @@ export function SettingToggle({ label, hint, checked, disabled, onChange, kind =
   onChange(value: boolean): void
   kind?: 'switch' | 'checkbox'
   accessory?: ReactNode
+  children?: ReactNode
 }): JSX.Element {
   const id = useId()
-  return <SettingRow label={label} hint={hint} width="auto" controlId={id} accessory={accessory}>
-    <ToggleInput id={id} label={label} checked={checked} disabled={disabled} onChange={onChange} kind={kind} />
-  </SettingRow>
+  const detailsId = children ? `${id}-details` : undefined
+  return <ToggleRoot>
+    <SettingRow label={label} hint={hint} width="auto" controlId={id} accessory={accessory}>
+      <ToggleInput id={id} label={label} checked={checked} disabled={disabled} onChange={onChange} kind={kind} controls={detailsId} />
+    </SettingRow>
+    {detailsId && <DependentSettings id={detailsId} hidden={!checked}>{children}</DependentSettings>}
+  </ToggleRoot>
 }
 
-function ToggleInput({ id, label, checked, disabled, onChange, kind }: {
+function ToggleInput({ id, label, checked, disabled, onChange, kind, controls }: {
   id: string; label: string; checked: boolean; disabled?: boolean; onChange(value: boolean): void; kind: 'switch' | 'checkbox'
+  controls?: string
 }): JSX.Element {
   const field = useFieldContext()
   const Control = kind === 'switch' ? MuiSwitch : MuiCheckbox
   return <Control checked={checked} disabled={disabled} onChange={event => onChange(event.target.checked)}
-    slotProps={{ input: { id, 'aria-label': label, 'aria-describedby': field?.hintId } }} />
+    slotProps={{ input: { id, 'aria-label': label, 'aria-describedby': field?.hintId, 'aria-controls': controls } }} />
 }
 
 /** Readouts, errors and multi-part content inside a settings group. */

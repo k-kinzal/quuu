@@ -98,6 +98,15 @@ Use `SettingsGroup` for related preferences and `SettingRow` for a label, hint
 and control. `SettingToggle` is an immediate switch; use `kind="checkbox"` in a
 form committed by Save. Use `CheckboxGroup` for multiple independent choices.
 
+Put settings that only apply while a feature is enabled inside its
+`SettingToggle` as children. The kit reveals them below the switch, indented to
+show the dependency, and removes them from keyboard and accessibility navigation
+while off. Children stay mounted so toggling does not erase input drafts. The
+switch changes activation only; it must not silently save adjacent draft fields.
+Keep independently useful actions, such as revoking an existing connection,
+outside the dependent content. An explicitly saved definition remains editable
+while inactive, since configuring it is necessary before it can be activated.
+
 `SettingRow` passes its accessible label and hint to `TextInput`, `NumberInput`,
 `TextArea` and `Select`. An explicit input name overrides the group label (for
 example, individual arguments in an ordered editor). `controlId` associates a

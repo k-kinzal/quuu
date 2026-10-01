@@ -20,12 +20,20 @@ beforeEach(() => {
 })
 function show() { render(<ThemeProvider><NotificationSettings /><Toasts /></ThemeProvider>) }
 
-it('saves several scripts per type and preserves other types and channel preferences', async () => {
+it('switches notification channels independently', async () => {
   show()
   fireEvent.click(screen.getByLabelText(t('notificationSettings.native')))
   await waitFor(() => expect(useStore.getState().settings?.nativeNotifications).toBe(false))
   fireEvent.click(screen.getByLabelText(t('notificationSettings.sstp')))
   await waitFor(() => expect(useStore.getState().settings?.sstpEnabled).toBe(true))
+  expect(useStore.getState().settings?.nativeNotifications).toBe(false)
+  expect(useStore.getState().settings?.notifyOnReview).toBe(true)
+  expect(useStore.getState().settings?.notifyOnFailure).toBe(true)
+})
+
+it('saves several scripts per type and preserves other types and channel preferences', async () => {
+  useStore.setState({ settings: { ...structuredClone(DEFAULT_SETTINGS), sstpEnabled: true, nativeNotifications: false } })
+  show()
   for (let index = 1; index <= 2; index++) {
     fireEvent.click(screen.getByRole('button', { name: t('notificationSettings.addScript') }))
     fireEvent.change(screen.getByLabelText(t('notificationSettings.script', { number: index })), { target: { value: `\\0Review ${index}: {{taskTitle}}\\e` } })
@@ -39,14 +47,23 @@ it('saves several scripts per type and preserves other types and channel prefere
   expect(useStore.getState().settings?.sstpScripts.review).toHaveLength(2)
   expect(useStore.getState().settings?.nativeNotifications).toBe(false)
   expect(useStore.getState().settings?.sstpEnabled).toBe(true)
+})
+
+it('can remove the final script for a type without changing another type', async () => {
+  useStore.setState({ settings: { ...structuredClone(DEFAULT_SETTINGS), sstpEnabled: true,
+    sstpScripts: { ...structuredClone(DEFAULT_SETTINGS.sstpScripts), review: ['Review script'], failure: ['Failure script'] }
+  } })
+  show()
   fireEvent.click(screen.getByRole('button', { name: t('notificationSettings.removeScript', { number: 1 }) }))
   fireEvent.click(screen.getByRole('button', { name: t('notificationSettings.save') }))
-  await waitFor(() => expect(useStore.getState().settings?.sstpScripts.failure).toHaveLength(0))
-  expect(useStore.getState().settings?.sstpScripts.review).toHaveLength(2)
+  await waitFor(() => expect(useStore.getState().settings?.sstpScripts.review).toHaveLength(0))
+  expect(useStore.getState().settings?.sstpScripts.failure).toEqual(['Failure script'])
 })
 
 it('keeps an invalid settings draft and reports the failed save as an in-app popup', async () => {
   show()
+  fireEvent.click(screen.getByRole('switch', { name: t('notificationSettings.sstp') }))
+  await screen.findByRole('spinbutton', { name: t('notificationSettings.port') })
   const input = screen.getByLabelText(t('notificationSettings.port'))
   fireEvent.change(input, { target: { value: '70000' } })
   fireEvent.blur(input)
@@ -61,4 +78,30 @@ it('keeps an invalid settings draft and reports the failed save as an in-app pop
   fireEvent.blur(input)
   fireEvent.click(screen.getByRole('button', { name: t('notificationSettings.save') }))
   await waitFor(() => expect(useStore.getState().settings?.sstpPort).toBe(9821))
+})
+
+it('only reveals SSTP configuration while enabled and preserves an unsaved draft across switching', async () => {
+  show()
+  const toggle = screen.getByRole('switch', { name: t('notificationSettings.sstp') })
+  expect(screen.queryByRole('textbox', { name: t('notificationSettings.host') })).not.toBeInTheDocument()
+  expect(screen.queryByRole('combobox', { name: t('notificationSettings.kind') })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: t('notificationSettings.save') })).not.toBeInTheDocument()
+  fireEvent.click(toggle)
+  const host = await screen.findByRole('textbox', { name: t('notificationSettings.host') })
+  fireEvent.change(host, { target: { value: 'draft.example' } })
+  fireEvent.click(screen.getByRole('button', { name: t('notificationSettings.addScript') }))
+  fireEvent.change(screen.getByRole('textbox', { name: t('notificationSettings.script', { number: 1 }) }), { target: { value: 'draft script' } })
+  fireEvent.click(toggle)
+  await waitFor(() => expect(toggle).not.toBeChecked())
+  expect(host).not.toBeVisible()
+  expect(screen.queryByRole('button', { name: t('notificationSettings.addScript') })).not.toBeInTheDocument()
+  expect(useStore.getState().settings?.sstpHost).toBe('127.0.0.1')
+  expect(useStore.getState().settings?.sstpScripts.review).toEqual([])
+  fireEvent.click(toggle)
+  await waitFor(() => expect(host).toBeVisible())
+  expect(host).toHaveValue('draft.example')
+  expect(screen.getByRole('textbox', { name: t('notificationSettings.script', { number: 1 }) })).toHaveValue('draft script')
+  fireEvent.click(screen.getByRole('button', { name: t('notificationSettings.save') }))
+  await waitFor(() => expect(useStore.getState().settings?.sstpHost).toBe('draft.example'))
+  expect(useStore.getState().settings?.sstpScripts.review).toEqual(['draft script'])
 })

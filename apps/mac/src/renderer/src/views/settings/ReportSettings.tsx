@@ -33,55 +33,50 @@ export function ReportSettings(): JSX.Element {
           label={t('reportSettings.enabled')}
           checked={settings.reportEnabled}
           onChange={(v: boolean) => void setSettings({ reportEnabled: v })}
-        />
-        <SettingRow label={t('reportSettings.target')} width="md">
-          <Select
-            aria-label={t('reportSettings.target')}
-            value={target}
-            onChange={(e) => {
-              const [kind, id] = e.target.value.split(':')
-              void setSettings({
-                reportTargetKind: kind === 'group' ? 'group' : 'agent',
-                reportTargetId: id ?? ''
-              })
-            }}
-            options={[
-              { value: '', label: t('reportSettings.unset') },
-              ...groups.map((group) => ({
-                value: `group:${group.id}`,
-                label: group.name,
-                group: t('reportSettings.groupsGroup')
-              })),
-              ...agents.map((agent) => ({
-                value: `agent:${agent.id}`,
-                label: agent.name,
-                group: t('reportSettings.agentsGroup')
-              }))
-            ]}
-          />
-        </SettingRow>
-        {settings.reportEnabled && settings.reportTargetId.length === 0 && (
-          <SettingsBlock><FieldHint tone="danger">{t('reportSettings.targetNeeded')}</FieldHint></SettingsBlock>
-        )}
-      </SettingsGroup>
-
-      <SettingsGroup title={t('reportSettings.projectSection')}>
-        <SettingRow label={t('reportSettings.projectInstructions')} hint={t('reportSettings.projectHint')} width="full" layout="stacked">
-          <TextArea rows={6} value={settings.projectReportInstructions}
-            placeholder={t('reportSettings.projectPlaceholder')}
-            onChange={(e) => void setSettings({ projectReportInstructions: e.target.value })} />
-        </SettingRow>
-      </SettingsGroup>
-
-      <SettingsGroup title={t('reportSettings.instructionsSection')}>
-        <SettingRow label={t('reportSettings.instructions')} width="full" layout="stacked">
-          <TextArea
-            rows={8}
-            placeholder={t('reportSettings.instructionsPlaceholder')}
-            value={settings.reportInstructions}
-            onChange={(e) => void setSettings({ reportInstructions: e.target.value })}
-          />
-        </SettingRow>
+        >
+          <SettingRow label={t('reportSettings.target')} width="md">
+            <Select
+              aria-label={t('reportSettings.target')}
+              value={target}
+              onChange={(e) => {
+                const [kind, id] = e.target.value.split(':')
+                void setSettings({
+                  reportTargetKind: kind === 'group' ? 'group' : 'agent',
+                  reportTargetId: id ?? ''
+                })
+              }}
+              options={[
+                { value: '', label: t('reportSettings.unset') },
+                ...groups.map((group) => ({
+                  value: `group:${group.id}`,
+                  label: group.name,
+                  group: t('reportSettings.groupsGroup')
+                })),
+                ...agents.map((agent) => ({
+                  value: `agent:${agent.id}`,
+                  label: agent.name,
+                  group: t('reportSettings.agentsGroup')
+                }))
+              ]}
+            />
+          </SettingRow>
+          {settings.reportEnabled && settings.reportTargetId.length === 0 && (
+            <SettingsBlock><FieldHint tone="danger">{t('reportSettings.targetNeeded')}</FieldHint></SettingsBlock>
+          )}
+          <SettingRow label={t('reportSettings.projectInstructions')} hint={t('reportSettings.projectHint')} width="full" layout="stacked">
+            <TextArea rows={6} value={settings.projectReportInstructions}
+              placeholder={t('reportSettings.projectPlaceholder')}
+              onChange={(e) => void setSettings({ projectReportInstructions: e.target.value })} />
+          </SettingRow>
+          <SettingRow label={t('reportSettings.instructions')} width="full" layout="stacked">
+            <TextArea
+              rows={8}
+              placeholder={t('reportSettings.instructionsPlaceholder')}
+              value={settings.reportInstructions}
+              onChange={(e) => void setSettings({ reportInstructions: e.target.value })}
+            />
+          </SettingRow>
+        </SettingToggle>
       </SettingsGroup>
     </Page>
   )

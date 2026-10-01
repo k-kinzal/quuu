@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { createRouterClient, implement } from '@orpc/server'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import { contract } from '../src/api/contract.js'
@@ -40,11 +41,17 @@ it('opens connection settings, shows actual endpoints and saves independent swit
   expect(await screen.findByText('http://127.0.0.1:43210')).toBeTruthy()
   expect(screen.getByText('http://127.0.0.1:43211/mcp')).toBeTruthy()
   expect(screen.getByText('/tmp/quuu/connections.json')).toBeTruthy()
+  const input = screen.getAllByRole('spinbutton', { name: t('connectionSettings.port') })[0]
+  fireEvent.change(input, { target: { value: '43212' } })
   fireEvent.click(screen.getByLabelText(t('connectionSettings.enableHttp')))
   await waitFor(() => expect(useStore.getState().settings?.httpEnabled).toBe(false))
   expect(useStore.getState().settings?.mcpEnabled).toBe(true)
-  const input = screen.getAllByLabelText(t('connectionSettings.port'))[0]
-  fireEvent.change(input, { target: { value: '43212' } })
+  expect(input).not.toBeVisible()
+  expect(screen.getAllByRole('button', { name: t('connectionSettings.apply') })).toHaveLength(1)
+  expect(useStore.getState().settings?.httpPort).toBe(0)
+  fireEvent.click(screen.getByLabelText(t('connectionSettings.enableHttp')))
+  await waitFor(() => expect(input).toBeVisible())
+  expect(input).toHaveValue(43212)
   fireEvent.blur(input)
   fireEvent.click(screen.getAllByRole('button', { name: t('connectionSettings.apply') })[0])
   await waitFor(() => expect(useStore.getState().settings?.httpPort).toBe(43212))

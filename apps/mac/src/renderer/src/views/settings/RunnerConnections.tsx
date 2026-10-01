@@ -10,32 +10,33 @@ export function RunnerConnections(): JSX.Element {
     refetchInterval: 2000, retry: false, networkMode: 'always' }, queryClient)
   const [pairing, setPairing] = useState<RunnerPairing | null>(null)
   const [port, setPort] = useState<number | null>(null)
-  const change = useMutation({ mutationFn: (enabled: boolean) => window.quuu.runners.configure({ enabled, port: port ?? status.data?.port ?? 47833 }),
-    onSuccess: () => { void status.refetch() } }, queryClient)
+  const change = useMutation({ mutationFn: (config: { enabled: boolean; port: number }) => window.quuu.runners.configure(config),
+    onSuccess: next => { queryClient.setQueryData(['runners.status'], next); setPairing(null) } }, queryClient)
   const pair = useMutation({ mutationFn: () => window.quuu.runners.pairing(), onSuccess: setPairing }, queryClient)
   const revoke = useMutation({ mutationFn: (id: string) => window.quuu.runners.revoke(id), onSuccess: () => { void status.refetch() } }, queryClient)
   const error = status.error ?? change.error ?? pair.error ?? revoke.error
   return <SettingsGroup title={t('runnerSettings.title')}>
     <SettingToggle label={t('runnerSettings.enable')} hint={t('runnerSettings.hint')} checked={status.data?.enabled ?? false}
-      disabled={change.isPending} onChange={enabled => change.mutate(enabled)} />
-    <SettingRow label={t('runnerSettings.port')} width="md">
-      <InputAction>
-        <NumberInput aria-label={t('runnerSettings.port')} min={0} max={65535} value={port ?? status.data?.port ?? 47833} onChange={setPort} />
-        <Button disabled={change.isPending || port === null} onClick={() => change.mutate(status.data?.enabled ?? false)}>{t('runnerSettings.apply')}</Button>
-      </InputAction>
-    </SettingRow>
-    <SettingsBlock>
-      <Row justify="between" wrap gap="md">
-        <Text mono selectable>{status.data?.urls.join(' · ')}</Text>
-        <Button disabled={!status.data?.listening || pair.isPending} onClick={() => pair.mutate()}>{t('runnerSettings.pair')}</Button>
-      </Row>
-    </SettingsBlock>
-    {pairing && <SettingsBlock>
-      <Text selectable>{t('runnerSettings.pin', { pin: pairing.pin })}</Text>
-      <FieldHint>{t('runnerSettings.expires', { time: new Date(pairing.expiresAt).toLocaleTimeString() })}</FieldHint>
-      <SettingRow layout="stacked" label={t('runnerSettings.fingerprint')}><Text mono selectable>{pairing.fingerprint}</Text></SettingRow>
-      <FieldHint>{t('runnerSettings.pairHint')}</FieldHint>
-    </SettingsBlock>}
+      disabled={change.isPending || !status.data} onChange={enabled => change.mutate({ enabled, port: status.data?.port ?? 47833 })}>
+      <SettingRow label={t('runnerSettings.port')} width="md">
+        <InputAction>
+          <NumberInput aria-label={t('runnerSettings.port')} min={0} max={65535} value={port ?? status.data?.port ?? 47833} onChange={setPort} />
+          <Button disabled={change.isPending || port === null || port === status.data?.port} onClick={() => change.mutate({ enabled: status.data?.enabled ?? false, port: port ?? status.data?.port ?? 47833 })}>{t('runnerSettings.apply')}</Button>
+        </InputAction>
+      </SettingRow>
+      <SettingsBlock>
+        <Row justify="between" wrap gap="md">
+          <Text mono selectable>{status.data?.urls.join(' · ')}</Text>
+          <Button disabled={!status.data?.listening || pair.isPending} onClick={() => pair.mutate()}>{t('runnerSettings.pair')}</Button>
+        </Row>
+      </SettingsBlock>
+      {pairing && <SettingsBlock>
+        <Text selectable>{t('runnerSettings.pin', { pin: pairing.pin })}</Text>
+        <FieldHint>{t('runnerSettings.expires', { time: new Date(pairing.expiresAt).toLocaleTimeString() })}</FieldHint>
+        <SettingRow layout="stacked" label={t('runnerSettings.fingerprint')}><Text mono selectable>{pairing.fingerprint}</Text></SettingRow>
+        <FieldHint>{t('runnerSettings.pairHint')}</FieldHint>
+      </SettingsBlock>}
+    </SettingToggle>
     {status.data?.runners.filter(runner => !runner.revoked).map(runner => <SettingsBlock key={runner.id}>
       <Row justify="between" wrap gap="md">
         <Text weight="medium">{runner.name}</Text>

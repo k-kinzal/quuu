@@ -16,6 +16,8 @@ function Example(): JSX.Element {
   const [scheme, setScheme] = useState('system')
   const [days, setDays] = useState(14)
   const [events, setEvents] = useState(['opened'])
+  const [connected, setConnected] = useState(false)
+  const [port, setPort] = useState(8080)
   return <Page title="Preferences">
     <SettingsGroup title="Behavior">
       <SettingToggle label="Continue in the background" hint="Applies when the window closes" checked={enabled} onChange={setEnabled} />
@@ -47,7 +49,10 @@ function Example(): JSX.Element {
       <SettingToggle kind="checkbox" label="Include this in the saved configuration" checked={enabled} onChange={setEnabled} />
     </SettingsGroup>
     <SettingsGroup title="Connection">
-      <SettingToggle label="Allow connections" checked={false} disabled onChange={() => undefined} />
+      <SettingToggle label="Allow connections" checked={connected} onChange={setConnected}>
+        <SettingRow label="Host"><TextInput defaultValue="127.0.0.1" /></SettingRow>
+        <SettingRow label="Port" width="sm"><InputAction><NumberInput value={port} onChange={setPort} min={1} max={65535} /><Button>Apply</Button></InputAction></SettingRow>
+      </SettingToggle>
       <SettingsBlock><Row justify="between" wrap><span>Workstation · Connected</span><Button>Disconnect</Button></Row></SettingsBlock>
     </SettingsGroup>
   </Page>

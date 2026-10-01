@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { createRouterClient, implement } from '@orpc/server'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import { contract } from '../src/api/contract.js'
@@ -54,7 +55,7 @@ function show(): void {
 
 it('pairs with a discovered host by its code, and then reports what the window is showing', async () => {
   show()
-  fireEvent.click(await screen.findByRole('button', { name: t('networkSettings.choose') }))
+  fireEvent.click(await screen.findByRole('button', { name: t('networkSettings.choose') }, { timeout: 5_000 }))
   expect(screen.getByLabelText<HTMLInputElement>(t('networkSettings.address')).value).toBe('10.0.0.2:47810')
   fireEvent.change(screen.getByLabelText(t('networkSettings.code')), { target: { value: '123 456' } })
   fireEvent.click(screen.getByRole('button', { name: t('networkSettings.pairWithHost') }))
@@ -64,8 +65,19 @@ it('pairs with a discovered host by its code, and then reports what the window i
 
 it('turns hosting on and shows the code another computer enters', async () => {
   show()
-  fireEvent.click(await screen.findByLabelText(t('networkSettings.enableHost')))
+  const toggle = await screen.findByLabelText(t('networkSettings.enableHost'), {}, { timeout: 5_000 })
+  expect(screen.queryByRole('spinbutton', { name: t('networkSettings.port') })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: t('networkSettings.pair') })).not.toBeInTheDocument()
+  fireEvent.click(toggle)
   expect(await screen.findByText('10.0.0.9:47810')).toBeTruthy()
+  const port = screen.getByRole('spinbutton', { name: t('networkSettings.port') })
+  fireEvent.change(port, { target: { value: '47820' } })
   fireEvent.click(screen.getByRole('button', { name: t('networkSettings.pair') }))
   expect(await screen.findByText('482913')).toBeTruthy()
+  fireEvent.click(toggle)
+  await waitFor(() => expect(port).not.toBeVisible())
+  expect(screen.queryByRole('button', { name: t('networkSettings.apply') })).not.toBeInTheDocument()
+  fireEvent.click(toggle)
+  await waitFor(() => expect(port).toBeVisible())
+  expect(port).toHaveValue(47820)
 })

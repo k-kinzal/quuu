@@ -1,5 +1,19 @@
 # Call-site feedback and decisions
 
+## 2026-10-01 Settings dependencies
+
+- Finding: SSTP showed editable receiver/script fields while delivery was off.
+  The same missing parent/child relationship affected other feature switches.
+  Grouping and spacing alone did not communicate when controls actually apply.
+- Accepted: `SettingToggle` owns optional dependent children, their indentation,
+  visibility and accessible relationship. Hidden content remains mounted to
+  preserve drafts. Activation and explicit draft saves remain separate actions.
+- This supersedes the earlier decision to always show inactive prompt contents
+  and allow connection configuration before enabling a service. Independent
+  connection revocation and inactive reusable definitions remain accessible.
+- Verification: switch transitions, unsaved draft preservation and save isolation
+  in component/integration tests, plus Computer Use on the fixture app and stories.
+
 ## 2026-10-01 Compound settings controls
 
 - Finding: settings accumulated independent section, field and checkbox margins.
@@ -14,8 +28,8 @@
   Domain labels, inheritance, API calls, save timing and validation stay in the
   app. Existing repeatable editors, list frames and searchable selects remain
   the compounds for their respective jobs.
-- Excluded: per-screen spacing overrides, automatic hiding of saved prompt
-  contents, and replacing long inheritance/agent choices with crowded segments.
+- Excluded: per-screen spacing overrides and replacing long inheritance/agent
+  choices with crowded segments. Dependent prompt visibility was revised above.
 - Verification: `Patterns/Settings` covers dark, light, narrow and comfortable
   layouts; Mac interaction tests cover names, hints, errors, label activation,
   multiselection and inherited disabled fields. Computer Use checks the isolated

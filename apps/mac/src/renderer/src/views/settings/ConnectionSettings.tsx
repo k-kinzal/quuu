@@ -16,16 +16,18 @@ export function ConnectionSettings(): JSX.Element {
   return <Page title={t('connectionSettings.title')}>
     <RunnerConnections />
     <SettingsGroup title={t('connectionSettings.http')}>
-      <SettingToggle label={t('connectionSettings.enableHttp')} checked={settings.httpEnabled} onChange={enabled => void setSettings({ httpEnabled: enabled })} />
-      <Port key={`http-${settings.httpPort}`} value={settings.httpPort} save={port => setSettings({ httpPort: port })} />
-      <SettingsBlock><Text selectable>{status.data?.http.url ?? t(status.data?.http.error ? 'connectionSettings.unavailable' : settings.httpEnabled ? 'connectionSettings.starting' : 'connectionSettings.off')}</Text>
-      {status.data?.http.error && <FieldHint tone="danger">{status.data.http.error}</FieldHint>}</SettingsBlock>
+      <SettingToggle label={t('connectionSettings.enableHttp')} checked={settings.httpEnabled} onChange={enabled => void setSettings({ httpEnabled: enabled })}>
+        <Port key={`http-${settings.httpPort}`} value={settings.httpPort} save={port => setSettings({ httpPort: port })} />
+        <SettingsBlock><Text selectable>{status.data?.http.url ?? t(status.data?.http.error ? 'connectionSettings.unavailable' : settings.httpEnabled ? 'connectionSettings.starting' : 'connectionSettings.off')}</Text>
+        {status.data?.http.error && <FieldHint tone="danger">{status.data.http.error}</FieldHint>}</SettingsBlock>
+      </SettingToggle>
     </SettingsGroup>
     <SettingsGroup title={t('connectionSettings.mcp')}>
-      <SettingToggle label={t('connectionSettings.enableMcp')} checked={settings.mcpEnabled} onChange={enabled => void setSettings({ mcpEnabled: enabled })} />
-      <Port key={`mcp-${settings.mcpPort}`} value={settings.mcpPort} save={port => setSettings({ mcpPort: port })} />
-      <SettingsBlock><Text selectable>{status.data?.mcp.url ?? t(status.data?.mcp.error ? 'connectionSettings.unavailable' : settings.mcpEnabled ? 'connectionSettings.starting' : 'connectionSettings.off')}</Text>
-      {status.data?.mcp.error && <FieldHint tone="danger">{status.data.mcp.error}</FieldHint>}</SettingsBlock>
+      <SettingToggle label={t('connectionSettings.enableMcp')} checked={settings.mcpEnabled} onChange={enabled => void setSettings({ mcpEnabled: enabled })}>
+        <Port key={`mcp-${settings.mcpPort}`} value={settings.mcpPort} save={port => setSettings({ mcpPort: port })} />
+        <SettingsBlock><Text selectable>{status.data?.mcp.url ?? t(status.data?.mcp.error ? 'connectionSettings.unavailable' : settings.mcpEnabled ? 'connectionSettings.starting' : 'connectionSettings.off')}</Text>
+        {status.data?.mcp.error && <FieldHint tone="danger">{status.data.mcp.error}</FieldHint>}</SettingsBlock>
+      </SettingToggle>
     </SettingsGroup>
     <SettingsGroup title={t('connectionSettings.credentials')}>
       <SettingsBlock>

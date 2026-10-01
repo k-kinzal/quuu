@@ -18,6 +18,10 @@ export const views = {
     revoke: "Revoke connection",
     allowProject: "Prefer Runner execution for new tasks",
     projectHint: "Requires Git and all task, hook and report agents",
+    setupTitle: "Set up Runner execution",
+    setupHint: "Leave Git remote empty to detect it from the project directory. Settings apply when you save and enable.",
+    saveAndEnable: "Save and enable",
+    cancelSetup: "Cancel",
     requiredLabels: "Required Runner labels",
     labelsPlaceholder: "rust, linux",
     saveLabels: "Save labels",
@@ -208,7 +212,7 @@ export const views = {
   reportSettings: {
     projectHint: 'Checks once a day while Quuu is running. Unchanged projects keep their previous report. Leave empty to use the default assessment.',
     projectPlaceholder: 'Assess progress toward the project’s vision and goals in AGENTS.md and README.md, using the current implementation as evidence.',
-    projectInstructions: 'What the report should cover',
+    projectInstructions: 'Project report instructions',
     projectSection: 'Project dashboard',
     title: 'Report',
     generationSection: 'Generation',
@@ -219,7 +223,7 @@ export const views = {
     agentsGroup: 'Agents',
     targetNeeded: 'Pick who writes the report',
     instructionsSection: 'Task reports',
-    instructions: 'Added to the instructions',
+    instructions: 'Task report instructions',
     instructionsPlaceholder: 'What every task report should cover'
   },
   pullRequestSettings: {

@@ -37,13 +37,55 @@ project's identity and execution defaults.
   informed the native control implementation. Existing small-switch theme rules
   conflicted with MUI's nested sizing rules and clipped the thumb; the common
   theme now sizes track, thumb and travel together at both densities.
+- [GOV.UK: Conditional questions](https://design-system.service.gov.uk/components/checkboxes/#conditionally-revealing-a-related-question)
+  informed showing dependent controls directly beneath the choice that makes
+  them relevant. The shared toggle owns this relationship, including visibility
+  to keyboard and assistive technology. Keeping children mounted follows
+  [React's state preservation guidance](https://react.dev/learn/preserving-and-resetting-state#preserving-state-for-removed-components)
+  so switching a feature off and on preserves its draft.
 
 This is a composition policy, not a rule to replace every select with segments.
 Theme and hook execution kind are compact sets of visible choices. Agent, application, strategy
-and inheritance values can be long and remain searchable selects. Disabled
-prompt contents stay visible, and connection configuration can be prepared
-before enabling a service. Conditional editors still appear only for relevant
-modes (custom PR prompts, custom identity, selected hooks, custom cron).
+and inheritance values can be long and remain searchable selects. Only enabled
+features reveal their dependent inputs and save actions. Conditional editors
+also appear only for relevant modes (custom PR prompts, custom identity, selected
+hooks, custom cron).
+
+## Dependency review after the SSTP feedback
+
+The first pass solved composition but missed whether controls should be usable
+in the current state. The second pass checks each control against its runtime
+prerequisites, rather than assuming every adjacent switch is its parent.
+
+| Parent | Dependent controls shown only while enabled |
+|---|---|
+| SSTP delivery | Host, port, notification type, script list, variables and Save |
+| External session import | Project creation, history range and manual import (the importer also requires the enable flag for manual runs) |
+| Report AI | Writer, project instructions and task instructions |
+| Each PR follow-up condition | Its prompt, in app and project settings |
+| HTTP/gRPC and MCP | Port, Apply and current endpoint/status |
+| Runner listener | Port, Apply, pairing action and pairing details |
+| Multiple-PC host | Port, Apply, address and pairing controls |
+| Project runner execution | Label/repository drafts and their Save actions |
+
+Switches change activation alone. Switching off does not implicitly save project
+runner drafts or the listener port; each retains its own Save/Apply action.
+Project Runner activation needs a valid Git repository/remote first: requesting
+activation without a saved remote opens a setup form, and **Save and enable** explicitly commits the
+remote, labels and activation together. Cancel leaves it off; failed validation
+keeps the editable setup open. This avoids hiding the very remote field needed
+to make initial activation succeed. The kit's existing
+[form dialog](https://mui.com/material-ui/react-dialog/#form-dialogs) owns that surface.
+Saved preferences and unsaved drafts survive switching off and on within the
+screen. Initial disabled state, enabling, disabling, re-enabling and explicit
+save are covered in interaction tests.
+
+Exceptions are intentional: existing runner/device revocation is still useful
+while a listener is off. Starting the scheduler on app launch is not its main
+on/off switch, so its poll interval remains available. Agent/group/automation
+definitions and hook definitions can be prepared while inactive. Identity setup
+must remain available before activation. Satellite pairing already appears only
+while enabled; iPhone sync already prevents Sync Now while disabled.
 
 ## Control inventory
 
@@ -63,10 +105,10 @@ modes (custom PR prompts, custom identity, selected hooks, custom cron).
 | Hook: name, activation, kind, target, prompt/command, timeout | Named rows; two segments for AI/command; long content above full-width editor; override control belongs to its field |
 | Hook: lifecycle events | Named checkbox grid that reflows with the pane; inherited fields remain disabled until overridden |
 | Hooks: recent execution history | Existing execution list retained without redundant containment |
-| Reports: activation, target, project and task instructions | Switch and select followed by separate full-width instruction groups; warnings remain adjacent |
+| Reports: activation, target, project and task instructions | Parent switch reveals the writer and full-width instructions with distinct labels; warnings remain adjacent |
 | PR: failed CI, pending CI, conflict | Each condition names its switch and contains its prompt; removes repeated ambiguous Send labels |
 | Notifications: review/failure events and system/SSTP delivery | Independent immediate switch rows grouped by responsibility |
-| Notifications: SSTP receiver and scripts | Explicit-save host/port fields, a searchable event selector, and a repeatable script editor; drafts survive failed saves |
+| Notifications: SSTP receiver and scripts | Revealed beneath SSTP activation; explicit-save fields and repeatable scripts; drafts survive failed saves and off/on transitions |
 | iPhone: sync enable, status, sync action, errors, conflicts | Switch plus status/action row; errors and conflict resolution retain their existing behavior |
 | Multiple PCs: host, port, address, PIN, devices | Host switch; numeric input plus apply; compact pairing action/readout; device actions beside each device |
 | Multiple PCs: satellite, state, discovered peers, address/PIN | Satellite switch; state/action block; address and PIN with adjacent pairing action |
