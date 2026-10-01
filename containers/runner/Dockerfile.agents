@@ -11,4 +11,6 @@ RUN curl -fsSL https://cursor.com/install -o /tmp/install-cursor.sh \
     && bash /tmp/install-cursor.sh \
     && rm /tmp/install-cursor.sh \
     && if [ ! -e /home/node/.local/bin/cursor-agent ]; then ln -s /home/node/.local/bin/agent /home/node/.local/bin/cursor-agent; fi
+# Agent homes owned by the runtime user, so fresh named volumes mounted here stay writable.
+RUN mkdir -p /home/node/.codex /home/node/.claude /home/node/.config/cursor
 ENV QUUU_RUNNER_AGENTS=codex,claude,cursor-agent

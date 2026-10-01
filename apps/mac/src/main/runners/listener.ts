@@ -4,7 +4,7 @@ import { runnerCertificate } from './tls.js'
 import { runnerLabels } from './labels.js'
 import type { RunnerPoll } from './types.js'
 
-const agent = z.object({ name: z.string().min(1).max(100), command: z.string().min(1).max(1024), version: z.string().max(300) }).strict()
+const agent = z.object({ name: z.string().min(1).max(100), command: z.string().min(1).max(1024), version: z.string().max(300), signedIn: z.boolean().optional() }).strict()
 const pair = z.object({ version: z.literal(1), pin: z.string().max(12), name: z.string().min(1).max(100),
   labels: runnerLabels.optional(),
   capacity: z.number().int().min(1).max(64), root: z.string().regex(/^\/[\w/.-]+$/).max(1024), agents: agent.array().max(64) }).strict()
@@ -17,7 +17,7 @@ const poll = z.object({ version: z.literal(1), labels: runnerLabels.optional(), 
   id: z.string().max(100), logOffset: z.number().int().nonnegative(), log: z.string().max(350_000),
   sessionOffset: z.number().int().nonnegative(), session: z.string().max(350_000), sessionId: z.string().max(300),
   result: result.optional()
-}).array().max(64) }).strict()
+}).array().max(64), installed: z.string().max(100).array().max(16).optional() }).strict()
 
 export async function listenForRunners(options: {
   port: number; dir: string

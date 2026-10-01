@@ -10,7 +10,8 @@ import { killProcessGroup } from '../platform/runProcess.js'
 import { resolveLogPath } from '../session/logAdapters.js'
 import { pinnedRequest } from './tls.js'
 import { configuredRunnerLabels } from './labels.js'
-import { atomicJson, executeJob, jobAuthDir, writeCredential } from './workerJob.js'
+import { atomicJson, executeJob, jobAuthDir, writeAgentCredential, writeCredential } from './workerJob.js'
+import { SHARED_TOKEN_AGENTS, installRunnerLogin, signedInOnRunner } from './agentAuth.js'
 import { recordProcess, recordedProcess } from './processIdentity.js'
 import type { RemoteJobSpec, RemoteResult, RunnerAgent, RunnerReply, RunnerUpdate } from './types.js'
 
@@ -25,7 +26,7 @@ export async function detectRunnerAgents(): Promise<RunnerAgent[]> {
     if (!/^[\w.-]+$/.test(name)) continue
     try {
       const { stdout } = await promisify(execFile)(name, ['--version'], { timeout: 15_000, maxBuffer: 16_384 })
-      agents.push({ name, command: name, version: stdout.trim().slice(0, 300) })
+      agents.push({ name, command: name, version: stdout.trim().slice(0, 300), signedIn: signedInOnRunner(name) })
     } catch { /* Missing CLIs are not advertised. */ }
   }
   return agents
@@ -36,6 +37,7 @@ export class RunnerWorker {
   private agents: RunnerAgent[] = []
   private checkedAt = 0
   private cursor = 0
+  private installed: string[] = []
   constructor(readonly root: string, private entry: string, private connection: Connection) {
     mkdirSync(join(root, 'jobs'), { recursive: true, mode: 0o700 })
   }
@@ -54,11 +56,27 @@ export class RunnerWorker {
     const batch = records.slice(this.cursor, this.cursor + 2)
     this.cursor = this.cursor + 2 >= records.length ? 0 : this.cursor + 2
     const updates = batch.map(record => this.update(record))
+    const installed = [...this.installed]
     const reply = await pinnedRequest(this.connection.url, this.connection.fingerprint, '/poll', {
-      version: 1, labels: configuredRunnerLabels(), agents: this.agents, updates
+      version: 1, labels: configuredRunnerLabels(), agents: this.agents, updates, ...(installed.length ? { installed } : {})
     }, this.connection.token) as RunnerReply
+    this.installed = this.installed.filter(id => !installed.includes(id))
     for (const [id, credential] of Object.entries(reply.credentials)) {
       if (safeId(id)) writeCredential(this.root, id, credential)
+    }
+    const variables: string[] = Object.values(SHARED_TOKEN_AGENTS)
+    for (const [id, env] of Object.entries(reply.agentCredentials ?? {})) {
+      const lent = Object.fromEntries(Object.entries(env).filter(([key, value]) => variables.includes(key) && typeof value === 'string'))
+      if (safeId(id)) writeAgentCredential(this.root, id, lent)
+    }
+    for (const login of reply.logins ?? []) {
+      if (!safeId(login.id) || this.installed.includes(login.id)) continue
+      try {
+        installRunnerLogin(login.agent, login.credential)
+        this.installed.push(login.id)
+        this.checkedAt = 0
+        console.log(`Installed the ${login.agent} sign-in issued by Quuu`)
+      } catch (error) { console.error(error instanceof Error ? error.message : 'Could not install the sign-in') }
     }
     for (const acknowledgement of reply.acknowledgements) {
       const record = records.find(record => record.spec.id === acknowledgement.id)

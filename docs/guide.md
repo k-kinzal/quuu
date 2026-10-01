@@ -1073,7 +1073,11 @@ Quuu can dispatch new tasks to a paired Linux Runner when a project permits it.
 Enable Runner connections in Settings → Connections, issue a PIN, and start the
 Runner with Quuu's LAN URL and certificate fingerprint. The project needs a Git
 remote and the Runner needs the task, hook and task-report agents installed and
-authenticated. Set **Required Runner labels** in project settings (for example
+signed in. Quuu shows a ready-made `docker run` command with the PIN. For sign-in, never
+copy this Mac's agent logins (they rotate and sign each other out): save a
+`claude setup-token` token or Cursor API key under **Agent sign-in for Runners**, which Quuu
+keeps in the Keychain and lends per job, and use **Sign in to codex** on each Runner, which
+mints a login only that Runner owns. Set **Required Runner labels** in project settings (for example
 `rust, linux`) to require every label advertised through `QUUU_RUNNER_LABELS`.
 An empty selector accepts any Runner; if no eligible Runner is available, new tasks
 can still run locally. Eligible Runners are preferred; existing conversations keep their
@@ -1086,4 +1090,5 @@ short-lived, repository-scoped installation tokens.
 
 See [Runner image and operation instructions](../containers/runner/README.md) for
 Docker builds, pairing, persistent storage and lifecycle limits. The local API
-exposes `runners.status`, `runners.configure`, `runners.pairing` and `runners.revoke`.
+exposes `runners.status`, `runners.configure`, `runners.pairing`, `runners.revoke`,
+`runners.setCredential` and `runners.signIn`.

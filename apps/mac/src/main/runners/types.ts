@@ -5,7 +5,10 @@ import type { ReviewEvidence } from '../review/types.js'
 import type { ReviewCommentInput, ReviewFileRequest } from '../review/types.js'
 import type { ReportRequest } from '../report/prompt.js'
 
-export interface RunnerAgent { name: string; command: string; version: string }
+import type { RunnerLoginAgent } from './agentAuth.js'
+
+/** `signedIn` is the Runner's own credential check; older workers omit it. */
+export interface RunnerAgent { name: string; command: string; version: string; signedIn?: boolean }
 export interface RemoteRunner {
   id: string
   name: string
@@ -87,10 +90,17 @@ export interface RunnerPoll {
   labels?: string[]
   agents: RunnerAgent[]
   updates: RunnerUpdate[]
+  /** Runner-owned logins written since the previous poll. */
+  installed?: string[]
 }
+/** A login minted for exactly one Runner; Quuu forgets it once the Runner confirms. */
+export interface RunnerLoginDelivery { id: string; agent: RunnerLoginAgent; credential: string }
 export interface RunnerReply {
   jobs: RemoteJobSpec[]
   cancel: string[]
   acknowledgements: Array<{ id: string; logOffset: number; sessionOffset: number; finished: boolean }>
   credentials: Record<string, GitCredential>
+  /** Agent tokens lent to a job that has not started; like GitHub credentials, never journaled. */
+  agentCredentials?: Record<string, Record<string, string>>
+  logins?: RunnerLoginDelivery[]
 }

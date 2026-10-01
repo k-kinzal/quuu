@@ -5009,7 +5009,8 @@
   "RunnersStatusResponseValueRunnersItemAgentsItem": {
     "name": 1,
     "command": 2,
-    "version": 3
+    "version": 3,
+    "auth": 4
   },
   "RunnersStatusResponseValueRunnersItemAgents": {
     "items": 1
@@ -5024,7 +5025,8 @@
     "revoked": 7,
     "online": 8,
     "active": 9,
-    "labels": 10
+    "labels": 10,
+    "login": 11
   },
   "RunnersStatusResponseValueRunners": {
     "items": 1
@@ -5036,7 +5038,8 @@
     "fingerprint": 4,
     "error": 5,
     "urls": 6,
-    "runners": 7
+    "runners": 7,
+    "credentials": 8
   },
   "RunnersStatusResponse": {
     "value": 1
@@ -5054,7 +5057,8 @@
   "RunnersConfigureResponseValueRunnersItemAgentsItem": {
     "name": 1,
     "command": 2,
-    "version": 3
+    "version": 3,
+    "auth": 4
   },
   "RunnersConfigureResponseValueRunnersItemAgents": {
     "items": 1
@@ -5069,7 +5073,8 @@
     "revoked": 7,
     "online": 8,
     "active": 9,
-    "labels": 10
+    "labels": 10,
+    "login": 11
   },
   "RunnersConfigureResponseValueRunners": {
     "items": 1
@@ -5081,7 +5086,8 @@
     "fingerprint": 4,
     "error": 5,
     "urls": 6,
-    "runners": 7
+    "runners": 7,
+    "credentials": 8
   },
   "RunnersConfigureResponse": {
     "value": 1
@@ -5094,7 +5100,8 @@
     "pin": 1,
     "expiresAt": 2,
     "fingerprint": 3,
-    "urls": 4
+    "urls": 4,
+    "command": 5
   },
   "RunnersPairingResponse": {
     "value": 1
@@ -5795,5 +5802,163 @@
     "reportFailure": 4,
     "pullRequest": 5,
     "syncConflict": 6
+  },
+  "RunnersStatusResponseValueCredentialsItem": {
+    "agent": 1,
+    "variable": 2,
+    "configured": 3
+  },
+  "RunnersStatusResponseValueCredentials": {
+    "items": 1
+  },
+  "RunnersStatusResponseValueRunnersItemLogin": {
+    "agent": 1,
+    "state": 2,
+    "url": 3,
+    "error": 4
+  },
+  "RunnersConfigureResponseValueCredentialsItem": {
+    "agent": 1,
+    "variable": 2,
+    "configured": 3
+  },
+  "RunnersConfigureResponseValueCredentials": {
+    "items": 1
+  },
+  "RunnersConfigureResponseValueRunnersItemLogin": {
+    "agent": 1,
+    "state": 2,
+    "url": 3,
+    "error": 4
+  },
+  "RunnersSetCredentialRequestValue": {
+    "agent": 1,
+    "value": 2
+  },
+  "RunnersSetCredentialRequest": {
+    "value": 1
+  },
+  "RunnersSetCredentialResponseValueUrls": {
+    "items": 1
+  },
+  "RunnersSetCredentialResponseValueCredentialsItem": {
+    "agent": 1,
+    "variable": 2,
+    "configured": 3
+  },
+  "RunnersSetCredentialResponseValueCredentials": {
+    "items": 1
+  },
+  "RunnersSetCredentialResponseValueRunnersItemAgentsItem": {
+    "name": 1,
+    "command": 2,
+    "version": 3,
+    "auth": 4
+  },
+  "RunnersSetCredentialResponseValueRunnersItemAgents": {
+    "items": 1
+  },
+  "RunnersSetCredentialResponseValueRunnersItemLogin": {
+    "agent": 1,
+    "state": 2,
+    "url": 3,
+    "error": 4
+  },
+  "RunnersSetCredentialResponseValueRunnersItemLabels": {
+    "items": 1
+  },
+  "RunnersSetCredentialResponseValueRunnersItem": {
+    "id": 1,
+    "name": 2,
+    "agents": 3,
+    "login": 4,
+    "labels": 5,
+    "capacity": 6,
+    "root": 7,
+    "lastSeen": 8,
+    "revoked": 9,
+    "online": 10,
+    "active": 11
+  },
+  "RunnersSetCredentialResponseValueRunners": {
+    "items": 1
+  },
+  "RunnersSetCredentialResponseValue": {
+    "enabled": 1,
+    "port": 2,
+    "listening": 3,
+    "fingerprint": 4,
+    "error": 5,
+    "urls": 6,
+    "credentials": 7,
+    "runners": 8
+  },
+  "RunnersSetCredentialResponse": {
+    "value": 1
+  },
+  "RunnersSignInRequestValue": {
+    "runnerId": 1,
+    "agent": 2
+  },
+  "RunnersSignInRequest": {
+    "value": 1
+  },
+  "RunnersSignInResponseValueUrls": {
+    "items": 1
+  },
+  "RunnersSignInResponseValueCredentialsItem": {
+    "agent": 1,
+    "variable": 2,
+    "configured": 3
+  },
+  "RunnersSignInResponseValueCredentials": {
+    "items": 1
+  },
+  "RunnersSignInResponseValueRunnersItemAgentsItem": {
+    "name": 1,
+    "command": 2,
+    "version": 3,
+    "auth": 4
+  },
+  "RunnersSignInResponseValueRunnersItemAgents": {
+    "items": 1
+  },
+  "RunnersSignInResponseValueRunnersItemLogin": {
+    "agent": 1,
+    "state": 2,
+    "url": 3,
+    "error": 4
+  },
+  "RunnersSignInResponseValueRunnersItemLabels": {
+    "items": 1
+  },
+  "RunnersSignInResponseValueRunnersItem": {
+    "id": 1,
+    "name": 2,
+    "agents": 3,
+    "login": 4,
+    "labels": 5,
+    "capacity": 6,
+    "root": 7,
+    "lastSeen": 8,
+    "revoked": 9,
+    "online": 10,
+    "active": 11
+  },
+  "RunnersSignInResponseValueRunners": {
+    "items": 1
+  },
+  "RunnersSignInResponseValue": {
+    "enabled": 1,
+    "port": 2,
+    "listening": 3,
+    "fingerprint": 4,
+    "error": 5,
+    "urls": 6,
+    "credentials": 7,
+    "runners": 8
+  },
+  "RunnersSignInResponse": {
+    "value": 1
   }
 }

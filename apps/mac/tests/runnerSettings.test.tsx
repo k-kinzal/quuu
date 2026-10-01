@@ -20,14 +20,14 @@ beforeEach(() => {
 })
 
 it('reveals listener setup only while enabled without applying a draft port when switching', async () => {
-  let status: RunnerStatus = { enabled: false, port: 47833, listening: false, fingerprint: '', error: '', urls: [], runners: [
+  let status: RunnerStatus = { enabled: false, port: 47833, listening: false, fingerprint: '', error: '', urls: [], credentials: [], runners: [
     { id: 'r1', name: 'Worker', agents: [], capacity: 1, root: '/tmp/worker', lastSeen: '', revoked: false, online: false, active: 0 }
   ] }
   const changes: Array<{ enabled: boolean; port: number }> = []
   const os = implement(contract)
   Object.defineProperty(window, 'quuu', { configurable: true, value: createRouterClient({ runners: {
     status: os.runners.status.handler(() => status),
-    pairing: os.runners.pairing.handler(() => ({ pin: '123456', expiresAt: new Date(Date.now() + 300_000).toISOString(), fingerprint: 'test-fingerprint', urls: [] })),
+    pairing: os.runners.pairing.handler(() => ({ pin: '123456', expiresAt: new Date(Date.now() + 300_000).toISOString(), fingerprint: 'test-fingerprint', urls: [], command: 'docker run quuu-runner' })),
     configure: os.runners.configure.handler(({ input }) => {
       changes.push(input)
       status = { ...status, ...input, listening: input.enabled }
@@ -137,4 +137,42 @@ it('lets a disabled project configure its required remote before activation and 
   await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   expect(toggle).toBeChecked()
   expect(screen.getByRole('textbox', { name: t('runnerSettings.repository') })).toHaveValue('https://example.test/project.git')
+})
+
+it('saves a lent agent token without echoing it and starts a Runner-only sign-in', async () => {
+  let status: RunnerStatus = { enabled: true, port: 47833, listening: true, fingerprint: 'fp', error: '', urls: ['https://192.0.2.1:47833'],
+    credentials: [{ agent: 'claude', variable: 'CLAUDE_CODE_OAUTH_TOKEN', configured: false }],
+    runners: [{ id: 'r1', name: 'Worker', capacity: 1, root: '/tmp/worker', lastSeen: '', revoked: false, online: true, active: 0,
+      agents: [{ name: 'codex', command: 'codex', version: '1', auth: 'missing' }, { name: 'claude', command: 'claude', version: '2', auth: 'runner' }] }] }
+  const saved: Array<{ agent: string; value: string }> = [], signIns: Array<{ runnerId: string; agent: string }> = []
+  const os = implement(contract)
+  Object.defineProperty(window, 'quuu', { configurable: true, value: createRouterClient({ runners: {
+    status: os.runners.status.handler(() => status),
+    setCredential: os.runners.setCredential.handler(({ input }) => {
+      saved.push(input)
+      status = { ...status, credentials: [{ agent: 'claude', variable: 'CLAUDE_CODE_OAUTH_TOKEN', configured: true }],
+        runners: status.runners.map(runner => ({ ...runner, agents: runner.agents.map(agent => agent.name === 'claude' ? { ...agent, auth: 'quuu' as const } : agent) })) }
+      return status
+    }),
+    signIn: os.runners.signIn.handler(({ input }) => {
+      signIns.push(input)
+      status = { ...status, runners: status.runners.map(runner => ({ ...runner, login: { agent: 'codex' as const, state: 'waiting' as const, url: 'https://auth.example.test', error: '' } })) }
+      return status
+    })
+  } }) })
+  render(<ThemeProvider><RunnerConnections /></ThemeProvider>)
+  const field = await screen.findByLabelText<HTMLInputElement>(t('runnerSettings.token.claude'))
+  expect(field.type).toBe('password')
+  fireEvent.change(field, { target: { value: 'sk-ant-oat01-secret' } })
+  fireEvent.click(screen.getByRole('button', { name: t('runnerSettings.saveToken') }))
+  await waitFor(() => expect(saved).toEqual([{ agent: 'claude', value: 'sk-ant-oat01-secret' }]))
+  await waitFor(() => expect(field).toHaveValue(''))
+  expect(await screen.findByText(new RegExp(t('runnerSettings.auth.quuu')))).toBeVisible()
+  expect(screen.getByRole('button', { name: t('runnerSettings.removeToken') })).toBeEnabled()
+  expect(screen.queryByRole('button', { name: t('runnerSettings.signIn', { name: 'claude' }) })).not.toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: t('runnerSettings.signIn', { name: 'codex' }) }))
+  await waitFor(() => expect(signIns).toEqual([{ runnerId: 'r1', agent: 'codex' }]))
+  expect(await screen.findByText(t('runnerSettings.loginWaiting'))).toBeVisible()
+  expect(screen.getByRole('button', { name: t('runnerSettings.openLogin') })).toBeVisible()
+  expect(document.body.textContent).not.toContain('sk-ant-oat01-secret')
 })

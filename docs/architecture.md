@@ -251,5 +251,14 @@ recovery. SQL and schema upgrades remain in `db`.
 GitHub installation tokens travel separately from durable instruction records.
 Quuu reads the App key from its own Keychain and scopes each token to the task's
 repository. The worker writes temporary GitHub CLI credentials and receives
-refreshes while the controller is connected. Agent authentication and project
-toolchains belong to the image user's runtime setup.
+refreshes while the controller is connected. Project toolchains belong to the
+image user's runtime setup.
+
+Agent sign-in never copies the controller's own login, because rotating refresh tokens
+make two holders sign each other out. Non-rotating tokens (`claude setup-token`, Cursor
+API keys) stay in the controller's key store and are lent per unstarted job on the same
+out-of-journal channel as GitHub tokens. Rotating subscription logins (Codex) are minted
+on the controller into a throwaway home for exactly one Runner, delivered once and
+forgotten after the Runner confirms; the Runner owns and refreshes them. Workers report
+whether each agent has a credential, and routing skips agents with neither that nor a
+lent token. `runners/agentAuth` is the one place that knows each agent's variables and files.

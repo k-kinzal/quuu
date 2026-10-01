@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { chmodSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, mkdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
@@ -10,7 +10,9 @@ import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { HookOperations } from '../src/main/hooks/operations.js'
 import { ReportOperations } from '../src/main/report/operations.js'
-import { RunnerOperations } from '../src/main/runners/operations.js'
+import { RunnerOperations, runnerLaunchCommand } from '../src/main/runners/operations.js'
+import type { StartLocalLogin } from '../src/main/runners/localLogin.js'
+import type { SecretStore } from '../src/main/platform/secretStore.js'
 import { RunnerWorker } from '../src/main/runners/worker.js'
 import { pinnedRequest } from '../src/main/runners/tls.js'
 import { normalizeRepository, projectRepository } from '../src/main/runners/repository.js'
@@ -24,13 +26,21 @@ vi.mock('../src/main/platform/githubAuthRuntime.mjs', async importOriginal => ({
 }))
 
 let dir: string, db: Db, remote: RunnerOperations, runner: Runner, scheduler: Scheduler
+let secrets: Map<string, string>, login: StartLocalLogin
+const store: SecretStore = {
+  read: account => Promise.resolve(secrets.get(account) ?? null),
+  write: (account, value) => { secrets.set(account, value); return Promise.resolve() },
+  remove: account => { secrets.delete(account); return Promise.resolve() }
+}
 beforeEach(async () => {
+  secrets = new Map()
+  login = () => { throw new Error('No sign-in expected') }
   dir = mkdtempSync(join(tmpdir(), 'quuu-runners-'))
   vi.stubEnv('QUUU_USER_DATA', join(dir, 'controller'))
   vi.stubEnv('QUUU_RUNNER_AGENTS', 'bash')
   vi.stubEnv('QUUU_RUNNER_LABELS', '')
   db = memoryDb()
-  remote = new RunnerOperations(db, () => {})
+  remote = new RunnerOperations(db, () => {}, { secrets: store, login: (agent, command) => login(agent, command) })
   runner = new Runner(db, remote)
   scheduler = new Scheduler(db, runner)
   await remote.configure({ enabled: true, port: 0 })
@@ -47,7 +57,15 @@ async function pair(labels?: string[]) {
   const grant = await pinnedRequest(url, pairing.fingerprint, '/pair', body) as { id: string; token: string }
   return { worker: new RunnerWorker(root, resolve('out/runner/quuu-runner.mjs'), { ...grant, url, fingerprint: status.fingerprint }), grant, url, body, fingerprint: status.fingerprint }
 }
-function project(script = 'printf "remote-output\\n"; printf changed > result.txt') {
+/** An executable on PATH that answers `--version` and otherwise runs its arguments with bash. */
+function fakeCli(name: string): void {
+  const bin = join(dir, 'bin')
+  mkdirSync(bin, { recursive: true })
+  writeFileSync(join(bin, name), '#!/bin/bash\nif [ "$1" = --version ]; then echo test; exit 0; fi\nexec /bin/bash "$@"\n')
+  chmodSync(join(bin, name), 0o755)
+  if (!process.env.PATH?.startsWith(bin)) vi.stubEnv('PATH', `${bin}:${process.env.PATH}`)
+}
+function project(script = 'printf "remote-output\\n"; printf changed > result.txt', command = '/bin/bash') {
   const source = join(dir, 'source')
   mkdirSync(source)
   const git = (args: string[]): string => execFileSync('git', ['-C', source, ...args], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim()
@@ -55,7 +73,7 @@ function project(script = 'printf "remote-output\\n"; printf changed > result.tx
   writeFileSync(join(source, 'README.md'), 'fixture\n')
   git(['add', '.']); git(['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'Initial'])
   git(['remote', 'add', 'origin', 'https://example.test/repository.git'])
-  const agentId = makeAgent(db, { name: 'Shell', command: '/bin/bash', logAdapter: 'stdout', argsTemplate: ['-c', script], resumeArgsTemplate: ['-c', script],
+  const agentId = makeAgent(db, { name: 'Shell', command, logAdapter: 'stdout', argsTemplate: ['-c', script], resumeArgsTemplate: ['-c', script],
     env: { GIT_CONFIG_COUNT: '1', GIT_CONFIG_KEY_0: `url.file://${source}.insteadOf`, GIT_CONFIG_VALUE_0: 'https://example.test/repository.git' } })
   const projectId = makeProject(db, { name: 'Remote project', targetId: agentId, path: source })
   repo.updateProject(db, projectId, { runnerEnabled: true })
@@ -295,4 +313,82 @@ it('extracts SSH GitHub remotes and refuses credential-bearing or local transpor
   }
   const { source } = project()
   expect(projectRepository(source)).toEqual({ repository: 'https://example.test/repository.git', subdirectory: '' })
+})
+
+it('lends a saved agent token only to that agent\'s unstarted job and keeps it out of every journal', async () => {
+  fakeCli('claude')
+  vi.stubEnv('QUUU_RUNNER_AGENTS', 'claude')
+  vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', '')
+  vi.stubEnv('QUUU_RUNNER_SECRETS', join(dir, 'tmpfs'))
+  const { worker } = await pair()
+  await worker.tick()
+  const { projectId } = project('printf "token-length=%s\\n" "${#CLAUDE_CODE_OAUTH_TOKEN}"', 'claude')
+  const token = 'sk-ant-oat01-fixture-token-value'
+  const saved = await remote.setCredential({ agent: 'claude', value: token })
+  expect(saved.credentials).toContainEqual({ agent: 'claude', variable: 'CLAUDE_CODE_OAUTH_TOKEN', configured: true })
+  expect(saved.runners[0].agents[0].auth).toBe('quuu')
+  expect(JSON.stringify(saved)).not.toContain(token)
+  const taskId = makeTask(db, projectId, 'Borrow the Claude token')
+  const claim = scheduler.claimNext()!
+  await until(worker, () => repo.getTask(db, taskId)?.status === 'review')
+  await until(worker, () => repo.listRemoteJobs(db).length === 0)
+  expect(readFileSync(repo.getRun(db, claim.run.id)!.stdoutLogPath, 'utf8')).toContain(`token-length=${token.length}`)
+  const journal = join(dir, 'worker', 'jobs', claim.run.id)
+  for (const file of readdirSync(journal)) expect(readFileSync(join(journal, file), 'utf8')).not.toContain(token)
+  expect(JSON.stringify(remote.job(claim.run.id))).not.toContain(token)
+  expect(existsSync(join(dir, 'tmpfs', claim.run.id))).toBe(false)
+  expect(repo.getSetting(db, 'runners.credentials')).not.toContain(token)
+  await remote.setCredential({ agent: 'claude', value: '' })
+  expect(secrets.has('claude')).toBe(false)
+  await expect(remote.setCredential({ agent: 'claude', value: 'has spaces in it but long' })).rejects.toThrow()
+}, 30_000)
+
+it('routes away from a Runner whose agent is not signed in unless Quuu lends a token', async () => {
+  const { url, fingerprint, grant } = await pair()
+  const { projectId, agentId } = project('true', 'claude')
+  const poll = (signedIn: boolean) => pinnedRequest(url, fingerprint, '/poll', { version: 1, updates: [],
+    agents: [{ name: 'claude', command: 'claude', version: 'test', signedIn }] }, grant.token)
+  await poll(false)
+  const taskId = makeTask(db, projectId, 'Needs a signed-in agent')
+  const agent = repo.getAgent(db, agentId)!, prj = repo.getProject(db, projectId)!
+  expect(remote.status().runners[0].agents[0].auth).toBe('missing')
+  expect(remote.choose(taskId, prj, agent)).toBeNull()
+  await poll(true)
+  expect(remote.status().runners[0].agents[0].auth).toBe('runner')
+  expect(remote.choose(taskId, prj, agent)?.runnerId).toBe(grant.id)
+  await poll(false)
+  await remote.setCredential({ agent: 'claude', value: 'sk-ant-oat01-fixture-token-value' })
+  expect(remote.choose(taskId, prj, agent)?.runnerId).toBe(grant.id)
+})
+
+it('hands a login minted for one Runner over once and forgets it after the Runner confirms', async () => {
+  fakeCli('codex')
+  vi.stubEnv('QUUU_RUNNER_AGENTS', 'bash,codex')
+  vi.stubEnv('CODEX_HOME', join(dir, 'codex-home'))
+  vi.stubEnv('OPENAI_API_KEY', '')
+  vi.stubEnv('CODEX_API_KEY', '')
+  const { worker } = await pair()
+  await worker.tick()
+  expect(remote.status().runners[0].agents.find(agent => agent.name === 'codex')?.auth).toBe('missing')
+  const credential = JSON.stringify({ tokens: { refresh_token: 'runner-only-refresh' } })
+  const commands: string[] = []
+  login = (_agent, command) => { commands.push(command); return { url: Promise.resolve('https://auth.example.test/authorize'), credential: Promise.resolve(credential), cancel() {} } }
+  const started = await remote.signIn({ runnerId: remote.status().runners[0].id, agent: 'codex' })
+  expect(commands).toEqual(['codex'])
+  expect(started.runners[0].login).toMatchObject({ agent: 'codex', url: 'https://auth.example.test/authorize' })
+  expect(JSON.stringify(started)).not.toContain('runner-only-refresh')
+  await until(worker, () => !remote.status().runners[0].login)
+  const file = join(dir, 'codex-home', 'auth.json')
+  expect(readFileSync(file, 'utf8')).toBe(credential)
+  expect(statSync(file).mode & 0o777).toBe(0o600)
+  await until(worker, () => remote.status().runners[0].agents.find(agent => agent.name === 'codex')?.auth === 'runner')
+})
+
+it('fills the start command with the controller values and persistent agent homes', () => {
+  const command = runnerLaunchCommand('https://192.0.2.1:47833', 'ab'.repeat(32), '01234567', 'beef')
+  expect(command).toContain('-e QUUU_CONTROLLER_URL=https://192.0.2.1:47833')
+  expect(command).toContain(`-e QUUU_CONTROLLER_FINGERPRINT=${'ab'.repeat(32)}`)
+  expect(command).toContain('-e QUUU_RUNNER_PIN=01234567')
+  expect(command).toContain('source=quuu-runner-beef-codex,target=/home/node/.codex')
+  expect(command).toContain('--tmpfs /run/quuu-runner:uid=1000,gid=1000,mode=0700')
 })
