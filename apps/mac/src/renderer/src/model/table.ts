@@ -259,6 +259,11 @@ export interface TaskFilters {
    * (header right-click and the chip).
    */
   includeDone: boolean
+  /**
+   * Words the task name must contain, as typed. **Not an axis**: it has no column
+   * of its own to pick values from, it narrows by the name the table already shows.
+   */
+  query: string
 }
 
 export const NO_FILTERS: TaskFilters = {
@@ -266,7 +271,8 @@ export const NO_FILTERS: TaskFilters = {
   projectIds: [],
   priorities: [],
   targets: [],
-  includeDone: false
+  includeDone: false,
+  query: ''
 }
 
 /** An empty array means "all". How many axes are filtering. */
@@ -277,7 +283,30 @@ export function activeFilterCount(filters: TaskFilters): number {
 }
 
 export function hasFilters(filters: TaskFilters): boolean {
-  return activeFilterCount(filters) > 0
+  return activeFilterCount(filters) > 0 || queryTerms(filters.query).length > 0
+}
+
+/*
+ * Width and case are folded so "ｒｅｖｉｅｗ" finds "Review": the name is matched as
+ * read, not as stored.
+ */
+function fold(text: string): string {
+  return text.normalize('NFKC').toLowerCase()
+}
+
+function queryTerms(query: string): string[] {
+  return fold(query).split(/\s+/).filter(Boolean)
+}
+
+/**
+ * Whether a task name holds every whitespace-separated word of the query (AND).
+ *
+ * Plain containment, not the palette's fuzzy subsequence: a filter that keeps rows
+ * the user can't see the typed word in reads as broken.
+ */
+export function titleMatches(title: string, query: string): boolean {
+  const name = fold(title)
+  return queryTerms(query).every((term) => name.includes(term))
 }
 
 /**
@@ -345,14 +374,15 @@ export function setFilterValues(
 }
 
 export function applyFilters(tasks: Task[], filters: TaskFilters, ctx: TableContext): Task[] {
-  const { statuses, projectIds, priorities, targets } = filters
+  const { statuses, projectIds, priorities, targets, query } = filters
   if (!hasFilters(filters)) return tasks
   return tasks.filter(
     (t) =>
       (statuses.length === 0 || statuses.includes(t.status)) &&
       (projectIds.length === 0 || projectIds.includes(t.projectId)) &&
       (priorities.length === 0 || priorities.includes(t.priority)) &&
-      (targets.length === 0 || targets.includes(ctx.agentKey(t)))
+      (targets.length === 0 || targets.includes(ctx.agentKey(t))) &&
+      titleMatches(t.title, query)
   )
 }
 

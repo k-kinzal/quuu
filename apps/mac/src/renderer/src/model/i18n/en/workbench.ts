@@ -63,7 +63,9 @@ export const workbench = {
     filterBy: 'Filter by {{axis}}',
     resetTitle: 'Reset sort, column widths, and filters to defaults',
     reset: 'Reset View',
-    menu: 'Filter'
+    menu: 'Filter',
+    searchLabel: 'Filter tasks by name',
+    searchPlaceholder: 'Filter by name'
   },
   taskWorkbench: {
     work: {

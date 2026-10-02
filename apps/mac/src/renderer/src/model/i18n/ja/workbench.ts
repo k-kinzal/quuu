@@ -64,7 +64,9 @@ export const workbench: typeof en = {
     filterBy: '{{axis}}で絞り込む',
     resetTitle: '並び・列の幅・絞り込みを既定へ戻す',
     reset: '表示を戻す',
-    menu: '絞り込み'
+    menu: '絞り込み',
+    searchLabel: 'タスク名で絞り込む',
+    searchPlaceholder: 'タスク名で絞り込む'
   },
   taskWorkbench: {
     work: {

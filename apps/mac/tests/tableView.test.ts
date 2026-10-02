@@ -179,6 +179,11 @@ describe('table view state', () => {
     // Not an axis value, so it does not count toward the number of active axes
     expect(activeFilterCount({ ...NO_FILTERS, includeDone: true })).toBe(0)
   })
+
+  it('a typed name counts as "touched", while blank space alone does not', () => {
+    expect(isTableViewDirty(null, {}, { ...NO_FILTERS, query: 'fix' })).toBe(true)
+    expect(isTableViewDirty(null, {}, { ...NO_FILTERS, query: '   ' })).toBe(false)
+  })
 })
 
 describe('sort cycle', () => {
@@ -330,6 +335,31 @@ describe('filtering', () => {
 
   it('can filter by priority', () => {
     expect(ids(applyFilters(tasks, { ...NO_FILTERS, priorities: [0] }, context()))).toEqual(['a'])
+  })
+
+  it('narrows by the task name, every typed word required, ignoring case and width', () => {
+    const named = [
+      task({ id: 'a', title: 'Fix the login screen' }),
+      task({ id: 'b', title: 'ログイン画面のレイアウト' }),
+      task({ id: 'c', title: 'Fix the review list' })
+    ]
+    const by = (query: string): string[] => ids(applyFilters(named, { ...NO_FILTERS, query }, context()))
+    expect(by('fix')).toEqual(['a', 'c'])
+    expect(by('FIX login')).toEqual(['a'])
+    expect(by('ｆｉｘ　ｒｅｖｉｅｗ')).toEqual(['c'])
+    expect(by('ログイン')).toEqual(['b'])
+    // Containment, not subsequence: "fl" is in no name even though f…l is
+    expect(by('fl')).toEqual([])
+    expect(by('  ')).toEqual(['a', 'b', 'c'])
+  })
+
+  it('the name stacks with the axes as AND', () => {
+    const got = applyFilters(
+      [task({ id: 'a', title: 'Fix', status: 'review' }), task({ id: 'b', title: 'Fix', status: 'queued' })],
+      { ...NO_FILTERS, statuses: ['review'], query: 'fix' },
+      context()
+    )
+    expect(ids(got)).toEqual(['a'])
   })
 
   it('toggling on and off is the same operation both ways', () => {

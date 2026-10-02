@@ -5,6 +5,7 @@ import type { Agent } from '../src/main/agents/types.js'
 import type { AppSnapshot } from '../src/main/snapshot.js'
 import type { Project } from '../src/main/projects/types.js'
 import type { Run } from '../src/main/execution/types.js'
+import type { TaskRule } from '../src/api/schemas/automation.js'
 import type { Task } from '../src/main/tasks/types.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { useTaskView } from '../src/renderer/src/interaction/useTasks.js'
@@ -232,6 +233,27 @@ describe('what the list shows', () => {
     expect(v.ordered.map((t) => t.id)).toEqual(['q1', 'q2'])
     expect(v.total).toBe(4)
     expect(v.narrowed).toBe(true)
+  })
+
+  it('narrows the list by a typed name and says so', () => {
+    useStore.setState({ filters: { ...NO_FILTERS, query: 'か' } })
+    const v = view()
+    expect(v.ordered.map((t) => t.id)).toEqual(['q2'])
+    expect(v.total).toBe(4)
+    expect(v.narrowed).toBe(true)
+  })
+
+  it('reads recurring rows by their name too, since it sits in the same title column', () => {
+    const rule = (id: string, name: string): TaskRule => ({
+      id, projectId: 'p1', name, prompt: '', priority: 2, agentOverrideId: null, whenIdle: false, cron: '',
+      frequency: 'daily', blockStatuses: [], enabled: true, dueAt: null, lastEnqueuedAt: null, sortOrder: 0,
+      createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z'
+    })
+    useStore.setState({
+      snapshot: { ...SNAPSHOT, rules: [rule('daily', 'Daily report'), rule('weekly', 'Weekly cleanup')] },
+      filters: { ...NO_FILTERS, query: 'report' }
+    })
+    expect(view().rules.map((r) => r.id)).toEqual(['daily'])
   })
 
   it('does not raise narrowed when nothing is filtered', () => {

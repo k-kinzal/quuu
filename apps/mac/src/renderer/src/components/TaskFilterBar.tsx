@@ -1,6 +1,7 @@
 import {
   FilterChip,
   LinkButton,
+  SearchInput,
   SearchPicker,
   Row,
   Spacer,
@@ -15,6 +16,7 @@ import { t } from '../model/i18n/index.js'
 import type { FilterAxis, FilterOption, TableContext } from '../model/table.js'
 import { AXIS_LABEL, axisValue, filterOptions, filterValues, isTableViewDirty, setFilterValues } from '../model/table.js'
 import { useStore } from '../state/store.js'
+import { ICON, Search, iconProps } from '../ui/icons.js'
 
 import { doneScopeItems, filterMenuItems } from './ColumnMenu.js'
 
@@ -94,6 +96,14 @@ export function TaskFilterBar({
 
   return (
     <Toolbar placement="panel">
+      {/* Words first: a name is how a task is remembered, the axes narrow what that leaves */}
+      <SearchInput
+        value={filters.query}
+        aria-label={t('filterBar.searchLabel')}
+        placeholder={t('filterBar.searchPlaceholder')}
+        icon={<Search size={ICON.sm} {...iconProps} />}
+        onChange={(event) => setFilters({ query: event.target.value })}
+      />
       {axes.map((axis) => {
         const selected = filterValues(filters, axis)
         /* The status axis alone carries the scope itself (include done?) besides the values */

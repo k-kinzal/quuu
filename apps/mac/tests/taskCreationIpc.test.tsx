@@ -317,6 +317,19 @@ describe('choosing the AI before creating a task', () => {
 })
 
 describe('searching task-list filters', () => {
+  it('narrows by a typed task name from the bar, and "Reset View" clears it', () => {
+    const snapshot = app.snapshot()
+    useStore.setState({ filters: NO_FILTERS, table: { sort: null, widths: {} } })
+    render(<ThemeProvider><TaskFilterBar candidates={snapshot.tasks} matched={1} total={2} crossProject canIncludeDone
+      context={{ projects: new Map(snapshot.projects.map(project => [project.id, project])), runs: new Map(),
+        agentLabel: () => 'Claude', agentKey: () => 'claude' }} /></ThemeProvider>)
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Filter tasks by name' }), { target: { value: 'login' } })
+    expect(useStore.getState().filters.query).toBe('login')
+    fireEvent.click(screen.getByRole('button', { name: 'Reset View' }))
+    expect(useStore.getState().filters.query).toBe('')
+    expect(screen.getByRole('searchbox', { name: 'Filter tasks by name' })).toHaveProperty('value', '')
+  })
+
   it('filters projects and agents while preserving stacked checks, deselection and the all option', () => {
     const beta = app.projects.createProject({ name: 'Beta', path: '/tmp/beta' })
     app.tasks.createTask({ projectId: beta.id, title: 'Beta task', status: 'draft' })

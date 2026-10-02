@@ -6,7 +6,7 @@ import { latestRunMap, projectMap, recentlyDone, scopeTasks, sortTasks, taskAgen
 import { loadedCount } from '../model/paging.js'
 import { groupByStatus } from '../model/statusGroups.js'
 import type { TableContext } from '../model/table.js'
-import { applyFilters, hasFilters, sortTasksBy } from '../model/table.js'
+import { applyFilters, hasFilters, sortTasksBy, titleMatches } from '../model/table.js'
 import { useStore } from '../state/store.js'
 
 export interface TaskView {
@@ -145,7 +145,9 @@ export function useTaskView(): TaskView {
       rules: (snapshot?.rules ?? []).filter((rule) =>
         scope.kind !== 'review' && scope.kind !== 'done' && projects.has(rule.projectId) &&
         (scope.kind === 'project' ? rule.projectId === scope.projectId :
-          filters.projectIds.length === 0 || filters.projectIds.includes(rule.projectId))
+          filters.projectIds.length === 0 || filters.projectIds.includes(rule.projectId)) &&
+        // A recurring row shows its name in the title column, so the name query reads it too
+        titleMatches(rule.name, filters.query)
       ),
       groups,
       total: inScope.length,
