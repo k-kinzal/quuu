@@ -80,6 +80,34 @@ The type scale rides on MUI's variants (`caption` 11 / `body2` 12 / `body1` 13 /
 
 ## Components
 
+### Shared control recipes and interaction states
+
+`theme/controls.ts` owns control geometry (`controlMetrics`), framed-control
+states (`controlFrame`), and focus (`focusRing`). A size includes its type scale,
+line height, padding and corner radius; do not choose those independently in a
+new component. Search and filter triggers use `xs`, ordinary actions use `sm`,
+form entry and selection use `md`. Buttons placed alongside a field use that
+field's size. Density changes the values of the complete recipe.
+
+Standalone controls show the same 2px `primaryText` focus ring outside their
+frame. Clipped rows, tabs and icon hit areas use the named `inside` placement.
+The input inside a framed control draws no second ring. An invalid field keeps
+its error border while showing the ordinary focus ring. Selected filter values
+remain colored after focus leaves; selection and keyboard focus are separate.
+Disabled frames share `action.disabledOpacity` and do not acquire hover/focus
+decoration. Prose, navigation and compound surfaces keep the geometry their
+purpose needs and use the same focus recipe.
+
+Check new components **next to related components**, not only in isolated
+stories. `Patterns/ControlQuality` covers fields, filters, actions, toggles,
+navigation and writing surfaces in both themes/densities and a narrow column.
+`tests/design-system.browser.test.ts` renders that same specimen in Electron's
+Chromium and compares computed geometry, typography and state appearance. It
+runs in `npm test` / `npm run check`, with a temporary profile and no app data.
+The architecture check also scans the kit itself for private focus outlines or
+glows. A new component family must extend the comparison specimen and its
+relevant contracts; app-boundary checks alone cannot prove visual consistency.
+
 Directories follow MUI's classification.
 
 | Category | Main items |

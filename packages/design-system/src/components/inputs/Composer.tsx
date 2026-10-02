@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import type { MouseEvent, ReactNode } from 'react'
 import { alpha, styled, type Theme } from '@mui/material/styles'
 import { blockProps, canHover } from '../../theme/styled.js'
@@ -36,7 +37,7 @@ export const ComposerBox = styled('div', { shouldForwardProp: blockProps('busy')
   transition: theme.transitions.create(['border-color', 'box-shadow'], { duration: theme.transitions.duration.shortest }),
   // Keep the body readable even while saving. Whether actions are available is told by the input and the main button.
   cursor: busy ? 'progress' : undefined,
-  '&:focus-within': { borderColor: theme.palette.primaryText, boxShadow: `0 0 0 2px ${alpha(theme.palette.primaryText, 0.12)}` }
+  '&:focus-within': { ...focusRing(theme), borderColor: theme.palette.primaryText }
 }))
 
 /** 1. The context strip. */
@@ -103,7 +104,7 @@ const chipShape = ({
           color: theme.palette.text.primary
         } },
         '&:active': { background: theme.palette.surface.selected },
-        '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -1 }
+        '&:focus-visible': focusRing(theme, 'inside')
       }
     : {})
 })

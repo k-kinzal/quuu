@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { styled } from '@mui/material/styles'
 import { blockProps, canHover } from '../../theme/styled.js'
 
@@ -105,7 +106,7 @@ export const ToolPanelRow = styled('button', {
   [canHover]: {
     '&:hover': { background: selected ? theme.palette.surface.selected : theme.palette.surface.hover }
   },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 },
+  '&:focus-visible': focusRing(theme, 'inside'),
   '&::before': selected
     ? {
         content: '""',

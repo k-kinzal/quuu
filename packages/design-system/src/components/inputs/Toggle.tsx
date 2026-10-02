@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import MuiCheckbox from '@mui/material/Checkbox'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import MuiRadio from '@mui/material/Radio'
@@ -173,7 +174,7 @@ const SegOption = styled(FormControlLabel, { shouldForwardProp: blockProps('sele
   '& .MuiFormControlLabel-label': { ...theme.typography.caption, fontWeight: 600 },
   // The native radio is kept, so arrow-key selection and screen reader support are not hand-rolled.
   '& .MuiRadio-root': { position: 'absolute', width: 1, height: 1, padding: 0, overflow: 'hidden', clipPath: 'inset(50%)' },
-  '&:has(.Mui-focusVisible)': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: 1 },
+  '&:has(.Mui-focusVisible)': focusRing(theme),
   '&:hover': { color: theme.palette.text.primary },
   '&.Mui-disabled': { opacity: theme.palette.action.disabledOpacity, cursor: 'default' }
 }))

@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { useId, type ReactNode } from 'react'
 import MuiCheckbox from '@mui/material/Checkbox'
 import MuiSwitch from '@mui/material/Switch'
@@ -86,7 +87,7 @@ const Control = styled('div', { shouldForwardProp: blockProps('width', 'stacked'
   } : {}),
   '& > .MuiFormControlLabel-root': { marginBottom: 0 },
   '& .MuiSwitch-root': { flexShrink: 0 },
-  '& .Mui-focusVisible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: theme.spacing(0.5) }
+  '& .Mui-focusVisible': focusRing(theme)
 }))
 
 export interface SettingRowProps {

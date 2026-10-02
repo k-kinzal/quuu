@@ -1,4 +1,5 @@
 import { styled } from '@mui/material/styles'
+import { controlFrame, controlMetrics } from '../../theme/controls.js'
 import { blockProps } from '../../theme/styled.js'
 import { useStrings } from '../../theme/strings.js'
 
@@ -8,19 +9,14 @@ const ChipRoot = styled('button', { shouldForwardProp: blockProps('active') })<{
   flex: '0 0 auto',
   display: 'inline-flex',
   alignItems: 'center',
-  gap: 4,
+  ...controlMetrics(theme, 'xs'),
+  ...controlFrame(theme),
+  gap: theme.spacing(1),
   maxWidth: 220,
-  height: theme.density.control.xs,
-  padding: '0 7px',
-  borderRadius: theme.radius.sm,
-  // Only filters actually in effect carry a frame and a color. The rest sink into the background
-  border: `1px solid ${active ? theme.palette.primaryText : theme.palette.border.subtle}`,
-  background: active ? theme.palette.surface.raised : 'transparent',
-  ...theme.typography.caption,
-  color: active ? theme.palette.text.primary : theme.palette.text.tertiary,
+  // Selection persists after focus leaves; only the ring identifies the current control.
+  ...(active ? { borderColor: theme.palette.primaryText } : {}),
   cursor: 'pointer',
-  whiteSpace: 'nowrap',
-  '&:hover': { background: theme.palette.surface.hover, color: theme.palette.text.primary }
+  whiteSpace: 'nowrap'
 }))
 
 const Label = styled('span')({ flex: '0 0 auto' })

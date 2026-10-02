@@ -19,7 +19,7 @@ const InputRoot = styled(OutlinedInput, { shouldForwardProp: blockProps('mono') 
   ({ theme, mono }) => ({
     width: '100%',
     ...(mono
-      ? { fontFamily: theme.typography.fontFamilyMono, fontSize: theme.typography.caption.fontSize }
+      ? { fontFamily: theme.typography.fontFamilyMono }
       : {})
   })
 )

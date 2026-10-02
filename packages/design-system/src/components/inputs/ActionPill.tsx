@@ -1,4 +1,5 @@
 /** The current selection names the entrance to the action. The shape keeps the hit area from shrinking as the options grow. */
+import { controlMetrics } from '../../theme/controls.js'
 import { styled } from '@mui/material/styles'
 import type { ReactNode } from 'react'
 import { Text } from '../data-display/Text.js'
@@ -7,14 +8,10 @@ const Root = styled('button')(({ theme }) => ({
   display: 'inline-flex',
   alignItems: 'center',
   gap: theme.spacing(0.5),
-  minHeight: theme.density.control.xs,
-  padding: `0 ${theme.spacing(2)}`,
+  ...controlMetrics(theme, 'xs'),
   border: 0,
-  borderRadius: theme.radius.full,
   background: theme.palette.surface.raised,
   color: theme.palette.primaryText,
-  font: 'inherit',
-  fontSize: theme.typography.body2.fontSize,
   cursor: 'pointer',
   '&:active': { background: theme.palette.surface.hover }
 }))
@@ -30,7 +27,7 @@ export function ActionPill({
 }): JSX.Element {
   return (
     <Root type="button" onClick={onClick} aria-haspopup="dialog">
-      <Text color="inherit" size="sm" weight="medium">
+      <Text color="inherit" size="xs" weight="medium">
         {label}
       </Text>
       {indicator}

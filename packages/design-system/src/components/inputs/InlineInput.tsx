@@ -1,6 +1,7 @@
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { alpha, styled } from '@mui/material/styles'
-import { blockProps } from '../../theme/styled.js'
+import { controlFrame, controlMetrics, focusRing } from '../../theme/controls.js'
+import { blockProps, canHover } from '../../theme/styled.js'
 import { lineHeight } from '../../theme/tokens.js'
 
 /**
@@ -33,10 +34,10 @@ export const InlineInput = styled('input', { shouldForwardProp: blockProps('scal
   whiteSpace: 'nowrap',
   overflow: 'hidden',
   textOverflow: 'ellipsis',
-  '&:hover': { background: theme.palette.surface.default },
+  [canHover]: { '&:hover:not(:disabled)': { background: theme.palette.surface.default } },
   '&:focus': {
     background: theme.palette.surface.default,
-    outline: `1px solid ${theme.palette.primaryText}`
+    ...focusRing(theme)
   }
 }))
 
@@ -59,7 +60,7 @@ export const PlainInput = styled('input', { shouldForwardProp: blockProps('textS
   fontFamily: 'inherit',
   fontSize:
     textSize === 'lg'
-      ? 16
+      ? theme.typography.subtitle1.fontSize
       : textSize === 'md'
         ? theme.typography.body1.fontSize
         : theme.typography.body2.fontSize,
@@ -133,10 +134,10 @@ export const AutoTextArea = styled('textarea', { shouldForwardProp: blockProps('
     transition: `background ${theme.transitions.duration.shortest}ms ease-out`,
     ...frame,
     '&::placeholder': { color: theme.palette.text.tertiary },
-    '&:hover:not(:disabled)': { background: theme.palette.surface.hover },
+    [canHover]: { '&:hover:not(:disabled)': { background: theme.palette.surface.hover } },
     '&:focus': {
       background: theme.palette.surface.raised,
-      outline: `1px solid ${theme.palette.primaryText}`
+      ...focusRing(theme)
     },
     '&:disabled': { color: theme.palette.text.secondary, cursor: 'default' }
   }
@@ -149,18 +150,14 @@ const SearchRoot = styled('label', { shouldForwardProp: blockProps('width', 'fil
   ({ theme, width = 240, fill }) => ({
     display: 'flex',
     alignItems: 'center',
-    gap: 6,
+    ...controlMetrics(theme, 'xs'),
+    ...controlFrame(theme),
+    gap: theme.spacing(1.5),
     width: fill ? '100%' : width,
-    height: theme.density.control.xs + 2,
-    padding: `0 ${theme.spacing(3)}`,
-    borderRadius: theme.radius.full,
-    border: `1px solid ${theme.palette.border.subtle}`,
-    background: theme.palette.surface.default,
-    color: theme.palette.text.tertiary,
-    '&:focus-within': {
-      borderColor: theme.palette.primaryText,
-      color: theme.palette.text.secondary
-    }
+    maxWidth: '100%',
+    minWidth: 0,
+    '& > svg': { flexShrink: 0, width: theme.iconSize.sm, height: theme.iconSize.sm, color: theme.palette.text.tertiary },
+    '& > input': { font: 'inherit', height: '100%' }
   })
 )
 
@@ -173,7 +170,7 @@ export interface SearchInputProps extends InputHTMLAttributes<HTMLInputElement> 
 /** The search box. The vessel holds state (focus); the input inside stays bare. */
 export function SearchInput({ icon, width, fill, ...rest }: SearchInputProps): JSX.Element {
   return (
-    <SearchRoot width={width} fill={fill}>
+    <SearchRoot width={width} fill={fill} data-disabled={rest.disabled || undefined}>
       {icon}
       <PlainInput type="search" {...rest} />
     </SearchRoot>
@@ -191,7 +188,7 @@ export const InlineAddRow = styled('div')(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
   gap: theme.spacing(2),
-  height: 32,
+  height: theme.density.control.lg,
   padding: `0 ${theme.spacing(3)}`,
   background: theme.palette.surface.raised,
   borderBottom: `1px solid ${theme.palette.border.subtle}`,

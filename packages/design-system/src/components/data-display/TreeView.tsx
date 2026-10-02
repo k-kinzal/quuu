@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { Fragment, useEffect, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { alpha, styled } from '@mui/material/styles'
 import { blockProps, canHover } from '../../theme/styled.js'
@@ -63,7 +64,7 @@ const Row = styled('button', { shouldForwardProp: blockProps('depth', 'selected'
       }
     },
     '&:active': { background: tint ? alpha(tint, 0.24) : theme.palette.surface.selected },
-    '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 }
+    '&:focus-visible': focusRing(theme, 'inside')
   }
 })
 

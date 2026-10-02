@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import type { MouseEvent, ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
 import { blockProps, canHover, surfaceStyles, type SurfaceLevel } from '../../theme/styled.js'
@@ -123,7 +124,7 @@ const ItemRoot = styled('button', { shouldForwardProp: blockProps('active', 'col
   transition: theme.transitions.create(['background-color', 'color'], { duration: theme.transitions.duration.shortest }),
   [canHover]: { '&:hover': { background: active ? theme.palette.surface.selected : theme.palette.surface.hover, color: theme.palette.text.primary } },
   '&:active': { background: theme.palette.surface.selected },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 },
+  '&:focus-visible': focusRing(theme, 'inside'),
   /*
    * Glyphs read heavier than text, so they always sit one step back in color.
    * Only the selected row is lifted to the primary color, which together with the
@@ -270,7 +271,7 @@ const MenuNavItemRoot = styled('button', { shouldForwardProp: blockProps('active
   color: active ? theme.palette.text.primary : theme.palette.text.secondary,
   [canHover]: { '&:hover': { background: active ? theme.palette.surface.selected : theme.palette.surface.hover } },
   '&:active': { background: theme.palette.surface.selected },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 },
+  '&:focus-visible': focusRing(theme, 'inside'),
   '& [data-icon]': {
     display: 'inline-flex',
     color: active ? theme.palette.primaryText : theme.palette.text.tertiary

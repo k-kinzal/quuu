@@ -1,5 +1,33 @@
 # Call-site feedback and decisions
 
+## 2026-10-03 Control consistency across the kit
+
+- Cause: `SearchInput` used `control.xs + 2`, body2 type and a full pill radius;
+  adjacent `FilterChip` used `control.xs`, caption type and the small radius.
+  Both were legal token consumers, but no shared recipe expressed that these
+  controls must align. The search's pill also contradicted the radius guidance.
+  These independent rules were already present in `4cb32a8`; `db0c060` reused
+  the search beside the filters, exposing the inconsistency without adding any
+  consumer-side styling violation.
+- The same gap affected interaction states: forms used a muted 3px glow and
+  primary-fill border, search changed only its border, and actions/navigation
+  had independently chosen focus offsets. One transcript control even used the
+  fill blue for its focus line. Search/filter disabled appearance was missing.
+- Existing enforcement checked app consumers and package dependencies, not
+  consistency inside the kit. Stories showed each family separately and the
+  test gate had no real-browser comparison of computed styles.
+- Accepted: complete size recipes for filters, actions and fields, shared frame
+  states, and one focus rule with two named placements. Search and filtering
+  now align, inputs/selects/buttons of the same size share geometry, and focus
+  drawing is shared across inputs, navigation, lists, disclosures and resizers.
+  Monospaced entry changes the face, not the field's type size. Check/radio
+  glyphs and large bare-input type now follow density rather than fixed pixels.
+- Prevention: an implementation-side architecture guard plus the shared
+  `Patterns/ControlQuality` specimen and Chromium regression in the root test
+  gate. Compare both color schemes and densities, normal/selected/disabled/error
+  states, multiline entry and focus. Keep purpose-specific geometry (prose,
+  tab strips, icon hit areas); new differences need an explicit purpose here.
+
 ## 2026-10-02 One line number for an unchanged file
 
 - Finding: a project's file page and a task's Project tab open files that have

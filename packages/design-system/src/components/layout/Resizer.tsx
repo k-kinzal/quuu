@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { styled, useTheme } from '@mui/material/styles'
 import { blockProps, surfaceStyles, type SurfaceLevel } from '../../theme/styled.js'
@@ -22,8 +23,8 @@ const ResizerRoot = styled('div', { shouldForwardProp: blockProps('active') })<{
    */
   '&:focus-visible': { outline: 'none', background: theme.palette.primaryText },
   '&:focus-visible::after': {
-    outline: `2px solid ${theme.palette.primaryText}`,
-    borderRadius: 3
+    ...focusRing(theme),
+    borderRadius: theme.radius.xs
   }
 }))
 
@@ -141,8 +142,8 @@ const StackResizerRoot = styled('div', { shouldForwardProp: blockProps('active')
   '&:hover': { background: theme.palette.primaryText },
   '&:focus-visible': { outline: 'none', background: theme.palette.primaryText },
   '&:focus-visible::after': {
-    outline: `2px solid ${theme.palette.primaryText}`,
-    borderRadius: 3
+    ...focusRing(theme),
+    borderRadius: theme.radius.xs
   }
 }))
 

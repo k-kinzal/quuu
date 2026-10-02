@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { useState, type DragEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
 import { activityBarWidth } from '../layout/Panel.js'
@@ -73,7 +74,7 @@ const Button = styled('button', {
       color: active ? theme.palette.primaryText : theme.palette.text.primary,
       background: visible ? theme.palette.surface.selected : theme.palette.surface.hover
     } },
-    '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 },
+    '&:focus-visible': focusRing(theme, 'inside'),
     '&:active': { cursor: 'grabbing' },
     '&::before': active
       ? {

@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import type { ReactNode } from 'react'
 import { styled, type Theme } from '@mui/material/styles'
 import { X } from 'lucide-react'
@@ -80,7 +81,7 @@ const DismissButton = styled('button')(({ theme }) => ({
   color: theme.palette.text.tertiary, cursor: 'pointer',
   '& svg': { width: theme.iconSize.sm, height: theme.iconSize.sm },
   [canHover]: { '&:hover': { background: theme.palette.surface.selected, color: theme.palette.text.primary } },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 }
+  '&:focus-visible': focusRing(theme, 'inside')
 }))
 
 export interface ToastStackProps<T extends ToastSpec> {

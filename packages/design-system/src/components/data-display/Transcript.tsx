@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 /** The display rules for a conversation. Sticky headings share the body's padding, and expanded contents share their summary's surface. It carries no meaning about fetching, CLIs, or actions. */
 /** Rendering of conversations and action logs. Fetching, what a speaker means, and running an action all belong to the caller. */
 import { blockProps, canHover } from '../../theme/styled.js'
@@ -125,7 +126,7 @@ export const TranscriptNestedFeed = styled(ConversationFeed)(({ theme }) => ({
   overscrollBehavior: 'contain',
   scrollbarGutter: 'stable',
   '& > div > article:last-child': { marginBottom: 0 },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primary.main}`, outlineOffset: -2 }
+  '&:focus-visible': focusRing(theme, 'inside')
 }))
 
 export const TranscriptTurnText = styled('div', { shouldForwardProp: blockProps('role') })<{
@@ -189,7 +190,7 @@ export const TranscriptThinkingToggle = styled('button')(({ theme }) => ({
   '&::before': disclosureMark,
   '&[aria-expanded="true"]::before': { transform: 'rotate(45deg)' },
   [canHover]: { '&:hover': { background: theme.palette.surface.hover, color: theme.palette.text.primary } },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 }
+  '&:focus-visible': focusRing(theme, 'inside')
 }))
 
 export const TranscriptThinkingBody = styled('div')(({ theme }) => ({
@@ -301,7 +302,7 @@ export const TranscriptToolLine = styled('button', { shouldForwardProp: blockPro
   textAlign: 'left',
   cursor: 'pointer',
   [canHover]: { '&:hover': { background: theme.palette.surface.hover } },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 },
+  '&:focus-visible': focusRing(theme, 'inside'),
   '&[aria-expanded]::after': { ...disclosureMark, marginRight: theme.spacing(1), color: theme.palette.text.tertiary },
   '&[aria-expanded="true"]': { background: theme.palette.surface.subtle },
   '&[aria-expanded="true"]::after': { transform: 'rotate(45deg)' },

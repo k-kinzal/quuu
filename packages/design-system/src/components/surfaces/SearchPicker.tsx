@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import useAutocomplete, { createFilterOptions } from '@mui/material/useAutocomplete'
 import { styled } from '@mui/material/styles'
 import { Check, Search } from 'lucide-react'
@@ -64,7 +65,7 @@ const Option = styled('li')(({ theme }) => ({
   '&[aria-disabled="true"]': { opacity: theme.palette.action.disabledOpacity, pointerEvents: 'none' },
   '&[data-separator="true"]': { borderTop: `1px solid ${theme.palette.border.subtle}`, marginTop: theme.spacing(1) },
   '&.Mui-focused': { background: theme.palette.surface.selected },
-  '&.Mui-focusVisible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 }
+  '&.Mui-focusVisible': focusRing(theme, 'inside')
 }))
 const Group = styled('li')(({ theme }) => ({
   padding: `${theme.spacing(1)} ${theme.spacing(1.5)}`,

@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { alpha, styled } from '@mui/material/styles'
 import {
   blockProps,
@@ -94,7 +95,7 @@ export const ItemRow = styled('button', {
   textAlign: 'left',
   cursor: 'pointer',
   transition: theme.transitions.create('background-color', { duration: theme.transitions.duration.shortest }),
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 },
+  '&:focus-visible': focusRing(theme, 'inside'),
   '&:disabled': { opacity: theme.palette.action.disabledOpacity, cursor: 'default', pointerEvents: 'none' },
   [canHover]: { '&:hover': { background: selected ? alpha(theme.palette.primaryText, 0.22) : theme.palette.surface.hover } },
   // Feedback for surfaces touched by finger. With no hover, the background is laid only while pressed

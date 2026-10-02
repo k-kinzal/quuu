@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { forwardRef, useLayoutEffect, useRef, type ComponentPropsWithoutRef, type MouseEvent, type ReactNode } from 'react'
 import MuiTabs from '@mui/material/Tabs'
 import MuiTab from '@mui/material/Tab'
@@ -68,7 +69,7 @@ const Root = styled(MuiTabs, { shouldForwardProp: blockProps('appearance') })<{
       background: appearance === 'document' ? theme.palette.surface.canvas : theme.palette.surface.selected,
       color: theme.palette.text.primary
     },
-    '&.Mui-focusVisible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -3 },
+    '&.Mui-focusVisible': focusRing(theme, 'inside'),
     '&[data-muted="true"]:not(.Mui-selected)': { color: theme.palette.text.tertiary }
   }
 }))
@@ -98,7 +99,7 @@ const CloseButton = styled('button')(({ theme }) => ({
   color: theme.palette.text.tertiary, cursor: 'pointer',
   '& svg': { width: theme.iconSize.sm, height: theme.iconSize.sm },
   [canHover]: { '&:hover': { background: theme.palette.surface.selected, color: theme.palette.text.primary } },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -2 }
+  '&:focus-visible': focusRing(theme, 'inside')
 }))
 
 const SelectButton = styled('button')({

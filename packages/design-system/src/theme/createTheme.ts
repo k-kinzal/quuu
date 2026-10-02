@@ -25,6 +25,7 @@ import {
   type SurfaceTokens,
   type SyntaxTokens
 } from './tokens.js'
+import { controlFrame, controlMetrics, focusRing } from './controls.js'
 import { canHover } from './styled.js'
 
 /* -------------------------------------------------------------------------
@@ -356,7 +357,7 @@ function components(
          */
         'input, textarea': { userSelect: 'text' },
         // Use a value that doesn't sink into the surface. The fill primary loses its outline on dark surfaces
-        ':focus-visible': { outline: `2px solid ${t.primaryText}`, outlineOffset: 1 },
+        ':focus-visible': focusRing({ palette: t }),
         /*
          * Where the surface itself is a keyboard control (lists, conversation).
          *
@@ -367,8 +368,7 @@ function components(
          */
         '[data-keyboard-region]': { outline: 'none' },
         '[data-keyboard-region]:focus-visible': {
-          outline: `2px solid ${t.primaryText}`,
-          outlineOffset: -2
+          ...focusRing({ palette: t }, 'inside')
         },
         '::-webkit-scrollbar': { width: 11, height: 11 },
         '::-webkit-scrollbar-thumb': {
@@ -405,7 +405,7 @@ function components(
           whiteSpace: 'nowrap',
           transition: `background ${duration.fast}ms ease-out, border-color ${duration.fast}ms ease-out`,
           '& > svg, & .MuiButton-startIcon > svg': { display: 'block', flexShrink: 0 },
-          '&.Mui-focusVisible': { outline: `2px solid ${t.primaryText}`, outlineOffset: 2 },
+          '&.Mui-focusVisible': focusRing({ palette: t }),
           '&.Mui-disabled': { opacity: 0.4, color: text.secondary, background: surface.subtle, borderColor: border.subtle },
           // While loading, don't inherit the disabled state's fade. Also keeps the label off the centered spinner.
           '&.MuiButton-loading': { opacity: 1, '& .MuiButton-loadingIndicator': { color: text.primary } },
@@ -417,15 +417,10 @@ function components(
       variants: [
         {
           props: { size: 'xs' },
-          style: {
-            height: density.control.xs,
-            padding: '0 8px',
-            fontSize: fontSize.xs,
-            borderRadius: radius.sm
-          }
+          style: ({ theme }) => controlMetrics(theme, 'xs')
         },
-        { props: { size: 'sm' }, style: { height: density.control.sm, padding: '0 12px' } },
-        { props: { size: 'md' }, style: { height: density.control.md, padding: '0 14px' } },
+        { props: { size: 'sm' }, style: ({ theme }) => controlMetrics(theme, 'sm') },
+        { props: { size: 'md' }, style: ({ theme }) => controlMetrics(theme, 'md') },
 
         // Neutral is "a surface with a ground". Colored ones get filled
         {
@@ -500,7 +495,7 @@ function components(
           color: text.secondary,
           transition: `background ${duration.fast}ms ease-out, color ${duration.fast}ms ease-out`,
           '& > svg': { display: 'block', flexShrink: 0 },
-          '&.Mui-focusVisible': { outline: `2px solid ${t.primaryText}`, outlineOffset: -2 },
+          '&.Mui-focusVisible': focusRing({ palette: t }, 'inside'),
           [canHover]: { '&:hover': { background: surface.hover, color: text.primary } },
           '&:active': { background: surface.hover, color: text.primary },
           '&.Mui-disabled': { opacity: 0.35 },
@@ -544,33 +539,27 @@ function components(
     },
     MuiOutlinedInput: {
       styleOverrides: {
-        root: {
-          height: density.control.md,
-          padding: '0 8px',
-          // Inputs are the innermost nesting level, so go 1 step below the container (radius.md)
-          borderRadius: radius.sm,
-          background: surface.raised,
-          transition: `box-shadow ${duration.fast}ms ease-out`,
-          '& .MuiOutlinedInput-notchedOutline': { borderColor: border.strong },
-          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: text.tertiary },
-          '&.Mui-focused': {
-            // Don't thicken the rule; put a thin ring outside. Row height stays put
-            boxShadow: `0 0 0 3px ${t.primaryMuted}`
+        root: ({ theme }) => ({
+          ...controlMetrics(theme, 'md'),
+          ...controlFrame(theme),
+          // MUI owns the outline element; the shared frame owns every state color.
+          borderWidth: 0,
+          '& .MuiOutlinedInput-notchedOutline, &:hover .MuiOutlinedInput-notchedOutline, &.Mui-focused .MuiOutlinedInput-notchedOutline, &.Mui-error .MuiOutlinedInput-notchedOutline, &.Mui-disabled .MuiOutlinedInput-notchedOutline': {
+            borderColor: 'inherit', borderWidth: 1
           },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: t.primary,
-            borderWidth: 1
-          },
-          '&.Mui-error .MuiOutlinedInput-notchedOutline': { borderColor: tone.error },
-          '&.MuiInputBase-multiline': { height: 'auto', padding: '5px 8px' }
-        },
-        input: { padding: 0 }
+          '&.MuiInputBase-multiline': { height: 'auto', padding: theme.spacing(1.5, 3) }
+        }),
+        input: {
+          padding: 0,
+          // The frame represents focus once, including the Select display slot.
+          '&:focus, &:focus-visible': { outline: 'none' }
+        }
       }
     },
     MuiSelect: {
       defaultProps: { size: 'small' },
       styleOverrides: {
-        select: { display: 'flex', alignItems: 'center', minHeight: 0 },
+        select: { display: 'flex', alignItems: 'center', minHeight: 0, '&:focus': { background: 'transparent' } },
         icon: { right: 6, color: text.tertiary, fontSize: 18 }
       }
     },
@@ -581,8 +570,9 @@ function components(
           padding: 0,
           marginTop: 1,
           color: border.strong,
+          '&.Mui-focusVisible': focusRing({ palette: t }),
           '&.Mui-checked, &.MuiCheckbox-indeterminate': { color: t.primary },
-          '& .MuiSvgIcon-root': { fontSize: 16 }
+          '& .MuiSvgIcon-root': { fontSize: iconSize.md }
         }
       }
     },
@@ -593,8 +583,9 @@ function components(
           padding: 0,
           marginTop: 1,
           color: border.strong,
+          '&.Mui-focusVisible': focusRing({ palette: t }),
           '&.Mui-checked': { color: t.primary },
-          '& .MuiSvgIcon-root': { fontSize: 16 }
+          '& .MuiSvgIcon-root': { fontSize: iconSize.md }
         }
       }
     },
@@ -606,6 +597,7 @@ function components(
           height: density.control.sm,
           padding: 0,
           alignItems: 'center',
+          '&:has(.Mui-focusVisible)': focusRing({ palette: t }),
           // MUI's small-size rules target these slots from the root. Override
           // at the same specificity so the thumb stays inside the track.
           '& .MuiSwitch-switchBase': {
@@ -616,7 +608,7 @@ function components(
           '& .MuiSwitch-thumb': { width: iconSize.md, height: iconSize.md }
         },
         switchBase: {
-          '&.Mui-checked': { color: '#fff' },
+          '&.Mui-checked': { color: t.primaryContrast },
           '&.Mui-checked + .MuiSwitch-track': { background: t.primary, opacity: 1 }
         },
         thumb: { boxShadow: 'none' },

@@ -1,3 +1,4 @@
+import { focusRing } from '../../theme/controls.js'
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
@@ -250,7 +251,7 @@ const Grip = styled('button')(({ theme }) => ({
   touchAction: 'none',
   '&:hover': { color: theme.palette.text.secondary },
   '&:active': { cursor: 'grabbing' },
-  '&:focus-visible': { outline: `2px solid ${theme.palette.primaryText}`, outlineOffset: -1 }
+  '&:focus-visible': focusRing(theme, 'inside')
 }))
 
 const Ordinal = styled('span')(({ theme }) => ({
