@@ -7292,6 +7292,7 @@ message ReviewProjectFilesResponseValue {
   optional string cwd = 1;
   optional string branch = 2;
   optional ReviewProjectFilesResponseValueTree tree = 3;
+  optional bool truncated = 5;
   optional ReviewProjectFilesResponseValueChanges changes = 4;
 }
 

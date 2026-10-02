@@ -7,7 +7,7 @@ import type { AppSettings } from '../settings/types.js'
 import { contextLines, extractSymbols, languageOf, parseUnifiedDiff } from './code.js'
 import { git } from './command.js'
 import { readCoverage } from './coverage.js'
-import { pathInside, projectFiles, readRevisionText, readText } from './files.js'
+import { listFiles, MAX_PROJECT_FILES, pathInside, projectFiles, readRevisionText, readText } from './files.js'
 import type { ReviewBaseline } from './git.js'
 import { changesBetween, inferReviewBaseline, snapshotWorktree } from './git.js'
 import { parseStatusEntries } from './gitFormat.js'
@@ -111,14 +111,15 @@ export class ReviewService {
    */
   async projectFiles(cwd: string): Promise<ProjectFiles> {
     const [files, branchResult, status] = await Promise.all([
-      projectFiles(cwd),
+      listFiles(cwd, MAX_PROJECT_FILES),
       git(cwd, ['branch', '--show-current']),
       git(cwd, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])
     ])
     return {
       cwd,
       branch: branchResult.code === 0 ? branchResult.stdout.trim() || 'detached' : '',
-      tree: buildFileTree(files.map((path) => ({ path }))),
+      tree: buildFileTree(files.paths.map((path) => ({ path }))),
+      truncated: files.truncated,
       changes: status.code === 0 ? parseStatusEntries(status.stdout) : []
     }
   }

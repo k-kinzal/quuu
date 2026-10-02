@@ -10,6 +10,7 @@ import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemePr
 import { contract } from '../src/api/contract.js'
 import type { Db } from '../src/main/db/database.js'
 import * as repo from '../src/main/db/repo.js'
+import { listFiles } from '../src/main/review/files.js'
 import { ReviewOperations } from '../src/main/review/operations.js'
 import { ReviewService } from '../src/main/review/service.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
@@ -60,6 +61,24 @@ describe('a project’s files', () => {
     const file = await operations.projectFile(projectId, 'src/index.ts')
     expect(file).toMatchObject({ source: 'working', path: 'src/index.ts', content: 'export const value = 2\n' })
     expect(file.diff.some(line => line.kind === 'added' && line.text.includes('value = 2'))).toBe(true)
+  })
+
+  it('lists every package of a project far larger than a task review lists', async () => {
+    // A monorepo past the review's 6000 files once showed six of its twenty packages and dropped the rest silently.
+    for (let pkg = 0; pkg < 20; pkg += 1) {
+      mkdirSync(join(cwd, 'packages', `pkg-${String(pkg)}`, 'src'), { recursive: true })
+      for (let file = 0; file < 350; file += 1) writeFileSync(join(cwd, 'packages', `pkg-${String(pkg)}`, 'src', `f${String(file)}.php`), '')
+    }
+    const files = await operations.projectFiles(projectId)
+    const packages = files.tree.find(node => node.name === 'packages')?.children ?? []
+    expect(packages).toHaveLength(20)
+    expect(packages.every(pkg => pkg.children?.[0]?.children?.length === 350)).toBe(true)
+    expect(files.truncated).toBe(false)
+  })
+
+  it('says so when the listing stops short of the directory', async () => {
+    await expect(listFiles(cwd, 2)).resolves.toEqual({ paths: ['README.md', 'src/gone.ts'], truncated: true })
+    await expect(listFiles(cwd, 3)).resolves.toMatchObject({ truncated: false })
   })
 
   it('refuses a path outside the project directory', async () => {

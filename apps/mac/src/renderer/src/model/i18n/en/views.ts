@@ -48,7 +48,8 @@ export const views = {
     title: 'Project Files', tree: 'Files in the project directory', refresh: 'Read the project directory again',
     loading: 'Reading the project directory…', failed: 'Could not read the project directory', empty: 'No files in the project directory',
     select: 'Select a file', fileLoading: 'Reading the file…', fileFailed: 'Could not read this file', binary: 'Binary files are not shown',
-    retry: 'Try again', changes: '{{count}} uncommitted'
+    retry: 'Try again', changes: '{{count}} uncommitted',
+    truncated: 'The directory is too large to list every file'
   },
   projectPullRequests: {
     title: 'Pull Requests', search: 'Find a pull request or task…', refresh: 'Check open pull requests again',

@@ -94,6 +94,8 @@ export const ProjectFilesSchema = z.object({
   cwd: z.string(),
   branch: z.string(),
   tree: ReviewTreeNodeSchema.array(),
+  /** The directory holds more files than one listing carries; the tree is not all of it. */
+  truncated: z.boolean(),
   changes: ReviewChangeSchema.array()
 })
 export type ProjectFiles = z.infer<typeof ProjectFilesSchema>

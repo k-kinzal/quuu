@@ -16154,6 +16154,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "kind": "value"
           }
         },
+        "truncated": {
+          "kind": "boolean"
+        },
         "changes": {
           "kind": "array",
           "items": {
@@ -16189,6 +16192,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "cwd",
         "branch",
         "tree",
+        "truncated",
         "changes"
       ]
     }

@@ -79,6 +79,8 @@ export function ProjectFiles({ project }: { project: Project }): JSX.Element {
         : built.nodes.length === 0 ? <EmptyState title={t('projectFiles.empty')} />
           : <ExplorerLayout>
             <ExplorerPane aria-label={t('projectFiles.tree')}>
+              {/* A cut listing must say so. A tree that silently stops reads as the directory itself */}
+              {data.truncated && <Alert tone="warning">{t('projectFiles.truncated')}</Alert>}
               <TreeView
                 label={t('projectFiles.tree')}
                 nodes={built.nodes}

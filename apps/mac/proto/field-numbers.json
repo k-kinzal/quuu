@@ -6075,7 +6075,8 @@
     "cwd": 1,
     "branch": 2,
     "tree": 3,
-    "changes": 4
+    "changes": 4,
+    "truncated": 5
   },
   "ReviewProjectFilesResponse": {
     "value": 1

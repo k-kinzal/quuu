@@ -49,7 +49,8 @@ export const views: typeof en = {
     title: 'プロジェクトファイル', tree: 'プロジェクトディレクトリのファイル', refresh: 'プロジェクトディレクトリを読み直す',
     loading: 'プロジェクトディレクトリを読み込み中…', failed: 'プロジェクトディレクトリを読み込めませんでした', empty: 'プロジェクトディレクトリにファイルがありません',
     select: 'ファイルを選択', fileLoading: 'ファイルを読み込み中…', fileFailed: 'このファイルを読み込めませんでした', binary: 'バイナリファイルは表示しません',
-    retry: '再試行', changes: '未コミット {{count}}'
+    retry: '再試行', changes: '未コミット {{count}}',
+    truncated: 'ファイル数が多すぎるため、一部のファイルを表示していません'
   },
   projectPullRequests: {
     title: 'プルリクエスト', search: 'プルリクエストやタスクを検索…', refresh: 'オープン中のプルリクエストを再確認',

@@ -74,6 +74,8 @@ export interface ProjectFiles {
   cwd: string
   branch: string
   tree: ReviewTreeNode[]
+  /** The directory holds more files than one listing carries; the tree is not all of it. */
+  truncated: boolean
   changes: ReviewChange[]
 }
 
