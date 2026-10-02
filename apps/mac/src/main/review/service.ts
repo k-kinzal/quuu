@@ -10,12 +10,13 @@ import { readCoverage } from './coverage.js'
 import { pathInside, projectFiles, readRevisionText, readText } from './files.js'
 import type { ReviewBaseline } from './git.js'
 import { changesBetween, inferReviewBaseline, snapshotWorktree } from './git.js'
+import { parseStatusEntries } from './gitFormat.js'
 import type { ReviewEvidence } from './evidence.js'
 import { gh, pullRequests, pullRequestUrl } from './github.js'
 import type { RunWindow } from './ownership.js'
 import { ownChanges, taskCommits } from './ownership.js'
 import { buildFileTree } from './tree.js'
-import type { ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewSnapshot } from './types.js'
+import type { ProjectFiles, ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewSnapshot } from './types.js'
 
 /** Assembles the listing and the file fetches. It owns neither a terminal's lifetime nor the DB. */
 export class ReviewService {
@@ -102,6 +103,24 @@ export class ReviewService {
     await localReady?.(local)
     const prs = await pullRequests(cwd, project, settings, baseline?.startedAt ?? null, evidence?.pullRequests)
     return { ...local, pullRequests: prs.items, pullRequestNotice: prs.notice }
+  }
+
+  /**
+   * The checkout as it stands, against its own HEAD. Untracked files are listed one by one so a
+   * new file inside a new directory is marked, not the directory alone.
+   */
+  async projectFiles(cwd: string): Promise<ProjectFiles> {
+    const [files, branchResult, status] = await Promise.all([
+      projectFiles(cwd),
+      git(cwd, ['branch', '--show-current']),
+      git(cwd, ['status', '--porcelain=v1', '-z', '--untracked-files=all'])
+    ])
+    return {
+      cwd,
+      branch: branchResult.code === 0 ? branchResult.stdout.trim() || 'detached' : '',
+      tree: buildFileTree(files.map((path) => ({ path }))),
+      changes: status.code === 0 ? parseStatusEntries(status.stdout) : []
+    }
   }
 
   /** Where a task's saved revisions are pinned, and those of one of its runs. */

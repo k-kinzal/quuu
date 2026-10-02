@@ -17,6 +17,7 @@ export type PaneId =
   | 'projectNavigation'
   | 'documents'
   | 'pullRequests'
+  | 'projectFiles'
   | 'list'
   | 'chat'
   | 'review'

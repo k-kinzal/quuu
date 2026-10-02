@@ -18,6 +18,7 @@ import { LeftMenu } from './components/LeftMenu.js'
 import { RendererBoundary } from './components/RendererBoundary.js'
 import { ProjectDocuments } from './views/project/ProjectDocuments.js'
 import { ProjectPullRequests } from './views/project/ProjectPullRequests.js'
+import { ProjectFiles } from './views/project/ProjectFiles.js'
 import { TaskComposer } from './components/TaskComposer.js'
 import { TaskOverview } from './components/TaskOverview.js'
 import { TaskWorkspace } from './components/TaskWorkspace.js'
@@ -100,6 +101,7 @@ function Shell(): JSX.Element {
   const openTask = useStore((s) => s.openTask)
   const projectDocumentsOpen = useStore((s) => s.projectDocumentsOpen)
   const projectPullRequestsOpen = useStore((s) => s.projectPullRequestsOpen)
+  const projectFilesOpen = useStore((s) => s.projectFilesOpen)
   const projectDashboardOpen = useStore((s) => s.projectDashboardOpen)
   const reportEnabled = useStore((s) => s.settings?.reportEnabled ?? false)
   const projectSettingsOpen = useStore((s) => s.projectSettingsOpen)
@@ -342,7 +344,7 @@ function Shell(): JSX.Element {
         return
       }
 
-      if (state.projectDocumentsOpen || state.projectPullRequestsOpen || state.projectDashboardOpen || state.projectSettingsOpen || state.section.kind === 'settings') return
+      if (state.projectDocumentsOpen || state.projectPullRequestsOpen || state.projectFilesOpen || state.projectDashboardOpen || state.projectSettingsOpen || state.section.kind === 'settings') return
       if (typing || e.metaKey || e.ctrlKey || e.altKey) return
 
       /*
@@ -388,7 +390,7 @@ function Shell(): JSX.Element {
       <AppShellBody>
         <MotionLayout
           motionKey={`${detailOpen ? task?.id ?? 'missing' : 'overview'}:${layout.railCollapsed}:${layout.listMode}`}
-          contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}:${projectDocumentsOpen}:${projectPullRequestsOpen}`}
+          contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}:${projectDocumentsOpen}:${projectPullRequestsOpen}:${projectFilesOpen}`}
         >
           <LeftMenu
             showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen}
@@ -402,6 +404,8 @@ function Shell(): JSX.Element {
                 <ProjectDetail project={project} onBack={() => openProjectSettings(false)} />
               ) : projectDocumentsOpen && project ? (
                 <ProjectDocuments key={project.id} project={project} />
+              ) : projectFilesOpen && project ? (
+                <ProjectFiles key={project.id} project={project} />
               ) : projectPullRequestsOpen && project ? (
                 <ProjectPullRequests key={project.id} project={project} />
               ) : projectDashboardOpen && reportEnabled && project?.reportEnabled ? (

@@ -121,7 +121,9 @@ export const model: typeof en = {
         history: 'レビュー履歴の読み込み',
         historySnapshot: 'ラン終了時点のレビューの読み込み',
         projectPullRequests: "プロジェクトのプルリクエストの読み込み",
-        refreshProjectPullRequests: "プロジェクトのプルリクエストの再確認"
+        refreshProjectPullRequests: "プロジェクトのプルリクエストの再確認",
+        projectFiles: "プロジェクトディレクトリの読み込み",
+        projectFile: "プロジェクトファイルの読み込み"
       },
       report: {
         get: 'レポートの読み込み',

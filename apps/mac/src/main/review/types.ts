@@ -70,6 +70,13 @@ export interface ReviewPullRequest {
 /** One Pull Request across a project, with every task whose review keeps it. No file list. */
 export type ProjectPullRequest = Omit<ReviewPullRequest, 'files'> & { tasks: Array<{ id: string; title: string }> }
 
+export interface ProjectFiles {
+  cwd: string
+  branch: string
+  tree: ReviewTreeNode[]
+  changes: ReviewChange[]
+}
+
 export interface CoverageMetric {
   covered: number
   total: number

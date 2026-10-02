@@ -84,6 +84,20 @@ export const ProjectPullRequestSchema = ReviewPullRequestSchema.omit({ files: tr
 })
 export type ProjectPullRequest = z.infer<typeof ProjectPullRequestSchema>
 
+/**
+ * The project's own checkout as it stands: every file, and what is uncommitted in it.
+ *
+ * Not a task's review. No baseline, no commits, no Pull Requests: the question is "what does the
+ * project look like right now", which no task's worktree answers.
+ */
+export const ProjectFilesSchema = z.object({
+  cwd: z.string(),
+  branch: z.string(),
+  tree: ReviewTreeNodeSchema.array(),
+  changes: ReviewChangeSchema.array()
+})
+export type ProjectFiles = z.infer<typeof ProjectFilesSchema>
+
 export const CoverageMetricSchema = z.object({
   covered: z.number(),
   total: z.number(),

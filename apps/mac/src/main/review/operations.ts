@@ -8,7 +8,7 @@ import type { Project } from '../projects/types.js'
 import type { AppSettings } from '../settings/types.js'
 import type { ReviewService } from './service.js'
 import { git } from './command.js'
-import type { ProjectPullRequest, ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewPullRequest, ReviewSnapshot } from './types.js'
+import type { ProjectFiles, ProjectPullRequest, ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewHistoryPoint, ReviewPullRequest, ReviewSnapshot } from './types.js'
 
 /**
  * How often a Pull Request whose checks are still running is looked at again.
@@ -163,6 +163,27 @@ export class ReviewOperations extends EventEmitter {
       await this.active
     }
     return this.projectPullRequests(projectId)
+  }
+
+  /**
+   * The project directory as it is now, read on demand. Nothing is saved: unlike a task's review,
+   * there is no earlier point of the project to keep, and the next look is the fresh one.
+   */
+  async projectFiles(projectId: string): Promise<ProjectFiles> {
+    return this.review.projectFiles(this.projectDir(projectId))
+  }
+
+  /** Only the working copy: a request names a path in the project, never a revision or a source. */
+  async projectFile(projectId: string, path: string, previousPath?: string): Promise<ReviewFile> {
+    const project = repo.getProject(this.db, projectId)
+    if (!project) throw new Error(t('tasks.projectNotFound'))
+    return this.review.file(project.path, project, this.getSettings(), { source: 'working', path, previousPath })
+  }
+
+  private projectDir(projectId: string): string {
+    const project = repo.getProject(this.db, projectId)
+    if (!project) throw new Error(t('tasks.projectNotFound'))
+    return project.path
   }
 
   /** The tasks whose Pull Request checks are being looked at again on their own. */

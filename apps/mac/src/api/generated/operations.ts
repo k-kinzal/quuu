@@ -102,6 +102,8 @@ export const operationNames: string[] = [
   "review.closePullRequest",
   "review.projectPullRequests",
   "review.refreshProjectPullRequests",
+  "review.projectFiles",
+  "review.projectFile",
   "report.conversation",
   "report.image",
   "report.projectGet",

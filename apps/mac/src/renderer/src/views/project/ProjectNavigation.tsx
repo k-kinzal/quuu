@@ -4,7 +4,7 @@ import { pane } from '../../interaction/focus.js'
 import type { Project } from '../../../../api/schemas/projects.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
-import { BookOpen, Gauge, GitPullRequest, ICON, ListChecks, Settings, iconProps } from '../../ui/icons.js'
+import { BookOpen, FolderTree, Gauge, GitPullRequest, ICON, ListChecks, Settings, iconProps } from '../../ui/icons.js'
 
 export function ProjectNavigation({ project }: { project: Project }): JSX.Element {
   const settings = useSettings()
@@ -12,6 +12,8 @@ export function ProjectNavigation({ project }: { project: Project }): JSX.Elemen
   const openDocuments = useStore((s) => s.openProjectDocuments)
   const pullRequests = useStore((s) => s.projectPullRequestsOpen)
   const openPullRequests = useStore((s) => s.openProjectPullRequests)
+  const files = useStore((s) => s.projectFilesOpen)
+  const openFiles = useStore((s) => s.openProjectFiles)
   const dashboard = useStore((s) => s.projectDashboardOpen)
   const configuration = useStore((s) => s.projectSettingsOpen)
   const openDashboard = useStore((s) => s.openProjectDashboard)
@@ -28,8 +30,11 @@ export function ProjectNavigation({ project }: { project: Project }): JSX.Elemen
           icon={<Gauge size={ICON.md} {...iconProps} />} active={dashboard}
           onClick={() => openDashboard(true)} />}
         <NavItem collapsed label={t('projectDashboard.tasks')}
-          icon={<ListChecks size={ICON.md} {...iconProps} />} active={!documents && !pullRequests && !configuration && !(canReport && dashboard)}
+          icon={<ListChecks size={ICON.md} {...iconProps} />} active={!documents && !pullRequests && !files && !configuration && !(canReport && dashboard)}
           onClick={() => openDashboard(false)} />
+        <NavItem collapsed label={t('projectFiles.title')}
+          icon={<FolderTree size={ICON.md} {...iconProps} />} active={files}
+          onClick={() => openFiles(true)} />
         <NavItem collapsed label={t('projectPullRequests.title')}
           icon={<GitPullRequest size={ICON.md} {...iconProps} />} active={pullRequests}
           onClick={() => openPullRequests(true)} />

@@ -6056,5 +6056,84 @@
   },
   "ReviewRefreshProjectPullRequestsResponse": {
     "value": 1
+  },
+  "ReviewProjectFilesRequest": {
+    "value": 1
+  },
+  "ReviewProjectFilesResponseValueTree": {
+    "items": 1
+  },
+  "ReviewProjectFilesResponseValueChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewProjectFilesResponseValueChanges": {
+    "items": 1
+  },
+  "ReviewProjectFilesResponseValue": {
+    "cwd": 1,
+    "branch": 2,
+    "tree": 3,
+    "changes": 4
+  },
+  "ReviewProjectFilesResponse": {
+    "value": 1
+  },
+  "ReviewProjectFileRequestValue": {
+    "projectId": 1,
+    "path": 2,
+    "previousPath": 3
+  },
+  "ReviewProjectFileRequest": {
+    "value": 1
+  },
+  "ReviewProjectFileResponseValueDiffItemOldLine": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewProjectFileResponseValueDiffItemNewLine": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewProjectFileResponseValueDiffItem": {
+    "kind": 1,
+    "oldLine": 2,
+    "newLine": 3,
+    "text": 4
+  },
+  "ReviewProjectFileResponseValueDiff": {
+    "items": 1
+  },
+  "ReviewProjectFileResponseValueSymbolsItem": {
+    "name": 1,
+    "kind": 2,
+    "line": 3,
+    "depth": 4
+  },
+  "ReviewProjectFileResponseValueSymbols": {
+    "items": 1
+  },
+  "ReviewProjectFileResponseValuePullRequestVariant1": {
+    "url": 1,
+    "number": 2,
+    "headSha": 3
+  },
+  "ReviewProjectFileResponseValuePullRequest": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewProjectFileResponseValue": {
+    "source": 1,
+    "path": 2,
+    "language": 3,
+    "content": 4,
+    "diff": 5,
+    "symbols": 6,
+    "pullRequest": 7,
+    "binary": 8
+  },
+  "ReviewProjectFileResponse": {
+    "value": 1
   }
 }

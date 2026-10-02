@@ -44,6 +44,12 @@ export const views = {
     detectRemote: "Detect from the project directory",
     runLabel: " · Runner",
   },
+  projectFiles: {
+    title: 'Project Files', tree: 'Files in the project directory', refresh: 'Read the project directory again',
+    loading: 'Reading the project directory…', failed: 'Could not read the project directory', empty: 'No files in the project directory',
+    select: 'Select a file', fileLoading: 'Reading the file…', fileFailed: 'Could not read this file', binary: 'Binary files are not shown',
+    retry: 'Try again', changes: '{{count}} uncommitted'
+  },
   projectPullRequests: {
     title: 'Pull Requests', search: 'Find a pull request or task…', refresh: 'Check open pull requests again',
     refreshFailed: 'Could not check the pull requests again', loading: 'Loading pull requests…',

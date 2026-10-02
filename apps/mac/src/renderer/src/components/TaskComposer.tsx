@@ -221,7 +221,7 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
     if (openAfter) await openTask(task.id)
     else {
       const current = useStore.getState()
-      if (!current.projectDashboardOpen && !current.projectDocumentsOpen && !current.projectPullRequestsOpen) await moveCursor(task.id)
+      if (!current.projectDashboardOpen && !current.projectDocumentsOpen && !current.projectPullRequestsOpen && !current.projectFilesOpen) await moveCursor(task.id)
       else pushToast({ id: `created-${task.id}`, level: 'info', message: t('taskComposer.added', { title: task.title }), taskId: task.id })
       ref.current?.focus()
     }

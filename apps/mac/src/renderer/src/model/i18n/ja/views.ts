@@ -45,6 +45,12 @@ export const views: typeof en = {
     detectRemote: "プロジェクトのディレクトリから検出",
     runLabel: " · Runner",
   },
+  projectFiles: {
+    title: 'プロジェクトファイル', tree: 'プロジェクトディレクトリのファイル', refresh: 'プロジェクトディレクトリを読み直す',
+    loading: 'プロジェクトディレクトリを読み込み中…', failed: 'プロジェクトディレクトリを読み込めませんでした', empty: 'プロジェクトディレクトリにファイルがありません',
+    select: 'ファイルを選択', fileLoading: 'ファイルを読み込み中…', fileFailed: 'このファイルを読み込めませんでした', binary: 'バイナリファイルは表示しません',
+    retry: '再試行', changes: '未コミット {{count}}'
+  },
   projectPullRequests: {
     title: 'プルリクエスト', search: 'プルリクエストやタスクを検索…', refresh: 'オープン中のプルリクエストを再確認',
     refreshFailed: 'プルリクエストを再確認できませんでした', loading: 'プルリクエストを読み込み中…',

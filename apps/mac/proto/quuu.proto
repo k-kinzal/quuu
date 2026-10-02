@@ -7270,6 +7270,109 @@ message ReviewRefreshProjectPullRequestsResponse {
   optional ReviewRefreshProjectPullRequestsResponseValue value = 1;
 }
 
+message ReviewProjectFilesRequest {
+  optional string value = 1;
+}
+
+message ReviewProjectFilesResponseValueTree {
+  repeated google.protobuf.Value items = 1;
+}
+
+message ReviewProjectFilesResponseValueChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewProjectFilesResponseValueChanges {
+  repeated ReviewProjectFilesResponseValueChangesItem items = 1;
+}
+
+message ReviewProjectFilesResponseValue {
+  optional string cwd = 1;
+  optional string branch = 2;
+  optional ReviewProjectFilesResponseValueTree tree = 3;
+  optional ReviewProjectFilesResponseValueChanges changes = 4;
+}
+
+message ReviewProjectFilesResponse {
+  optional ReviewProjectFilesResponseValue value = 1;
+}
+
+message ReviewProjectFileRequestValue {
+  optional string projectId = 1;
+  optional string path = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewProjectFileRequest {
+  optional ReviewProjectFileRequestValue value = 1;
+}
+
+message ReviewProjectFileResponseValueDiffItemOldLine {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewProjectFileResponseValueDiffItemNewLine {
+  oneof kind {
+  double variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewProjectFileResponseValueDiffItem {
+  optional string kind = 1;
+  optional ReviewProjectFileResponseValueDiffItemOldLine oldLine = 2;
+  optional ReviewProjectFileResponseValueDiffItemNewLine newLine = 3;
+  optional string text = 4;
+}
+
+message ReviewProjectFileResponseValueDiff {
+  repeated ReviewProjectFileResponseValueDiffItem items = 1;
+}
+
+message ReviewProjectFileResponseValueSymbolsItem {
+  optional string name = 1;
+  optional string kind = 2;
+  optional double line = 3;
+  optional double depth = 4;
+}
+
+message ReviewProjectFileResponseValueSymbols {
+  repeated ReviewProjectFileResponseValueSymbolsItem items = 1;
+}
+
+message ReviewProjectFileResponseValuePullRequestVariant1 {
+  optional string url = 1;
+  optional double number = 2;
+  optional string headSha = 3;
+}
+
+message ReviewProjectFileResponseValuePullRequest {
+  oneof kind {
+  ReviewProjectFileResponseValuePullRequestVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewProjectFileResponseValue {
+  optional string source = 1;
+  optional string path = 2;
+  optional string language = 3;
+  optional string content = 4;
+  optional ReviewProjectFileResponseValueDiff diff = 5;
+  optional ReviewProjectFileResponseValueSymbols symbols = 6;
+  optional ReviewProjectFileResponseValuePullRequest pullRequest = 7;
+  optional bool binary = 8;
+}
+
+message ReviewProjectFileResponse {
+  optional ReviewProjectFileResponseValue value = 1;
+}
+
 message ReportConversationRequestValue {
   optional string id = 1;
   optional double before = 2;
@@ -8053,6 +8156,8 @@ service Quuu {
   rpc ReviewClosePullRequest(ReviewClosePullRequestRequest) returns (ReviewClosePullRequestResponse);
   rpc ReviewProjectPullRequests(ReviewProjectPullRequestsRequest) returns (ReviewProjectPullRequestsResponse);
   rpc ReviewRefreshProjectPullRequests(ReviewRefreshProjectPullRequestsRequest) returns (ReviewRefreshProjectPullRequestsResponse);
+  rpc ReviewProjectFiles(ReviewProjectFilesRequest) returns (ReviewProjectFilesResponse);
+  rpc ReviewProjectFile(ReviewProjectFileRequest) returns (ReviewProjectFileResponse);
   rpc ReportConversation(ReportConversationRequest) returns (ReportConversationResponse);
   rpc ReportImage(ReportImageRequest) returns (ReportImageResponse);
   rpc ReportProjectGet(ReportProjectGetRequest) returns (ReportProjectGetResponse);

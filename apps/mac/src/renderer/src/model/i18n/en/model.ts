@@ -120,7 +120,9 @@ export const model = {
         history: 'load the review history',
         historySnapshot: 'load the review as that run left it',
         projectPullRequests: "load the project's pull requests",
-        refreshProjectPullRequests: "check the project's pull requests again"
+        refreshProjectPullRequests: "check the project's pull requests again",
+        projectFiles: "read the project directory",
+        projectFile: "read the project file"
       },
       report: {
         get: 'load the report',

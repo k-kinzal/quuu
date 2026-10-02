@@ -601,6 +601,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       closePullRequest: reviewClosePullRequest,
       projectPullRequests: os.review.projectPullRequests.handler(({ input }) => app.reviews.projectPullRequests(input)),
       refreshProjectPullRequests: os.review.refreshProjectPullRequests.handler(({ input }) => app.reviews.refreshProjectPullRequests(input)),
+      projectFiles: os.review.projectFiles.handler(({ input }) => app.reviews.projectFiles(input)),
+      projectFile: os.review.projectFile.handler(({ input }) => app.reviews.projectFile(input.projectId, input.path, input.previousPath)),
     },
     report: {
       conversation: os.report.conversation.handler(({ input }) => app.reports.conversation(input)),

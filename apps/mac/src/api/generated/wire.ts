@@ -16134,6 +16134,230 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       }
     }
   },
+  "review.projectFiles": {
+    "method": "reviewProjectFiles",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "cwd": {
+          "kind": "string"
+        },
+        "branch": {
+          "kind": "string"
+        },
+        "tree": {
+          "kind": "array",
+          "items": {
+            "kind": "value"
+          }
+        },
+        "changes": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "path": {
+                "kind": "string"
+              },
+              "change": {
+                "kind": "string",
+                "choices": [
+                  "added",
+                  "modified",
+                  "deleted",
+                  "renamed",
+                  "copied",
+                  "untracked",
+                  "conflicted"
+                ]
+              },
+              "previousPath": {
+                "kind": "string"
+              }
+            },
+            "required": [
+              "path",
+              "change"
+            ]
+          }
+        }
+      },
+      "required": [
+        "cwd",
+        "branch",
+        "tree",
+        "changes"
+      ]
+    }
+  },
+  "review.projectFile": {
+    "method": "reviewProjectFile",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "projectId": {
+          "kind": "string"
+        },
+        "path": {
+          "kind": "string"
+        },
+        "previousPath": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "projectId",
+        "path"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "source": {
+          "kind": "string",
+          "choices": [
+            "working",
+            "task",
+            "commit",
+            "pull-request"
+          ]
+        },
+        "path": {
+          "kind": "string"
+        },
+        "language": {
+          "kind": "string"
+        },
+        "content": {
+          "kind": "string"
+        },
+        "diff": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "context",
+                  "added",
+                  "deleted",
+                  "hunk"
+                ]
+              },
+              "oldLine": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "number"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
+              "newLine": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "number"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
+              "text": {
+                "kind": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "oldLine",
+              "newLine",
+              "text"
+            ]
+          }
+        },
+        "symbols": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "name": {
+                "kind": "string"
+              },
+              "kind": {
+                "kind": "string",
+                "choices": [
+                  "class",
+                  "interface",
+                  "function",
+                  "method",
+                  "type",
+                  "variable",
+                  "heading"
+                ]
+              },
+              "line": {
+                "kind": "number"
+              },
+              "depth": {
+                "kind": "number"
+              }
+            },
+            "required": [
+              "name",
+              "kind",
+              "line",
+              "depth"
+            ]
+          }
+        },
+        "pullRequest": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "object",
+              "fields": {
+                "url": {
+                  "kind": "string"
+                },
+                "number": {
+                  "kind": "number"
+                },
+                "headSha": {
+                  "kind": "string"
+                }
+              },
+              "required": [
+                "number",
+                "headSha"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "binary": {
+          "kind": "boolean"
+        }
+      },
+      "required": [
+        "source",
+        "path",
+        "language",
+        "content",
+        "diff",
+        "symbols",
+        "binary"
+      ]
+    }
+  },
   "report.conversation": {
     "method": "reportConversation",
     "input": {

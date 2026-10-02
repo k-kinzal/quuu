@@ -122,7 +122,7 @@ describe('project navigation and dashboard', () => {
   it('navigates between project destinations and restores them with back and forward', async () => {
     render(<ThemeProvider><ProjectNavigation project={project} /></ThemeProvider>)
     const nav = screen.getByRole('navigation', { name: 'Project navigation' })
-    expect(nav.querySelectorAll('button')).toHaveLength(5)
+    expect(nav.querySelectorAll('button')).toHaveLength(6)
     fireEvent.click(screen.getByRole('button', { name: 'Dashboard' }))
     expect(useStore.getState()).toMatchObject({ projectDashboardOpen: true, projectSettingsOpen: false, detailOpen: false })
     fireEvent.click(screen.getByRole('button', { name: 'Project Settings' }))

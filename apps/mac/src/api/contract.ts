@@ -13,7 +13,7 @@ import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, Edito
 import { RunSchema, SchedulerStatusSchema } from "./schemas/execution.js"
 import { ProjectInputSchema, ProjectSchema } from "./schemas/projects.js"
 import { ReportHistoryEntrySchema, ReportViewRequestSchema, TaskReportSchema, ProjectReportSchema, ProjectReportViewRequestSchema } from "./schemas/report.js"
-import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewHistoryPointSchema, ReviewSnapshotSchema, ProjectPullRequestSchema } from "./schemas/review.js"
+import { ReviewActionResultSchema, ReviewCommentInputSchema, ReviewFileRequestSchema, ReviewFileSchema, ReviewHistoryPointSchema, ReviewSnapshotSchema, ProjectPullRequestSchema, ProjectFilesSchema } from "./schemas/review.js"
 import { SessionMessageSchema, SessionSnapshotSchema } from "./schemas/session.js"
 import { NetworkConfigSchema, NetworkPairSchema, NetworkStatusSchema } from "./schemas/network.js"
 import { ServerStatusSchema, AppSettingsSchema, CommitIdentitySchema, IdentityPreviewSchema } from "./schemas/settings.js"
@@ -220,6 +220,14 @@ export const contract = {
     projectPullRequests: procedure.input(z.string()).output(ProjectPullRequestSchema.array()),
     /** Looks again at the tasks whose Pull Requests are still open, then answers the list. */
     refreshProjectPullRequests: procedure.input(z.string()).output(ProjectPullRequestSchema.array()),
+    /** The project directory's files and its uncommitted changes, read now. */
+    projectFiles: procedure.input(z.string()).output(ProjectFilesSchema),
+    /** One file of the project directory against HEAD. Only the working copy is readable here. */
+    projectFile: procedure.input(z.object({
+      projectId: z.string(),
+      path: z.string(),
+      previousPath: z.string().optional()
+    })).output(ReviewFileSchema),
   },
   report: {
     conversation: procedure.input(AuxiliaryPageInputSchema).output(AuxiliaryPageSchema),

@@ -44,6 +44,7 @@ export interface Place {
   projectDashboardOpen: boolean
   projectDocumentsOpen: boolean
   projectPullRequestsOpen: boolean
+  projectFilesOpen: boolean
   editingRuleId: string | null
 }
 
@@ -59,6 +60,7 @@ export const INITIAL_PLACE: Place = {
   projectDashboardOpen: false,
   projectDocumentsOpen: false,
   projectPullRequestsOpen: false,
+  projectFilesOpen: false,
   editingRuleId: null
 }
 
@@ -98,6 +100,7 @@ export function placeOf(state: Place): Place {
     projectDashboardOpen: state.projectDashboardOpen,
     projectDocumentsOpen: state.projectDocumentsOpen,
     projectPullRequestsOpen: state.projectPullRequestsOpen,
+    projectFilesOpen: state.projectFilesOpen,
     editingRuleId: state.editingRuleId
   }
 }
@@ -114,6 +117,7 @@ export function samePlace(a: Place, b: Place): boolean {
     a.projectDashboardOpen === b.projectDashboardOpen &&
     a.projectDocumentsOpen === b.projectDocumentsOpen &&
     a.projectPullRequestsOpen === b.projectPullRequestsOpen &&
+    a.projectFilesOpen === b.projectFilesOpen &&
     a.editingRuleId === b.editingRuleId
   )
 }
