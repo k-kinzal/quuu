@@ -2124,11 +2124,12 @@ export function removeHookReport(db: Db, taskId: string): void {
 
 
 // Remote execution journals contain instructions and receipts, never issued GitHub tokens.
+// Updating in place keeps the rowid, so heartbeats never move a Runner: the list stays in pairing order.
 export function saveRemoteRunner(db: Db, runner: RemoteRunner): void {
-  db.prepare('INSERT OR REPLACE INTO remote_runners (id, data) VALUES (?, ?)').run(runner.id, JSON.stringify(runner))
+  db.prepare('INSERT INTO remote_runners (id, data) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET data = excluded.data').run(runner.id, JSON.stringify(runner))
 }
 export function listRemoteRunners(db: Db): RemoteRunner[] {
-  return (db.prepare('SELECT data FROM remote_runners').all() as Array<{ data: string }>).map(r => JSON.parse(r.data) as RemoteRunner)
+  return (db.prepare('SELECT data FROM remote_runners ORDER BY rowid').all() as Array<{ data: string }>).map(r => JSON.parse(r.data) as RemoteRunner)
 }
 export function saveRunnerWorkspace(db: Db, workspace: RunnerWorkspace): void {
   db.prepare('INSERT OR REPLACE INTO runner_workspaces (task_id, data) VALUES (?, ?)').run(workspace.taskId, JSON.stringify(workspace))

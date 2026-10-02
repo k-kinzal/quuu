@@ -87,6 +87,16 @@ it('pins the controller before sending secrets and consumes a PIN only once', as
   expect(JSON.stringify(repo.listRemoteRunners(db))).not.toContain(paired.grant.token)
 })
 
+it('keeps Runners in pairing order when a heartbeat saves one again', () => {
+  const saved = ['first', 'second', 'third'].map(name => ({ id: `runner_${name}`, name, agents: [], labels: [], root: '/work', capacity: 1,
+    lastSeen: '2000-01-01T00:00:00Z', revoked: false, tokenHash: name }))
+  for (const item of saved) repo.saveRemoteRunner(db, item)
+  repo.saveRemoteRunner(db, { ...saved[0], lastSeen: '2026-01-01T00:00:00Z' })
+  repo.saveRemoteRunner(db, { ...saved[1], revoked: true })
+  expect(repo.listRemoteRunners(db).map(item => item.name)).toEqual(['first', 'second', 'third'])
+  expect(remote.status().runners.map(item => item.name)).toEqual(['first', 'second', 'third'])
+})
+
 it('requires the report and hook agents before preferring a Runner', async () => {
   await pair()
   const { projectId, agentId } = project()
