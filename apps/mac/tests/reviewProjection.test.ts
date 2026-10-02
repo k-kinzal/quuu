@@ -11,9 +11,9 @@ import { makeAgent, makeProject, makeTask, memoryDb, occupy } from './helpers.js
 function snapshot(): ReviewSnapshot {
   return { cwd: '/tmp', branch: 'main', repository: 'owner/repo', tree: [], changes: [], stagedChanges: [], stagedRevision: null, localChanges: [], revision: null, localRevision: null, commits: [], pullRequests: [], coverage: null, projectTasks: [] }
 }
-function tool(result: string | null, name = 'Bash', input: unknown = { command: 'git commit -m finished' }): SessionMessage {
+function tool(result: string | null, name = 'Bash', input: unknown = { command: 'git commit -m finished' }, target: string | null = null): SessionMessage {
   return { id: 'tool', role: 'assistant', isSidechain: false, timestamp: null, model: null,
-    blocks: [{ kind: 'tool', tool: { id: 'call', name, input, target: null, result, isError: false, images: [] } }] }
+    blocks: [{ kind: 'tool', tool: { id: 'call', name, input, target, result, isError: false, images: [] } }] }
 }
 
 it('extracts successful git and PR receipts from wrapped command output, excluding prompts and proposed commands', () => {
@@ -86,6 +86,37 @@ it('keeps a Pull Request the run acted on even when the command named it', () =>
   expect(extractReviewEvidence([
     tool(`Merging pull request\n${url}\n`, 'Bash', { command: `gh pr merge ${url} --squash` })
   ]).pullRequests).toEqual([url])
+})
+
+it.each([
+  ['Bash', { command: "cd /tmp/worktree\npython3 - <<'EOF'\nprint('ready')\nEOF\ngh pr create --body-file /tmp/pr.md 2>&1 | tail -2" }],
+  ['exec_command', { cmd: 'cd /tmp/worktree\ngh\tpr\tcreate' }],
+  ['run_in_terminal', { CommandLine: 'cd /tmp/worktree\r\ngh pr edit 42' }],
+  ['shell', { command: ['sh', '-c', 'cd /tmp/worktree\ngh pr view --json url'] }]
+])('recognizes a PR receipt from a multiline %s command', (name, input) => {
+  const url = 'https://github.com/owner/repo/pull/42'
+  expect(extractReviewEvidence([
+    tool(`${url}\nShell cwd was reset to /tmp/project`, name, input)
+  ]).pullRequests).toEqual([url])
+})
+
+it('still excludes explicitly inspected PRs and failed receipts in multiline commands', () => {
+  const url = 'https://github.com/other/project/pull/7'
+  expect(extractReviewEvidence([
+    tool(url, 'Bash', { command: `cd /tmp/worktree\ngh pr view ${url}` }),
+    tool(url, 'Bash', { command: 'cd /tmp/worktree\ngh pr view 7 --repo other/project' }),
+    tool(JSON.stringify({ exit_code: 1, output: url }), 'exec_command', { cmd: 'cd /tmp/worktree\ngh pr create' })
+  ]).pullRequests).toEqual([])
+})
+
+it('keeps PR receipts from later calls in a script wrapper and from resumed output', () => {
+  const first = 'https://github.com/owner/repo/pull/42'
+  const second = 'https://github.com/owner/repo/pull/43'
+  expect(extractReviewEvidence([
+    tool(JSON.stringify({ output: first }), 'exec_command',
+      'text(await tools.exec_command({cmd: "git status"}));\ntext(await tools.exec_command({cmd: "gh pr create"}))', 'git status'),
+    tool(second, 'wait', { cell_id: '1' }, 'gh pr create')
+  ]).pullRequests).toEqual([first, second])
 })
 
 let db: ReturnType<typeof memoryDb>

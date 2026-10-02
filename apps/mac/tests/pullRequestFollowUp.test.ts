@@ -2,6 +2,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import * as repo from '../src/main/db/repo.js'
 import { MAX_PULL_REQUEST_ROUNDS, REVIEW_PULL_REQUEST_WATCH_MS, PullRequestFollowUp, pullRequestTrouble, type PullRequestFollowUpPorts } from '../src/main/automation/pullRequestFollowUp.js'
 import type { ReviewPullRequest, ReviewSnapshot } from '../src/main/review/types.js'
+import { recordSessionEvidence } from '../src/main/review/evidence.js'
 import { DEFAULT_SETTINGS, type AppSettings } from '../src/main/settings/types.js'
 import type { ToastPayload } from '../src/main/snapshot.js'
 import { nowIso } from '../src/main/util.js'
@@ -341,5 +342,34 @@ it('holds the task only where a prompt is on, waits for indexing before asking G
   ports.conclude.mockImplementation(() => { order.push('conclude') })
   await expect(followUp.onCheck(taskId)).resolves.toBeUndefined()
   expect(order).toEqual(['indexed', 'refresh', 'conclude'])
+  expect(ports.conclude).toHaveBeenCalledWith(taskId)
+})
+
+it('sends the CI wait prompt for a PR created on a later command line before concluding the run check', async () => {
+  const taskId = checking(db, projectId, 'Ship it', agentId)
+  const pr = pull({ check: 'pending', mergeState: 'clean' })
+  ports.indexed.mockImplementation(id => {
+    recordSessionEvidence(db, id, [{
+      id: 'create-pr', role: 'assistant', isSidechain: false, timestamp: null, model: null,
+      blocks: [{ kind: 'tool', tool: {
+        id: 'create-pr', name: 'Bash', input: { command: 'cd /tmp/worktree\ngh pr create --body-file /tmp/pr.md' },
+        target: null, result: `${pr.url}\nShell cwd was reset to /tmp/project`, isError: false, images: []
+      } }]
+    }])
+    return Promise.resolve()
+  })
+  ports.refresh.mockImplementation(id => {
+    const urls = repo.reviewEvidence(db, id).pullRequests
+    const fresh = snapshot(urls.includes(pr.url) ? [pr] : [])
+    followUp.onProjected(id, fresh)
+    return Promise.resolve(fresh)
+  })
+  ports.conclude.mockImplementation(() => {
+    expect(ports.sendBack).toHaveBeenCalledWith(taskId, settings.pullRequestPendingPrompt)
+  })
+
+  await followUp.onCheck(taskId)
+
+  expect(ports.sendBack).toHaveBeenCalledTimes(1)
   expect(ports.conclude).toHaveBeenCalledWith(taskId)
 })

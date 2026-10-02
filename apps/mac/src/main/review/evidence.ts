@@ -1,7 +1,7 @@
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { SessionBatch, SessionDerivation } from '../session/derive.js'
-import { isShellTool } from '../session/shell.js'
+import { isShellTool, shellCommandOf } from '../session/shell.js'
 import type { SessionMessage } from '../session/types.js'
 
 import type { ReviewEvidence } from './types.js'
@@ -67,8 +67,10 @@ export function extractReviewEvidence(messages: SessionMessage[]): ReviewEvidenc
       if (block.kind !== 'tool' || block.tool.result === null) continue
       const tool = block.tool
       const shell = isShellTool(tool.name)
-      const input = typeof tool.input === 'string' ? tool.input : JSON.stringify(tool.input)
-      const invocation = `${tool.target ?? ''} ${input}`
+      // JSON escaping turns a newline before gh into a literal "ngh", hiding the command boundary.
+      const command = shellCommandOf(tool) ?? ''
+      // A script wrapper's target can name only its first call; later calls remain in the input.
+      const invocation = typeof tool.input === 'string' ? `${command}\n${tool.input}` : command
       const actsOnPr = (shell && /\bgh\s+pr\s+(?:create|edit|merge)\b/.test(invocation)) ||
         /(?:^|[._])create_pull_request$/.test(tool.name)
       const readsPr = shell && /\bgh\s+pr\s+view\b/.test(invocation)

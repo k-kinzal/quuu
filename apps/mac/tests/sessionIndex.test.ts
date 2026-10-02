@@ -111,14 +111,14 @@ it('reopens durable pages and images without parsing the original log again', as
 it.each([false, true])('rebuilds outdated PR evidence from bounded cached pages, even with a missing log (%s)', async missing => {
   const url = 'https://github.com/upstream/repo/pull/42'
   writeFileSync(logPath, history(300) +
-    line({ type: 'assistant', uuid: 'pr', message: { content: [{ type: 'tool_use', id: 'create-pr', name: 'Bash', input: { command: 'gh pr create' } }] } }) +
-    line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'create-pr', content: url }] } }))
+    line({ type: 'assistant', uuid: 'pr', message: { content: [{ type: 'tool_use', id: 'create-pr', name: 'Bash', input: { command: 'cd /tmp/worktree\ngh pr create' } }] } }) +
+    line({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: 'create-pr', content: `${url}\nShell cwd was reset to /tmp/project` }] } }))
   view.loadSession(runId)
   await index.settled()
   const run = repo.getRun(db, runId)!
   const target = sessionReadTarget(db, run)
   const key = sessionKey(target)
-  repo.finishSessionEvidence(db, key, 0)
+  repo.finishSessionEvidence(db, key, 3)
   db.prepare("DELETE FROM task_review_evidence WHERE task_id = ? AND kind = 'pull-request'").run(taskId)
   if (missing) rmSync(logPath)
   view.closeSession()
