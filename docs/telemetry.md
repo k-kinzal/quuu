@@ -32,6 +32,11 @@ quuu app set-telemetry '{"enabled":false}'
 collector took it, and its error. It is the place to look when nothing arrives; the
 exporters report failures nowhere else.
 
+A collector on the LAN needs macOS **Local Network** access for Quuu (System Settings ›
+Privacy & Security › Local Network). Until it is allowed, every export fails and
+`lastExports` shows `connect EHOSTUNREACH <collector>`, while the same address works
+from a terminal (which carries the terminal's own access).
+
 Only the fields a patch names change. The choice is this computer's own: it is kept in
 `telemetry.json` in the data directory (mode 0600, written by the operation; do not edit it
 by hand), not in the app settings a satellite reads from its host, and `app.*` operations
