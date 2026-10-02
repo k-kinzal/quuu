@@ -8,6 +8,7 @@ import type { AppSnapshot } from '../../../api/schemas/snapshot.js'
  *   L2 entity     … opens only after picking in L1
  */
 export type Section =
+  | { kind: 'quuuAI' }
   | { kind: 'all' }
   | { kind: 'review' }
   | { kind: 'done' }

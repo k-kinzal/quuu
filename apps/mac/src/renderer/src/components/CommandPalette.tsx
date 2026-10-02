@@ -29,6 +29,7 @@ import { useSettings, useStore } from '../state/store.js'
 import { StatusDot } from '../ui/StatusDot.js'
 import { Bell, Bot, CheckCheck, CircleCheckBig, CirclePause, CirclePlay, FolderGit2, ICON, Inbox, Palette, PanelLeftClose, PanelRightClose, Play, Plus, Rows3, Search, Settings, SlidersHorizontal, iconProps } from '../ui/icons.js'
 import { shortcut } from '../interaction/shortcut.js'
+import { startNewTask } from '../interaction/taskLink.js'
 
 type Group = 'tasks' | 'go' | 'projects' | 'actions'
 
@@ -163,6 +164,14 @@ export function CommandPalette(): JSX.Element | null {
     }
 
     // --- Go ---
+    if (snapshot.projects.some(project => project.builtIn)) out.push({
+      id: 'go:quuuAI',
+      group: 'go',
+      title: t('quuuAI.title'),
+      icon: <Bot size={ICON.md} {...iconProps} />,
+      keywords: t('quuuAI.emptyDescription'),
+      run: close(() => setSection({ kind: 'quuuAI' }))
+    })
     out.push(
       {
         id: 'go:all',
@@ -224,6 +233,7 @@ export function CommandPalette(): JSX.Element | null {
 
     // --- Projects ---
     for (const project of snapshot.projects) {
+      if (project.builtIn) continue
       const open = snapshot.tasks.filter(
         (t) => t.projectId === project.id && !t.archived && t.status !== 'done'
       ).length
@@ -276,8 +286,7 @@ export function CommandPalette(): JSX.Element | null {
       icon: <Plus size={ICON.md} {...iconProps} />,
       keywords: t('palette.keywords.newTask'),
       run: close(() => {
-        setSection({ kind: 'all' })
-        setTimeout(() => window.dispatchEvent(new CustomEvent('quuu:focus-quickadd')), 0)
+        startNewTask(null)
       }, 'keep')
     })
 

@@ -62,6 +62,7 @@ export function projectStateItems(project: Project): MenuItemSpec[] {
  * pins Settings. The groups never move, so the hand learns one menu for both routes.
  */
 export function projectItems(project: Project, settings: MenuItemSpec): MenuItemSpec[] {
+  if (project.builtIn) return []
   return [
     ...group(openWithItems({ kind: 'project', id: project.id })),
     ...group(copyItem(t('rail.copyDirectory'), project.path)),

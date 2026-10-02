@@ -124,7 +124,9 @@ export function TaskSidebar({ besideNavigation = false }: {
   }, [landedTaskId])
 
   const sectionTitle =
-    section.kind === 'review'
+    section.kind === 'quuuAI'
+      ? t('quuuAI.title')
+      : section.kind === 'review'
       ? t('sidebar.review')
       : section.kind === 'done'
         ? t('sidebar.done')
@@ -145,9 +147,9 @@ export function TaskSidebar({ besideNavigation = false }: {
    * With a project open, the path already answers it (the same condition under which the
    * full-width table shows the column).
    */
-  const showProject = section.kind !== 'project'
+  const showProject = section.kind !== 'project' && section.kind !== 'quuuAI'
 
-  const openProjects = snapshot?.projects ?? []
+  const openProjects = (snapshot?.projects ?? []).filter(p => section.kind !== 'quuuAI' || p.builtIn)
   const targetId = defaultTargetProjectId(
     section.kind === 'project' ? section.id : null,
     targetProjectId,
@@ -195,7 +197,7 @@ export function TaskSidebar({ besideNavigation = false }: {
             project={target}
             projects={openProjects}
             /* Fix it only when the hierarchy decides it. A destination that fell through because it is archived must stay re-pickable */
-            fixed={section.kind === 'project' && target.id === section.id}
+            fixed={section.kind === 'quuuAI' || (section.kind === 'project' && target.id === section.id)}
             onClose={() => setAdding(false)}
           />
         )}

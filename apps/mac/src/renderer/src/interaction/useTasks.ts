@@ -143,7 +143,7 @@ export function useTaskView(): TaskView {
       matched: matched.length,
       hasMore: ordered.length < sorted.length,
       rules: (snapshot?.rules ?? []).filter((rule) =>
-        scope.kind !== 'review' && scope.kind !== 'done' && projects.has(rule.projectId) &&
+        scope.kind !== 'quuuAI' && scope.kind !== 'review' && scope.kind !== 'done' && projects.has(rule.projectId) &&
         (scope.kind === 'project' ? rule.projectId === scope.projectId :
           filters.projectIds.length === 0 || filters.projectIds.includes(rule.projectId)) &&
         // A recurring row shows its name in the title column, so the name query reads it too

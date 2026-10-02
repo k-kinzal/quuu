@@ -1,5 +1,12 @@
 /** Copy for the workbench area: list, composer, palette, rail, footer. Groups are the owning components. */
 export const workbench = {
+  quuuAI: {
+    title: 'QuuuAI',
+    emptyTitle: 'What would you like QuuuAI to help with?',
+    emptyDescription: 'Ask a question about Quuu or request help managing your tasks, projects, and agents.',
+    ask: 'Ask QuuuAI',
+    placeholder: 'Ask QuuuAI a question or request a task...'
+  },
   taskComposer: {
     added: 'Added “{{title}}”',
     agent: 'AI',

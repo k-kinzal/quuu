@@ -6,6 +6,7 @@ import { Bot, ICON, iconProps } from '../ui/icons.js'
 
 /** What the project itself decides, said in the project's own terms. */
 function defaultLabel(target: ReturnType<typeof useNewTaskAgent>): string {
+  if (target.builtIn) return target.targetLabel
   if (target.targetKind === 'group') return t('taskComposer.agentGroup', { name: target.targetLabel })
   if (target.targetKind === 'agent') return t('taskComposer.agentProject', { name: target.targetLabel })
   return target.targetLabel

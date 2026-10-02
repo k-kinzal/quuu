@@ -177,7 +177,9 @@ export function TaskOverview(): JSX.Element {
 
   const project = section.kind === 'project' ? projects.get(section.id) : undefined
   const title =
-    section.kind === 'review'
+    section.kind === 'quuuAI'
+      ? t('quuuAI.title')
+      : section.kind === 'review'
       ? t('taskOverview.needsReview')
       : section.kind === 'done'
         ? t('taskOverview.doneSection')
@@ -185,7 +187,7 @@ export function TaskOverview(): JSX.Element {
           ? (project?.name ?? t('taskOverview.projectFallback'))
           : t('taskOverview.allTasks')
 
-  const crossProject = section.kind !== 'project'
+  const crossProject = section.kind !== 'project' && section.kind !== 'quuuAI'
   /*
    * Done tasks never reach the review section, and the Done section is nothing else.
    * Don't show an item that does nothing when pressed
@@ -433,6 +435,13 @@ export function TaskOverview(): JSX.Element {
               title={t('taskOverview.emptyFiltered')}
               action={{ label: t('taskOverview.resetView'), onClick: resetTableView }}
             />
+          ) : section.kind === 'quuuAI' ? (
+            <EmptyState
+              title={t('quuuAI.emptyTitle')}
+              action={{ label: t('quuuAI.ask'), onClick: () => focusAny('composer') }}
+            >
+              {t('quuuAI.emptyDescription')}
+            </EmptyState>
           ) : (
             <EmptyState
               title={

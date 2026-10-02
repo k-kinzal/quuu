@@ -460,6 +460,11 @@ export const useStore = create<State>((set, get) => ({
 
   // Rule A-1: picking a section never opens the detail. Show the whole picture first.
   setSection(section) {
+    // Links to the backing project enter the dedicated task surface too.
+    const projectId = section.kind === 'project' ? section.id : null
+    if (projectId && get().snapshot?.projects.some(p => p.id === projectId && p.builtIn)) {
+      section = { kind: 'quuuAI' }
+    }
     navigate(set, get, () => {
       if (get().selectedRunId) void window.quuu.session.close()
       set({
@@ -596,6 +601,7 @@ export const useStore = create<State>((set, get) => ({
     })
   },
   openProjectSettings(open) {
+    if (get().section.kind !== 'project') return
     navigate(set, get, () => {
       if (open) get().closeDetail()
       set({ projectSettingsOpen: open, projectDashboardOpen: false, projectDocumentsOpen: false, projectPullRequestsOpen: false, projectFilesOpen: false, detailOpen: false, editingRuleId: null })

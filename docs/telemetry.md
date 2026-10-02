@@ -118,7 +118,7 @@ backends that do not index the field yet).
 | `quuu.app.focus` | a window gains or loses focus | `quuu.ui.focused` |
 | `quuu.app.quit` | quit | none |
 | `quuu.task.lifecycle` | after each committed task fact | `quuu.task.lifecycle` (`created`, `queued`, `held`, `started`, `stopped`, `review`, `failed`, `completed`, `reopened`, `archived`, `restored`, `deleted`), `quuu.task.id/.status/.priority/.source/.automated/.agent_pinned/.dependencies/.age_seconds`, `quuu.project.id/.name`, and the run attributes when a run is involved. `review`/`failed`/`completed` add `quuu.task.run_count` and `.followup_count` |
-| `quuu.ui.screen` | the window shows a different place | `quuu.ui.screen` (`all`, `review/task`, `project/dashboard`, `settings/agents/agent`, …), `quuu.ui.previous_screen`, `quuu.ui.previous_duration_ms`, ids |
+| `quuu.ui.screen` | the window shows a different place | `quuu.ui.screen` (`quuuAI`, `quuuAI/task`, `all`, `review/task`, `project/dashboard`, `settings/agents/agent`, …), `quuu.ui.previous_screen`, `quuu.ui.previous_duration_ms`, ids |
 | `quuu.ui.action` | a UI-only change, settled for 1s | `quuu.ui.action` (`table`, `filters`, `layout`, `palette.open`), `quuu.ui.fields` |
 | `quuu.ui.command` | a native-menu command | `quuu.ui.command` (`task.runNow`, `view.back`, …), `quuu.ui.trigger` (`shortcut`, `menu`, `notification`, `gesture`, `app`) |
 | `quuu.notification` | a toast or OS notification | `quuu.notification.kind`, `.level` (never the text) |

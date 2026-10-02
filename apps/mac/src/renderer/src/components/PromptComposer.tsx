@@ -50,14 +50,14 @@ export function PromptComposer({
       {errors}
       <ComposerToolbar>
         <ComposerOptions>
-          <ContextChip icon={project && <Dot color={project.color} />} title={project?.path}
+          {(!project?.builtIn || onPickProject) && <ContextChip icon={project && <Dot color={project.color} />} title={project?.path}
             onClick={onPickProject}
             aria-haspopup={onPickProject ? 'listbox' : undefined}
             aria-expanded={onPickProject ? projectPickerOpen : undefined}
             onContextMenu={project ? event => {
               if (claimContextMenu(event)) void contextMenu(pathItems(project.path, t('composer.workingDirectory')))
             } : undefined}
-          >{project?.name ?? t('composer.unassigned')}</ContextChip>
+          >{project?.name ?? t('composer.unassigned')}</ContextChip>}
           {agent}
           <SegmentedControl<Priority> label={t('taskComposer.priority')} value={priority}
             onChange={onPriorityChange}

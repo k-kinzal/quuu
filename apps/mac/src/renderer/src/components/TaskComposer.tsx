@@ -261,7 +261,7 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
       input={{
         ...files.inputProps, disabled: creation.isPending,
         value: lead.divided ? lead.body : text,
-        placeholder: lead.divided ? t('taskComposer.promptPlaceholder') : t('taskComposer.draftPlaceholder'),
+        placeholder: project.builtIn ? t('quuuAI.placeholder') : lead.divided ? t('taskComposer.promptPlaceholder') : t('taskComposer.draftPlaceholder'),
         onChange: e => changeBody(e.target.value, e.target.selectionStart ?? 0),
         onKeyDown: (e) => {
           if (files.isBusy()) return

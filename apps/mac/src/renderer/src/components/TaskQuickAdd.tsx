@@ -179,7 +179,7 @@ export function TaskQuickAdd({
 
         <NewTaskAgentSelect target={agent} compact onPicking={open => { picking.current = open; if (!open) ref.current?.focus() }} />
 
-        {fixed ? (
+        {fixed ? !target.builtIn && (
           <MarkerSlot title={target.path}>
             <Dot color={target.color} />
           </MarkerSlot>

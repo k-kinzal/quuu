@@ -164,6 +164,31 @@ beforeEach(() => {
 const view = (): ReturnType<typeof useTaskView> => renderHook(() => useTaskView()).result.current
 
 describe('what the list shows', () => {
+  it('keeps QuuuAI tasks, counts and completion filters separate from other projects', () => {
+    const quuu = { ...project('quuu', 'QuuuAI'), builtIn: true }
+    useStore.setState({
+      section: { kind: 'quuuAI' },
+      snapshot: {
+        ...SNAPSHOT,
+        projects: [...SNAPSHOT.projects, quuu],
+        tasks: [...TASKS,
+          task({ id: 'ask', projectId: quuu.id }),
+          task({ id: 'answered', projectId: quuu.id, status: 'done' }),
+          task({ id: 'archived', projectId: quuu.id, archived: true })]
+      }
+    })
+    expect(view().ordered.map(task => task.id)).toEqual(['ask'])
+    expect(view()).toMatchObject({ total: 1, doneHidden: 1 })
+    act(() => useStore.getState().toggleShowDone())
+    expect(view().ordered.map(task => task.id)).toEqual(['ask', 'answered'])
+    expect(view().doneHidden).toBe(0)
+  })
+
+  it('shows no tasks when the QuuuAI backing project is absent', () => {
+    useStore.setState({ section: { kind: 'quuuAI' } })
+    expect(view().ordered).toEqual([])
+  })
+
   it('passes full-history project usage to the filters even when completed tasks are hidden', () => {
     useStore.setState({ snapshot: { ...SNAPSHOT, projectRecentRunCounts: { p1: 2, p2: 8 } } })
     const current = view()

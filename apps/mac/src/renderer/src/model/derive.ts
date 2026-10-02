@@ -79,7 +79,7 @@ export { groupByStatus, STATUS_ORDER, type StatusGroup } from './statusGroups.js
 export type TaskGroup = StatusGroup<Task>
 
 export interface ScopeFilter {
-  kind: 'all' | 'review' | 'done' | 'project'
+  kind: 'quuuAI' | 'all' | 'review' | 'done' | 'project'
   projectId?: string
   showDone: boolean
 }
@@ -98,8 +98,10 @@ export function scopeTasks(snapshot: AppSnapshot, filter: ScopeFilter): Task[] {
   if (filter.kind === 'done') {
     return tasks.filter((t) => t.status === 'done')
   }
+  const quuuProjectId = filter.kind === 'quuuAI' ? snapshot.projects.find(p => p.builtIn)?.id : undefined
   return tasks.filter(
     (t) =>
+      (filter.kind !== 'quuuAI' || t.projectId === quuuProjectId) &&
       (filter.kind !== 'project' || t.projectId === filter.projectId) &&
       (filter.showDone || t.status !== 'done')
   )

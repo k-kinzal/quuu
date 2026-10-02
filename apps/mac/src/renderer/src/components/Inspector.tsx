@@ -439,7 +439,7 @@ export function Inspector({
           </InspectorGroup>
         )}
 
-        {project && (
+        {project && !project.builtIn && (
           <InspectorGroup last>
             <GroupTitle>{t('inspector.projectSettings')}</GroupTitle>
             <DescriptionList>

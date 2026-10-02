@@ -1,6 +1,13 @@
 import type { workbench as en } from '../en/workbench.js'
 
 export const workbench: typeof en = {
+  quuuAI: {
+    title: 'QuuuAI',
+    emptyTitle: 'QuuuAIに質問や作業をお願いしましょう',
+    emptyDescription: 'Quuuの使い方を質問したり、タスク・プロジェクト・エージェントの管理を依頼できます。',
+    ask: 'QuuuAIに依頼する',
+    placeholder: 'QuuuAIへの質問や、お願いしたい作業を入力…'
+  },
   taskComposer: {
     added: '「{{title}}」を追加しました',
     agent: 'AI',

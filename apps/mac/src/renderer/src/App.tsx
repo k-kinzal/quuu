@@ -384,6 +384,7 @@ function Shell(): JSX.Element {
   const isSettings = section.kind === 'settings'
   const project =
     section.kind === 'project' ? snapshot?.projects.find((p) => p.id === section.id) : undefined
+  const taskProject = section.kind === 'quuuAI' ? snapshot?.projects.find(p => p.builtIn) : project
 
   return (
     <AppShell glass>
@@ -423,8 +424,8 @@ function Shell(): JSX.Element {
               )}
             </AppShellBody>
             {/* The detail already has the conversation's composer below the chat; a second prompt there reads as one too many */}
-            {!isSettings && !(projectSettingsOpen && project) && !detailOpen && (
-              <TaskComposer fixedProjectId={project?.id} />
+            {!isSettings && !(projectSettingsOpen && project) && !detailOpen && (section.kind !== 'quuuAI' || taskProject) && (
+              <TaskComposer fixedProjectId={taskProject?.id} />
             )}
             <Footer />
           </AppShellMain>

@@ -9,6 +9,10 @@ import { addActionStatus, defaultAddAction } from '../src/main/tasks/addAction.j
 import type { Task, TaskInput } from '../src/main/tasks/types.js'
 import { contract } from '../src/api/contract.js'
 import { TaskComposer } from '../src/renderer/src/components/TaskComposer.js'
+import { TaskSidebar } from '../src/renderer/src/components/TaskSidebar.js'
+import { TaskOverview } from '../src/renderer/src/components/TaskOverview.js'
+import { Rail } from '../src/renderer/src/components/Rail.js'
+import { NO_FILTERS } from '../src/renderer/src/model/table.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { buildTheme } from '../src/renderer/src/ui/theme.js'
 
@@ -117,6 +121,10 @@ beforeEach(() => {
 
   useStore.setState({
     snapshot: SNAPSHOT,
+    section: { kind: 'all' },
+    filters: NO_FILTERS,
+    table: { sort: null, widths: {} },
+    cursorTaskId: null,
     drafts: {},
     detailOpen: false,
     toasts: [],
@@ -132,6 +140,71 @@ beforeEach(() => {
     }
   })
   Object.defineProperty(window, 'quuu', { configurable: true, writable: true, value: client })
+})
+
+describe('QuuuAI as a dedicated task surface', () => {
+  const quuu = { ...PROJECT, id: 'quuu', name: 'QuuuAI', builtIn: true }
+
+  beforeEach(() => {
+    useStore.setState({
+      snapshot: { ...SNAPSHOT, projects: [PROJECT, quuu] },
+      section: { kind: 'quuuAI' },
+      targetProjectId: PROJECT.id,
+      layout: { ...useStore.getState().layout, railCollapsed: false }
+    })
+    vi.stubGlobal('ResizeObserver', class {
+      observe(): void { }
+      unobserve(): void { }
+      disconnect(): void { }
+    })
+    HTMLElement.prototype.scrollIntoView = vi.fn()
+  })
+
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('places QuuuAI once above All tasks and keeps it on the collapsed rail', () => {
+    const { rerender } = render(<ThemeProvider><Rail /></ThemeProvider>)
+    let buttons = screen.getAllByRole('button')
+    expect(screen.getAllByRole('button', { name: 'QuuuAI' })).toHaveLength(1)
+    expect(buttons.indexOf(screen.getByRole('button', { name: 'QuuuAI' })))
+      .toBeLessThan(buttons.indexOf(screen.getByRole('button', { name: /All tasks/ })))
+    fireEvent.click(screen.getByRole('button', { name: /All tasks/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'QuuuAI' }))
+    expect(useStore.getState().section).toEqual({ kind: 'quuuAI' })
+    useStore.setState({ layout: { ...useStore.getState().layout, railCollapsed: true } })
+    rerender(<ThemeProvider><Rail /></ThemeProvider>)
+    buttons = screen.getAllByRole('button')
+    expect(buttons).toContain(screen.getByRole('button', { name: 'QuuuAI' }))
+  })
+
+  it('invites questions and requests when empty and focuses the QuuuAI composer', () => {
+    render(<ThemeProvider buildTheme={buildTheme}>
+      <TaskOverview />
+      <TaskComposer fixedProjectId={quuu.id} />
+    </ThemeProvider>)
+    expect(screen.getByText('What would you like QuuuAI to help with?')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Ask QuuuAI' }))
+    expect(document.activeElement).toBe(screen.getByPlaceholderText('Ask QuuuAI a question or request a task...'))
+  })
+
+  it('creates only in QuuuAI despite a remembered destination in another project', async () => {
+    useStore.setState({ drafts: { 'new:quuu': 'Organize my queue' } })
+    render(<ThemeProvider buildTheme={buildTheme}><TaskComposer fixedProjectId={quuu.id} /></ThemeProvider>)
+    expect(screen.queryByRole('button', { name: PROJECT.name })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ projectId: quuu.id })))
+  })
+
+  it('keeps quick add in QuuuAI while a task is open', async () => {
+    useStore.setState({ detailOpen: true })
+    render(<ThemeProvider buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
+    fireEvent.click(screen.getByRole('button', { name: /Add Task/ }))
+    const input = await screen.findByPlaceholderText('Task title...')
+    fireEvent.change(input, { target: { value: 'Explain the queue' } })
+    fireEvent.keyDown(input, { key: 'Enter', metaKey: true })
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ projectId: quuu.id })))
+    expect(screen.queryByRole('button', { name: /Add to:/ })).toBeNull()
+  })
 })
 
 function show(draft: string): void {

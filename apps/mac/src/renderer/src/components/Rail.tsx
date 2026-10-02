@@ -22,7 +22,7 @@ import { lastSegment } from '../model/paths.js'
 import { projectsByName } from '../model/projectOptions.js'
 import type { Section } from '../state/store.js'
 import { useStore } from '../state/store.js'
-import { CheckCheck, CircleCheckBig, ICON, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, iconProps } from '../ui/icons.js'
+import { Bot, CheckCheck, CircleCheckBig, ICON, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, iconProps } from '../ui/icons.js'
 import { shortcut } from '../interaction/shortcut.js'
 
 /**
@@ -52,7 +52,8 @@ export function Rail(): JSX.Element {
   const counts = useMemo(() => openCountByProject(snapshot?.tasks ?? []), [snapshot?.tasks])
   const reviews = useMemo(() => reviewCount(snapshot?.tasks ?? []), [snapshot?.tasks])
   /* Removed projects don't enter the snapshot (main filters them out) */
-  const projects = useMemo(() => projectsByName(snapshot?.projects ?? []), [snapshot?.projects])
+  const projects = useMemo(() => projectsByName((snapshot?.projects ?? []).filter(p => !p.builtIn)), [snapshot?.projects])
+  const quuuAI = snapshot?.projects.find(p => p.builtIn)
   const open = useMemo(() => {
     let total = 0
     for (const v of counts.values()) total += v
@@ -140,6 +141,14 @@ export function Rail(): JSX.Element {
       {collapsed && <SideNavTop collapsed>{toggle}</SideNavTop>}
 
       <NavSection>
+        {quuuAI && <NavItem
+          icon={<Bot size={ICON.md} {...iconProps} />}
+          label={t('quuuAI.title')}
+          badge={counts.get(quuuAI.id)}
+          collapsed={collapsed}
+          active={isActive({ kind: 'quuuAI' })}
+          onClick={() => setSection({ kind: 'quuuAI' })}
+        />}
         <NavItem
           icon={<Inbox size={ICON.md} {...iconProps} />}
           label={t('rail.allTasks')}

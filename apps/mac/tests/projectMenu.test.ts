@@ -81,10 +81,15 @@ describe('a project right-click menu', () => {
     ])
   })
 
-  it('still ends with settings for the built-in project, which has no Delete', () => {
+  it('opens QuuuAI without offering project operations or settings', () => {
     useStore.setState({ snapshot: snapshot([{ ...PROJECT, builtIn: true }]) })
-    expect(projectMenuItems('p1').at(-2)?.label).toBe('Stop This Project')
-    expect(projectMenuItems('p1').at(-1)?.label).toBe('Project Settings...')
+    const items = projectMenuItems('p1')
+    expect(outline(items)).toEqual(['Open'])
+    items[0].onSelect?.()
+    expect(useStore.getState().section).toEqual({ kind: 'quuuAI' })
+    useStore.getState().openProjectSettings(true)
+    expect(useStore.getState().projectSettingsOpen).toBe(false)
+    expect(outline(sectionMenuItems())).not.toContain('Project Settings...')
   })
 
   it('puts the project part of the list surface menu in the same order', () => {

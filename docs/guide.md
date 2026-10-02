@@ -384,7 +384,9 @@ configuration and history analysis. The Unix socket API has been retired.
 
 ## Operating Quuu from Quuu (QuuuAI)
 
-The first project in the rail is **QuuuAI**, built into Quuu and present from the first launch.
+**QuuuAI** has its own entry above **All tasks** in the rail, present from the first launch.
+It shows only its own tasks and fixes both task-creation inputs to QuuuAI. It has no project
+navigation or project settings. When the list is empty, it invites questions and requests.
 Its tasks are requests about Quuu itself — "register ~/src/api as a project", "enable Codex and
 use it for api", "review failed runs every morning" — and the agent carries them out through the
 `quuu` CLI, the same operations the screen uses.
@@ -399,8 +401,8 @@ use it for api", "review failed runs every morning" — and the agent carries th
 - Its runs find the bundled `quuu` first on `PATH`. Without Node.js, the launcher runs the CLI on
   Quuu's own runtime.
 - It cannot be deleted, and its directory and worktree mode are fixed: the operations refuse
-  them from the screen, the CLI and MCP alike. Disable it to stop its tasks. Name, color, agent,
-  priority and concurrency are yours; it starts at project priority 0 on the default group.
+  them through the CLI and MCP alike. Its backing project starts at priority 0 on the default
+  group; the task composer lets you choose an agent for a request.
 - Each launch points it at the running app's workspace, so moving or updating the app, or a
   dev launch sharing the database, keeps it working. It starts with change reports, commit
   identity and Pull Request prompts off: nothing it does is committed.

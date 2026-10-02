@@ -28,6 +28,7 @@ export function useNewTaskAgent(project: Project | undefined) {
   const others = candidates.filter(agent => !linkedIds.has(agent.id))
   const selected = candidates.find(agent => agent.id === chosen)
   return {
+    builtIn: project?.builtIn ?? false,
     linked,
     others,
     /** The picker earns its place only where there is something to pick besides the project's own. */
