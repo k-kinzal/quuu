@@ -61,6 +61,7 @@ export const views: typeof en = {
     failed: 'プルリクエストを読み込めませんでした', empty: 'このプロジェクトのタスクにはまだプルリクエストがありません',
     noMatches: '一致するプルリクエストがありません', select: 'プルリクエストを選択', retry: '再試行',
     openTask: 'タスク「{{title}}」を開く',
+    filter: 'プルリクエストの状態', all: 'すべて',
     state: { open: 'オープン', merged: 'マージ済み', closed: 'クローズ' }
   },
   githubWeb: {

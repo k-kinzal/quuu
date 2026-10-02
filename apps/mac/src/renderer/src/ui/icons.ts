@@ -13,7 +13,7 @@ export {
   CirclePause,
   CirclePlay, Clock, Code2, Copy,
   ExternalLink, FileDiff, FilePen,
-  FileSearch, FileText, FolderGit2, FolderOpen, FolderTree, Gauge, GitCommitHorizontal, GitPullRequest, GripVertical, Hash,
+  FileSearch, FileText, FolderGit2, FolderOpen, FolderTree, Gauge, GitCommitHorizontal, GitMerge, GitPullRequest, GitPullRequestClosed, GripVertical, Hash,
   // Navigation
   Inbox, Layers, ListChecks, ListFilter, ListTree, Lock,
   LockOpen, Maximize2, MessageSquareText, Minus, Monitor, MoreHorizontal, Palette, PanelLeftClose,

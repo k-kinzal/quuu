@@ -1,7 +1,7 @@
 import { Dot, IconMark, useTheme, type TreeNode } from '@design-system/react'
-import type { FileChangeKind, PullRequestCheck } from '../../../api/schemas/review.js'
+import type { FileChangeKind, PullRequestCheck, PullRequestState } from '../../../api/schemas/review.js'
 import { t } from '../model/i18n/index.js'
-import { Check, CircleAlert, Clock, ICON, Minus, TriangleAlert, iconProps } from './icons.js'
+import { Check, CircleAlert, Clock, GitMerge, GitPullRequest, GitPullRequestClosed, ICON, Minus, TriangleAlert, iconProps } from './icons.js'
 
 export const changeTone: Record<FileChangeKind, NonNullable<TreeNode['tone']>> = {
   added: 'success',
@@ -78,6 +78,27 @@ export function ConflictMark(): JSX.Element {
   return (
     <IconMark color={theme.palette.error.main} title={label} aria-label={label}>
       <TriangleAlert size={ICON.sm} {...iconProps} />
+    </IconMark>
+  )
+}
+
+const STATE_LABEL: Record<PullRequestState, string> = {
+  open: t('projectPullRequests.state.open'),
+  merged: t('projectPullRequests.state.merged'),
+  closed: t('projectPullRequests.state.closed')
+}
+
+/**
+ * Where a Pull Request stands, in GitHub's own colors and shapes: open green, merged purple,
+ * closed red. Read beside GitHub's page, any other mapping would have to be translated.
+ */
+export function PullRequestStateMark({ state }: { state: PullRequestState }): JSX.Element {
+  const theme = useTheme()
+  const color = state === 'open' ? theme.palette.success.main : state === 'merged' ? theme.palette.secondary.main : theme.palette.error.main
+  const Icon = state === 'open' ? GitPullRequest : state === 'merged' ? GitMerge : GitPullRequestClosed
+  return (
+    <IconMark color={color} title={STATE_LABEL[state]} aria-label={STATE_LABEL[state]}>
+      <Icon size={ICON.sm} {...iconProps} />
     </IconMark>
   )
 }

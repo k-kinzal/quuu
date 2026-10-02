@@ -168,14 +168,25 @@ describe('project navigation and dashboard', () => {
     ])
     const view = render(<ThemeProvider><ProjectPullRequests project={project} /></ThemeProvider>)
     const tree = (await screen.findByText('#3 PR 3')).closest('[aria-label="Pull Requests"]') as HTMLElement
+    // Open ones only at first, the latest update first, the task that made each under its title.
+    const rows = (): Array<string | null> => within(tree).getAllByRole('button').map(row => row.textContent)
+    expect(rows()).toEqual(['#1 PR 1Task 1', '#3 PR 3Conflicts with the base branch · Parser rewrite'])
+    expect(within(tree).getAllByLabelText('Open')).toHaveLength(2)
+    // CI is one circle at the row's end, named for what it says
+    expect(within(tree).getByRole('img', { name: 'CI failed' })).toBeTruthy()
+    expect(within(tree).getByRole('img', { name: 'CI running' })).toBeTruthy()
+    expect(within(tree).queryByText('Open')).toBeNull()
+
+    const filter = screen.getByRole('radiogroup', { name: 'Pull request state' })
+    expect(within(filter).getByRole('radio', { name: 'Open 2' })).toHaveProperty('checked', true)
+    fireEvent.click(within(filter).getByRole('radio', { name: 'Merged 1' }))
+    expect(rows()).toEqual(['#2 PR 2Task 2'])
+    expect(within(tree).getByLabelText('Merged')).toBeTruthy()
+    fireEvent.click(within(filter).getByRole('radio', { name: 'All 3' }))
+    expect(rows()).toHaveLength(3)
     expect(within(tree).getByText('Open')).toBeTruthy()
     expect(within(tree).getByText('Merged')).toBeTruthy()
-    expect(within(tree).getByLabelText('CI failed')).toBeTruthy()
-    expect(within(tree).getByLabelText('CI running')).toBeTruthy()
-    // Open ones first, the latest update first; the task that made each one under its title.
-    expect(within(tree).getAllByRole('button').map(row => row.textContent)).toEqual([
-      '#1 PR 1Task 1', '#3 PR 3Conflicts with the base branch · Parser rewrite', '#2 PR 2Task 2'
-    ])
+    fireEvent.click(within(filter).getByRole('radio', { name: 'Open 2' }))
 
     fireEvent.click(within(tree).getByText('#3 PR 3'))
     await waitFor(() => expect(openPullRequest).toHaveBeenCalled())

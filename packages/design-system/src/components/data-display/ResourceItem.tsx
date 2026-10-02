@@ -1,12 +1,13 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
+import { blockProps } from '../../theme/styled.js'
 import { ItemRow } from './ItemList.js'
 import { Text } from './Text.js'
 
 /** Resource names must remain distinguishable even when their final segment is long. */
-const ResourceRow = styled(ItemRow)(({ theme }) => ({
+const ResourceRow = styled(ItemRow, { shouldForwardProp: blockProps('trailing') })<{ trailing: boolean }>(({ theme, trailing }) => ({
   display: 'grid',
-  gridTemplateColumns: `${theme.iconSize.sm}px minmax(0, 1fr)`,
+  gridTemplateColumns: `${theme.iconSize.sm}px minmax(0, 1fr)${trailing ? ' auto' : ''}`,
   alignItems: 'start',
   height: 'auto',
   minHeight: theme.density.row.xl,
@@ -24,6 +25,13 @@ const ResourceIcon = styled('span')(({ theme }) => ({
   '& > svg': { flex: '0 0 auto', width: theme.iconSize.sm, height: theme.iconSize.sm }
 }))
 
+/** Sits on the name's line, so a state mark reads with the name it belongs to however far the row wraps. */
+const ResourceMeta = styled('span')({
+  display: 'flex',
+  alignItems: 'center',
+  height: '1lh'
+})
+
 const ResourceBody = styled('span')(({ theme }) => ({
   minWidth: 0,
   display: 'flex',
@@ -38,15 +46,18 @@ export interface ResourceItemProps extends Omit<ButtonHTMLAttributes<HTMLButtonE
   label: string
   description?: string
   selected?: boolean
+  /** A small state mark at the row's end, beside the name. The caller owns its meaning. */
+  meta?: ReactNode
 }
 
 /** A readable resource name, a fixed icon column, and one quiet line of context. */
-export function ResourceItem({ icon, label, description, selected, ...props }: ResourceItemProps): JSX.Element {
-  return <ResourceRow type="button" selected={selected} {...props}>
+export function ResourceItem({ icon, label, description, selected, meta, ...props }: ResourceItemProps): JSX.Element {
+  return <ResourceRow type="button" selected={selected} trailing={meta !== undefined} {...props}>
     <ResourceIcon aria-hidden="true">{icon}</ResourceIcon>
     <ResourceBody>
       <Text block>{label}</Text>
       {description && <Text block size="xs" tone="secondary" truncate title={description}>{description}</Text>}
     </ResourceBody>
+    {meta !== undefined && <ResourceMeta>{meta}</ResourceMeta>}
   </ResourceRow>
 }

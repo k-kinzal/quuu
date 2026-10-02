@@ -1,5 +1,17 @@
 # Call-site feedback and decisions
 
+## 2026-10-02 A state mark at the end of a resource row
+
+- Finding: a project's pull request list leads each row with the pull request's
+  state and has to show CI as well. `ResourceItem` had only the leading icon, so
+  the two marks competed for one column, or CI moved into the context line.
+- Accepted: `ResourceItem` takes an optional `meta` node at the row's end, kept
+  on the name's line however far the name wraps, with the row's own gap. Without
+  it the row is unchanged.
+- The mark itself (CI circle, its colors and labels) stays owned by the app.
+- Verification: `Data Display/ResourceItem/State Mark` with a wrapping title;
+  the Mac list test reads each row's state mark and CI circle by name.
+
 ## 2026-10-01 Settings dependencies
 
 - Finding: SSTP showed editable receiver/script fields while delivery was off.

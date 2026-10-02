@@ -1,6 +1,6 @@
 import {
   claimContextMenu, Button, Dot, EditorPane, EmptyState, ExplorerLayout, ExplorerPane, IconButton, ItemGroupHeader,
-  ItemList, Panel, PanelHeader, PanelHeading, ResourceItem, SearchInput, Toolbar, WindowDragArea, type MenuItemSpec
+  ItemList, Panel, PanelHeader, PanelHeading, ResourceItem, SearchInput, SegmentedControl, Toolbar, WindowDragArea, type MenuItemSpec
 } from '@design-system/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -13,14 +13,15 @@ import { useGitHubWebSignIn } from '../../interaction/useGitHubWebSignIn.js'
 import { contextMenu } from '../../interaction/menu.js'
 import { t } from '../../model/i18n/index.js'
 import { failureReason } from '../../model/operationFailure.js'
-import { groupProjectPullRequests } from '../../model/projectPullRequests.js'
+import { countByState, DEFAULT_STATE_FILTER, groupProjectPullRequests, STATE_ORDER, type PullRequestStateFilter } from '../../model/projectPullRequests.js'
 import { queryClient } from '../../state/queryClient.js'
 import { useStore } from '../../state/store.js'
 import { ExternalLink, ICON, ListChecks, RefreshCw, iconProps } from '../../ui/icons.js'
-import { CheckMark } from '../../ui/workbench.js'
+import { CheckDot, PullRequestStateMark } from '../../ui/workbench.js'
 
-// Selection belongs to this window; coming back to a project's Pull Requests keeps the last one open.
+// Selection and filter belong to this window; coming back to a project's Pull Requests keeps both.
 const selections = new Map<string, string>()
+const filters = new Map<string, PullRequestStateFilter>()
 
 const STATE_LABEL = {
   open: t('projectPullRequests.state.open'),
@@ -35,6 +36,7 @@ const viewId = (url: string): string => `project-pull-request:${url}`
 export function ProjectPullRequests({ project }: { project: Project }): JSX.Element {
   const [selection, setSelection] = useState(selections.get(project.id) ?? '')
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState<PullRequestStateFilter>(filters.get(project.id) ?? DEFAULT_STATE_FILTER)
   const opened = useRef(new Set<string>())
   const pushToast = useStore(s => s.pushToast)
   const openTask = useStore(s => s.openTask)
@@ -60,7 +62,12 @@ export function ProjectPullRequests({ project }: { project: Project }): JSX.Elem
   }, [])
 
   const pullRequests = useMemo(() => list.data ?? [], [list.data])
-  const groups = useMemo(() => groupProjectPullRequests(pullRequests, search), [pullRequests, search])
+  const groups = useMemo(() => groupProjectPullRequests(pullRequests, search, filter), [pullRequests, search, filter])
+  const counts = useMemo(() => countByState(pullRequests), [pullRequests])
+  const pickFilter = (next: PullRequestStateFilter): void => {
+    filters.set(project.id, next)
+    setFilter(next)
+  }
   const byUrl = useMemo(() => new Map(pullRequests.map(pr => [pr.url, pr])), [pullRequests])
   const selected = byUrl.get(selection) ?? null
   const choose = useCallback((url: string): void => {
@@ -92,17 +99,24 @@ export function ProjectPullRequests({ project }: { project: Project }): JSX.Elem
         : pullRequests.length === 0 ? <EmptyState title={refresh.isPending ? t('projectPullRequests.loading') : t('projectPullRequests.empty')} />
           : <ExplorerLayout>
             <ExplorerPane aria-label={t('projectPullRequests.title')}>
+              <Toolbar placement="panel">
+                <SegmentedControl<PullRequestStateFilter> label={t('projectPullRequests.filter')} value={filter} onChange={pickFilter}
+                  options={[...STATE_ORDER, 'all' as const].map(state => ({ value: state,
+                    label: `${state === 'all' ? t('projectPullRequests.all') : STATE_LABEL[state]} ${String(counts[state])}` }))} />
+              </Toolbar>
               <Toolbar placement="panel"><SearchInput aria-label={t('projectPullRequests.search')} placeholder={t('projectPullRequests.search')}
                 value={search} onChange={event => setSearch(event.target.value)} /></Toolbar>
               <ItemList aria-label={t('projectPullRequests.title')}>
                 {groups.map(group => <Fragment key={group.state}>
-                  <ItemGroupHeader>{STATE_LABEL[group.state]}</ItemGroupHeader>
+                  {/* A single state needs no heading: the filter above already names it */}
+                  {filter === 'all' && <ItemGroupHeader>{STATE_LABEL[group.state]}</ItemGroupHeader>}
                   {group.pullRequests.map(pr => <ResourceItem key={pr.url} selected={selected?.url === pr.url}
                     aria-current={selected?.url === pr.url ? 'page' : undefined} title={`${pr.headRefName} → ${pr.baseRefName}`}
                     onClick={() => choose(pr.url)}
                     onContextMenu={event => { if (claimContextMenu(event)) void contextMenu(items(pr)) }}
-                    // The CI mark leads the row: it is what the list is opened to see. A conflict is named in words below.
-                    icon={<CheckMark status={pr.check} />}
+                    icon={<PullRequestStateMark state={pr.state} />}
+                    // CI as one circle at the end; nothing while no check reports.
+                    meta={pr.check === 'neutral' ? undefined : <CheckDot status={pr.check} />}
                     label={`#${String(pr.number)} ${pr.title}`}
                     description={[...(pr.state === 'open' && pr.mergeState === 'conflicting' ? [CONFLICTING] : []), ...pr.tasks.map(task => task.title)].join(' · ')} />)}
                 </Fragment>)}

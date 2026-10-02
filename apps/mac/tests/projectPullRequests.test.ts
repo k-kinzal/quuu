@@ -6,7 +6,7 @@ import { ReviewService } from '../src/main/review/service.js'
 import type { ReviewPullRequest, ReviewSnapshot } from '../src/main/review/types.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import type { ProjectPullRequest } from '../src/api/schemas/review.js'
-import { groupProjectPullRequests } from '../src/renderer/src/model/projectPullRequests.js'
+import { countByState, DEFAULT_STATE_FILTER, groupProjectPullRequests } from '../src/renderer/src/model/projectPullRequests.js'
 import { makeAgent, makeProject, makeTask, memoryDb } from './helpers.js'
 
 function pull(number: number, over: Partial<ReviewPullRequest> = {}): ReviewPullRequest {
@@ -87,6 +87,18 @@ describe('the project’s Pull Request list', () => {
       ['open', [4, 2]], ['merged', [3]], ['closed', [1]]
     ])
     expect(groupProjectPullRequests([entry(1, 'merged', '2026-09-01')]).map(group => group.state)).toEqual(['merged'])
+  })
+
+  it('starts on open ones alone, shows only the picked state, and counts each state for the filter', () => {
+    const list = [entry(1, 'open', '2026-09-01'), entry(2, 'merged', '2026-09-02'), entry(3, 'closed', '2026-09-03'), entry(4, 'open', '2026-09-04')]
+    expect(DEFAULT_STATE_FILTER).toBe('open')
+    const shown = (filter: Parameters<typeof groupProjectPullRequests>[2]): number[] =>
+      groupProjectPullRequests(list, '', filter).flatMap(group => group.pullRequests.map(pr => pr.number))
+    expect(shown('open')).toEqual([4, 1])
+    expect(shown('merged')).toEqual([2])
+    expect(shown('closed')).toEqual([3])
+    expect(shown('all')).toEqual([4, 1, 2, 3])
+    expect(countByState(list)).toEqual({ open: 2, merged: 1, closed: 1, all: 4 })
   })
 
   it('finds a Pull Request by its number, title, branch or the task that made it', () => {
