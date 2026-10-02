@@ -74,8 +74,8 @@ with page navigation and an action to open the original site in a browser.
 
 Open **Pull Requests** in a project's left navigation. It lists every pull request
 the project's tasks produced — the same ones each task's Pull Request tab shows —
-once each, the latest update first. The state switch above the list starts on
-**Open** and also offers Merged, Closed and All, each with its count. Each row
+once each, the latest update first. The **State** chip above the search box
+starts on Open; its menu also offers Merged, Closed and All, each with its count. Each row
 leads with GitHub's state icon and color (open green, merged purple, closed red),
 ends with one circle for CI (green passed, red failed, amber running; none while
 no check reports), says when the branch conflicts with its base, and names the

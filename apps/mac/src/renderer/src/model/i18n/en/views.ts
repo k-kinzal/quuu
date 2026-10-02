@@ -56,7 +56,7 @@ export const views = {
     failed: 'Could not load pull requests', empty: 'No task in this project has a pull request yet',
     noMatches: 'No matching pull requests', select: 'Select a pull request', retry: 'Try again',
     openTask: 'Open task “{{title}}”',
-    filter: 'Pull request state', all: 'All',
+    filter: 'State', filterTitle: 'Show pull requests by state', all: 'All',
     state: { open: 'Open', merged: 'Merged', closed: 'Closed' }
   },
   githubWeb: {

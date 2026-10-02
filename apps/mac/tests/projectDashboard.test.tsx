@@ -177,16 +177,22 @@ describe('project navigation and dashboard', () => {
     expect(within(tree).getByRole('img', { name: 'CI running' })).toBeTruthy()
     expect(within(tree).queryByText('Open')).toBeNull()
 
-    const filter = screen.getByRole('radiogroup', { name: 'Pull request state' })
-    expect(within(filter).getByRole('radio', { name: 'Open 2' })).toHaveProperty('checked', true)
-    fireEvent.click(within(filter).getByRole('radio', { name: 'Merged 1' }))
+    // The chip names the state in effect; picking another opens a menu that counts each one
+    const chip = screen.getByRole('button', { name: /^State/ })
+    expect(chip.textContent).toContain('Open')
+    const pick = async (name: string): Promise<void> => {
+      fireEvent.click(chip)
+      fireEvent.click(await screen.findByRole('menuitemcheckbox', { name }))
+    }
+    await pick('Merged 1')
     expect(rows()).toEqual(['#2 PR 2Task 2'])
     expect(within(tree).getByLabelText('Merged')).toBeTruthy()
-    fireEvent.click(within(filter).getByRole('radio', { name: 'All 3' }))
+    await pick('All 3')
     expect(rows()).toHaveLength(3)
     expect(within(tree).getByText('Open')).toBeTruthy()
     expect(within(tree).getByText('Merged')).toBeTruthy()
-    fireEvent.click(within(filter).getByRole('radio', { name: 'Open 2' }))
+    await pick('Open 2')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
 
     fireEvent.click(within(tree).getByText('#3 PR 3'))
     await waitFor(() => expect(openPullRequest).toHaveBeenCalled())

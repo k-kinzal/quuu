@@ -1,6 +1,6 @@
 import {
   claimContextMenu, Button, Dot, EditorPane, EmptyState, ExplorerLayout, ExplorerPane, IconButton, ItemGroupHeader,
-  ItemList, Panel, PanelHeader, PanelHeading, ResourceItem, SearchInput, SegmentedControl, Toolbar, WindowDragArea, type MenuItemSpec
+  FilterChip, ItemList, Menu, Panel, PanelHeader, PanelHeading, ResourceItem, SearchInput, Toolbar, WindowDragArea, useMenu, type MenuItemSpec
 } from '@design-system/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -37,6 +37,7 @@ export function ProjectPullRequests({ project }: { project: Project }): JSX.Elem
   const [selection, setSelection] = useState(selections.get(project.id) ?? '')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<PullRequestStateFilter>(filters.get(project.id) ?? DEFAULT_STATE_FILTER)
+  const stateMenu = useMenu()
   const opened = useRef(new Set<string>())
   const pushToast = useStore(s => s.pushToast)
   const openTask = useStore(s => s.openTask)
@@ -99,13 +100,23 @@ export function ProjectPullRequests({ project }: { project: Project }): JSX.Elem
         : pullRequests.length === 0 ? <EmptyState title={refresh.isPending ? t('projectPullRequests.loading') : t('projectPullRequests.empty')} />
           : <ExplorerLayout>
             <ExplorerPane aria-label={t('projectPullRequests.title')}>
+              {/*
+                * The state chip on a row of its own above the search: the search box keeps its width, and four
+                * segments or a chip beside it both ran past the edge of a narrow list pane.
+                */}
               <Toolbar placement="panel">
-                <SegmentedControl<PullRequestStateFilter> label={t('projectPullRequests.filter')} value={filter} onChange={pickFilter}
-                  options={[...STATE_ORDER, 'all' as const].map(state => ({ value: state,
-                    label: `${state === 'all' ? t('projectPullRequests.all') : STATE_LABEL[state]} ${String(counts[state])}` }))} />
+                <FilterChip label={t('projectPullRequests.filter')} value={filter === 'all' ? undefined : STATE_LABEL[filter]}
+                  title={t('projectPullRequests.filterTitle')} aria-haspopup="menu" aria-expanded={stateMenu.isOpen}
+                  onClick={stateMenu.open} />
               </Toolbar>
               <Toolbar placement="panel"><SearchInput aria-label={t('projectPullRequests.search')} placeholder={t('projectPullRequests.search')}
                 value={search} onChange={event => setSearch(event.target.value)} /></Toolbar>
+              <Menu open={stateMenu.isOpen} anchorEl={stateMenu.anchorEl} onClose={stateMenu.close} label={t('projectPullRequests.filterTitle')}
+                items={() => [...STATE_ORDER, 'all' as const].map((state, index) => ({
+                  label: `${state === 'all' ? t('projectPullRequests.all') : STATE_LABEL[state]} ${String(counts[state])}`,
+                  checked: filter === state, separatorBefore: state === 'all' && index > 0,
+                  onSelect: () => pickFilter(state)
+                }))} />
               <ItemList aria-label={t('projectPullRequests.title')}>
                 {groups.map(group => <Fragment key={group.state}>
                   {/* A single state needs no heading: the filter above already names it */}
