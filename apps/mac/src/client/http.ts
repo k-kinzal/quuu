@@ -39,6 +39,8 @@ export class QuuuHttpClient {
   constructor(url: string, token: string) {
     this.session = new Http2SessionManager(url)
     this.headers = new Headers({ authorization: `Bearer ${token}` })
+    // Set for an agent Quuu launched; the app's telemetry tells its calls from a person's by this.
+    if (process.env.QUUU_RUN_ID) this.headers.set('quuu-run-id', process.env.QUUU_RUN_ID)
     this.transport = createGrpcTransport({ baseUrl: url, sessionManager: this.session, defaultTimeoutMs: 30_000, readMaxBytes: 32 * 1024 * 1024, writeMaxBytes: 4 * 1024 * 1024 })
     this.rpc = createClient(Quuu, this.transport)
     this.api = createORPCClient<QuuuApi>({ call: (path, input, options) => this.call(path.join('.'), input, options.signal) })

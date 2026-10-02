@@ -67,7 +67,7 @@ export class McpServer {
     }
     if (!session) {
       if (request.method !== 'POST' || !isInitializeRequest(body)) { response.writeHead(400).end(); return }
-      const caller = this.operations.create()
+      const caller = this.operations.create({ kind: 'mcp' })
       const server = new Server({ name: 'quuu', version: '1.0.0' }, { capabilities: { tools: {} } })
       const transport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({ sessionIdGenerator: randomUUID, enableJsonResponse: true,
         onsessioninitialized: sessionId => { this.sessions.set(sessionId, { server, transport, caller }) },

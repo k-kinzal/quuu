@@ -2,6 +2,9 @@
 export const RPC_CONNECT = 'quuu:rpc:connect'
 export const RPC_CLIENT = 'quuu:rpc:client'
 
+/** One-way usage and error reports from a window (`schemas/telemetry.ts`). */
+export const TELEMETRY = 'quuu:telemetry'
+
 /** Push channels from main to renderer. */
 export const EVENTS = {
   snapshot: 'quuu:evt:snapshot',

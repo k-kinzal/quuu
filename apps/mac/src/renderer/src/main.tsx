@@ -5,6 +5,7 @@ import { App } from './App.js'
 import { currentPane, focusPane, movePaneFocus, openContextMenuAtFocus } from './interaction/focus.js'
 import { createQuuuClient } from './state/client.js'
 import { useStore } from './state/store.js'
+import { reportRendererError, startUsageReports } from './state/usage.js'
 
 // preload exposes only the connection and notifications; the typed client is derived from the contract.
 const { port1, port2 } = new MessageChannel()
@@ -14,12 +15,17 @@ port1.start()
 
 // Async work outside the render boundary also gets a last path back to the user and diagnostics.
 window.addEventListener('unhandledrejection', event => {
+  reportRendererError('unhandled_rejection', event.reason)
   useStore.getState().reportFailure(event.reason)
   event.preventDefault()
 })
 window.addEventListener('error', event => {
+  reportRendererError('uncaught', event.error ?? event.message)
   useStore.getState().reportFailure(event.error ?? event.message)
 })
+
+// Which screens and controls get used, for telemetry; main drops these while it is off.
+startUsageReports(useStore)
 
 const container = document.getElementById('root')
 if (!container) throw new Error('#root not found')

@@ -267,6 +267,7 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | `QUUU_AGY_DIR` | Everything the Antigravity CLI wrote (default: `~/.gemini/antigravity-cli`) |
 | `QUUU_OPENCODE_DB` | The one store opencode keeps every session in (default: `~/.local/share/opencode/opencode.db`) |
 | `QUUU_APPLICATION_DIRS` | Where to look for IDEs / editors (`:`-separated; default: `/Applications` and `~/Applications`, plus `JetBrains Toolbox` under them) |
+| `QUUU_OTEL` | `1` turns on OpenTelemetry export, `0` keeps it off whatever `telemetry.json` says ([telemetry](telemetry.md)) |
 
 The variables that relocate session logs are read by both import and the conversation
 view. Tests point them all at once via `isolateSessionDirs` in

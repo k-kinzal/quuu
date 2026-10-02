@@ -138,6 +138,7 @@ describe('a host and its satellite', () => {
     const owner = {}
     const router = createOperationsRouter<object>(satellite, {
       authorize: () => undefined,
+      callerOf: () => ({ kind: 'window' }),
       releaseWithOwner: () => () => undefined,
       sendEvent: () => undefined,
       desktopFor: () => { throw new Error('No desktop in this test') },

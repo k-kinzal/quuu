@@ -1,7 +1,7 @@
 import type { RemoteRunner, RemoteJob, RunnerWorkspace } from '../runners/types.js'
 import type { HookEvent } from '../hooks/types.js'
 import type { StoredHookRun } from '../hooks/stored.js'
-import { inTransaction } from './database.js'
+import { afterCommit, inTransaction } from './database.js'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Agent, AgentCooldown, AgentGroup, AgentGroupInput, AgentInput, GroupStrategy, RunTargetKind } from '../agents/types.js'
 import type { TaskRule, TaskRuleInput } from '../automation/conditions.js'
@@ -2050,8 +2050,18 @@ export function setLifecycleRecorder(db: Db, recorder: LifecycleRecorder | null)
   if (recorder) lifecycleRecorders.set(db, recorder)
   else lifecycleRecorders.delete(db)
 }
+/** Watchers that only look. They hear a fact once it has committed, never inside its transaction. */
+type LifecycleObserver = (task: Task, event: HookEvent, run?: Run) => void
+const lifecycleObservers = new WeakMap<Db, Set<LifecycleObserver>>()
+export function observeLifecycle(db: Db, observer: LifecycleObserver): () => void {
+  let observers = lifecycleObservers.get(db)
+  if (!observers) lifecycleObservers.set(db, observers = new Set())
+  observers.add(observer)
+  return () => { observers.delete(observer) }
+}
 function lifecycle(db: Db, task: Task, event: HookEvent, run?: Run): void {
   lifecycleRecorders.get(db)?.(task, event, run)
+  for (const observer of lifecycleObservers.get(db) ?? []) afterCommit(db, () => observer(task, event, run))
 }
 
 export function saveHookRun(db: Db, run: StoredHookRun): void {

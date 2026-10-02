@@ -2,7 +2,8 @@ import { ToastPayloadSchema } from '../../api/schemas/snapshot.js'
 import { ORPCError } from '@orpc/server'
 import { RPCHandler } from '@orpc/server/message-port'
 import { BrowserWindow, ipcMain } from 'electron'
-import { EVENTS, RPC_CONNECT } from '../../api/channels.js'
+import { EVENTS, RPC_CONNECT, TELEMETRY } from '../../api/channels.js'
+import { RendererTelemetrySchema } from '../../api/schemas/telemetry.js'
 import type { QuuuApp } from '../bootstrap.js'
 import { createOperationsRouter } from '../api/router.js'
 import type { ForwardedOperations } from '../api/host.js'
@@ -11,6 +12,8 @@ import { desktopOperations } from '../desktop/operations.js'
 import { ownsWindow, windowUrl } from '../windows.js'
 import { sendEvent } from './events.js'
 import { authorizedFrame } from './validation.js'
+import { telemetryActive } from '../telemetry/index.js'
+import { reportRenderer } from '../telemetry/ui.js'
 
 function ownerOf(event: Electron.IpcMainEvent): BrowserWindow {
   const owner = BrowserWindow.fromWebContents(event.sender)
@@ -83,11 +86,14 @@ function hostSessionFor(owner: BrowserWindow): ForwardedOperations | null {
   return session
 }
 
+const WINDOW_CALLER = { kind: 'window' } as const
+
 export function createAppRouter(app: QuuuApp) {
   return createOperationsRouter<BrowserWindow>(app, {
     authorize(owner) {
       if (owner.isDestroyed() || !authorizedFrame({ owned: ownsWindow(owner), mainFrame: true, actualUrl: owner.webContents.mainFrame.url, expectedUrl: windowUrl(owner) })) throw new ORPCError('FORBIDDEN')
     },
+    callerOf: () => WINDOW_CALLER,
     releaseWithOwner: releaseWithWindow,
     sendEvent: (owner, event, payload) => { if (!owner.isDestroyed()) sendEvent(owner, event, payload) },
     desktopFor: desktopOperations,
@@ -116,5 +122,12 @@ export function registerIpc(app: QuuuApp): void {
       for (const port of event.ports) port.close()
       console.error('IPC connection could not be accepted', error)
     }
+  })
+  ipcMain.removeAllListeners(TELEMETRY)
+  ipcMain.on(TELEMETRY, (event, payload: unknown) => {
+    if (!telemetryActive()) return
+    try { ownerOf(event) } catch { return }
+    const report = RendererTelemetrySchema.safeParse(payload)
+    if (report.success) reportRenderer(report.data)
   })
 }

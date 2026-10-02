@@ -33,3 +33,4 @@ human.
 - [design-system.md](docs/design-system.md): Design system kit: tokens, components, and call-site rules
 - [design-system-feedback.md](docs/design-system-feedback.md): Accepted and rejected design-system requests, with reasons
 - [mobile-sync.md](docs/mobile-sync.md): Mac / iPhone file-format and operation spec
+- [telemetry.md](docs/telemetry.md): Opt-in OpenTelemetry export: what is recorded for bug fixing and usage analysis, and how to read it

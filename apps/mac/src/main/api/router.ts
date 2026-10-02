@@ -10,6 +10,7 @@ import type { SessionView } from '../session/view.js'
 import { savePromptFiles } from '../platform/promptFiles.js'
 import { t } from '../i18n/index.js'
 import { satelliteRoute, type OperationHost } from './host.js'
+import { observeOperation } from '../telemetry/index.js'
 
 interface DocumentRequest {
   generation: number
@@ -17,21 +18,27 @@ interface DocumentRequest {
 }
 
 export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<Owner>) {
-  const os = implement(contract).$context<{ owner: Owner }>().use(async ({ context, next, path }, input, output) => {
-    host.authorize(context.owner)
-    try {
-      const forward = host.forwardFor?.(context.owner)
-      if (forward) {
-        const name = path.join('.'), route = satelliteRoute(name)
-        if (route === 'unavailable') throw new Error(t('network.onHost'))
-        if (route === 'host') return output(await forward.call(name, input))
+  const os = implement(contract).$context<{ owner: Owner }>().use(({ context, next, path }, input, output) => {
+    const name = path.join('.')
+    return observeOperation(name, context.owner, host.callerOf(context.owner), input, async markForwarded => {
+      host.authorize(context.owner)
+      try {
+        const forward = host.forwardFor?.(context.owner)
+        if (forward) {
+          const route = satelliteRoute(name)
+          if (route === 'unavailable') throw new Error(t('network.onHost'))
+          if (route === 'host') {
+            markForwarded()
+            return output(await forward.call(name, input))
+          }
+        }
+        return await next()
+      } catch (error) {
+        console.error('Operation failed', name, error)
+        if (error instanceof ORPCError) throw error
+        throw new ORPCError('OPERATION_FAILED', { message: t('ipc.operationFailed'), data: { reason: error instanceof Error ? error.message : String(error) }, cause: error })
       }
-      return await next()
-    } catch (error) {
-      console.error('Operation failed', path.join('.'), error)
-      if (error instanceof ORPCError) throw error
-      throw new ORPCError('OPERATION_FAILED', { message: t('ipc.operationFailed'), data: { reason: error instanceof Error ? error.message : String(error) }, cause: error })
-    }
+    })
   })
   const sessions = new Map<Owner, SessionView>()
   const releaseSessions = new Map<Owner, () => void>()

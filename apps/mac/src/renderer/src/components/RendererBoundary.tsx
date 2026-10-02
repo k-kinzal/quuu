@@ -1,6 +1,7 @@
 import { EmptyState } from '@design-system/react'
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { t } from '../model/i18n/index.js'
+import { reportRendererError } from '../state/usage.js'
 
 const ERROR_KEY = 'taskd.renderer-error.v1'
 
@@ -26,6 +27,7 @@ export class RendererBoundary extends Component<RendererBoundaryProps, RendererB
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('Exception thrown while rendering', error, info.componentStack)
+    reportRendererError('render', error, info.componentStack)
     try {
       localStorage.setItem(
         ERROR_KEY,

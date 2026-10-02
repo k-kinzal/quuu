@@ -8,13 +8,18 @@ import { PRIORITY_LABEL } from './menuLabels.js'
 import { menuForPlatform } from './menuPlatform.js'
 import { beginQuit, mainWindow, showWindow } from './windows.js'
 import type { UpdateMenuItem } from './desktop/appUpdates.js'
+import { reportCommand } from './telemetry/ui.js'
 let updateMenuItem: UpdateMenuItem | null = null
 export function setUpdateMenuItem(item: UpdateMenuItem): void {
   updateMenuItem = item
   buildMenu()
 }
 let currentProjects: { id: string; name: string }[] = []
-export function send(command: AppCommand, extra?: Omit<CommandPayload, 'command'>): void {
+/** Set while a menu item's click runs, so `send` knows whether a shortcut or the pointer chose it. */
+let menuTrigger: 'shortcut' | 'menu' | null = null
+
+export function send(command: AppCommand, extra?: Omit<CommandPayload, 'command'>, trigger: 'notification' | 'gesture' | 'app' = 'app'): void {
+  reportCommand(command, menuTrigger ?? trigger)
   showWindow()
   const payload: CommandPayload = { command, ...extra }
   if (mainWindow) sendEvent(mainWindow, EVENTS.command, payload)
@@ -320,5 +325,22 @@ function buildMenu(): void {
     }
   ]
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate(menuForPlatform(template, process.platform)))
+  Menu.setApplicationMenu(Menu.buildFromTemplate(menuForPlatform(withTrigger(template), process.platform)))
+}
+
+/** Which shortcuts are known and which items are still clicked is read off every command `send` reports. */
+function withTrigger(items: Electron.MenuItemConstructorOptions[]): Electron.MenuItemConstructorOptions[] {
+  return items.map(item => {
+    const click = item.click
+    const nested = Array.isArray(item.submenu) ? { submenu: withTrigger(item.submenu) } : {}
+    if (!click) return { ...item, ...nested }
+    return {
+      ...item,
+      ...nested,
+      click: (menuItem, window, event) => {
+        menuTrigger = event.triggeredByAccelerator ? 'shortcut' : 'menu'
+        try { click(menuItem, window, event) } finally { menuTrigger = null }
+      }
+    }
+  })
 }

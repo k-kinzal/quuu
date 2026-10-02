@@ -87,8 +87,11 @@ export class GrpcServer {
           return found
         }
         router.rpc(Quuu.method.connect, (_request, context) => {
-          const caller = operations.create()
-          this.callers.set(caller.id, identity(context.requestHeader))
+          const who = identity(context.requestHeader)
+          // The CLI an agent runs names its run, which tells an agent operating Quuu from a person.
+          const agentRunId = context.requestHeader.get('quuu-run-id')?.slice(0, 64) || null
+          const caller = operations.create(who === 'local' ? { kind: 'cli', agentRunId } : { kind: 'satellite' })
+          this.callers.set(caller.id, who)
           caller.once('closed', () => this.callers.delete(caller.id))
           return { clientId: caller.id }
         })

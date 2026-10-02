@@ -21,6 +21,10 @@ import { quuuWorkspaceDir } from './projects/builtIn.js'
 import { beginQuit, configureWindows, mainWindow, showWindow } from './windows.js'
 import { isReleaseBuild } from './updates/distribution.js'
 import type { AppUpdates } from './desktop/appUpdates.js'
+import { startTelemetry, stopTelemetry, telemetryActive } from './telemetry/index.js'
+import { readTelemetryConfig } from './telemetry/config.js'
+import { observeApp, reportLaunch } from './telemetry/app.js'
+import { observeElectron, reportQuit } from './telemetry/electron.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -93,7 +97,7 @@ function notify(instance: QuuuApp, event: ToastPayload): Promise<void> {
     toast: payload => { if (!showingHost()) broadcast(EVENTS.toast, payload) },
     native: (payload, title) => showNativeNotification(payload, title, taskId => {
       showWindow()
-      if (taskId) send('task.open', { taskId })
+      if (taskId) send('task.open', { taskId }, 'notification')
     })
   })
 }
@@ -135,13 +139,20 @@ if (!app.requestSingleInstanceLock()) {
   app.on('browser-window-created', (_created, win) => {
     win.on('swipe', (_swipe, direction) => {
       const command = swipeCommand(direction)
-      if (command) send(command)
+      if (command) send(command, undefined, 'gesture')
     })
   })
 
   void app.whenReady().then(async () => {
     // Before anything user-visible (menus, notifications, IPC reasons) is built.
     initMainI18n(app.getLocale())
+    // Opt-in (telemetry/config.ts). Started before the app is built so its first facts are kept.
+    const telemetry = readTelemetryConfig()
+    if (telemetry.enabled) {
+      await startTelemetry({ version: app.getVersion(), packaged: app.isPackaged }, telemetry)
+        .catch(error => { console.warn('Cannot start telemetry:', error) })
+    }
+    if (telemetryActive()) observeElectron(app)
     if (process.platform === 'darwin' && !app.isPackaged) {
       const icon = nativeImage.createFromPath(join(RESOURCES, 'icon.png'))
       if (!icon.isEmpty()) app.dock?.setIcon(icon)
@@ -159,7 +170,9 @@ if (!app.requestSingleInstanceLock()) {
     quuu.setAppControls(appControls)
     wire(quuu)
     registerIpc(quuu)
+    if (telemetryActive()) observeApp(quuu)
     await quuu.bootstrap()
+    if (telemetryActive()) reportLaunch(quuu)
 
     // Built after bootstrap so "Go › Projects" can be populated
     refreshMenuIfProjectsChanged(quuu?.snapshot().projects ?? [])
@@ -223,6 +236,7 @@ if (!app.requestSingleInstanceLock()) {
     quitting = true
     updates?.stop()
     void (async () => {
+      reportQuit()
       // Stop listeners and caller-owned resources before closing SQLite.
       followHost(null)
       await servers?.stop()
@@ -234,6 +248,7 @@ if (!app.requestSingleInstanceLock()) {
       if (broadcastTimer) clearTimeout(broadcastTimer)
       broadcastTimer = null
       instance?.db.close()
+      await stopTelemetry()
     })().catch(error => console.error('Quuu shutdown:', error)).finally(() => {
       shutdownComplete = true
       // Finish the canceled native quit event before requesting a fresh quit.

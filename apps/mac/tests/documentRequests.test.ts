@@ -18,7 +18,7 @@ const desktop: DesktopOperations = {
   showReport: unused, hideReport: unused, showDocument: show, hideDocument: hide, navigateDocument: unused
 }
 const host: OperationHost<string> = {
-  authorize: () => undefined, releaseWithOwner: () => () => undefined,
+  authorize: () => undefined, callerOf: () => ({ kind: 'window' }), releaseWithOwner: () => () => undefined,
   sendEvent: () => undefined, desktopFor: () => desktop
 }
 const url = 'https://example.com/docs/'

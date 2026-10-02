@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, webUtils, type IpcRendererEvent } from 'electron'
-import { EVENTS, RPC_CLIENT, RPC_CONNECT } from '../api/channels.js'
+import { EVENTS, RPC_CLIENT, RPC_CONNECT, TELEMETRY } from '../api/channels.js'
 import type { EventPayloads, QuuuEvents } from '../api/events.js'
 
 // Only forward ports from the main frame itself to main. main verifies the sender too.
@@ -29,3 +29,6 @@ contextBridge.exposeInMainWorld('quuuPlatform', process.platform)
 
 // webUtils needs the original DOM File, before IPC structured cloning loses its native path.
 contextBridge.exposeInMainWorld('quuuFiles', { getPathForFile: (file: File): string => webUtils.getPathForFile(file) } satisfies import('../api/schemas/files.js').QuuuFiles)
+
+// Main validates and, while telemetry is off, drops these unread.
+contextBridge.exposeInMainWorld('quuuTelemetry', { record: (event) => { ipcRenderer.send(TELEMETRY, event) } } satisfies import('../api/schemas/telemetry.js').QuuuTelemetry)

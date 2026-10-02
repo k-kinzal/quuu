@@ -4,6 +4,7 @@ import type { PullRequestViewBounds } from '../terminal/types.js'
 import type { ReviewActionResult } from '../review/types.js'
 import type { z } from 'zod'
 import type { DocumentViewSchema } from '../../api/schemas/documents.js'
+import type { OperationCaller } from '../telemetry/index.js'
 
 type LocalCalls<T> = { [K in keyof T]: T[K] extends (input: infer I, ...args: never[]) => Promise<infer O> ? undefined extends I ? (input?: I) => O | Promise<O> : (input: I) => O | Promise<O> : never }
 
@@ -46,6 +47,8 @@ export function satelliteRoute(name: string): 'here' | 'host' | 'unavailable' {
 /** A caller owns its views and terminals, regardless of the transport that admitted it. */
 export interface OperationHost<Owner> {
   authorize(owner: Owner): void
+  /** Who is calling: a window, the CLI (from an agent run or not), an MCP client or a satellite. */
+  callerOf(owner: Owner): OperationCaller
   /** The host that answers this owner's operations while this Quuu is its satellite; absent or null otherwise. */
   forwardFor?(owner: Owner): ForwardedOperations | null
   releaseWithOwner(owner: Owner, cleanup: () => void): () => void

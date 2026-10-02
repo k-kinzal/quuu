@@ -7,9 +7,11 @@ import type { EventPayloads } from '../../api/events.js'
 import type { QuuuApp } from '../bootstrap.js'
 import type { DesktopOperations } from '../api/host.js'
 import { createOperationsRouter } from '../api/router.js'
+import type { OperationCaller } from '../telemetry/index.js'
 
 export class Caller extends EventEmitter {
   readonly id = randomUUID()
+  constructor(readonly identity: OperationCaller) { super() }
   lastUsed = Date.now()
   closed = false
   private cleanup = new Set<() => void>()
@@ -37,6 +39,7 @@ export class RemoteOperations {
   constructor(private app: QuuuApp, desktop: () => DesktopOperations) {
     this.router = createOperationsRouter<Caller>(app, {
       authorize: owner => { if (owner.closed) throw new ORPCError('UNAUTHORIZED') },
+      callerOf: owner => owner.identity,
       releaseWithOwner: (owner, cleanup) => owner.own(cleanup),
       sendEvent: (owner, name, payload) => { if (!owner.closed) owner.emit('event', { name, payload }) },
       desktopFor: desktop,
@@ -50,9 +53,9 @@ export class RemoteOperations {
     app.on('settings', this.settings)
     app.on('notify', this.notify)
   }
-  create(): Caller {
+  create(identity: OperationCaller): Caller {
     if (this.callers.size >= 64) throw new Error('Too many clients; close an existing connection')
-    const caller = new Caller()
+    const caller = new Caller(identity)
     this.callers.set(caller.id, caller)
     return caller
   }
