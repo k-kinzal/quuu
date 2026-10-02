@@ -72,7 +72,7 @@ quuu app set-telemetry '{"enabled":true,"endpoint":"http://HOST:4318"}'
 quuu app set-telemetry '{"enabled":false}'
 ```
 
-`active` says whether it is exporting now; `override` names an environment variable (`QUUU_OTEL`,
+`active` says whether it is exporting now, and `lastExports` whether each signal's latest batch reached the collector (with the error when not); `override` names an environment variable (`QUUU_OTEL`,
 `OTEL_SDK_DISABLED`) deciding instead of `enabled`. Header values are never read back. What is
 recorded is in the repository's `docs/telemetry.md`.
 

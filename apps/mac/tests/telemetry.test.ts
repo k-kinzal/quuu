@@ -16,6 +16,7 @@ import { readTelemetryConfig } from '../src/main/telemetry/config.js'
 import { observeOperation, onTelemetryChange, startTelemetry, stopTelemetry, telemetryActive, type InstallSdk, type OperationCaller } from '../src/main/telemetry/index.js'
 import { observeApp, reportLaunch } from '../src/main/telemetry/app.js'
 import { reportRenderer } from '../src/main/telemetry/ui.js'
+import { recordExport } from '../src/main/telemetry/health.js'
 import { screenOf, startUsageReports, type ScreenState } from '../src/renderer/src/state/usage.js'
 import type { RendererTelemetry } from '../src/api/schemas/telemetry.js'
 import { makeAgent, makeProject, makeTask, occupy } from './helpers.js'
@@ -111,7 +112,10 @@ describe('configuring telemetry through the operations', () => {
       expect(await client.app.telemetry()).toMatchObject({ enabled: false, active: false, override: null })
 
       const on = await client.app.setTelemetry({ enabled: true, endpoint: 'http://collector:4318/', headers: { authorization: 'Bearer secret' } })
-      expect(on).toEqual({ enabled: true, endpoint: 'http://collector:4318', headerNames: ['authorization'], resourceAttributes: {}, override: null, active: true })
+      expect(on).toEqual({ enabled: true, endpoint: 'http://collector:4318', headerNames: ['authorization'], resourceAttributes: {}, override: null, active: true, lastExports: [] })
+      // A collector that refuses shows up here, not only in OpenTelemetry's unread diagnostics.
+      recordExport('traces', false, new Error('connect ECONNREFUSED 192.0.2.1:4318'))
+      expect((await client.app.telemetry()).lastExports).toMatchObject([{ signal: 'traces', ok: false, error: 'connect ECONNREFUSED 192.0.2.1:4318' }])
       expect(JSON.stringify(on)).not.toContain('secret')
       const file = join(workdir, 'telemetry.json')
       expect(statSync(file).mode & 0o777).toBe(0o600)

@@ -30,7 +30,14 @@ export const TelemetryStatusSchema = z.object({
   /** An environment variable deciding instead of `enabled`. */
   override: z.enum(['QUUU_OTEL', 'OTEL_SDK_DISABLED']).nullable(),
   /** Exporting right now. */
-  active: z.boolean()
+  active: z.boolean(),
+  /** Each signal's latest export since export last started: whether the collector took it. */
+  lastExports: z.array(z.object({
+    signal: z.enum(['traces', 'metrics', 'logs']),
+    at: z.string(),
+    ok: z.boolean(),
+    error: z.string().nullable()
+  }))
 })
 export type TelemetryStatus = z.infer<typeof TelemetryStatusSchema>
 

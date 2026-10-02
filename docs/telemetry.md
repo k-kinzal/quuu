@@ -17,7 +17,7 @@ Use the CLI (or any caller of the operation contract). A change applies at once;
 
 ```sh
 quuu app set-telemetry '{"enabled":true,"endpoint":"http://192.168.10.4:4318","resourceAttributes":{"host.name":"kinzal-mbp"}}'
-quuu app telemetry          # saved choice, environment override, and whether it is exporting now
+quuu app telemetry          # saved choice, environment override, whether it is exporting, and each signal's last export
 quuu app set-telemetry '{"enabled":false}'
 ```
 
@@ -27,6 +27,10 @@ quuu app set-telemetry '{"enabled":false}'
 | `endpoint` | OTLP/HTTP base URL (`http`/`https`); `/v1/traces`, `/v1/metrics` and `/v1/logs` are appended |
 | `headers` | Sent with every export (e.g. an auth token). Replaced whole; only the names are ever read back (`headerNames`) |
 | `resourceAttributes` | Added to the resource, e.g. to tell two Macs apart. Replaced whole |
+
+`lastExports` holds each signal's latest export since export started: when, whether the
+collector took it, and its error. It is the place to look when nothing arrives; the
+exporters report failures nowhere else.
 
 Only the fields a patch names change. The choice is this computer's own: it is kept in
 `telemetry.json` in the data directory (mode 0600, written by the operation; do not edit it

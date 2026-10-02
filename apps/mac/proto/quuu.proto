@@ -8052,6 +8052,24 @@ message AppTelemetryResponseValueOverride {
   }
 }
 
+message AppTelemetryResponseValueLastExportsItemError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AppTelemetryResponseValueLastExportsItem {
+  optional string signal = 1;
+  optional string at = 2;
+  optional bool ok = 3;
+  optional AppTelemetryResponseValueLastExportsItemError error = 4;
+}
+
+message AppTelemetryResponseValueLastExports {
+  repeated AppTelemetryResponseValueLastExportsItem items = 1;
+}
+
 message AppTelemetryResponseValue {
   optional bool enabled = 1;
   optional string endpoint = 2;
@@ -8059,6 +8077,7 @@ message AppTelemetryResponseValue {
   optional google.protobuf.Value resourceAttributes = 4;
   optional AppTelemetryResponseValueOverride override = 5;
   optional bool active = 6;
+  optional AppTelemetryResponseValueLastExports lastExports = 7;
 }
 
 message AppTelemetryResponse {
@@ -8087,6 +8106,24 @@ message AppSetTelemetryResponseValueOverride {
   }
 }
 
+message AppSetTelemetryResponseValueLastExportsItemError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AppSetTelemetryResponseValueLastExportsItem {
+  optional string signal = 1;
+  optional string at = 2;
+  optional bool ok = 3;
+  optional AppSetTelemetryResponseValueLastExportsItemError error = 4;
+}
+
+message AppSetTelemetryResponseValueLastExports {
+  repeated AppSetTelemetryResponseValueLastExportsItem items = 1;
+}
+
 message AppSetTelemetryResponseValue {
   optional bool enabled = 1;
   optional string endpoint = 2;
@@ -8094,6 +8131,7 @@ message AppSetTelemetryResponseValue {
   optional google.protobuf.Value resourceAttributes = 4;
   optional AppSetTelemetryResponseValueOverride override = 5;
   optional bool active = 6;
+  optional AppSetTelemetryResponseValueLastExports lastExports = 7;
 }
 
 message AppSetTelemetryResponse {

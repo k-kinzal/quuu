@@ -17601,6 +17601,45 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         },
         "active": {
           "kind": "boolean"
+        },
+        "lastExports": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "signal": {
+                "kind": "string",
+                "choices": [
+                  "traces",
+                  "metrics",
+                  "logs"
+                ]
+              },
+              "at": {
+                "kind": "string"
+              },
+              "ok": {
+                "kind": "boolean"
+              },
+              "error": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "signal",
+              "at",
+              "ok",
+              "error"
+            ]
+          }
         }
       },
       "required": [
@@ -17609,7 +17648,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "headerNames",
         "resourceAttributes",
         "override",
-        "active"
+        "active",
+        "lastExports"
       ]
     }
   },
@@ -17668,6 +17708,45 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         },
         "active": {
           "kind": "boolean"
+        },
+        "lastExports": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "signal": {
+                "kind": "string",
+                "choices": [
+                  "traces",
+                  "metrics",
+                  "logs"
+                ]
+              },
+              "at": {
+                "kind": "string"
+              },
+              "ok": {
+                "kind": "boolean"
+              },
+              "error": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "signal",
+              "at",
+              "ok",
+              "error"
+            ]
+          }
         }
       },
       "required": [
@@ -17676,7 +17755,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "headerNames",
         "resourceAttributes",
         "override",
-        "active"
+        "active",
+        "lastExports"
       ]
     }
   }

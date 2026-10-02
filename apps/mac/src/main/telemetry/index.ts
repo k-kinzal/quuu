@@ -4,6 +4,7 @@ import { logs, SeverityNumber, type Logger } from '@opentelemetry/api-logs'
 import { ATTR, EVENT, type CallerKind, type ErrorOrigin } from './attributes.js'
 import { readTelemetryConfig, readTelemetrySettings, saveTelemetrySettings, telemetryOverride, type TelemetryBuild, type TelemetryConfig, type TelemetryOverride, type TelemetryPatch } from './config.js'
 import { captureConsole } from './console.js'
+import { forgetExports, lastExports, type ExportOutcome } from './health.js'
 
 export { ATTR, EVENT, SPAN } from './attributes.js'
 export type { CallerKind, ErrorOrigin } from './attributes.js'
@@ -33,6 +34,7 @@ export type InstallSdk = (config: TelemetryConfig, build: TelemetryBuild) => () 
 
 export async function startTelemetry(build: TelemetryBuild, config: TelemetryConfig = readTelemetryConfig(), install?: InstallSdk): Promise<boolean> {
   if (instruments || !config.enabled) return instruments !== null
+  forgetExports()
   shutdownSdk = (install ?? (await import('./sdk.js')).startSdk)(config, build)
   const meter = metrics.getMeter('quuu', build.version)
   instruments = {
@@ -73,6 +75,8 @@ export interface TelemetryStatus {
   resourceAttributes: Record<string, string>
   override: TelemetryOverride
   active: boolean
+  /** Each signal's latest export since export last started. Empty until the first batch goes out. */
+  lastExports: ExportOutcome[]
 }
 
 export function telemetryStatus(): TelemetryStatus {
@@ -83,7 +87,8 @@ export function telemetryStatus(): TelemetryStatus {
     headerNames: Object.keys(settings.headers).sort(),
     resourceAttributes: settings.resourceAttributes,
     override: telemetryOverride().override,
-    active: telemetryActive()
+    active: telemetryActive(),
+    lastExports: lastExports()
   }
 }
 

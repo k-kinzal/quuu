@@ -6150,7 +6150,8 @@
     "headerNames": 3,
     "resourceAttributes": 4,
     "override": 5,
-    "active": 6
+    "active": 6,
+    "lastExports": 7
   },
   "AppTelemetryResponse": {
     "value": 1
@@ -6177,9 +6178,36 @@
     "headerNames": 3,
     "resourceAttributes": 4,
     "override": 5,
-    "active": 6
+    "active": 6,
+    "lastExports": 7
   },
   "AppSetTelemetryResponse": {
     "value": 1
+  },
+  "AppTelemetryResponseValueLastExportsItemError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AppTelemetryResponseValueLastExportsItem": {
+    "signal": 1,
+    "at": 2,
+    "ok": 3,
+    "error": 4
+  },
+  "AppTelemetryResponseValueLastExports": {
+    "items": 1
+  },
+  "AppSetTelemetryResponseValueLastExportsItemError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AppSetTelemetryResponseValueLastExportsItem": {
+    "signal": 1,
+    "at": 2,
+    "ok": 3,
+    "error": 4
+  },
+  "AppSetTelemetryResponseValueLastExports": {
+    "items": 1
   }
 }
