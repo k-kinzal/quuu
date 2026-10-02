@@ -17,6 +17,23 @@ import { DocumentBody, WorkSurface, ExplorerLayout, ExplorerPane, EditorPane, Ov
 const meta: Meta = { title: 'Layout/EditorWorkspace', parameters: { layout: 'fullscreen' } }
 export default meta
 
+/** Reused by the browser regression so narrow layouts exercise the real pointer target. */
+export function ExplorerResizeSpecimen({ width = 720 }: { width?: number }): JSX.Element {
+  return <WorkSurface style={{ width, height: 300 }}>
+    <ExplorerLayout data-explorer-layout>
+      <ExplorerPane aria-label="Files"><ItemList>
+        <ResourceItem icon={<FileText />} label="understanding-the-project-structure.md" description="packages/example/docs" selected />
+        <ResourceItem icon={<FileText />} label="src/example.ts" />
+      </ItemList></ExplorerPane>
+      <EditorPane aria-label="Selected content"><DocumentBody>
+        <Text>Drag the boundary or focus it and use the arrow keys to leave more room for this content.</Text>
+      </DocumentBody></EditorPane>
+    </ExplorerLayout>
+  </WorkSurface>
+}
+
+export const Narrow: StoryObj = { render: () => <ExplorerResizeSpecimen width={360} /> }
+
 /** Only the layout is shared; the target's name, the search and the submit handling all come from the caller. */
 export const WithOverlays: StoryObj = {
   render: () => (

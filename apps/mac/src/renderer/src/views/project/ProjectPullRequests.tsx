@@ -9,6 +9,7 @@ import type { ProjectPullRequest } from '../../../../api/schemas/review.js'
 import { PullRequestBrowser } from '../../components/PullRequestBrowser.js'
 import { copyText, selectionItems } from '../../interaction/contextMenu.js'
 import { pane } from '../../interaction/focus.js'
+import { useExplorerWidth } from '../../interaction/useExplorerWidth.js'
 import { useGitHubWebSignIn } from '../../interaction/useGitHubWebSignIn.js'
 import { contextMenu } from '../../interaction/menu.js'
 import { t } from '../../model/i18n/index.js'
@@ -34,6 +35,7 @@ const CONFLICTING = t('workbench.mergeState.conflicting')
 const viewId = (url: string): string => `project-pull-request:${url}`
 
 export function ProjectPullRequests({ project }: { project: Project }): JSX.Element {
+  const explorer = useExplorerWidth('projectPullRequests')
   const [selection, setSelection] = useState(selections.get(project.id) ?? '')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<PullRequestStateFilter>(filters.get(project.id) ?? DEFAULT_STATE_FILTER)
@@ -99,7 +101,7 @@ export function ProjectPullRequests({ project }: { project: Project }): JSX.Elem
       : !list.data ? <EmptyState title={t('projectPullRequests.loading')} />
         : pullRequests.length === 0 ? <EmptyState title={refresh.isPending ? t('projectPullRequests.loading') : t('projectPullRequests.empty')} />
           : <ExplorerLayout>
-            <ExplorerPane aria-label={t('projectPullRequests.title')}>
+            <ExplorerPane {...explorer} aria-label={t('projectPullRequests.title')}>
               {/*
                 * The state chip on a row of its own above the search: the search box keeps its width, and four
                 * segments or a chip beside it both ran past the edge of a narrow list pane.

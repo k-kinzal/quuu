@@ -35,6 +35,7 @@ import { t } from '../model/i18n/index.js'
 import { copyText, selectionItems } from '../interaction/contextMenu.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useReportHistory } from '../interaction/useReportHistory.js'
+import { useExplorerWidth } from '../interaction/useExplorerWidth.js'
 import { useTaskReport } from '../interaction/useTaskReport.js'
 import { absoluteTime } from '../model/format.js'
 import { overallCheck } from '../model/pullRequestStatus.js'
@@ -263,6 +264,7 @@ export function TaskMainPane({
   const modeTabsId = useId()
   const fileTabsId = useId()
   const [mode, setMode] = useState<MainMode>('chat')
+  const explorer = useExplorerWidth(mode === 'chat' || mode === 'report' ? 'tree' : mode)
   const lastReviewMode = useRef<ExplorerMode>('changes')
 
   const [tabs, setTabs] = useState<ReviewTab[]>([])
@@ -596,7 +598,7 @@ export function TaskMainPane({
             )
           ) : option.value === mode && (
             <ExplorerLayout>
-              <ExplorerPane>
+              <ExplorerPane {...explorer} aria-label={option.label}>
                 {loading && <EmptyState title={t('reviewPane.loading')} />}
                 {!loading && error && <Alert title={t('reviewPane.loadRejected')}>{error}</Alert>}
                 {!loading && !error && mode === 'pull-requests' && snapshot?.pullRequestNotice && (

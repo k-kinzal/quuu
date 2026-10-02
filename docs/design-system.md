@@ -264,10 +264,14 @@ children, and holds no Git / IPC / app state.
 
 ### APIs that keep call sites from choosing dimensions
 
-- Panes use `Resizer profile="navigation | collection | inspector"`. The initial
+- Panes use `Resizer profile="navigation | collection | inspector | explorer"`. The initial
   width is `paneProfiles[profile].initial`; a saved width comes back through
   `restorePaneWidth(profile, saved)`. Store `PaneWidth` as-is; do not fabricate
   initial values from numbers or type assertions.
+- `ExplorerPane` includes its own resizer. Pass `width` / `onWidthChange` to keep
+  the preference in app state and an `aria-label` to name the boundary. The kit
+  fits the width to its container while preserving room for the selected content;
+  a temporary window shrink does not change the saved preference.
 - Action bands use `Toolbar placement="inline | panel | section"`. pad / padX / padY are not accepted.
 - Attribute lists use `DescriptionList labels="standard | short"`. The label column's actual width is not passed.
 - Details belonging to history use `DataList placement="history"`. They align with the related rows.

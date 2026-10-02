@@ -3,7 +3,7 @@ import { focusRing } from '../../theme/controls.js'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { styled, useTheme } from '@mui/material/styles'
 import { blockProps, surfaceStyles, type SurfaceLevel } from '../../theme/styled.js'
-import { paneProfiles, restorePaneWidth, type PaneProfile, type PaneWidth } from '../../layoutSpec.js'
+import { fitPaneWidth, paneProfiles, type PaneProfile, type PaneWidth } from '../../layoutSpec.js'
 import { useStrings } from '../../theme/strings.js'
 
 const ResizerRoot = styled('div', { shouldForwardProp: blockProps('active') })<{
@@ -11,6 +11,8 @@ const ResizerRoot = styled('div', { shouldForwardProp: blockProps('active') })<{
 }>(({ theme, active }) => ({
   flex: '0 0 1px',
   position: 'relative',
+  zIndex: 1,
+  touchAction: 'none',
   background: active ? theme.palette.primaryText : theme.palette.border.subtle,
   cursor: 'col-resize',
   // Nobody can aim at 1px. Keep the look at 1px and widen only the hit target
@@ -32,6 +34,8 @@ const ResizerRoot = styled('div', { shouldForwardProp: blockProps('active') })<{
 export interface ResizerProps {
   value: PaneWidth
   profile: PaneProfile
+  /** Measured space available to this pane, when nested inside a constrained workspace. */
+  availableWidth?: number
   /** Invert for panes on the right (ones that grow leftward) */
   invert?: boolean
   /** What this is the boundary of. Readable before pressing, for those arriving by keyboard */
@@ -46,25 +50,30 @@ const STEP = 8
 export function Resizer({
   value,
   profile,
+  availableWidth,
   invert = false,
   label,
   onChange
 }: ResizerProps): JSX.Element {
   const strings = useStrings()
   const resizerLabel = label ?? strings.resizer.paneWidth
-  const { min, max } = paneProfiles[profile]
+  const max = Math.max(0, Math.min(paneProfiles[profile].max, availableWidth ?? paneProfiles[profile].max))
+  const min = Math.min(paneProfiles[profile].min, max)
+  const displayedValue = fitPaneWidth(profile, value, availableWidth)
   const [dragging, setDragging] = useState(false)
   const startX = useRef(0)
   const startValue = useRef(value)
 
   const onPointerDown = useCallback(
     (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return
       e.preventDefault()
+      e.currentTarget.setPointerCapture?.(e.pointerId)
       startX.current = e.clientX
-      startValue.current = value
+      startValue.current = displayedValue
       setDragging(true)
     },
-    [value]
+    [displayedValue]
   )
 
   useEffect(() => {
@@ -73,19 +82,23 @@ export function Resizer({
     const move = (e: PointerEvent): void => {
       const delta = e.clientX - startX.current
       const next = startValue.current + (invert ? -delta : delta)
-      onChange(restorePaneWidth(profile, next))
+      onChange(fitPaneWidth(profile, next, availableWidth))
     }
     const up = (): void => setDragging(false)
 
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
+    window.addEventListener('blur', up)
     document.body.style.cursor = 'col-resize'
     return () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
+      window.removeEventListener('blur', up)
       document.body.style.cursor = ''
     }
-  }, [dragging, invert, profile, onChange])
+  }, [dragging, invert, profile, availableWidth, onChange])
 
   /**
    * Make the width changeable by keyboard too.
@@ -99,16 +112,16 @@ export function Resizer({
     const step = e.shiftKey ? 1 : STEP
     const move = (delta: number): void => {
       e.preventDefault()
-      onChange(restorePaneWidth(profile, value + (invert ? -delta : delta)))
+      onChange(fitPaneWidth(profile, displayedValue + (invert ? -delta : delta), availableWidth))
     }
     if (e.key === 'ArrowLeft') move(-step)
     else if (e.key === 'ArrowRight') move(step)
     else if (e.key === 'Home') {
       e.preventDefault()
-      onChange(restorePaneWidth(profile, invert ? max : min))
+      onChange(fitPaneWidth(profile, invert ? max : min, availableWidth))
     } else if (e.key === 'End') {
       e.preventDefault()
-      onChange(restorePaneWidth(profile, invert ? min : max))
+      onChange(fitPaneWidth(profile, invert ? min : max, availableWidth))
     }
   }
 
@@ -116,13 +129,14 @@ export function Resizer({
     <ResizerRoot
       active={dragging}
       onPointerDown={onPointerDown}
+      onLostPointerCapture={() => setDragging(false)}
       onKeyDown={onKeyDown}
       role="separator"
       tabIndex={0}
       aria-orientation="vertical"
       aria-label={strings.resizer.horizontalAria(resizerLabel)}
       title={strings.resizer.horizontalTitle(resizerLabel)}
-      aria-valuenow={value}
+      aria-valuenow={displayedValue}
       aria-valuemin={min}
       aria-valuemax={max}
     />

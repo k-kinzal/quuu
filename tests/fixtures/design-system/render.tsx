@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { ControlSpecimen } from '../../../packages/design-system/src/components/ControlQuality.stories.js'
 import { TooltipSpecimen } from '../../../packages/design-system/src/components/TooltipQuality.stories.js'
+import { ExplorerResizeSpecimen } from '../../../packages/design-system/src/components/layout/EditorWorkspace.stories.js'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import type { ColorScheme, Density } from '../../../packages/design-system/src/theme/tokens.js'
 
@@ -154,3 +155,26 @@ function checkTooltip(text: string): void {
 }
 
 Object.assign(window, { renderTooltips, prepareTooltip, tooltipTarget, checkTooltip })
+
+async function renderExplorer(width: number, scheme: ColorScheme): Promise<void> {
+  flushSync(() => root.render(<ThemeProvider colorScheme={scheme}><ExplorerResizeSpecimen width={width} /></ThemeProvider>))
+  await frame()
+  await frame()
+}
+
+function explorerGeometry() {
+  const pane = document.querySelector<HTMLElement>('section[aria-label="Files"]')!
+  const content = document.querySelector<HTMLElement>('section[aria-label="Selected content"]')!
+  const handle = document.querySelector<HTMLElement>('[role="separator"]')!
+  const layout = document.querySelector<HTMLElement>('[data-explorer-layout]')!
+  const bounds = handle.getBoundingClientRect()
+  return {
+    width: pane.getBoundingClientRect().width,
+    content: content.getBoundingClientRect().width,
+    overflow: layout.scrollWidth > layout.clientWidth,
+    value: Number(handle.getAttribute('aria-valuenow')),
+    x: Math.round(bounds.x), y: Math.round(bounds.y + bounds.height / 2)
+  }
+}
+
+Object.assign(window, { renderExplorer, explorerGeometry })

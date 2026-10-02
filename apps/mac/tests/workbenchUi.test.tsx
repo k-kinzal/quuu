@@ -94,6 +94,28 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+it('resizes every review explorer independently and remembers each width when returning to its tab', () => {
+  useStore.setState({ layout: { ...useStore.getState().layout, explorers: {} } })
+  vi.stubGlobal('quuu', { review: { closePullRequest: vi.fn() } })
+  render(<ThemeProvider buildTheme={buildTheme}>
+    <TaskMainPane task={workTask()} project={undefined} snapshot={null}
+      loading={false} error={null} requestedLine={null} onRefresh={vi.fn()} onFile={vi.fn()} />
+  </ThemeProvider>)
+  for (const name of [/^Project$/, /Changes/, /Commit/, /Pull Request/]) {
+    fireEvent.click(screen.getByRole('tab', { name }))
+    const boundary = screen.getByRole('separator')
+    expect(boundary.getAttribute('aria-valuenow')).toBe('256')
+    fireEvent.keyDown(boundary, { key: 'ArrowLeft' })
+    expect(boundary.getAttribute('aria-valuenow')).toBe('248')
+  }
+  fireEvent.click(screen.getByRole('tab', { name: /^Project$/ }))
+  expect(screen.getByRole('separator').getAttribute('aria-valuenow')).toBe('248')
+  const saved: unknown = JSON.parse(localStorage.getItem('taskd.layout.v8')!)
+  expect(saved).toMatchObject({
+    explorers: { tree: 248, changes: 248, commits: 248, 'pull-requests': 248 }
+  })
+})
+
 it('lists local changes, staging and commit hashes in order and opens each version of a partially staged file', async () => {
   const localRevision = { base: 'b'.repeat(40), head: 'c'.repeat(40) }
   const stagedRevision = { base: 'a'.repeat(40), head: 'b'.repeat(40) }

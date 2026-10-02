@@ -1,4 +1,8 @@
 import { alpha, styled } from '@mui/material/styles'
+import { useLayoutEffect, useRef, useState, type ComponentPropsWithoutRef } from 'react'
+import { explorerContentMinWidth, fitPaneWidth, paneProfiles, type PaneWidth } from '../../layoutSpec.js'
+import { blockProps } from '../../theme/styled.js'
+import { Resizer } from './Resizer.js'
 
 /** An editor's explorer surface, its body, and the input field laid over it. It carries no meaning about the app's targets or actions. */
 export const WorkSurface = styled('div')({
@@ -17,15 +21,48 @@ export const ExplorerLayout = styled('div')(({ theme }) => ({
   background: theme.palette.surface.default
 }))
 
-export const ExplorerPane = styled('section')(({ theme }) => ({
+const ExplorerPaneRoot = styled('section', { shouldForwardProp: blockProps('width') })<{ width: PaneWidth }>(({ theme, width }) => ({
   display: 'flex',
   flexDirection: 'column',
-  flex: `0 0 ${theme.spacing(64)}`,
-  width: theme.spacing(64),
+  flex: `0 0 ${width}px`,
+  width,
+  minWidth: 0,
   minHeight: 0,
-  borderRight: `1px solid ${theme.palette.border.subtle}`,
+  overflow: 'hidden',
   background: theme.palette.surface.default
 }))
+
+export interface ExplorerPaneProps extends ComponentPropsWithoutRef<'section'> {
+  width?: PaneWidth
+  onWidthChange?(width: PaneWidth): void
+}
+
+/** The explorer and its boundary are one control, so no browsing surface can omit resizing. */
+export function ExplorerPane({ width, onWidthChange, children, ...props }: ExplorerPaneProps): JSX.Element {
+  const [localWidth, setLocalWidth] = useState(paneProfiles.explorer.initial)
+  const [availableWidth, setAvailableWidth] = useState<number>()
+  const root = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const parent = root.current?.parentElement
+    if (!parent) return
+    const measure = (): void => {
+      const total = parent.getBoundingClientRect().width
+      if (total > 0) setAvailableWidth(Math.max(0, total - 1 - Math.min(explorerContentMinWidth, total / 2)))
+    }
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(measure)
+    observer.observe(parent)
+    return () => observer.disconnect()
+  }, [])
+  const value = fitPaneWidth('explorer', width ?? localWidth, availableWidth)
+  const change = (next: PaneWidth): void => { setLocalWidth(next); onWidthChange?.(next) }
+  return <>
+    <ExplorerPaneRoot {...props} ref={root} width={value}>{children}</ExplorerPaneRoot>
+    <Resizer profile="explorer" value={value} availableWidth={availableWidth}
+      label={props['aria-label']} onChange={change} />
+  </>
+}
 
 export const EditorPane = styled('section')(({ theme }) => ({
   display: 'flex',

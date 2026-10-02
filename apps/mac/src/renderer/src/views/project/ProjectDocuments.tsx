@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Project } from '../../../../api/schemas/projects.js'
 import { DocumentWebsite } from '../../components/DocumentWebsite.js'
 import { pane } from '../../interaction/focus.js'
+import { useExplorerWidth } from '../../interaction/useExplorerWidth.js'
 import { t } from '../../model/i18n/index.js'
 import { failureReason } from '../../model/operationFailure.js'
 import { queryClient } from '../../state/queryClient.js'
@@ -18,6 +19,7 @@ import { ChevronLeft, ChevronRight, ExternalLink, FileText, ICON, RefreshCw, ico
 const selections = new Map<string, string>()
 
 export function ProjectDocuments({ project }: { project: Project }): JSX.Element {
+  const explorer = useExplorerWidth('projectDocuments')
   const [selection, setSelection] = useState(selections.get(project.id) ?? '')
   const [search, setSearch] = useState('')
   const [fragment, setFragment] = useState('')
@@ -83,7 +85,7 @@ export function ProjectDocuments({ project }: { project: Project }): JSX.Element
       : !data ? <EmptyState title={t('projectDocuments.loading')} />
         : data.files.length + data.websites.length === 0 ? <EmptyState title={t('projectDocuments.empty')} />
           : <ExplorerLayout>
-            <ExplorerPane aria-label={t('projectDocuments.title')}>
+            <ExplorerPane {...explorer} aria-label={t('projectDocuments.title')}>
               <Toolbar placement="panel"><SearchInput aria-label={t('projectDocuments.search')} placeholder={t('projectDocuments.search')}
                 value={search} onChange={event => setSearch(event.target.value)} /></Toolbar>
               <ItemList>

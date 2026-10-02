@@ -31,6 +31,8 @@ it('keeps control appearance and visible icon names consistent in real Chromium 
     expect(stdout).toContain('light/comfortable: geometry')
     expect(stdout).toContain('dark/compact: icon names')
     expect(stdout).toContain('light/comfortable: icon names')
+    expect(stdout).toContain('dark: explorer pointer')
+    expect(stdout).toContain('light: explorer pointer')
   } finally {
     await server.close()
     await rm(profile, { recursive: true, force: true })

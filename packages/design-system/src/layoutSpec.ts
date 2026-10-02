@@ -28,7 +28,8 @@ export type PaneWidth = number & { readonly [paneWidth]: true }
 export const paneProfiles = {
   navigation: { initial: 208 as PaneWidth, min: 176, max: 300 },
   collection: { initial: 268 as PaneWidth, min: 220, max: 420 },
-  inspector: { initial: 300 as PaneWidth, min: 260, max: 480 }
+  inspector: { initial: 300 as PaneWidth, min: 260, max: 480 },
+  explorer: { initial: 256 as PaneWidth, min: 120, max: 640 }
 } as const
 export type PaneProfile = keyof typeof paneProfiles
 
@@ -38,6 +39,15 @@ export function restorePaneWidth(profile: PaneProfile, saved: unknown): PaneWidt
   return typeof saved === 'number' && Number.isFinite(saved)
     ? Math.round(Math.min(max, Math.max(min, saved))) as PaneWidth
     : initial
+}
+
+/** A nested explorer must leave room to read the selected item, even in a narrow workbench. */
+export const explorerContentMinWidth = 160
+
+/** Fit the current display without overwriting the user's preferred width when the window shrinks. */
+export function fitPaneWidth(profile: PaneProfile, value: number, availableWidth?: number): PaneWidth {
+  const maximum = Math.max(0, Math.min(paneProfiles[profile].max, availableWidth ?? paneProfiles[profile].max))
+  return Math.min(maximum, restorePaneWidth(profile, value)) as PaneWidth
 }
 
 /** If notifications and the bottom band each decided their own height, they would overlap the moment the band changed. */

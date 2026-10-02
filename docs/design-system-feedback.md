@@ -1,5 +1,20 @@
 # Call-site feedback and decisions
 
+## 2026-10-03 Resizable explorer boundaries
+
+- Finding: the task's project, changes, commits and pull-request tabs, plus the
+  project's files, documents and pull-request pages, all inherited a fixed-width
+  `ExplorerPane`. None offered a boundary to adjust that space.
+- Accepted: `ExplorerPane` includes the existing pointer/keyboard `Resizer`, with
+  an explorer profile that can shrink further than the main collection. It fits
+  within its container and reserves room for the selected content. Measurement
+  changes only the displayed width; the app retains the preferred width per surface.
+- Resizers capture the pointer, cancel on lost capture/cancellation/window blur,
+  and keep their wider hit area above neighboring content. Dragging a constrained
+  pane starts at its displayed width, avoiding a dead zone after a window shrink.
+- Verification: resizer and screen regressions, the EditorWorkspace narrow story,
+  Chromium pointer/geometry checks, and the isolated app's reading surfaces.
+
 ## 2026-10-03 Discoverable names for icon-only controls
 
 - Cause: `NavItem` claimed to provide a tooltip when collapsed but implemented

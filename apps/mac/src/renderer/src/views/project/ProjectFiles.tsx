@@ -7,6 +7,7 @@ import { useMemo, useState } from 'react'
 import type { Project } from '../../../../api/schemas/projects.js'
 import type { ReviewTreeNode } from '../../../../api/schemas/review.js'
 import { pane } from '../../interaction/focus.js'
+import { useExplorerWidth } from '../../interaction/useExplorerWidth.js'
 import { t } from '../../model/i18n/index.js'
 import { failureReason } from '../../model/operationFailure.js'
 import { projectReviewTree, treeChange } from '../../model/reviewTree.js'
@@ -41,6 +42,7 @@ function convert(nodes: ReviewTreeNode[], files: Map<string, FileTarget>): TreeN
  * workplace. A task's tab answers "what did this task do"; this answers "what is in the project".
  */
 export function ProjectFiles({ project }: { project: Project }): JSX.Element {
+  const explorer = useExplorerWidth('projectFiles')
   const [selection, setSelection] = useState<FileTarget | null>(selections.get(project.id) ?? null)
   const listing = useQuery({
     queryKey: ['project-files', project.id, project.path],
@@ -78,7 +80,7 @@ export function ProjectFiles({ project }: { project: Project }): JSX.Element {
       : !data ? <EmptyState title={t('projectFiles.loading')} />
         : built.nodes.length === 0 ? <EmptyState title={t('projectFiles.empty')} />
           : <ExplorerLayout>
-            <ExplorerPane aria-label={t('projectFiles.tree')}>
+            <ExplorerPane {...explorer} aria-label={t('projectFiles.tree')}>
               {/* A cut listing must say so. A tree that silently stops reads as the directory itself */}
               {data.truncated && <Alert tone="warning">{t('projectFiles.truncated')}</Alert>}
               <TreeView

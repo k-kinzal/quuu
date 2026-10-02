@@ -71,6 +71,31 @@ describe('Pane boundary', () => {
     fireEvent.keyDown(handle, { key: 'End' })
     expect(onChange).toHaveBeenLastCalledWith(300)
   })
+
+  it('starts at the visible width in a constrained pane and releases the drag on cancellation', () => {
+    const { handle, onChange } = setup({ profile: 'explorer', value: restorePaneWidth('explorer', 400), availableWidth: 200 })
+    expect(handle.getAttribute('aria-valuenow')).toBe('200')
+    expect(handle.getAttribute('aria-valuemax')).toBe('200')
+    fireEvent.pointerDown(handle, { button: 0, clientX: 200 })
+    fireEvent.pointerMove(window, { clientX: 160 })
+    expect(onChange).toHaveBeenLastCalledWith(160)
+    fireEvent.pointerCancel(window)
+    onChange.mockClear()
+    fireEvent.pointerMove(window, { clientX: 180 })
+    expect(onChange).not.toHaveBeenCalled()
+    expect(document.body.style.cursor).toBe('')
+  })
+
+  it('keeps both panes reachable below the usual minimum and ignores a secondary-button drag', () => {
+    const { handle, onChange } = setup({ profile: 'explorer', availableWidth: 90 })
+    fireEvent.keyDown(handle, { key: 'End' })
+    expect(onChange).toHaveBeenLastCalledWith(90)
+    expect(handle.getAttribute('aria-valuemin')).toBe('90')
+    onChange.mockClear()
+    fireEvent.pointerDown(handle, { button: 2, clientX: 90 })
+    fireEvent.pointerMove(window, { clientX: 150 })
+    expect(onChange).not.toHaveBeenCalled()
+  })
 })
 
 describe('Boundary between vertically stacked panes', () => {

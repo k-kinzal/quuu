@@ -39,6 +39,8 @@ export type { Place, Section, SettingsCategory } from './navigation.js'
  */
 export type ListMode = 'compact' | 'hidden'
 
+export type ExplorerId = 'tree' | 'changes' | 'commits' | 'pull-requests' | 'projectFiles' | 'projectDocuments' | 'projectPullRequests'
+
 export interface Layout {
   rail: PaneWidth
   /** Width of the list in side-by-side view. */
@@ -47,6 +49,7 @@ export interface Layout {
   inspector: PaneWidth
   railCollapsed: boolean
   inspectorOpen: boolean
+  explorers?: Partial<Record<ExplorerId, PaneWidth>>
 }
 
 /*
@@ -84,7 +87,10 @@ function loadLayout(): Layout {
       ...DEFAULT_LAYOUT, ...saved,
       rail: restorePaneWidth('navigation', saved.rail),
       list: restorePaneWidth('collection', saved.list),
-      inspector: restorePaneWidth('inspector', saved.inspector)
+      inspector: restorePaneWidth('inspector', saved.inspector),
+      explorers: Object.fromEntries(
+        Object.entries(saved.explorers ?? {}).map(([id, width]) => [id, restorePaneWidth('explorer', width)])
+      )
     }
   } catch {
     return DEFAULT_LAYOUT
