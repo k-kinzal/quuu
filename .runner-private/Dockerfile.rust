@@ -3,7 +3,7 @@ FROM ${RUNNER_IMAGE}
 ARG RUST_VERSION=1.92.0
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential pkg-config libssl-dev clang cmake python3 ripgrep jq unzip zip \
+    build-essential pkg-config libssl-dev clang cmake ripgrep jq unzip zip \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /opt/rustup /opt/cargo \
     && chown node:node /opt/rustup /opt/cargo

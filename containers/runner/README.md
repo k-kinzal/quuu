@@ -36,7 +36,7 @@ follow-ups and Runner-owned logins survive container replacement.
 
 The Rust Dockerfile is kept at [`.runner-private/Dockerfile.rust`](../../.runner-private/Dockerfile.rust).
 It extends the agent image with Rust 1.92.0, rustfmt, Clippy, native build tools,
-OpenSSL development headers and Python, and advertises `rust,linux`. The compiler
+OpenSSL development headers, and advertises `rust,linux`. The compiler
 version can be changed with `--build-arg RUST_VERSION=...`.
 
 ```sh
