@@ -64,6 +64,19 @@ describe('the generated gRPC API', () => {
     await expect(http.call('tasks.create', { projectId: project.id, title: 'invalid', status: 'done' })).rejects.toThrow()
     expect(app.tasks.listTasks()).toHaveLength(1)
   })
+  it('conditionally transfers review updates over gRPC while keeping the original snapshot API', async () => {
+    const project = app.projects.createProject({ name: 'Review polling', path: dir })
+    const task = app.tasks.createTask({ projectId: project.id, title: 'Review' })
+    const snapshot = { cwd: dir, branch: 'main', repository: null, tree: [], changes: [], stagedChanges: [],
+      stagedRevision: null, localChanges: [], revision: null, localRevision: null, commits: [], pullRequests: [], coverage: null, projectTasks: [] }
+    repo.saveReviewSnapshot(app.db, task.id, snapshot)
+    const first = await http.api.review.poll({ taskId: task.id })
+    expect(first.snapshot).toEqual(await http.api.review.snapshot(task.id))
+    expect(await http.api.review.poll({ taskId: task.id, knownVersion: first.version! }))
+      .toEqual({ version: first.version, snapshot: null })
+    repo.saveReviewSnapshot(app.db, task.id, { ...snapshot, branch: 'changed' })
+    expect((await http.api.review.poll({ taskId: task.id, knownVersion: first.version! })).snapshot?.branch).toBe('changed')
+  })
   it('rejects unauthenticated callers before operations execute', async () => {
     const denied = new QuuuHttpClient(connection.http, 'wrong')
     await expect(denied.api.projects.list()).rejects.toMatchObject({ code: 16 })

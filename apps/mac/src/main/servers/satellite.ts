@@ -36,6 +36,7 @@ export class HostSession {
   private readonly client: QuuuHttpClient
   private readonly abort = new AbortController()
   private readonly ready: Promise<void>
+  private reviewPolling = true
   constructor(url: string, token: string, deliver: (name: string, payload: JsonValue) => void, lost: () => void) {
     this.client = new QuuuHttpClient(url, token)
     this.ready = new Promise<void>((resolve, reject) => {
@@ -57,6 +58,18 @@ export class HostSession {
   async call(name: string, input: unknown): Promise<unknown> {
     try {
       await this.ready
+      if (name === 'review.poll') {
+        if (this.reviewPolling) {
+          try { return await this.client.call(name, input) }
+          catch (error) {
+            if (!(error instanceof ConnectError) || error.code !== Code.Unimplemented) throw error
+            this.reviewPolling = false
+          }
+        }
+        // Satellites can be updated before their host. Older hosts still serve complete reviews.
+        const { taskId } = input as { taskId: string }
+        return { version: null, snapshot: await this.client.api.review.snapshot(taskId) }
+      }
       return await this.client.call(name, input)
     } catch (error) {
       // The window shows the host's reason, not the transport's framing of it.

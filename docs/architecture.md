@@ -198,8 +198,16 @@ Existing indexed history remains readable when a provider log is no longer prese
 `quuu tasks logs --all` streams JSONL with backpressure and avoids repeating the
 same recorded conversation. It keeps only one page in memory. The history reader
 creates no live view subscription, so analysis does not change the person's open
-conversation. Global snapshots are built for remote clients only when a client is
-watching, and bursts are coalesced.
+conversation.
+
+The review screen checks saved projection versions every second. `review.poll` returns
+only the version when unchanged; changed and initial reads include the full projection.
+The original `review.snapshot` remains available, including for satellites following an
+older host. Time labels share a clock and render only when their text changes; hiding the
+document pauses that display clock without affecting execution or ingestion.
+
+Global snapshots are built for remote clients only when a client is watching, and bursts
+are coalesced.
 
 ## Verification
 

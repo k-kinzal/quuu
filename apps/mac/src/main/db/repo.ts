@@ -173,6 +173,12 @@ export function reviewEvidence(db: Db, taskId: string): { commits: string[]; pul
   return { commits: rows.filter(row => row.kind === 'commit').map(row => s(row.value)), pullRequests: rows.filter(row => row.kind === 'pull-request').map(row => s(row.value)) }
 }
 
+/** Read the change token without loading a potentially multi-megabyte file tree. */
+export function reviewSnapshotVersion(db: Db, taskId: string): string | null {
+  const row = db.prepare('SELECT updated_at FROM task_review_snapshots WHERE task_id = ?').get(taskId) as Row | undefined
+  return row ? s(row.updated_at) : null
+}
+
 export function getReviewSnapshot(db: Db, taskId: string): { updatedAt: string; snapshot: ReviewSnapshot } | null {
   const row = db.prepare('SELECT * FROM task_review_snapshots WHERE task_id = ?').get(taskId) as Row | undefined
   return row ? { updatedAt: s(row.updated_at), snapshot: JSON.parse(s(row.snapshot)) as ReviewSnapshot } : null
@@ -194,8 +200,12 @@ export function listProjectPullRequests(db: Db, projectId: string): Array<{ task
 }
 
 export function saveReviewSnapshot(db: Db, taskId: string, snapshot: ReviewSnapshot): void {
+  // Local and GitHub projections can land in the same millisecond. Keep the token increasing
+  // even then (or if the wall clock moves backwards), so no saved update is missed by a reader.
+  const previous = Date.parse(reviewSnapshotVersion(db, taskId) ?? '')
+  const updatedAt = new Date(Math.max(Date.now(), Number.isFinite(previous) ? previous + 1 : 0)).toISOString()
   db.prepare('INSERT OR REPLACE INTO task_review_snapshots (task_id, updated_at, snapshot) VALUES (?, ?, ?)')
-    .run(taskId, nowIso(), JSON.stringify(snapshot))
+    .run(taskId, updatedAt, JSON.stringify(snapshot))
 }
 
 /** Review tasks with an open or not-yet-observed PR, without loading their file trees. */

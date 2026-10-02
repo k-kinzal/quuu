@@ -1,10 +1,11 @@
+import { Code, ConnectError } from '@connectrpc/connect'
 import { once } from 'node:events'
 import { mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs'
 import { createServer } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRouterClient } from '@orpc/server'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { EVENTS } from '../src/api/channels.js'
 import { QuuuHttpClient } from '../src/client/http.js'
 import { QuuuApp } from '../src/main/bootstrap.js'
@@ -13,7 +14,7 @@ import { createOperationsRouter } from '../src/main/api/router.js'
 import { t } from '../src/main/i18n/index.js'
 import { ServerController } from '../src/main/servers/controller.js'
 import { parseAnnouncement } from '../src/main/servers/lan.js'
-import { pair } from '../src/main/servers/satellite.js'
+import { HostSession, pair } from '../src/main/servers/satellite.js'
 import { NetworkOperations, normalizeAddress } from '../src/main/settings/network.js'
 import { isolateSessionDirs } from './helpers.js'
 
@@ -172,4 +173,22 @@ describe('a host and its satellite', () => {
     await expect(satellite.network.pair(`127.0.0.1:${port}`, code === '123456' ? '654321' : '123456')).rejects.toThrow(t('network.wrongCode'))
     expect(host.network.status().host.devices).toEqual([])
   })
+})
+
+it('reads complete reviews from an older host and remembers that it cannot poll conditionally', async () => {
+  const watch = vi.spyOn(QuuuHttpClient.prototype, 'watch').mockImplementation(async function* (signal) {
+    yield { name: 'quuu.ready', payload: null }
+    await new Promise<void>(resolve => signal.addEventListener('abort', () => resolve(), { once: true }))
+  })
+  const snapshot = { branch: 'older host' }
+  const call = vi.spyOn(QuuuHttpClient.prototype, 'call').mockImplementation(name => {
+    if (name === 'review.poll') return Promise.reject(new ConnectError('Unknown method', Code.Unimplemented))
+    return Promise.resolve(snapshot)
+  })
+  const session = new HostSession('http://127.0.0.1:1', 'fixture', () => undefined, () => undefined)
+  try {
+    expect(await session.call('review.poll', { taskId: 'task' })).toEqual({ version: null, snapshot })
+    expect(await session.call('review.poll', { taskId: 'task' })).toEqual({ version: null, snapshot })
+    expect(call.mock.calls.map(([name]) => name)).toEqual(['review.poll', 'review.snapshot', 'review.snapshot'])
+  } finally { session.close(); watch.mockRestore(); call.mockRestore() }
 })

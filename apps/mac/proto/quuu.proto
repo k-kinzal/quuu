@@ -6276,6 +6276,279 @@ message OpenEditorsResponse {
   optional OpenEditorsResponseValue value = 1;
 }
 
+message ReviewPollRequestValue {
+  optional string taskId = 1;
+  optional string knownVersion = 2;
+}
+
+message ReviewPollRequest {
+  optional ReviewPollRequestValue value = 1;
+}
+
+message ReviewPollResponseValueVersion {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValueSnapshotVariant1Repository {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValueSnapshotVariant1Tree {
+  repeated google.protobuf.Value items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1ChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1Changes {
+  repeated ReviewPollResponseValueSnapshotVariant1ChangesItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1LocalChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1LocalChanges {
+  repeated ReviewPollResponseValueSnapshotVariant1LocalChangesItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1StagedChangesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1StagedChanges {
+  repeated ReviewPollResponseValueSnapshotVariant1StagedChangesItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1RevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewPollResponseValueSnapshotVariant1Revision {
+  oneof kind {
+  ReviewPollResponseValueSnapshotVariant1RevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValueSnapshotVariant1LocalRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewPollResponseValueSnapshotVariant1LocalRevision {
+  oneof kind {
+  ReviewPollResponseValueSnapshotVariant1LocalRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValueSnapshotVariant1StagedRevisionVariant1 {
+  optional string base = 1;
+  optional string head = 2;
+}
+
+message ReviewPollResponseValueSnapshotVariant1StagedRevision {
+  oneof kind {
+  ReviewPollResponseValueSnapshotVariant1StagedRevisionVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValueSnapshotVariant1CommitsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CommitsItemFiles {
+  repeated ReviewPollResponseValueSnapshotVariant1CommitsItemFilesItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CommitsItem {
+  optional string sha = 1;
+  optional string shortSha = 2;
+  optional string subject = 3;
+  optional string author = 4;
+  optional string committedAt = 5;
+  optional ReviewPollResponseValueSnapshotVariant1CommitsItemFiles files = 6;
+}
+
+message ReviewPollResponseValueSnapshotVariant1Commits {
+  repeated ReviewPollResponseValueSnapshotVariant1CommitsItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1PullRequestsItemFilesItem {
+  optional string path = 1;
+  optional string change = 2;
+  optional string previousPath = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1PullRequestsItemFiles {
+  repeated ReviewPollResponseValueSnapshotVariant1PullRequestsItemFilesItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1PullRequestsItem {
+  optional double number = 1;
+  optional string title = 2;
+  optional string url = 3;
+  optional string headRefName = 4;
+  optional string baseRefName = 5;
+  optional string headSha = 6;
+  optional bool draft = 7;
+  optional string updatedAt = 8;
+  optional string check = 9;
+  optional string mergeState = 10;
+  optional string state = 11;
+  optional ReviewPollResponseValueSnapshotVariant1PullRequestsItemFiles files = 12;
+}
+
+message ReviewPollResponseValueSnapshotVariant1PullRequests {
+  repeated ReviewPollResponseValueSnapshotVariant1PullRequestsItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1Lines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1Functions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1Branches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1Statements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemLines {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemFunctions {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemBranches {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemStatements {
+  optional double covered = 1;
+  optional double total = 2;
+  optional double percent = 3;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemUncoveredLines {
+  repeated double items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItem {
+  optional string path = 1;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemLines lines = 2;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemFunctions functions = 3;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemBranches branches = 4;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemStatements statements = 5;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemUncoveredLines uncoveredLines = 6;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1Files {
+  repeated ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1CoverageVariant1 {
+  optional string source = 1;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1Lines lines = 2;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1Functions functions = 3;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1Branches branches = 4;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1Statements statements = 5;
+  optional ReviewPollResponseValueSnapshotVariant1CoverageVariant1Files files = 6;
+}
+
+message ReviewPollResponseValueSnapshotVariant1Coverage {
+  oneof kind {
+  ReviewPollResponseValueSnapshotVariant1CoverageVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValueSnapshotVariant1ProjectTasksItem {
+  optional string id = 1;
+  optional string label = 2;
+  optional string source = 3;
+  optional string command = 4;
+}
+
+message ReviewPollResponseValueSnapshotVariant1ProjectTasks {
+  repeated ReviewPollResponseValueSnapshotVariant1ProjectTasksItem items = 1;
+}
+
+message ReviewPollResponseValueSnapshotVariant1 {
+  optional bool preparing = 1;
+  optional string error = 2;
+  optional string cwd = 3;
+  optional string branch = 4;
+  optional ReviewPollResponseValueSnapshotVariant1Repository repository = 5;
+  optional ReviewPollResponseValueSnapshotVariant1Tree tree = 6;
+  optional ReviewPollResponseValueSnapshotVariant1Changes changes = 7;
+  optional ReviewPollResponseValueSnapshotVariant1LocalChanges localChanges = 8;
+  optional ReviewPollResponseValueSnapshotVariant1StagedChanges stagedChanges = 9;
+  optional ReviewPollResponseValueSnapshotVariant1Revision revision = 10;
+  optional ReviewPollResponseValueSnapshotVariant1LocalRevision localRevision = 11;
+  optional ReviewPollResponseValueSnapshotVariant1StagedRevision stagedRevision = 12;
+  optional ReviewPollResponseValueSnapshotVariant1Commits commits = 13;
+  optional ReviewPollResponseValueSnapshotVariant1PullRequests pullRequests = 14;
+  optional ReviewPollResponseValueSnapshotVariant1Coverage coverage = 15;
+  optional ReviewPollResponseValueSnapshotVariant1ProjectTasks projectTasks = 16;
+  optional string pullRequestNotice = 17;
+}
+
+message ReviewPollResponseValueSnapshot {
+  oneof kind {
+  ReviewPollResponseValueSnapshotVariant1 variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message ReviewPollResponseValue {
+  optional ReviewPollResponseValueVersion version = 1;
+  optional ReviewPollResponseValueSnapshot snapshot = 2;
+}
+
+message ReviewPollResponse {
+  optional ReviewPollResponseValue value = 1;
+}
+
 message ReviewSnapshotRequest {
   optional string value = 1;
 }
@@ -8247,6 +8520,7 @@ service Quuu {
   rpc OpenReveal(OpenRevealRequest) returns (OpenRevealResponse);
   rpc OpenWorkingDir(OpenWorkingDirRequest) returns (OpenWorkingDirResponse);
   rpc OpenEditors(OpenEditorsRequest) returns (OpenEditorsResponse);
+  rpc ReviewPoll(ReviewPollRequest) returns (ReviewPollResponse);
   rpc ReviewSnapshot(ReviewSnapshotRequest) returns (ReviewSnapshotResponse);
   rpc ReviewRefresh(ReviewRefreshRequest) returns (ReviewRefreshResponse);
   rpc ReviewHistory(ReviewHistoryRequest) returns (ReviewHistoryResponse);

@@ -340,3 +340,40 @@ it('fills in the merge state and openness for a projection saved before they wer
   repo.saveReviewSnapshot(db, taskId, legacy)
   expect(operations.reviewSnapshot(taskId).pullRequests).toEqual([{ ...pull, mergeState: 'unknown', state: 'open' }])
 })
+
+it('returns only a version for an unchanged review without reading its file tree', () => {
+  repo.saveReviewSnapshot(db, taskId, snapshot())
+  const first = operations.pollSnapshot(taskId)
+  expect(first.snapshot).toEqual(snapshot())
+  expect(first.version).toBeTypeOf('string')
+  const read = vi.spyOn(repo, 'getReviewSnapshot')
+  expect(operations.pollSnapshot(taskId, first.version!)).toEqual({ version: first.version, snapshot: null })
+  expect(read).not.toHaveBeenCalled()
+  const changed = { ...snapshot(), error: 'GitHub unavailable' }
+  repo.saveReviewSnapshot(db, taskId, changed)
+  expect(operations.pollSnapshot(taskId, first.version!).snapshot).toEqual(changed)
+})
+
+it('keeps projection versions distinct within a millisecond and across a backwards clock change', () => {
+  const now = vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000)
+  repo.saveReviewSnapshot(db, taskId, snapshot())
+  const first = repo.reviewSnapshotVersion(db, taskId)!
+  repo.saveReviewSnapshot(db, taskId, snapshot())
+  const second = repo.reviewSnapshotVersion(db, taskId)!
+  now.mockReturnValue(1_700_000_000_000)
+  repo.saveReviewSnapshot(db, taskId, snapshot())
+  const third = repo.reviewSnapshotVersion(db, taskId)!
+  expect(second > first).toBe(true)
+  expect(third > second).toBe(true)
+})
+
+it('keeps asking for an unmaterialized review and rejects a deleted task even with a known version', () => {
+  const request = vi.spyOn(operations, 'requestRefresh').mockImplementation(() => undefined)
+  expect(operations.pollSnapshot(taskId).snapshot?.preparing).toBe(true)
+  expect(operations.pollSnapshot(taskId).version).toBeNull()
+  expect(request).toHaveBeenCalledTimes(2)
+  repo.saveReviewSnapshot(db, taskId, snapshot())
+  const version = repo.reviewSnapshotVersion(db, taskId)!
+  repo.deleteTask(db, taskId)
+  expect(() => operations.pollSnapshot(taskId, version)).toThrow()
+})

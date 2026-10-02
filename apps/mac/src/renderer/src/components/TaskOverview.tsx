@@ -48,6 +48,7 @@ import type { Run } from '../../../api/schemas/execution.js'
 import type { TaskRule } from '../../../api/schemas/automation.js'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { Priority, Task, TaskStatus } from '../../../api/schemas/tasks.js'
+import { useClockText } from '../interaction/useClockText.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import { PRIORITY_LABEL, RUN_STATUS_LABEL, TASK_STATUS_LABEL } from '../model/labels.js'
@@ -157,11 +158,6 @@ export function TaskOverview(): JSX.Element {
   const resetTableView = useStore((s) => s.resetTableView)
 
   const theme = useTheme()
-  const [now, setNow] = useState(() => Date.now())
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
 
   const view = useTaskView()
   const tasks = view.ordered
@@ -373,9 +369,10 @@ export function TaskOverview(): JSX.Element {
       showProject={crossProject}
       widths={widths}
       agent={view.context.agentLabel(task)}
-      state={stateText(task, runs.get(task.id), positions.get(task.id), now, byId)}
+      run={runs.get(task.id)}
+      queuePos={positions.get(task.id)}
+      byId={byId}
       tone={stateTone(task, byId)}
-      lastRun={lastRunText(runs.get(task.id), now)}
       selected={task.id === cursorTaskId}
       flashing={task.id === landedTaskId}
       onOpen={onOpen}
@@ -551,9 +548,10 @@ interface TaskRowProps {
   showProject: boolean
   widths: ResolvedWidths
   agent: string
-  state: string
+  run: Run | undefined
+  queuePos: number | undefined
+  byId: Map<string, Task>
   tone: CellTone
-  lastRun: string
   selected: boolean
   flashing: boolean
   onOpen(id: string): void
@@ -563,23 +561,17 @@ interface TaskRowProps {
   onEnqueue(id: string): void
 }
 
-/**
- * One row.
- *
- * **Memoized so the clock recompute doesn't rebuild rows.** Elapsed time updates every
- * second, but only running rows get a new value; the rest produce the same string.
- * With hundreds of rows, skipping this memo means everything redraws every second
- * while nothing is happening.
- */
+/** Stable rows leave time-dependent cells to their own clock subscriptions. */
 const TaskRow = memo(function TaskRow({
   task,
   project,
   showProject,
   widths,
   agent,
-  state,
+  run,
+  queuePos,
+  byId,
   tone,
-  lastRun,
   selected,
   flashing,
   onMenu,
@@ -660,20 +652,8 @@ const TaskRow = memo(function TaskRow({
       <DataCell width={widths.agent} tone="muted">
         {agent}
       </DataCell>
-      {/*
-        Failure reasons always get cut by the column width. Restore what was truncated via
-        title (rule K-1). Taking the whole thing out is the row's right-click ("copy failure reason")
-      */}
-      <DataCell
-        width={widths.state}
-        tone={tone}
-        title={task.status === 'failed' ? state : undefined}
-      >
-        {state}
-      </DataCell>
-      <DataCell width={widths.lastRun} tone="muted">
-        {lastRun}
-      </DataCell>
+      <TaskStateCell task={task} run={run} queuePos={queuePos} byId={byId} width={widths.state} tone={tone} />
+      <TaskLastRunCell run={run} width={widths.lastRun} />
       <FillerCell />
       <DataCell width={ACTIONS_WIDTH} edge="end">
         {/* Rule E: operations with heavy consequences get labels. Never icon-only. */}
@@ -723,6 +703,17 @@ const TaskRow = memo(function TaskRow({
     </DataRow>
   )
 })
+
+function TaskStateCell({ task, run, queuePos, byId, width, tone }: Pick<TaskRowProps, 'task' | 'run' | 'queuePos' | 'byId' | 'tone'> & { width: number }): JSX.Element {
+  const state = useClockText(now => stateText(task, run, queuePos, now, byId),
+    task.status === 'running' || task.status === 'review' || task.status === 'done' || (task.status === 'queued' && task.scheduledAt !== null))
+  return <DataCell width={width} tone={tone} title={task.status === 'failed' ? state : undefined}>{state}</DataCell>
+}
+
+function TaskLastRunCell({ run, width }: { run: Run | undefined; width: number }): JSX.Element {
+  const text = useClockText(now => lastRunText(run, now), run?.status === 'running' || run?.status === 'starting')
+  return <DataCell width={width} tone="muted">{text}</DataCell>
+}
 
 /**
  * Whether the state column gets color.

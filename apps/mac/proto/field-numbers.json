@@ -6210,5 +6210,220 @@
   },
   "AppSetTelemetryResponseValueLastExports": {
     "items": 1
+  },
+  "ReviewPollRequestValue": {
+    "taskId": 1,
+    "knownVersion": 2
+  },
+  "ReviewPollRequest": {
+    "value": 1
+  },
+  "ReviewPollResponseValueVersion": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1Repository": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1Tree": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1ChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1Changes": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1LocalChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1LocalChanges": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1StagedChangesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1StagedChanges": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1RevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1Revision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1LocalRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1LocalRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1StagedRevisionVariant1": {
+    "base": 1,
+    "head": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1StagedRevision": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1CommitsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CommitsItemFiles": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1CommitsItem": {
+    "sha": 1,
+    "shortSha": 2,
+    "subject": 3,
+    "author": 4,
+    "committedAt": 5,
+    "files": 6
+  },
+  "ReviewPollResponseValueSnapshotVariant1Commits": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1PullRequestsItemFilesItem": {
+    "path": 1,
+    "change": 2,
+    "previousPath": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1PullRequestsItemFiles": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1PullRequestsItem": {
+    "number": 1,
+    "title": 2,
+    "url": 3,
+    "headRefName": 4,
+    "baseRefName": 5,
+    "headSha": 6,
+    "draft": 7,
+    "updatedAt": 8,
+    "check": 9,
+    "mergeState": 10,
+    "state": 11,
+    "files": 12
+  },
+  "ReviewPollResponseValueSnapshotVariant1PullRequests": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1Lines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1Functions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1Branches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1Statements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemLines": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemFunctions": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemBranches": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemStatements": {
+    "covered": 1,
+    "total": 2,
+    "percent": 3
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItemUncoveredLines": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1FilesItem": {
+    "path": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "uncoveredLines": 6
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1Files": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1CoverageVariant1": {
+    "source": 1,
+    "lines": 2,
+    "functions": 3,
+    "branches": 4,
+    "statements": 5,
+    "files": 6
+  },
+  "ReviewPollResponseValueSnapshotVariant1Coverage": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValueSnapshotVariant1ProjectTasksItem": {
+    "id": 1,
+    "label": 2,
+    "source": 3,
+    "command": 4
+  },
+  "ReviewPollResponseValueSnapshotVariant1ProjectTasks": {
+    "items": 1
+  },
+  "ReviewPollResponseValueSnapshotVariant1": {
+    "preparing": 1,
+    "error": 2,
+    "cwd": 3,
+    "branch": 4,
+    "repository": 5,
+    "tree": 6,
+    "changes": 7,
+    "localChanges": 8,
+    "stagedChanges": 9,
+    "revision": 10,
+    "localRevision": 11,
+    "stagedRevision": 12,
+    "commits": 13,
+    "pullRequests": 14,
+    "coverage": 15,
+    "projectTasks": 16,
+    "pullRequestNotice": 17
+  },
+  "ReviewPollResponseValueSnapshot": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "ReviewPollResponseValue": {
+    "version": 1,
+    "snapshot": 2
+  },
+  "ReviewPollResponse": {
+    "value": 1
   }
 }

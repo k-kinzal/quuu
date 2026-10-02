@@ -86,6 +86,13 @@ export class ReviewOperations extends EventEmitter {
     return this.empty(this.launchDir(taskId), true)
   }
 
+  /** An unchanged projection costs only a token read, including over IPC and satellite links. */
+  pollSnapshot(taskId: string, knownVersion?: string): { version: string | null; snapshot: ReviewSnapshot | null } {
+    if (!repo.getTask(this.db, taskId)) throw new Error(t('tasks.notFound'))
+    const version = repo.reviewSnapshotVersion(this.db, taskId)
+    return { version, snapshot: version !== null && version === knownVersion ? null : this.reviewSnapshot(taskId) }
+  }
+
   /** Only a placeholder's label until the first projection names the place the work is in. */
   private launchDir(taskId: string): string {
     const task = repo.getTask(this.db, taskId)

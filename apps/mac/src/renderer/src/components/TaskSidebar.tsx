@@ -22,7 +22,9 @@ import {
   motionAnchor
 } from '@design-system/react'
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import type { Run } from '../../../api/schemas/execution.js'
 import type { Task, TaskStatus } from '../../../api/schemas/tasks.js'
+import { useClockText } from '../interaction/useClockText.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import { TASK_STATUS_LABEL } from '../model/labels.js'
@@ -81,7 +83,6 @@ export function TaskSidebar({ besideNavigation = false }: {
   const section = useStore((s) => s.section)
   const landedTaskId = useStore((s) => s.landedTaskId)
   const targetProjectId = useStore((s) => s.targetProjectId)
-  const [now, setNow] = useState(() => Date.now())
   const [adding, setAdding] = useState(false)
 
   /*
@@ -101,11 +102,6 @@ export function TaskSidebar({ besideNavigation = false }: {
     () => queuePositions(snapshot?.tasks ?? [], projects),
     [snapshot?.tasks, projects]
   )
-
-  useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000)
-    return () => clearInterval(id)
-  }, [])
 
   // ⌘N (the rule A shortcut) is taken here with the detail still open.
   // Forcing the detail closed just to queue something loses what you were reading.
@@ -232,27 +228,13 @@ export function TaskSidebar({ besideNavigation = false }: {
               const project = projects.get(task.projectId)
               const run = runs.get(task.id)
               const current = task.id === cursorTaskId
-              const elapsed =
-                task.status === 'running' && run
-                  ? duration(run.startedAt, null, now)
-                  : task.status === 'queued'
-                    ? `#${positions.get(task.id) ?? '-'}`
-                    : task.status === 'review' || task.status === 'failed'
-                      ? relativeTime(run?.endedAt ?? task.updatedAt, now)
-                      : task.status === 'done'
-                        ? relativeTime(task.doneAt ?? task.updatedAt, now)
-                        : ''
 
               const lock = holdsSlot(task) ? (
                 <InlineMarker title={t('sidebar.holdMarker')}>
                   <Lock size={ICON.sm} {...iconProps} />
                 </InlineMarker>
               ) : null
-              const time = elapsed ? (
-                <Text size="xs" tone="tertiary" tabular>
-                  {elapsed}
-                </Text>
-              ) : null
+              const time = <TaskElapsed task={task} run={run} position={positions.get(task.id)} />
 
               return (
                 <ItemRow
@@ -331,4 +313,20 @@ export function TaskSidebar({ besideNavigation = false }: {
       </ItemList>
     </Panel>
   )
+}
+
+/** The clock belongs to the label, so it never rebuilds the surrounding list or its controls. */
+function TaskElapsed({ task, run, position }: { task: Task; run: Run | undefined; position: number | undefined }): JSX.Element | null {
+  const elapsed = useClockText(now =>
+    task.status === 'running' && run
+      ? duration(run.startedAt, null, now)
+      : task.status === 'queued'
+        ? `#${position ?? '-'}`
+        : task.status === 'review' || task.status === 'failed'
+          ? relativeTime(run?.endedAt ?? task.updatedAt, now)
+          : task.status === 'done'
+            ? relativeTime(task.doneAt ?? task.updatedAt, now)
+            : '',
+  task.status === 'running' || task.status === 'review' || task.status === 'failed' || task.status === 'done')
+  return elapsed ? <Text size="xs" tone="tertiary" tabular>{elapsed}</Text> : null
 }

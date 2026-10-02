@@ -424,7 +424,7 @@ describe('the workbench display state', () => {
       configurable: true,
       value: {
         review: {
-          snapshot: vi.fn().mockResolvedValue(snapshot),
+          poll: vi.fn().mockResolvedValue({ version: '1', snapshot }),
           file: vi.fn().mockResolvedValue(file),
           comment: vi.fn(),
           openPullRequest: vi.fn()

@@ -201,6 +201,8 @@ export const contract = {
     editors: procedure.output(EditorAppSchema.array()),
   },
   review: {
+    poll: procedure.input(z.object({ taskId: z.string(), knownVersion: z.string().optional() }))
+      .output(z.object({ version: z.string().nullable(), snapshot: ReviewSnapshotSchema.nullable() })),
     snapshot: procedure.input(z.string()).output(ReviewSnapshotSchema),
     refresh: procedure.input(z.string()).output(ReviewSnapshotSchema),
     history: procedure.input(z.string()).output(ReviewHistoryPointSchema.array()),

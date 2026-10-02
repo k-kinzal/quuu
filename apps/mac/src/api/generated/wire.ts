@@ -13775,6 +13775,649 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       }
     }
   },
+  "review.poll": {
+    "method": "reviewPoll",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        },
+        "knownVersion": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "taskId"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "version": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "snapshot": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "object",
+              "fields": {
+                "preparing": {
+                  "kind": "boolean"
+                },
+                "error": {
+                  "kind": "string"
+                },
+                "cwd": {
+                  "kind": "string"
+                },
+                "branch": {
+                  "kind": "string"
+                },
+                "repository": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "string"
+                    },
+                    {
+                      "kind": "null"
+                    }
+                  ]
+                },
+                "tree": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "value"
+                  }
+                },
+                "changes": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "object",
+                    "fields": {
+                      "path": {
+                        "kind": "string"
+                      },
+                      "change": {
+                        "kind": "string",
+                        "choices": [
+                          "added",
+                          "modified",
+                          "deleted",
+                          "renamed",
+                          "copied",
+                          "untracked",
+                          "conflicted"
+                        ]
+                      },
+                      "previousPath": {
+                        "kind": "string"
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "change"
+                    ]
+                  }
+                },
+                "localChanges": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "object",
+                    "fields": {
+                      "path": {
+                        "kind": "string"
+                      },
+                      "change": {
+                        "kind": "string",
+                        "choices": [
+                          "added",
+                          "modified",
+                          "deleted",
+                          "renamed",
+                          "copied",
+                          "untracked",
+                          "conflicted"
+                        ]
+                      },
+                      "previousPath": {
+                        "kind": "string"
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "change"
+                    ]
+                  }
+                },
+                "stagedChanges": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "object",
+                    "fields": {
+                      "path": {
+                        "kind": "string"
+                      },
+                      "change": {
+                        "kind": "string",
+                        "choices": [
+                          "added",
+                          "modified",
+                          "deleted",
+                          "renamed",
+                          "copied",
+                          "untracked",
+                          "conflicted"
+                        ]
+                      },
+                      "previousPath": {
+                        "kind": "string"
+                      }
+                    },
+                    "required": [
+                      "path",
+                      "change"
+                    ]
+                  }
+                },
+                "revision": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "base": {
+                          "kind": "string"
+                        },
+                        "head": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "head"
+                      ]
+                    },
+                    {
+                      "kind": "null"
+                    }
+                  ]
+                },
+                "localRevision": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "base": {
+                          "kind": "string"
+                        },
+                        "head": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "head"
+                      ]
+                    },
+                    {
+                      "kind": "null"
+                    }
+                  ]
+                },
+                "stagedRevision": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "base": {
+                          "kind": "string"
+                        },
+                        "head": {
+                          "kind": "string"
+                        }
+                      },
+                      "required": [
+                        "base",
+                        "head"
+                      ]
+                    },
+                    {
+                      "kind": "null"
+                    }
+                  ]
+                },
+                "commits": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "object",
+                    "fields": {
+                      "sha": {
+                        "kind": "string"
+                      },
+                      "shortSha": {
+                        "kind": "string"
+                      },
+                      "subject": {
+                        "kind": "string"
+                      },
+                      "author": {
+                        "kind": "string"
+                      },
+                      "committedAt": {
+                        "kind": "string"
+                      },
+                      "files": {
+                        "kind": "array",
+                        "items": {
+                          "kind": "object",
+                          "fields": {
+                            "path": {
+                              "kind": "string"
+                            },
+                            "change": {
+                              "kind": "string",
+                              "choices": [
+                                "added",
+                                "modified",
+                                "deleted",
+                                "renamed",
+                                "copied",
+                                "untracked",
+                                "conflicted"
+                              ]
+                            },
+                            "previousPath": {
+                              "kind": "string"
+                            }
+                          },
+                          "required": [
+                            "path",
+                            "change"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "sha",
+                      "shortSha",
+                      "subject",
+                      "author",
+                      "committedAt",
+                      "files"
+                    ]
+                  }
+                },
+                "pullRequests": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "object",
+                    "fields": {
+                      "number": {
+                        "kind": "number"
+                      },
+                      "title": {
+                        "kind": "string"
+                      },
+                      "url": {
+                        "kind": "string"
+                      },
+                      "headRefName": {
+                        "kind": "string"
+                      },
+                      "baseRefName": {
+                        "kind": "string"
+                      },
+                      "headSha": {
+                        "kind": "string"
+                      },
+                      "draft": {
+                        "kind": "boolean"
+                      },
+                      "updatedAt": {
+                        "kind": "string"
+                      },
+                      "check": {
+                        "kind": "string",
+                        "choices": [
+                          "success",
+                          "failure",
+                          "pending",
+                          "neutral"
+                        ]
+                      },
+                      "mergeState": {
+                        "kind": "string",
+                        "choices": [
+                          "clean",
+                          "conflicting",
+                          "unknown"
+                        ]
+                      },
+                      "state": {
+                        "kind": "string",
+                        "choices": [
+                          "open",
+                          "merged",
+                          "closed"
+                        ]
+                      },
+                      "files": {
+                        "kind": "array",
+                        "items": {
+                          "kind": "object",
+                          "fields": {
+                            "path": {
+                              "kind": "string"
+                            },
+                            "change": {
+                              "kind": "string",
+                              "choices": [
+                                "added",
+                                "modified",
+                                "deleted",
+                                "renamed",
+                                "copied",
+                                "untracked",
+                                "conflicted"
+                              ]
+                            },
+                            "previousPath": {
+                              "kind": "string"
+                            }
+                          },
+                          "required": [
+                            "path",
+                            "change"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "number",
+                      "title",
+                      "url",
+                      "headRefName",
+                      "baseRefName",
+                      "headSha",
+                      "draft",
+                      "updatedAt",
+                      "check",
+                      "mergeState",
+                      "state",
+                      "files"
+                    ]
+                  }
+                },
+                "coverage": {
+                  "kind": "union",
+                  "variants": [
+                    {
+                      "kind": "object",
+                      "fields": {
+                        "source": {
+                          "kind": "string"
+                        },
+                        "lines": {
+                          "kind": "object",
+                          "fields": {
+                            "covered": {
+                              "kind": "number"
+                            },
+                            "total": {
+                              "kind": "number"
+                            },
+                            "percent": {
+                              "kind": "number"
+                            }
+                          },
+                          "required": [
+                            "covered",
+                            "total",
+                            "percent"
+                          ]
+                        },
+                        "functions": {
+                          "kind": "object",
+                          "fields": {
+                            "covered": {
+                              "kind": "number"
+                            },
+                            "total": {
+                              "kind": "number"
+                            },
+                            "percent": {
+                              "kind": "number"
+                            }
+                          },
+                          "required": [
+                            "covered",
+                            "total",
+                            "percent"
+                          ]
+                        },
+                        "branches": {
+                          "kind": "object",
+                          "fields": {
+                            "covered": {
+                              "kind": "number"
+                            },
+                            "total": {
+                              "kind": "number"
+                            },
+                            "percent": {
+                              "kind": "number"
+                            }
+                          },
+                          "required": [
+                            "covered",
+                            "total",
+                            "percent"
+                          ]
+                        },
+                        "statements": {
+                          "kind": "object",
+                          "fields": {
+                            "covered": {
+                              "kind": "number"
+                            },
+                            "total": {
+                              "kind": "number"
+                            },
+                            "percent": {
+                              "kind": "number"
+                            }
+                          },
+                          "required": [
+                            "covered",
+                            "total",
+                            "percent"
+                          ]
+                        },
+                        "files": {
+                          "kind": "array",
+                          "items": {
+                            "kind": "object",
+                            "fields": {
+                              "path": {
+                                "kind": "string"
+                              },
+                              "lines": {
+                                "kind": "object",
+                                "fields": {
+                                  "covered": {
+                                    "kind": "number"
+                                  },
+                                  "total": {
+                                    "kind": "number"
+                                  },
+                                  "percent": {
+                                    "kind": "number"
+                                  }
+                                },
+                                "required": [
+                                  "covered",
+                                  "total",
+                                  "percent"
+                                ]
+                              },
+                              "functions": {
+                                "kind": "object",
+                                "fields": {
+                                  "covered": {
+                                    "kind": "number"
+                                  },
+                                  "total": {
+                                    "kind": "number"
+                                  },
+                                  "percent": {
+                                    "kind": "number"
+                                  }
+                                },
+                                "required": [
+                                  "covered",
+                                  "total",
+                                  "percent"
+                                ]
+                              },
+                              "branches": {
+                                "kind": "object",
+                                "fields": {
+                                  "covered": {
+                                    "kind": "number"
+                                  },
+                                  "total": {
+                                    "kind": "number"
+                                  },
+                                  "percent": {
+                                    "kind": "number"
+                                  }
+                                },
+                                "required": [
+                                  "covered",
+                                  "total",
+                                  "percent"
+                                ]
+                              },
+                              "statements": {
+                                "kind": "object",
+                                "fields": {
+                                  "covered": {
+                                    "kind": "number"
+                                  },
+                                  "total": {
+                                    "kind": "number"
+                                  },
+                                  "percent": {
+                                    "kind": "number"
+                                  }
+                                },
+                                "required": [
+                                  "covered",
+                                  "total",
+                                  "percent"
+                                ]
+                              },
+                              "uncoveredLines": {
+                                "kind": "array",
+                                "items": {
+                                  "kind": "number"
+                                }
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "uncoveredLines"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "source",
+                        "files"
+                      ]
+                    },
+                    {
+                      "kind": "null"
+                    }
+                  ]
+                },
+                "projectTasks": {
+                  "kind": "array",
+                  "items": {
+                    "kind": "object",
+                    "fields": {
+                      "id": {
+                        "kind": "string"
+                      },
+                      "label": {
+                        "kind": "string"
+                      },
+                      "source": {
+                        "kind": "string",
+                        "choices": [
+                          "package",
+                          "composer",
+                          "make"
+                        ]
+                      },
+                      "command": {
+                        "kind": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "label",
+                      "source",
+                      "command"
+                    ]
+                  }
+                },
+                "pullRequestNotice": {
+                  "kind": "string"
+                }
+              },
+              "required": [
+                "cwd",
+                "branch",
+                "repository",
+                "tree",
+                "changes",
+                "localChanges",
+                "stagedChanges",
+                "revision",
+                "localRevision",
+                "stagedRevision",
+                "commits",
+                "pullRequests",
+                "coverage",
+                "projectTasks"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "version",
+        "snapshot"
+      ]
+    }
+  },
   "review.snapshot": {
     "method": "reviewSnapshot",
     "input": {

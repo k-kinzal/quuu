@@ -359,6 +359,7 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   })
 
   // --- Task workbench ---
+  const reviewPoll = os.review.poll.handler(({ input }) => app.reviews.pollSnapshot(input.taskId, input.knownVersion))
   const reviewSnapshot = os.review.snapshot.handler(({ input }) => {
     const taskId = input
     return app.reviews.reviewSnapshot(taskId)
@@ -592,6 +593,7 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       editors: editorList,
     },
     review: {
+      poll: reviewPoll,
       snapshot: reviewSnapshot,
       refresh: os.review.refresh.handler(({ input }) => app.reviews.refresh(input)),
       history: os.review.history.handler(({ input }) => app.reviews.reviewHistory(input)),

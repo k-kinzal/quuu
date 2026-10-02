@@ -91,6 +91,7 @@ export const operationNames: string[] = [
   "open.reveal",
   "open.workingDir",
   "open.editors",
+  "review.poll",
   "review.snapshot",
   "review.refresh",
   "review.history",
