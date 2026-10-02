@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Agent } from '../src/main/agents/types.js'
 import type { AppSnapshot } from '../src/main/snapshot.js'
@@ -8,6 +8,7 @@ import type { Run } from '../src/main/execution/types.js'
 import type { Task } from '../src/main/tasks/types.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { useTaskView } from '../src/renderer/src/interaction/useTasks.js'
+import { DONE_PAGE_SIZE, loadedCount, nearEnd } from '../src/renderer/src/model/paging.js'
 import { filterOptions, NO_FILTERS } from '../src/renderer/src/model/table.js'
 
 /**
@@ -153,7 +154,9 @@ beforeEach(() => {
     snapshot: SNAPSHOT,
     section: { kind: 'all' },
     filters: NO_FILTERS,
-    table: { sort: null, widths: {} }
+    table: { sort: null, widths: {} },
+    cursorTaskId: null,
+    doneLoaded: DONE_PAGE_SIZE
   })
 })
 
@@ -312,5 +315,119 @@ describe('how done is handled', () => {
     useStore.setState({ filters: { ...NO_FILTERS, includeDone: true } })
     useStore.getState().resetTableView()
     expect(useStore.getState().filters.includeDone).toBe(false)
+  })
+})
+
+/**
+ * The Done section: only finished work, newest first, a page at a time.
+ * Toggling "include done" on another list is not how a person goes looking for what they finished.
+ */
+describe('the Done section', () => {
+  /** `n` done tasks, `done-0` finished most recently. */
+  const finished = (n: number): Task[] =>
+    Array.from({ length: n }, (_, i) =>
+      task({
+        id: `done-${i}`,
+        status: 'done',
+        projectId: i % 2 === 0 ? 'p1' : 'p2',
+        doneAt: new Date(Date.UTC(2026, 0, 1) - i * 60_000).toISOString()
+      })
+    )
+
+  it('lists only done tasks from every project, the most recently done first, without groups', () => {
+    const older = task({ id: 'older', status: 'done', doneAt: '2026-01-01T00:00:00.000Z' })
+    const newer = task({ id: 'newer', status: 'done', projectId: 'p2', doneAt: '2026-01-02T00:00:00.000Z' })
+    // Done before the time was recorded: goes by its last update, the time its row shows
+    const unstamped = task({ id: 'unstamped', status: 'done', updatedAt: '2025-12-31T00:00:00.000Z' })
+    useStore.setState({
+      snapshot: { ...SNAPSHOT, tasks: [...TASKS, older, unstamped, newer] },
+      section: { kind: 'done' }
+    })
+    const v = view()
+    expect(v.ordered.map((t) => t.id)).toEqual(['newer', 'older', 'unstamped', 'x1'])
+    // Every row has the one status; a header saying it again is noise
+    expect(v.groups).toBeNull()
+    expect(v.rules).toEqual([])
+    expect(v.doneHidden).toBe(0)
+  })
+
+  it('draws one page, counts every match, and grows a page at a time to the end', () => {
+    useStore.setState({ snapshot: { ...SNAPSHOT, tasks: finished(120) }, section: { kind: 'done' } })
+    let v = view()
+    expect(v.ordered).toHaveLength(DONE_PAGE_SIZE)
+    expect(v.ordered[0].id).toBe('done-0')
+    expect(v.matched).toBe(120)
+    expect(v.total).toBe(120)
+    expect(v.hasMore).toBe(true)
+
+    useStore.getState().loadMoreDone(DONE_PAGE_SIZE * 2)
+    v = view()
+    expect(v.ordered).toHaveLength(DONE_PAGE_SIZE * 2)
+    expect(v.hasMore).toBe(true)
+
+    useStore.getState().loadMoreDone()
+    v = view()
+    expect(v.ordered).toHaveLength(120)
+    expect(v.hasMore).toBe(false)
+  })
+
+  it('never shrinks what is loaded when asked for less', () => {
+    useStore.getState().loadMoreDone(DONE_PAGE_SIZE * 3)
+    useStore.getState().loadMoreDone(DONE_PAGE_SIZE)
+    expect(useStore.getState().doneLoaded).toBe(DONE_PAGE_SIZE * 3)
+  })
+
+  it('keeps a highlighted task past the loaded page on screen, and loaded once the highlight moves on', () => {
+    useStore.setState({
+      snapshot: { ...SNAPSHOT, tasks: finished(120) },
+      section: { kind: 'done' },
+      cursorTaskId: 'done-80'
+    })
+    const { result } = renderHook(() => useTaskView())
+    expect(result.current.ordered).toHaveLength(81)
+    expect(useStore.getState().doneLoaded).toBe(81)
+
+    // Moving back up does not pull rows out from under the reader
+    act(() => useStore.setState({ cursorTaskId: 'done-0' }))
+    expect(result.current.ordered).toHaveLength(81)
+  })
+
+  it('starts from the first page again on arriving from another section', () => {
+    useStore.setState({ snapshot: { ...SNAPSHOT, tasks: finished(120) }, doneLoaded: 120 })
+    useStore.getState().setSection({ kind: 'done' })
+    expect(useStore.getState().doneLoaded).toBe(DONE_PAGE_SIZE)
+    expect(view().ordered).toHaveLength(DONE_PAGE_SIZE)
+  })
+
+  it('draws every other section whole, whatever is loaded in Done', () => {
+    useStore.setState({ snapshot: { ...SNAPSHOT, tasks: finished(120) }, filters: { ...NO_FILTERS, includeDone: true } })
+    const v = view()
+    expect(v.ordered).toHaveLength(120)
+    expect(v.hasMore).toBe(false)
+  })
+})
+
+describe('paging', () => {
+  const rows = ['a', 'b', 'c', 'd'].map((id) => ({ id }))
+
+  it('counts what is loaded, never past the end', () => {
+    expect(loadedCount(rows, 2, null)).toBe(2)
+    expect(loadedCount(rows, 10, null)).toBe(4)
+  })
+
+  it('stretches to the highlighted row, and ignores one that is not in the list', () => {
+    expect(loadedCount(rows, 1, 'c')).toBe(3)
+    expect(loadedCount(rows, 1, 'gone')).toBe(1)
+  })
+
+  it('asks for more within a screenful of the end', () => {
+    expect(nearEnd({ scrollTop: 0, clientHeight: 500, scrollHeight: 2000 })).toBe(false)
+    expect(nearEnd({ scrollTop: 1000, clientHeight: 500, scrollHeight: 2000 })).toBe(true)
+    // Content shorter than the pane: nothing to scroll, so the next page has to come unasked
+    expect(nearEnd({ scrollTop: 0, clientHeight: 500, scrollHeight: 300 })).toBe(true)
+  })
+
+  it('never asks from a pane with no height (it would pull in every page)', () => {
+    expect(nearEnd({ scrollTop: 0, clientHeight: 0, scrollHeight: 0 })).toBe(false)
   })
 })

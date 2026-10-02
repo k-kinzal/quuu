@@ -3,6 +3,7 @@ import { create } from 'zustand'
 import { scopeTasks, type ScopeFilter } from '../model/derive.js'
 import { failureMessage, failureReason } from '../model/operationFailure.js'
 import type { ColumnWidths, TaskColumnId, TaskFilters, TaskSort, TaskSortKey } from '../model/table.js'
+import { DONE_PAGE_SIZE } from '../model/paging.js'
 import { NO_FILTERS, nextSort } from '../model/table.js'
 
 import type { Run, SchedulerStatus } from '../../../api/schemas/execution.js'
@@ -197,6 +198,8 @@ interface State {
   table: TableView
   /** Table filters. Not persisted (cleared when leaving the section). */
   filters: TaskFilters
+  /** How many rows of the Done section are loaded (`model/paging.ts`). Belongs to the section, like the filters. */
+  doneLoaded: number
   /** The queue-target project the user last picked. Persisted. */
   targetProjectId: string | null
   /** New-task choices stay separate for each project and survive composer unmounts. */
@@ -236,6 +239,8 @@ interface State {
   goForward(): Promise<Place | null>
   /** Bring done tasks into / out of scope. Backed by the filters (`filters.includeDone`). */
   toggleShowDone(): void
+  /** Load the Done section's next page, or at least `count` rows. Never shrinks what is loaded. */
+  loadMoreDone(count?: number): void
 
   moveCursor(taskId: string | null): Promise<void>
   openTask(taskId: string): Promise<void>
@@ -362,7 +367,8 @@ async function travel(
     selectedRunId: null,
     session: null,
     // Filters belong to the section (the same rule as `setSection`). Arriving in another one carries none over
-    filters: sameSection(from.section, place.section) ? get().filters : NO_FILTERS
+    filters: sameSection(from.section, place.section) ? get().filters : NO_FILTERS,
+    doneLoaded: sameSection(from.section, place.section) ? get().doneLoaded : DONE_PAGE_SIZE
   })
   if (place.detailOpen && place.cursorTaskId) await get().refreshRuns(place.cursorTaskId)
   return place
@@ -388,6 +394,7 @@ export const useStore = create<State>((set, get) => ({
   layout: loadLayout(),
   table: loadTable(),
   filters: NO_FILTERS,
+  doneLoaded: DONE_PAGE_SIZE,
   targetProjectId: loadTargetProject(),
   newTaskAgentIds: {},
   addAction: null,
@@ -468,7 +475,8 @@ export const useStore = create<State>((set, get) => ({
         editingRuleId: null,
         // Filters belong to the section. Carried over, the destination becomes an
         // inexplicably short list (a project filter carried into another project shows 0 rows)
-        filters: NO_FILTERS
+        filters: NO_FILTERS,
+        doneLoaded: DONE_PAGE_SIZE
       })
     })
   },
@@ -493,6 +501,12 @@ export const useStore = create<State>((set, get) => ({
         statuses: includeDone ? filters.statuses : filters.statuses.filter((s) => s !== 'done')
       }
     })
+  },
+
+  loadMoreDone(count) {
+    const loaded = get().doneLoaded
+    const next = Math.max(loaded, count ?? loaded + DONE_PAGE_SIZE)
+    if (next !== loaded) set({ doneLoaded: next })
   },
 
   async moveCursor(taskId) {

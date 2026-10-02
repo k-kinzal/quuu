@@ -196,6 +196,7 @@ export const ja: typeof en = {
     goAnywhere: 'どこへでも移動…',
     allTasks: '全タスク',
     needsReview: '要レビュー',
+    done: '完了済み',
     projects: 'プロジェクト',
     noProjectsYet: 'まだありません',
     view: '表示',

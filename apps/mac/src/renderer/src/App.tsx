@@ -145,6 +145,10 @@ function Shell(): JSX.Element {
           setSection({ kind: 'review' })
           focusList()
           return
+        case 'view.done':
+          setSection({ kind: 'done' })
+          focusList()
+          return
         case 'view.settings':
           setSection({ kind: 'settings' })
           focusPaneSoon('settings')

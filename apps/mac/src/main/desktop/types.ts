@@ -64,6 +64,7 @@ export type AppCommand =
   | 'task.openEditor'
   | 'view.all'
   | 'view.review'
+  | 'view.done'
   | 'view.settings'
   | 'view.palette'
   | 'view.project'

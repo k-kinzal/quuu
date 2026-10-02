@@ -55,12 +55,14 @@ import { PRIORITY_LABEL, RUN_STATUS_LABEL, TASK_STATUS_LABEL } from '../model/la
 import { focusAny, pane } from '../interaction/focus.js'
 import { runTaskListKey, taskRowId } from '../interaction/listNav.js'
 import { contextMenu } from '../interaction/menu.js'
+import { useLoadMoreAtEnd } from '../interaction/useLoadMoreAtEnd.js'
 import { useTaskView } from '../interaction/useTasks.js'
 import { blockingTasks, dependencySatisfied, queuePositions, taskMap } from '../model/derive.js'
 import { clockOrDate, clockTime, duration, relativeTime } from '../model/format.js'
 import type { ColumnWidths, TaskColumn, TaskColumnId } from '../model/table.js'
 import { COLUMN_MAX_WIDTH, columnWidth, filterOptions, filterValues, isTableViewDirty, setFilterValues, visibleColumns } from '../model/table.js'
 import { holdsSlot } from '../model/taskStatus.js'
+import { DONE_PAGE_SIZE } from '../model/paging.js'
 import type { VisibleRange } from '../model/windowing.js'
 import { rowOffsets, visibleRange } from '../model/windowing.js'
 import { useStore } from '../state/store.js'
@@ -142,6 +144,7 @@ export function TaskOverview(): JSX.Element {
   const landedTaskId = useStore((s) => s.landedTaskId)
   const pushToast = useStore((s) => s.pushToast)
   const markDoneAndAdvance = useStore((s) => s.markDoneAndAdvance)
+  const loadMoreDone = useStore((s) => s.loadMoreDone)
 
   const savedWidths = useStore((s) => s.table.widths)
   const sort = useStore((s) => s.table.sort)
@@ -180,13 +183,18 @@ export function TaskOverview(): JSX.Element {
   const title =
     section.kind === 'review'
       ? t('taskOverview.needsReview')
-      : section.kind === 'project'
-        ? (project?.name ?? t('taskOverview.projectFallback'))
-        : t('taskOverview.allTasks')
+      : section.kind === 'done'
+        ? t('taskOverview.doneSection')
+        : section.kind === 'project'
+          ? (project?.name ?? t('taskOverview.projectFallback'))
+          : t('taskOverview.allTasks')
 
   const crossProject = section.kind !== 'project'
-  /* Done tasks never reach the review section. Don't show an item that does nothing when pressed */
-  const canIncludeDone = section.kind !== 'review'
+  /*
+   * Done tasks never reach the review section, and the Done section is nothing else.
+   * Don't show an item that does nothing when pressed
+   */
+  const canIncludeDone = section.kind !== 'review' && section.kind !== 'done'
   const columns = useMemo(() => visibleColumns(crossProject), [crossProject])
   /* Widths handed to rows go in one object. Resolving per row defeats the memo */
   const widths = useMemo(() => resolveWidths(savedWidths), [savedWidths])
@@ -232,6 +240,8 @@ export function TaskOverview(): JSX.Element {
   )
   const bodyRef = useRef<HTMLDivElement>(null)
   const range = useVisibleRange(bodyRef, offsets, headHeight)
+  const loadNextPage = useCallback(() => loadMoreDone(tasks.length + DONE_PAGE_SIZE), [loadMoreDone, tasks.length])
+  useLoadMoreAtEnd(bodyRef, view.hasMore, tasks.length, loadNextPage)
 
   /*
    * When the cursor leaves the window, scroll to it.
@@ -380,7 +390,7 @@ export function TaskOverview(): JSX.Element {
     <Panel surface="canvas" windowHeader grow onContextMenu={onSectionMenu} {...motionRegion('collection', 'left')}>
       <PanelHeader startInset={layout.railCollapsed ? WINDOW_BUTTONS_OVERHANG : undefined}>
         {project && <Dot color={project.color} />}
-        <PanelHeading title={title} count={tasks.length}><span {...motionAnchor('heading')}>{title}</span></PanelHeading>
+        <PanelHeading title={title} count={view.matched}><span {...motionAnchor('heading')}>{title}</span></PanelHeading>
         {/* The band's empty space is a window-drag surface. The window has no title bar, so give that back here */}
         <WindowDragArea />
       </PanelHeader>
@@ -394,7 +404,7 @@ export function TaskOverview(): JSX.Element {
         <TaskFilterBar
           candidates={view.candidates}
           context={view.context}
-          matched={tasks.length}
+          matched={view.matched}
           total={view.total}
           crossProject={crossProject}
           canIncludeDone={canIncludeDone}
@@ -418,7 +428,7 @@ export function TaskOverview(): JSX.Element {
           /*
             Don't write "do this to fill it" on an empty pane (rule Q).
             If you can go back, offer the way back; if you can add, offer the add. An empty
-            with no handle (needs review) stays empty — that pane doesn't fill because a
+            with no handle (needs review, done) stays empty — that pane doesn't fill because a
             human did something
           */
           view.narrowed ? (
@@ -428,9 +438,15 @@ export function TaskOverview(): JSX.Element {
             />
           ) : (
             <EmptyState
-              title={section.kind === 'review' ? t('taskOverview.emptyReview') : t('taskOverview.emptyTasks')}
-              action={
+              title={
                 section.kind === 'review'
+                  ? t('taskOverview.emptyReview')
+                  : section.kind === 'done'
+                    ? t('taskOverview.emptyDone')
+                    : t('taskOverview.emptyTasks')
+              }
+              action={
+                section.kind === 'review' || section.kind === 'done'
                   ? undefined
                   : { label: t('taskOverview.addTask'), onClick: () => focusAny('composer') }
               }

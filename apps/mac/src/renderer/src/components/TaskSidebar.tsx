@@ -21,7 +21,7 @@ import {
   motionRegion,
   motionAnchor
 } from '@design-system/react'
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 import type { Task, TaskStatus } from '../../../api/schemas/tasks.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
@@ -30,9 +30,11 @@ import { TASK_STATUS_LABEL } from '../model/labels.js'
 import { pane } from '../interaction/focus.js'
 import { runTaskListKey, taskRowId } from '../interaction/listNav.js'
 import { contextMenu } from '../interaction/menu.js'
+import { useLoadMoreAtEnd } from '../interaction/useLoadMoreAtEnd.js'
 import { useTaskView } from '../interaction/useTasks.js'
 import { defaultTargetProjectId, queuePositions } from '../model/derive.js'
 import { duration, relativeTime } from '../model/format.js'
+import { DONE_PAGE_SIZE } from '../model/paging.js'
 import { holdsSlot } from '../model/taskStatus.js'
 import { useStore } from '../state/store.js'
 import { ICON, Lock, PanelLeftClose, Plus, iconProps } from '../ui/icons.js'
@@ -128,9 +130,16 @@ export function TaskSidebar({ besideNavigation = false }: {
   const sectionTitle =
     section.kind === 'review'
       ? t('sidebar.review')
-      : section.kind === 'project'
-        ? (projects.get(section.id)?.name ?? t('sidebar.project'))
-        : t('sidebar.allTasks')
+      : section.kind === 'done'
+        ? t('sidebar.done')
+        : section.kind === 'project'
+          ? (projects.get(section.id)?.name ?? t('sidebar.project'))
+          : t('sidebar.allTasks')
+
+  /* Every row here is drawn, so the Done section's pages matter most in this list */
+  const loadMoreDone = useStore((s) => s.loadMoreDone)
+  const loadNextPage = useCallback(() => loadMoreDone(tasks.length + DONE_PAGE_SIZE), [loadMoreDone, tasks.length])
+  useLoadMoreAtEnd(listRef, view.hasMore, tasks.length, loadNextPage)
 
   /*
    * In All tasks / Needs review, say **in words** which project a row belongs to (rule C-2a).
@@ -163,7 +172,7 @@ export function TaskSidebar({ besideNavigation = false }: {
         size="sm"
         startInset={layout.railCollapsed && !besideNavigation ? WINDOW_BUTTONS_OVERHANG : undefined}
       >
-        <PanelHeading title={sectionTitle} count={tasks.length}><span {...motionAnchor('heading')}>{sectionTitle}</span></PanelHeading>
+        <PanelHeading title={sectionTitle} count={view.matched}><span {...motionAnchor('heading')}>{sectionTitle}</span></PanelHeading>
         {/* The empty part of the bar is a drag surface. It gives back what the window loses by having no title bar */}
         <WindowDragArea />
 
@@ -230,7 +239,9 @@ export function TaskSidebar({ besideNavigation = false }: {
                     ? `#${positions.get(task.id) ?? '-'}`
                     : task.status === 'review' || task.status === 'failed'
                       ? relativeTime(run?.endedAt ?? task.updatedAt, now)
-                      : ''
+                      : task.status === 'done'
+                        ? relativeTime(task.doneAt ?? task.updatedAt, now)
+                        : ''
 
               const lock = holdsSlot(task) ? (
                 <InlineMarker title={t('sidebar.holdMarker')}>

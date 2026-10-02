@@ -22,7 +22,7 @@ import { lastSegment } from '../model/paths.js'
 import { projectsByName } from '../model/projectOptions.js'
 import type { Section } from '../state/store.js'
 import { useStore } from '../state/store.js'
-import { CircleCheckBig, ICON, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, iconProps } from '../ui/icons.js'
+import { CheckCheck, CircleCheckBig, ICON, Inbox, PanelLeftClose, PanelLeftOpen, Plus, Settings, iconProps } from '../ui/icons.js'
 import { shortcut } from '../interaction/shortcut.js'
 
 /**
@@ -156,6 +156,14 @@ export function Rail(): JSX.Element {
           collapsed={collapsed}
           active={isActive({ kind: 'review' })}
           onClick={() => setSection({ kind: 'review' })}
+        />
+        {/* No badge: done only grows, and a count of it asks nothing of anyone */}
+        <NavItem
+          icon={<CheckCheck size={ICON.md} {...iconProps} />}
+          label={t('rail.done')}
+          collapsed={collapsed}
+          active={isActive({ kind: 'done' })}
+          onClick={() => setSection({ kind: 'done' })}
         />
       </NavSection>
 

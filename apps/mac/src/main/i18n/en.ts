@@ -195,6 +195,7 @@ export const en = {
     goAnywhere: 'Go Anywhere…',
     allTasks: 'All Tasks',
     needsReview: 'Needs Review',
+    done: 'Done',
     projects: 'Projects',
     noProjectsYet: 'No Projects Yet',
     view: 'View',

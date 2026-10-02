@@ -27,7 +27,7 @@ import { fuzzyMatch, splitByRanges } from '../model/fuzzy.js'
 import type { SettingsCategory } from '../state/store.js'
 import { useSettings, useStore } from '../state/store.js'
 import { StatusDot } from '../ui/StatusDot.js'
-import { Bell, Bot, CircleCheckBig, CirclePause, CirclePlay, FolderGit2, ICON, Inbox, Palette, PanelLeftClose, PanelRightClose, Play, Plus, Rows3, Search, Settings, SlidersHorizontal, iconProps } from '../ui/icons.js'
+import { Bell, Bot, CheckCheck, CircleCheckBig, CirclePause, CirclePlay, FolderGit2, ICON, Inbox, Palette, PanelLeftClose, PanelRightClose, Play, Plus, Rows3, Search, Settings, SlidersHorizontal, iconProps } from '../ui/icons.js'
 import { shortcut } from '../interaction/shortcut.js'
 
 type Group = 'tasks' | 'go' | 'projects' | 'actions'
@@ -182,6 +182,14 @@ export function CommandPalette(): JSX.Element | null {
         icon: <CircleCheckBig size={ICON.md} {...iconProps} />,
         keywords: t('palette.keywords.review'),
         run: close(() => setSection({ kind: 'review' }))
+      },
+      {
+        id: 'go:done',
+        group: 'go',
+        title: t('palette.done'),
+        icon: <CheckCheck size={ICON.md} {...iconProps} />,
+        keywords: t('palette.keywords.doneTasks'),
+        run: close(() => setSection({ kind: 'done' }))
       },
       {
         id: 'go:settings',

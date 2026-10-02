@@ -31,7 +31,7 @@ export function sectionMenuItems(): MenuItemSpec[] {
   }
 
   /* Part of the status filter (`filters.includeDone`). The same item also appears on the status chips */
-  if (section.kind !== 'review') {
+  if (section.kind !== 'review' && section.kind !== 'done') {
     items.push({
       label: t('sectionMenu.includeDone'),
       checked: filters.includeDone,

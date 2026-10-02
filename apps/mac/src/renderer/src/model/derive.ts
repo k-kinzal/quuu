@@ -21,6 +21,22 @@ export function sortTasks(tasks: Task[], projects: Map<string, Project>): Task[]
 }
 
 /**
+ * The Done section's order: most recently done first.
+ *
+ * Nothing waits on a done task, so the queue order says nothing about it; what a person comes
+ * looking for is what just finished. One done before the time was recorded goes by its last
+ * update, the time its row shows.
+ */
+export function recentlyDone(tasks: Task[]): Task[] {
+  // ISO 8601 in UTC, so the string order is the time order
+  return tasks.slice().sort((a, b) => {
+    const x = a.doneAt ?? a.updatedAt
+    const y = b.doneAt ?? b.updatedAt
+    return x === y ? 0 : x < y ? 1 : -1
+  })
+}
+
+/**
  * Position within the queue (1-based).
  * Computed with the same rule as queuePositions on the main side, scheduled tasks left out:
  * one waiting for a time (a human's schedule, an agent's Limit) is not in line for the next slot.
@@ -63,7 +79,7 @@ export { groupByStatus, STATUS_ORDER, type StatusGroup } from './statusGroups.js
 export type TaskGroup = StatusGroup<Task>
 
 export interface ScopeFilter {
-  kind: 'all' | 'review' | 'project'
+  kind: 'all' | 'review' | 'done' | 'project'
   projectId?: string
   showDone: boolean
 }
@@ -78,6 +94,9 @@ export function scopeTasks(snapshot: AppSnapshot, filter: ScopeFilter): Task[] {
 
   if (filter.kind === 'review') {
     return tasks.filter((t) => t.status === 'review' || t.status === 'failed')
+  }
+  if (filter.kind === 'done') {
+    return tasks.filter((t) => t.status === 'done')
   }
   return tasks.filter(
     (t) =>

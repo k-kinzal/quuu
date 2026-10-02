@@ -7,7 +7,7 @@
  */
 export {
   BookOpen,
-  Archive, ArrowDownAZ, ArrowLeft, Bell, Bot, Braces, Brain, ChartNoAxesColumnIncreasing, Check, ChevronDown, ChevronLeft,
+  Archive, ArrowDownAZ, ArrowLeft, Bell, Bot, Braces, Brain, ChartNoAxesColumnIncreasing, Check, CheckCheck, ChevronDown, ChevronLeft,
   ChevronRight, ChevronUp, CircleAlert, CircleCheckBig, CircleDot,
   // Status and information
   CirclePause,

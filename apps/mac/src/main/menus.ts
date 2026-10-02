@@ -224,6 +224,8 @@ function buildMenu(): void {
         { type: 'separator' },
         { label: t('menu.allTasks'), accelerator: 'Cmd+1', click: () => send('view.all') },
         { label: t('menu.needsReview'), accelerator: 'Cmd+2', click: () => send('view.review') },
+        // No accelerator: ⌘3 onward already open projects, and moving those would retrain every hand
+        { label: t('menu.done'), click: () => send('view.done') },
         {
           label: t('menu.projects'),
           enabled: projects.length > 0,

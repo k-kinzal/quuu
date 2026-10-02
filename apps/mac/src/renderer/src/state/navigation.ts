@@ -10,6 +10,7 @@ import type { AppSnapshot } from '../../../api/schemas/snapshot.js'
 export type Section =
   | { kind: 'all' }
   | { kind: 'review' }
+  | { kind: 'done' }
   | { kind: 'project'; id: string }
   | { kind: 'settings' }
 
