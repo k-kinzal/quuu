@@ -20,7 +20,6 @@ const openLink = (href: string): void => void window.quuu.system.openExternal(hr
 const codeActions = (code: string): JSX.Element => (
   <IconButton
     size="xs"
-    plainTitle
     title={t('messageBody.copyCode')}
     icon={<Copy size={ICON.sm} {...iconProps} />}
     onClick={() => void window.quuu.system.copy(code)}

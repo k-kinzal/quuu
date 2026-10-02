@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { focusRing } from '../../theme/controls.js'
 import { createContext, useContext, useRef, useState, type ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
@@ -295,14 +296,15 @@ export function RepeatableRow({
       onFocusCapture={onSelect}
     >
       {reorder && (
-        <Grip
-          data-grip
-          type="button"
-          aria-label={strings.repeatableList.reorderAria(index + 1)}
-          title={strings.repeatableList.reorderTitle}
-          onPointerDown={(e) => reorder.begin(index, e)}
-          onKeyDown={(e) => reorder.key(index, e)}
-        />
+        <ControlTooltip title={strings.repeatableList.reorderTitle}>
+          <Grip
+            data-grip
+            type="button"
+            aria-label={strings.repeatableList.reorderAria(index + 1)}
+            onPointerDown={(e) => reorder.begin(index, e)}
+            onKeyDown={(e) => reorder.key(index, e)}
+          />
+        </ControlTooltip>
       )}
       {ordinal && <Ordinal>{index + 1}</Ordinal>}
       {children}
@@ -338,17 +340,17 @@ export function SwatchGroup({ colors, value, label, onChange }: SwatchGroupProps
   return (
     <Row wrap role="radiogroup" aria-label={label}>
       {colors.map((color) => (
-        <SwatchButton
-          key={color}
-          type="button"
-          role="radio"
-          aria-checked={color === value}
-          aria-label={color}
-          title={color}
-          color={color}
-          on={color === value}
-          onClick={() => onChange(color)}
-        />
+        <ControlTooltip key={color} title={color}>
+          <SwatchButton
+            type="button"
+            role="radio"
+            aria-checked={color === value}
+            aria-label={color}
+            color={color}
+            on={color === value}
+            onClick={() => onChange(color)}
+          />
+        </ControlTooltip>
       ))}
     </Row>
   )

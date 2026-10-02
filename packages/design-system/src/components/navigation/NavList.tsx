@@ -3,6 +3,7 @@ import type { MouseEvent, ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
 import { blockProps, canHover, surfaceStyles, type SurfaceLevel } from '../../theme/styled.js'
 import { footerBandHeight, headerBandHeight } from '../layout/Panel.js'
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 
 export { default as Tabs } from '@mui/material/Tabs'
 export { default as Tab } from '@mui/material/Tab'
@@ -201,22 +202,24 @@ export function NavItem({
 }: NavItemProps): JSX.Element {
   const hasBadge = badge !== undefined && badge > 0
   return (
-    <ItemRoot
-      type="button"
-      active={active}
-      collapsed={collapsed}
-      /* The current row can be addressed from outside too (the landing spot when entering the panel by keyboard) */
-      data-active={active || undefined}
-      aria-current={active ? 'page' : undefined}
-      title={title ?? label}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
-    >
-      <ItemIcon data-icon>{icon}</ItemIcon>
-      {!collapsed && <ItemLabel>{label}</ItemLabel>}
-      {!collapsed && hasBadge && <ItemBadge accent={accent}>{badge}</ItemBadge>}
-      {collapsed && hasBadge && <ItemMark accent={accent} />}
-    </ItemRoot>
+    <ControlTooltip title={title ?? label} placement="right">
+      <ItemRoot
+        type="button"
+        active={active}
+        collapsed={collapsed}
+        /* The current row can be addressed from outside too (the landing spot when entering the panel by keyboard) */
+        data-active={active || undefined}
+        aria-current={active ? 'page' : undefined}
+        aria-label={label}
+        onClick={onClick}
+        onContextMenu={onContextMenu}
+      >
+        <ItemIcon data-icon>{icon}</ItemIcon>
+        {!collapsed && <ItemLabel>{label}</ItemLabel>}
+        {!collapsed && hasBadge && <ItemBadge accent={accent}>{badge}</ItemBadge>}
+        {collapsed && hasBadge && <ItemMark accent={accent} />}
+      </ItemRoot>
+    </ControlTooltip>
   )
 }
 

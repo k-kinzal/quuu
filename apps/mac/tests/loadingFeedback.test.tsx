@@ -35,7 +35,7 @@ describe('dotted loading feedback', () => {
   it('keeps loading buttons named and disabled, then restores them when loading ends', () => {
     const controls = (loading: boolean): JSX.Element => <ThemeProvider strings={jaStrings}>
       <Button loading={loading}>保存</Button>
-      <IconButton loading={loading} title="更新" icon="↻" plainTitle />
+      <IconButton loading={loading} title="更新" icon="↻" />
     </ThemeProvider>
     const { rerender } = render(controls(true))
     for (const name of ['保存', '更新']) {

@@ -110,6 +110,28 @@ relevant contracts; app-boundary checks alone cannot prove visual consistency.
 
 Directories follow MUI's classification.
 
+### Icon names are part of the control
+
+Every icon-only control must display its name on mouse hover and keyboard focus,
+including collapsed navigation, menu triggers and disabled actions. `aria-label`
+and the HTML `title` attribute alone do not fulfill this contract. The owning kit
+component uses `utils/ControlTooltip`; applications only supply the localized
+name (`label`, `title`, or the component's named action prop). There is no
+consumer opt-out such as `plainTitle`.
+
+The shared tooltip uses the theme's delay and appearance and renders outside
+clipped rails. Activation dismisses it immediately and cancels pending hover
+opening, so a menu never needs to sacrifice its discoverable name to avoid
+stacking surfaces. Escape dismisses it too. Disabled native controls use a
+non-focusable hover anchor and keep their accessible name on the button.
+
+`Patterns/TooltipQuality` compares these families together; the Chromium test
+checks actual hover/focus, disabled names, clipping, Escape and menu activation
+in both themes and densities. Extend that specimen when adding an icon control.
+The implementation architecture check also rejects named native/styled/MUI
+buttons that bypass `ControlTooltip`. The check protects the recognized button
+patterns; the browser contract remains necessary for behavior and new patterns.
+
 | Category | Main items |
 |---|---|
 | `inputs/` | Button, IconButton, LinkButton, Field, TextInput, NumberInput, TextArea, Select, Checkbox, Switch, RadioField, SegmentedControl, InlineInput, PlainInput, AutoTextArea, SearchInput, InlineAddRow, the Composer set, RepeatableList, SwatchGroup |

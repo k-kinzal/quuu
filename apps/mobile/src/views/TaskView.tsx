@@ -131,7 +131,6 @@ export function TaskView({ taskId }: { taskId: string }): JSX.Element {
           items.length > 0 && (
             <IconButton
               title={t('taskView.actions')}
-              plainTitle
               size="md"
               icon={<Glyph name="more" step="lg" />}
               onClick={() => setMenu(true)}

@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { ControlSpecimen } from '../../../packages/design-system/src/components/ControlQuality.stories.js'
+import { TooltipSpecimen } from '../../../packages/design-system/src/components/TooltipQuality.stories.js'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import type { ColorScheme, Density } from '../../../packages/design-system/src/theme/tokens.js'
 
@@ -104,3 +105,52 @@ function readHover(name: string): { border: string; background: string } {
 }
 
 Object.assign(window, { checkControls: check, prepareHover, readHover })
+
+const tooltipCases = [
+  ['nav', 'Project files / プロジェクト構造'], ['activity', 'Files panel'], ['collapse', 'Restore panel'],
+  ['nav-custom', 'Documents and notes', 'button:nth-of-type(2)', 'nav'],
+  ['icon', 'Add item'], ['disabled', 'Unavailable action'], ['menu', 'More actions'],
+  ['list', 'Add row'], ['list-disabled', 'Remove row'], ['send', 'Send message'],
+  ['split', 'Choose action', 'button[aria-haspopup]'], ['close', 'Close First (Delete)', 'button[aria-label="Close First"]'],
+  ['scroll', 'Scroll tabs right', 'button[aria-label="Scroll tabs right"]'],
+  ['scroll-disabled', 'Scroll tabs left', 'button[aria-label="Scroll tabs left"]', 'scroll'],
+  ['reorder', 'Drag, or ↑ ↓ to reorder'], ['swatch', 'blue'], ['dismiss', 'Dismiss']
+]
+
+function tooltipTarget(name: string): HTMLButtonElement {
+  const testCase = tooltipCases.find(item => item[0] === name)
+  const selector = testCase?.[2] ?? 'button'
+  const target = document.querySelector(`[data-tooltip="${testCase?.[3] ?? name}"] ${selector}`)
+  if (!(target instanceof HTMLButtonElement)) throw new Error(`Missing tooltip control ${name}`)
+  return target
+}
+
+async function renderTooltips(scheme: ColorScheme, density: Density): Promise<string[][]> {
+  // Remount so a focused/hovered control cannot carry state into the next density.
+  flushSync(() => root.render(<ThemeProvider key={`${scheme}-${density}`} colorScheme={scheme} density={density}><TooltipSpecimen /></ThemeProvider>))
+  await document.fonts.ready
+  await frame()
+  return tooltipCases
+}
+
+function prepareTooltip(name: string): { x: number; y: number } {
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  const target = tooltipTarget(name)
+  target.scrollIntoView({ block: 'center' })
+  const bounds = target.getBoundingClientRect()
+  if (!target.getAttribute('aria-label')) throw new Error(`${name}: missing accessible name`)
+  if (target.hasAttribute('title')) throw new Error(`${name}: native tooltip would compete with the kit`)
+  return { x: Math.round(bounds.x + bounds.width / 2), y: Math.round(bounds.y + bounds.height / 2) }
+}
+
+function checkTooltip(text: string): void {
+  const tips = [...document.querySelectorAll<HTMLElement>('[role="tooltip"]')]
+  equal(tips.length, 1, `${text}: exactly one tooltip`)
+  equal(tips[0].textContent, text, 'visible tooltip name')
+  // Popper rounds translation to device pixels; inspect the painted bubble inside its margins.
+  const bounds = (tips[0].querySelector('.MuiTooltip-tooltip') ?? tips[0]).getBoundingClientRect()
+  if (bounds.width <= 0 || bounds.height <= 0 || bounds.left < 0 || bounds.right > innerWidth || bounds.top < 0 || bounds.bottom > innerHeight) throw new Error(`${text}: tooltip outside the viewport ${JSON.stringify(bounds.toJSON())}, viewport ${innerWidth}x${innerHeight}`)
+  if (tips[0].closest('nav')) throw new Error(`${text}: tooltip clipped by the navigation container`)
+}
+
+Object.assign(window, { renderTooltips, prepareTooltip, tooltipTarget, checkTooltip })

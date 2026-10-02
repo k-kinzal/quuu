@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import type { ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
@@ -106,8 +107,10 @@ export function ListFrameButton({
   onClick
 }: ListFrameButtonProps): JSX.Element {
   return (
-    <BarButton type="button" title={title} aria-label={title} disabled={disabled} onClick={onClick}>
-      {icon}
-    </BarButton>
+    <ControlTooltip title={title} disabledSupport>
+      <BarButton type="button" aria-label={title} disabled={disabled} onClick={onClick}>
+        {icon}
+      </BarButton>
+    </ControlTooltip>
   )
 }

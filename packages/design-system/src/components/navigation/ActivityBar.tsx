@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { focusRing } from '../../theme/controls.js'
 import { useState, type DragEvent, type KeyboardEvent, type ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
@@ -201,35 +202,36 @@ export function ActivityBar({
       {items.map((item, index) => (
         <ItemSlot key={item.id}>
           {dropIndex === index && dragged !== item.id && <DropGap />}
-          <Button
-            type="button"
-            title={item.label}
-            aria-label={item.label}
-            aria-pressed={visibleIds.includes(item.id)}
-            data-activity-id={item.id}
-            visible={visibleIds.includes(item.id)}
-            active={activeId === item.id}
-            dragging={dragged === item.id}
-            draggable={Boolean(onReorder)}
-            onClick={() => onToggle(item.id)}
-            onKeyDown={(event) => key(event, item.id)}
-            onDragStart={(event) => {
-              setDragged(item.id)
-              setDropIndex(index)
-              event.dataTransfer.effectAllowed = 'move'
-              event.dataTransfer.setData('text/plain', item.id)
-            }}
-            onDragOver={(event) => over(event, index)}
-            onDrop={(event) => {
-              event.preventDefault()
-              finish()
-            }}
-          >
-            {item.icon}
-            {item.badge !== undefined && item.badge !== 0 && (
-              <Badge dot={item.badge === 'dot'}>{item.badge === 'dot' ? null : item.badge}</Badge>
-            )}
-          </Button>
+          <ControlTooltip title={item.label} placement={side === 'left' ? 'right' : 'left'}>
+            <Button
+              type="button"
+              aria-label={item.label}
+              aria-pressed={visibleIds.includes(item.id)}
+              data-activity-id={item.id}
+              visible={visibleIds.includes(item.id)}
+              active={activeId === item.id}
+              dragging={dragged === item.id}
+              draggable={Boolean(onReorder)}
+              onClick={() => onToggle(item.id)}
+              onKeyDown={(event) => key(event, item.id)}
+              onDragStart={(event) => {
+                setDragged(item.id)
+                setDropIndex(index)
+                event.dataTransfer.effectAllowed = 'move'
+                event.dataTransfer.setData('text/plain', item.id)
+              }}
+              onDragOver={(event) => over(event, index)}
+              onDrop={(event) => {
+                event.preventDefault()
+                finish()
+              }}
+            >
+              {item.icon}
+              {item.badge !== undefined && item.badge !== 0 && (
+                <Badge dot={item.badge === 'dot'}>{item.badge === 'dot' ? null : item.badge}</Badge>
+              )}
+            </Button>
+          </ControlTooltip>
         </ItemSlot>
       ))}
       {dropIndex === items.length && dragged && <DropGap />}

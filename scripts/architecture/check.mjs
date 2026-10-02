@@ -17,5 +17,5 @@ if (result.issues.length) {
     `Architecture check: ${result.files} files / ${result.edges} dependencies. No layer, public-entry, manifest, or cycle violations.`
   )
   console.log(`Design System: ${design.files} consumer files. 0 styling-rule leaks.`)
-  console.log(`Design System: ${kit.files} implementation files. 0 private focus recipes.`)
+  console.log(`Design System: ${kit.files} implementation files. 0 control-contract violations.`)
 }

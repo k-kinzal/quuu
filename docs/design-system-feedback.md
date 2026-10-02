@@ -1,5 +1,33 @@
 # Call-site feedback and decisions
 
+## 2026-10-03 Discoverable names for icon-only controls
+
+- Cause: `NavItem` claimed to provide a tooltip when collapsed but implemented
+  only a native HTML `title`, already present in `4cb32a8`. Project navigation
+  supplied the correct localized `label`; the kit never rendered its themed
+  tooltip. `ActivityBar`, collapse handles and other custom icon controls copied
+  the native-title approach, while `IconButton` used MUI Tooltip. The browser
+  owns native-title timing/display, so the kit could not guarantee a name on
+  hover or focus consistently.
+- An earlier workaround suppressed `IconButton` tooltips for menu triggers and
+  exposed `plainTitle` to callers to avoid lingering bubbles over menus. That
+  solved stacking by removing discoverability. The current requirement makes
+  visible names mandatory; activation must dismiss the tooltip instead.
+- Enforcement covered appearance and focus recipes, but neither the collapsed
+  navigation nor visible icon names were in the behavioral comparison. Having
+  a label/title string passed type checking without proving it was displayed.
+- Accepted: one internal `ControlTooltip` owns named icon interactions, uses
+  the existing themed MUI tooltip, preserves accessible names and disabled
+  behavior, and closes on activation before menus or drags begin. Navigation,
+  activity bars, collapse/list controls, send/reorder/swatch controls, tab close
+  and scroll controls, split actions and toast dismissal use it. `menu` retains
+  its accessibility meaning; `plainTitle` is removed.
+- Prevention: `Patterns/TooltipQuality` and the Chromium quality-gate regression
+  exercise real hover and focus across both themes/densities, including clipped
+  navigation, disabled controls, Escape and early menu activation. A kit-side
+  AST guard rejects named icon buttons outside the shared implementation.
+  Applications do not add tooltip wrappers to repair kit behavior.
+
 ## 2026-10-03 Control consistency across the kit
 
 - Cause: `SearchInput` used `control.xs + 2`, body2 type and a full pill radius;

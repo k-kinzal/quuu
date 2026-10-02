@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import MuiButton, { type ButtonProps } from '@mui/material/Button'
@@ -298,29 +299,30 @@ export function SplitButton<T extends string | number>({
   return (
     <Group ref={groupRef}>
       <Main {...rest}>{children}</Main>
-      <Caret
-        ref={caretRef}
-        color={color}
-        variant={variant}
-        size={size}
-        open={open}
-        disabled={menuDisabled}
-        aria-label={menuTitle}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        title={menuTitle}
-        onClick={() => {
-          if (open) {
-            close(true)
-            return
-          }
-          /* Reset to the current value on every open (what is in effect now, not where the hand last was) */
-          setActive(current)
-          setOpen(true)
-        }}
-      >
-        {caret}
-      </Caret>
+      <ControlTooltip title={menuTitle} disabledSupport>
+        <Caret
+          ref={caretRef}
+          color={color}
+          variant={variant}
+          size={size}
+          open={open}
+          disabled={menuDisabled}
+          aria-label={menuTitle}
+          aria-haspopup="menu"
+          aria-expanded={open}
+          onClick={() => {
+            if (open) {
+              close(true)
+              return
+            }
+            /* Reset to the current value on every open (what is in effect now, not where the hand last was) */
+            setActive(current)
+            setOpen(true)
+          }}
+        >
+          {caret}
+        </Caret>
+      </ControlTooltip>
 
       {open &&
         createPortal(

@@ -72,7 +72,6 @@ export function Screen({
               {onBack && (
                 <IconButton
                   title={t('screen.back')}
-                  plainTitle
                   size="md"
                   icon={<Glyph name="back" step="lg" />}
                   onClick={onBack}

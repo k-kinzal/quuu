@@ -187,7 +187,6 @@ export function TaskQuickAdd({
           <IconButton
             size="xs"
             title={t('quickAdd.targetTitle', { name: target.name, path: target.path })}
-            plainTitle
             aria-haspopup="listbox"
             icon={<Dot color={target.color} />}
             aria-expanded={Boolean(projectAnchor)}

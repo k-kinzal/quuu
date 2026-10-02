@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 /** A short send field. Input, send state and auto-growth come as one set, so no screen computes dimensions. */
 import { useEffect, useRef, type ReactNode } from 'react'
 import { styled } from '@mui/material/styles'
@@ -95,15 +96,17 @@ export function CompactComposer({
           placeholder={placeholder}
           onChange={(e) => onChange(e.target.value)}
         />
-        <Send
-          type="button"
-          active={ready}
-          disabled={!ready}
-          aria-label={sendLabel}
-          onClick={() => ready && onSend()}
-        >
-          {sendIcon}
-        </Send>
+        <ControlTooltip title={sendLabel} disabledSupport>
+          <Send
+            type="button"
+            active={ready}
+            disabled={!ready}
+            aria-label={sendLabel}
+            onClick={() => ready && onSend()}
+          >
+            {sendIcon}
+          </Send>
+        </ControlTooltip>
       </Pill>
     </Column>
   )

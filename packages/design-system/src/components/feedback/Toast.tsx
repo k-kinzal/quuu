@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { focusRing } from '../../theme/controls.js'
 import type { ReactNode } from 'react'
 import { styled, type Theme } from '@mui/material/styles'
@@ -129,17 +130,18 @@ export function ToastStack<T extends ToastSpec>({
             )}
           </Text>
           {onDismiss && (
-            <DismissButton
-              type="button"
-              aria-label={strings.toast.dismiss}
-              title={strings.toast.dismiss}
-              onClick={(event) => {
-                event.stopPropagation()
-                onDismiss(toast)
-              }}
-            >
-              <X aria-hidden="true" />
-            </DismissButton>
+            <ControlTooltip title={strings.toast.dismiss}>
+              <DismissButton
+                type="button"
+                aria-label={strings.toast.dismiss}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onDismiss(toast)
+                }}
+              >
+                <X aria-hidden="true" />
+              </DismissButton>
+            </ControlTooltip>
           )}
         </ToastRoot>
       ))}

@@ -8,7 +8,33 @@ export function inspectDesignInternals(path, source) {
   const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX)
   const issues = []
   const name = node => node && (ts.isIdentifier(node) || ts.isStringLiteral(node)) ? node.text : ''
+  const buttons = new Set(['button'])
+  function collect(node) {
+    if (ts.isImportDeclaration(node) && /@mui\/material\/(IconButton|Button|TabScrollButton)$/.test(name(node.moduleSpecifier))) {
+      buttons.add(name(node.importClause?.name))
+    }
+    if (ts.isVariableDeclaration(node)) {
+      let value = node.initializer
+      while (value && ts.isCallExpression(value)) {
+        if (name(value.expression) === 'styled' && buttons.has(name(value.arguments[0]))) buttons.add(name(node.name))
+        value = value.expression
+      }
+    }
+    ts.forEachChild(node, collect)
+  }
+  collect(file)
   function visit(node, focused = false) {
+    const hasAttribute = key => (ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) &&
+      node.attributes.properties.some(property => ts.isJsxAttribute(property) && name(property.name) === key)
+    if ((ts.isJsxOpeningElement(node) || ts.isJsxSelfClosingElement(node)) && buttons.has(name(node.tagName)) &&
+      (hasAttribute('aria-label') || (hasAttribute('title') && (hasAttribute('collapsed') || ts.isJsxSelfClosingElement(node))))) {
+      let parent = node.parent
+      while (parent && !(ts.isJsxElement(parent) && name(parent.openingElement.tagName) === 'ControlTooltip')) parent = parent.parent
+      if (!parent) {
+        const { line } = file.getLineAndCharacterOfPosition(node.getStart(file))
+        issues.push(`${path}:${line + 1}: named icon controls must use ControlTooltip; aria-label or native title alone does not provide a visible name`)
+      }
+    }
     if (ts.isObjectLiteralExpression(node) && node.properties.some(property =>
       ts.isSpreadAssignment(property) && ts.isCallExpression(property.expression) &&
       name(property.expression.expression) === 'controlMetrics')) {

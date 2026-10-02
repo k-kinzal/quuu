@@ -1,7 +1,7 @@
 import { forwardRef, useId, type ReactNode } from 'react'
 import MuiButton, { type ButtonProps } from '@mui/material/Button'
 import MuiIconButton, { type IconButtonProps as MuiIconButtonProps } from '@mui/material/IconButton'
-import Tooltip from '@mui/material/Tooltip'
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { LoadingProgress } from '../feedback/LoadingDots.js'
 
 export type { ButtonProps } from '@mui/material/Button'
@@ -25,20 +25,7 @@ export interface IconButtonProps extends Omit<MuiIconButtonProps, 'children' | '
    */
   title: string
   icon: ReactNode
-  /** Skip the tooltip and use only the `title` attribute (inside menus and other places where surfaces must not stack) */
-  plainTitle?: boolean
-  /**
-   * A button that opens a menu when pressed.
-   *
-   * **Put up no bubble at all** (neither a tooltip nor a `title` attribute). The OS
-   * draws the menu, and the moment it opens the pointer is still parked on the button.
-   * The hover tooltip never receives `mouseleave` so it does not disappear, and **the
-   * "tooltip from hovering" and the "menu opened by clicking" end up stacked two deep**
-   * (that is what happened).
-   *
-   * The name is still carried by `aria-label`. What it can do is said by the contents of
-   * the menu itself, so there is no need to say it again before opening.
-   */
+  /** Identifies a menu trigger. Its tooltip closes before the menu opens. */
   menu?: boolean
 }
 
@@ -46,30 +33,24 @@ export interface IconButtonProps extends Omit<MuiIconButtonProps, 'children' | '
 export function IconButton({
   title,
   icon,
-  plainTitle,
   menu,
   ...rest
 }: IconButtonProps): JSX.Element {
   const generatedId = useId()
   const buttonId = rest.id ?? generatedId
-  const button = (
-    <MuiIconButton
-      aria-label={title}
-      // Tell screen readers too what pressing does (a menu opens)
-      aria-haspopup={menu ? 'menu' : undefined}
-      title={plainTitle && !menu ? title : undefined}
-      {...rest}
-      id={buttonId}
-      loadingIndicator={rest.loadingIndicator ?? <LoadingProgress labelledBy={buttonId} />}
-    >
-      {icon}
-    </MuiIconButton>
-  )
-  if (plainTitle || menu) return button
   return (
-    <Tooltip title={title}>
-      <span style={{ display: 'inline-flex' }}>{button}</span>
-    </Tooltip>
+    <ControlTooltip title={title} disabledSupport>
+      <MuiIconButton
+        aria-label={title}
+        // Tell screen readers too what pressing does (a menu opens)
+        aria-haspopup={menu ? 'menu' : undefined}
+        {...rest}
+        id={buttonId}
+        loadingIndicator={rest.loadingIndicator ?? <LoadingProgress labelledBy={buttonId} />}
+      >
+        {icon}
+      </MuiIconButton>
+    </ControlTooltip>
   )
 }
 

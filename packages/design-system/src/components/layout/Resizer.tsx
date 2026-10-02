@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { focusRing } from '../../theme/controls.js'
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { styled, useTheme } from '@mui/material/styles'
@@ -326,9 +327,11 @@ export function CollapseHandle({
   onClick
 }: CollapseHandleProps): JSX.Element {
   return (
-    <HandleRoot type="button" surface={surface} bordered={bordered} title={title} aria-label={title} onClick={onClick}>
-      <span data-grip />
-      {icon}
-    </HandleRoot>
+    <ControlTooltip title={title} placement="right">
+      <HandleRoot type="button" surface={surface} bordered={bordered} aria-label={title} onClick={onClick}>
+        <span data-grip />
+        {icon}
+      </HandleRoot>
+    </ControlTooltip>
   )
 }

@@ -1,3 +1,4 @@
+import { ControlTooltip } from '../utils/ControlTooltip.js'
 import { focusRing } from '../../theme/controls.js'
 import { forwardRef, useLayoutEffect, useRef, type ComponentPropsWithoutRef, type MouseEvent, type ReactNode } from 'react'
 import MuiTabs from '@mui/material/Tabs'
@@ -123,7 +124,9 @@ const ClosableTabRoot = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<'
 const ScrollButton = forwardRef<HTMLButtonElement, TabScrollButtonProps>((props, ref) => {
   const strings = useStrings()
   return (
-    <MuiTabScrollButton {...props} ref={ref} component="button" tabIndex={-1} aria-disabled={props.disabled || undefined} aria-label={props.direction === 'left' ? strings.contentTabs.scrollLeft : strings.contentTabs.scrollRight} />
+    <ControlTooltip title={props.direction === 'left' ? strings.contentTabs.scrollLeft : strings.contentTabs.scrollRight} disabledSupport>
+      <MuiTabScrollButton {...props} ref={ref} component="button" tabIndex={-1} aria-disabled={props.disabled || undefined} aria-label={props.direction === 'left' ? strings.contentTabs.scrollLeft : strings.contentTabs.scrollRight} />
+    </ControlTooltip>
   )
 })
 
@@ -183,10 +186,9 @@ export function ContentTabs<T extends string>({ idBase, label, value, options, a
                 close(option.value)
               }
             }}
-            {...(onClose ? { closeControl: !option.disabled ? <CloseButton
+            {...(onClose ? { closeControl: !option.disabled ? <ControlTooltip title={strings.contentTabs.closeTitle(option.label)}><CloseButton
                 type="button"
                 aria-label={strings.contentTabs.close(option.label)}
-                title={strings.contentTabs.closeTitle(option.label)}
                 tabIndex={-1}
                 // Merely closing must not briefly select an unselected tab or throw focus into the contents.
                 onMouseDown={(event) => { event.preventDefault(); event.stopPropagation() }}
@@ -194,7 +196,7 @@ export function ContentTabs<T extends string>({ idBase, label, value, options, a
                 onKeyDown={(event) => event.stopPropagation()}
                 onKeyUp={(event) => event.stopPropagation()}
                 onClick={(event) => { event.stopPropagation(); close(option.value) }}
-              ><X aria-hidden="true" /></CloseButton> : undefined } : {})}
+              ><X aria-hidden="true" /></CloseButton></ControlTooltip> : undefined } : {})}
             label={<Label>{option.icon}<span data-label>{option.label}</span>{option.count !== undefined && <span data-count>{option.count}</span>}{option.mark !== undefined && <span data-mark>{option.mark}</span>}</Label>}
           />
         )

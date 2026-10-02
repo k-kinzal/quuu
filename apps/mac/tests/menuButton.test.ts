@@ -14,15 +14,9 @@ import { describe, expect, it } from 'vitest'
  *
  * ---
  *
- * A button that opens a menu carries no hover tooltip.
- *
- * The OS draws the menu, and the moment it opens the pointer is left sitting on the button.
- * No `mouseleave` reaches the hover tooltip, so it never goes away, and **"what hover produced"
- * and "the menu the click opened" stay stacked two deep** (that actually happened on the `⋯` in
- * the detail header: the tooltip covered the first line of the inspector).
- *
- * Forgetting it does not fail type checking, and nothing shows until you open the screen and hover.
- * So this checks that every button which opens a menu on press carries `menu`.
+ * Icon menu triggers identify themselves with `menu` so assistive technology knows
+ * what pressing opens. The design system owns their tooltip, including dismissing
+ * it on activation before the menu appears (covered in the browser regression).
  */
 const ROOT = join(import.meta.dirname, '..', 'src', 'renderer', 'src')
 
@@ -138,7 +132,7 @@ describe('buttons that open a menu', () => {
     expect(files.some((f) => f.endsWith('TaskWorkspace.tsx'))).toBe(true)
   })
 
-  it('shows no hover tooltip (it would stack two deep with the menu)', () => {
+  it('identifies menu triggers for assistive technology', () => {
     const missing: string[] = []
     for (const file of files) {
       for (const block of iconButtonBlocks(readFileSync(file, 'utf8'))) {
