@@ -1,5 +1,18 @@
 # Call-site feedback and decisions
 
+## 2026-10-02 One line number for an unchanged file
+
+- Finding: a project's file page and a task's Project tab open files that have
+  no change in them through `DiffView`. Each line carried two equal numbers
+  (before and after), which read as a doubled gutter.
+- Accepted: when every line is context, `DiffView` draws one number column. A
+  view with any added, deleted or hunk line keeps both. No prop: the lines
+  already say whether there is a change.
+- Not changed: the highlighting ceiling (200,000 characters) stays. Past it a
+  file such as a lockfile is shown plain, the same as in the conversation.
+- Verification: `Data Display/DiffView/Change` and `Unchanged File`; the Mac
+  project file test reads one number on an unchanged line.
+
 ## 2026-10-02 A state mark at the end of a resource row
 
 - Finding: a project's pull request list leads each row with the pull request's

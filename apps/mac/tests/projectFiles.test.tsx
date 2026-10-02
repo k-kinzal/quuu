@@ -101,7 +101,7 @@ describe('a project’s files', () => {
       settings: { ...DEFAULT_SETTINGS } })
 
     render(<ThemeProvider><ProjectNavigation project={project} /></ThemeProvider>)
-    fireEvent.click(screen.getByRole('button', { name: 'Project Files' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Project Structure' }))
     expect(useStore.getState()).toMatchObject({ projectFilesOpen: true, projectDocumentsOpen: false, projectPullRequestsOpen: false, detailOpen: false })
     fireEvent.click(screen.getByRole('button', { name: 'Tasks' }))
     expect(useStore.getState().projectFilesOpen).toBe(false)
@@ -117,5 +117,9 @@ describe('a project’s files', () => {
     expect(within(tree).getByRole('treeitem', { name: /^src/ }).getAttribute('aria-expanded')).toBe('true')
     fireEvent.click(await within(tree).findByRole('treeitem', { name: /^index\.ts/ }))
     await waitFor(() => expect(screen.getAllByText(/value = 2/).length).toBeGreaterThan(0))
+
+    // An unchanged file is numbered once; before and after columns that always agree read as a doubled gutter
+    fireEvent.click(within(tree).getByRole('treeitem', { name: 'README.md' }))
+    await waitFor(() => expect(document.querySelector('[data-new-line="1"]')?.textContent).toBe('1# Files'))
   })
 })

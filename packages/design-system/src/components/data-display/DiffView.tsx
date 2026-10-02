@@ -45,11 +45,12 @@ const Root = styled('div')(({ theme }) => ({
   userSelect: 'text'
 }))
 
-const Line = styled('button', { shouldForwardProp: blockProps('kind', 'selected', 'actionable') })<{
+const Line = styled('button', { shouldForwardProp: blockProps('kind', 'selected', 'actionable', 'unchanged') })<{
   kind: DiffViewLine['kind']
   selected?: boolean
   actionable?: boolean
-}>(({ theme, kind, selected, actionable }) => ({
+  unchanged?: boolean
+}>(({ theme, kind, selected, actionable, unchanged }) => ({
   display: 'grid',
   width: '100%',
   padding: 0,
@@ -57,7 +58,9 @@ const Line = styled('button', { shouldForwardProp: blockProps('kind', 'selected'
   color: 'inherit',
   font: 'inherit',
   textAlign: 'left',
-  gridTemplateColumns: `${theme.spacing(11)} ${theme.spacing(11)} ${theme.spacing(4)} minmax(max-content, 1fr)`,
+  gridTemplateColumns: unchanged
+    ? `${theme.spacing(11)} ${theme.spacing(4)} minmax(max-content, 1fr)`
+    : `${theme.spacing(11)} ${theme.spacing(11)} ${theme.spacing(4)} minmax(max-content, 1fr)`,
   minHeight: theme.density.row.sm,
   background:
     kind === 'added'
@@ -117,6 +120,11 @@ export function DiffView({
   const grammar = resolveLanguage(language)
   const code = useMemo(() => lines.map((line) => line.text).join('\n'), [lines])
   const [tokens, setTokens] = useState<ThemedToken[][] | null>(null)
+  /*
+   * A file with no change in it has one numbering, not two. Before and after columns that always
+   * agree read as a doubled gutter, and push the code right for nothing.
+   */
+  const unchanged = useMemo(() => lines.every((line) => line.kind === 'context'), [lines])
   const selectable = useMemo(
     () => lines.flatMap((line) => (line.newLine !== null && line.kind !== 'deleted' ? [line.newLine] : [])),
     [lines]
@@ -173,11 +181,12 @@ export function DiffView({
             aria-disabled={!actionable}
             data-new-line={line.newLine ?? undefined}
             kind={line.kind}
+            unchanged={unchanged}
             selected={line.newLine !== null && selectedLine === line.newLine}
             actionable={actionable}
             onClick={actionable ? (event) => onLineClick(line.newLine!, event) : undefined}
           >
-            <NumberCell>{line.oldLine ?? ''}</NumberCell>
+            {!unchanged && <NumberCell>{line.oldLine ?? ''}</NumberCell>}
             <NumberCell>{line.newLine ?? ''}</NumberCell>
             <Mark>
               {line.kind === 'added' ? '+' : line.kind === 'deleted' ? '-' : line.kind === 'hunk' ? '@' : ''}

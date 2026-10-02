@@ -45,7 +45,7 @@ export const views = {
     runLabel: " · Runner",
   },
   projectFiles: {
-    title: 'Project Files', tree: 'Files in the project directory', refresh: 'Read the project directory again',
+    title: 'Project Structure', tree: 'Files in the project directory', refresh: 'Read the project directory again',
     loading: 'Reading the project directory…', failed: 'Could not read the project directory', empty: 'No files in the project directory',
     select: 'Select a file', fileLoading: 'Reading the file…', fileFailed: 'Could not read this file', binary: 'Binary files are not shown',
     retry: 'Try again', changes: '{{count}} uncommitted',
