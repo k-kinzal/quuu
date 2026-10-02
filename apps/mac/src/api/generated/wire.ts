@@ -17560,5 +17560,124 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "updates"
       ]
     }
+  },
+  "app.telemetry": {
+    "method": "appTelemetry",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "endpoint": {
+          "kind": "string"
+        },
+        "headerNames": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
+        },
+        "resourceAttributes": {
+          "kind": "value"
+        },
+        "override": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string",
+              "choices": [
+                "QUUU_OTEL",
+                "OTEL_SDK_DISABLED"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "active": {
+          "kind": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "endpoint",
+        "headerNames",
+        "resourceAttributes",
+        "override",
+        "active"
+      ]
+    }
+  },
+  "app.setTelemetry": {
+    "method": "appSetTelemetry",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "endpoint": {
+          "kind": "string"
+        },
+        "headers": {
+          "kind": "value"
+        },
+        "resourceAttributes": {
+          "kind": "value"
+        }
+      },
+      "required": []
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "endpoint": {
+          "kind": "string"
+        },
+        "headerNames": {
+          "kind": "array",
+          "items": {
+            "kind": "string"
+          }
+        },
+        "resourceAttributes": {
+          "kind": "value"
+        },
+        "override": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string",
+              "choices": [
+                "QUUU_OTEL",
+                "OTEL_SDK_DISABLED"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "active": {
+          "kind": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "endpoint",
+        "headerNames",
+        "resourceAttributes",
+        "override",
+        "active"
+      ]
+    }
   }
 }

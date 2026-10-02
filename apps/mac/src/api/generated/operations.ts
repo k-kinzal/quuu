@@ -131,5 +131,7 @@ export const operationNames: string[] = [
   "system.openExternal",
   "system.copy",
   "app.info",
-  "app.checkForUpdates"
+  "app.checkForUpdates",
+  "app.telemetry",
+  "app.setTelemetry"
 ]

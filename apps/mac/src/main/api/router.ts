@@ -10,7 +10,7 @@ import type { SessionView } from '../session/view.js'
 import { savePromptFiles } from '../platform/promptFiles.js'
 import { t } from '../i18n/index.js'
 import { satelliteRoute, type OperationHost } from './host.js'
-import { observeOperation } from '../telemetry/index.js'
+import { observeOperation, setTelemetry, telemetryStatus } from '../telemetry/index.js'
 
 interface DocumentRequest {
   generation: number
@@ -464,6 +464,8 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
     app: {
       info: os.app.info.handler(() => app.appControls().info()),
       checkForUpdates: os.app.checkForUpdates.handler(() => app.appControls().checkForUpdates()),
+      telemetry: os.app.telemetry.handler(() => telemetryStatus()),
+      setTelemetry: os.app.setTelemetry.handler(({ input }) => setTelemetry(input)),
     },
     system: {
       savePromptFiles: os.system.savePromptFiles.handler(({ input }) => savePromptFiles(input.map(file => ({ name: file.name, data: Buffer.from(file.data, 'base64') })))),

@@ -2,13 +2,13 @@ import { createHash } from 'node:crypto'
 import { context, metrics, SpanKind, SpanStatusCode, trace, type Attributes, type Histogram, type Span, type Tracer } from '@opentelemetry/api'
 import { logs, SeverityNumber, type Logger } from '@opentelemetry/api-logs'
 import { ATTR, EVENT, type CallerKind, type ErrorOrigin } from './attributes.js'
-import { readTelemetryConfig, type TelemetryBuild, type TelemetryConfig } from './config.js'
+import { readTelemetryConfig, readTelemetrySettings, saveTelemetrySettings, telemetryOverride, type TelemetryBuild, type TelemetryConfig, type TelemetryOverride, type TelemetryPatch } from './config.js'
 import { captureConsole } from './console.js'
 
 export { ATTR, EVENT, SPAN } from './attributes.js'
 export type { CallerKind, ErrorOrigin } from './attributes.js'
 
-export type { TelemetryBuild } from './config.js'
+export type { TelemetryBuild, TelemetryConfig, TelemetryPatch } from './config.js'
 
 interface Instruments {
   tracer: Tracer
@@ -63,6 +63,46 @@ export async function stopTelemetry(timeoutMs = 3000): Promise<void> {
   // Let go of the globals too, so a later start (a test) installs afresh.
   trace.disable(); metrics.disable(); logs.disable(); context.disable()
 }
+
+/** What `app.telemetry` answers: the saved choice, what the environment decides, and whether it is exporting now. */
+export interface TelemetryStatus {
+  enabled: boolean
+  endpoint: string
+  /** Only the names: a header's value may be a token. */
+  headerNames: string[]
+  resourceAttributes: Record<string, string>
+  override: TelemetryOverride
+  active: boolean
+}
+
+export function telemetryStatus(): TelemetryStatus {
+  const settings = readTelemetrySettings()
+  return {
+    enabled: settings.enabled,
+    endpoint: settings.endpoint,
+    headerNames: Object.keys(settings.headers).sort(),
+    resourceAttributes: settings.resourceAttributes,
+    override: telemetryOverride().override,
+    active: telemetryActive()
+  }
+}
+
+/** The composition's way of starting, stopping or redirecting export. Absent (tests, fixtures), a change is only saved. */
+let applyConfig: ((config: TelemetryConfig) => Promise<void>) | null = null
+export function onTelemetryChange(apply: (config: TelemetryConfig) => Promise<void>): void {
+  applyConfig = apply
+}
+
+/** Save a change and apply it now: no restart, so turning it on starts exporting right away. */
+export async function setTelemetry(patch: TelemetryPatch): Promise<TelemetryStatus> {
+  saveTelemetrySettings(patch)
+  // One change at a time: two quick calls must not interleave a stop with a start.
+  const applied = applying.then(() => applyConfig?.(readTelemetryConfig()))
+  applying = applied.catch(() => undefined)
+  await applied
+  return telemetryStatus()
+}
+let applying: Promise<unknown> = Promise.resolve()
 
 /** For the few callers that would do real work (a DB read) just to describe something. */
 export function tracer(): Tracer | null {

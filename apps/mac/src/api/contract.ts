@@ -4,7 +4,7 @@ import { AuxiliaryPageInputSchema, AuxiliaryPageSchema, AuxiliaryImageInputSchem
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
 import { PromptFileSchema } from './schemas/files.js'
 import { oc } from '@orpc/contract'
-import { AppInfoSchema } from './schemas/app.js'
+import { AppInfoSchema, TelemetryPatchSchema, TelemetryStatusSchema } from './schemas/app.js'
 import { ProjectDocumentsSchema, DocumentReadSchema, DocumentContentSchema, DocumentViewSchema } from './schemas/documents.js'
 import { z } from 'zod'
 import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./schemas/agents.js"
@@ -286,5 +286,9 @@ export const contract = {
     info: procedure.output(AppInfoSchema),
     /** "Check for Updates…": a dialog about the result appears on the Mac, as from the menu. */
     checkForUpdates: procedure.output(AppInfoSchema),
+    /** OpenTelemetry export on this computer. */
+    telemetry: procedure.output(TelemetryStatusSchema),
+    /** Turn export on or off, or point it elsewhere. Applies without a restart. */
+    setTelemetry: procedure.input(TelemetryPatchSchema).output(TelemetryStatusSchema),
   },
 }

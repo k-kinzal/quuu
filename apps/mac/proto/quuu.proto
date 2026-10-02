@@ -8037,6 +8037,69 @@ message AppCheckForUpdatesResponse {
   optional AppCheckForUpdatesResponseValue value = 1;
 }
 
+message AppTelemetryRequest {
+
+}
+
+message AppTelemetryResponseValueHeaderNames {
+  repeated string items = 1;
+}
+
+message AppTelemetryResponseValueOverride {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AppTelemetryResponseValue {
+  optional bool enabled = 1;
+  optional string endpoint = 2;
+  optional AppTelemetryResponseValueHeaderNames headerNames = 3;
+  optional google.protobuf.Value resourceAttributes = 4;
+  optional AppTelemetryResponseValueOverride override = 5;
+  optional bool active = 6;
+}
+
+message AppTelemetryResponse {
+  optional AppTelemetryResponseValue value = 1;
+}
+
+message AppSetTelemetryRequestValue {
+  optional bool enabled = 1;
+  optional string endpoint = 2;
+  optional google.protobuf.Value headers = 3;
+  optional google.protobuf.Value resourceAttributes = 4;
+}
+
+message AppSetTelemetryRequest {
+  optional AppSetTelemetryRequestValue value = 1;
+}
+
+message AppSetTelemetryResponseValueHeaderNames {
+  repeated string items = 1;
+}
+
+message AppSetTelemetryResponseValueOverride {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AppSetTelemetryResponseValue {
+  optional bool enabled = 1;
+  optional string endpoint = 2;
+  optional AppSetTelemetryResponseValueHeaderNames headerNames = 3;
+  optional google.protobuf.Value resourceAttributes = 4;
+  optional AppSetTelemetryResponseValueOverride override = 5;
+  optional bool active = 6;
+}
+
+message AppSetTelemetryResponse {
+  optional AppSetTelemetryResponseValue value = 1;
+}
+
 message ConnectRequest {}
 
 message ConnectResponse { string client_id = 1; }
@@ -8186,6 +8249,8 @@ service Quuu {
   rpc SystemCopy(SystemCopyRequest) returns (SystemCopyResponse);
   rpc AppInfo(AppInfoRequest) returns (AppInfoResponse);
   rpc AppCheckForUpdates(AppCheckForUpdatesRequest) returns (AppCheckForUpdatesResponse);
+  rpc AppTelemetry(AppTelemetryRequest) returns (AppTelemetryResponse);
+  rpc AppSetTelemetry(AppSetTelemetryRequest) returns (AppSetTelemetryResponse);
   rpc Connect(ConnectRequest) returns (ConnectResponse);
   rpc Disconnect(DisconnectRequest) returns (DisconnectResponse);
   rpc Watch(WatchRequest) returns (stream WatchResponse);

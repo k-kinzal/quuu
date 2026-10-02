@@ -443,6 +443,10 @@ Mac の Quuu と iPhone の Quuu が、このフォルダごしにやりとり�
     projectTaskNotFound: 'プロジェクトタスクが見つかりません'
   },
 
+  telemetry: {
+    badEndpoint: 'OpenTelemetry の送信先は http:// か https:// の URL で入力してください（例: http://192.168.10.4:4318）。'
+  },
+
   network: {
     pairingClosed: '母艦でペアリングが開始されていません。母艦の設定 › 複数のPC でペアリングを開始してから、もう一度お試しください。',
     wrongCode: '母艦に表示されているコードと一致しません。',

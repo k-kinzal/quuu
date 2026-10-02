@@ -6135,5 +6135,51 @@
   },
   "ReviewProjectFileResponse": {
     "value": 1
+  },
+  "AppTelemetryRequest": {},
+  "AppTelemetryResponseValueHeaderNames": {
+    "items": 1
+  },
+  "AppTelemetryResponseValueOverride": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AppTelemetryResponseValue": {
+    "enabled": 1,
+    "endpoint": 2,
+    "headerNames": 3,
+    "resourceAttributes": 4,
+    "override": 5,
+    "active": 6
+  },
+  "AppTelemetryResponse": {
+    "value": 1
+  },
+  "AppSetTelemetryRequestValue": {
+    "enabled": 1,
+    "endpoint": 2,
+    "headers": 3,
+    "resourceAttributes": 4
+  },
+  "AppSetTelemetryRequest": {
+    "value": 1
+  },
+  "AppSetTelemetryResponseValueHeaderNames": {
+    "items": 1
+  },
+  "AppSetTelemetryResponseValueOverride": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AppSetTelemetryResponseValue": {
+    "enabled": 1,
+    "endpoint": 2,
+    "headerNames": 3,
+    "resourceAttributes": 4,
+    "override": 5,
+    "active": 6
+  },
+  "AppSetTelemetryResponse": {
+    "value": 1
   }
 }

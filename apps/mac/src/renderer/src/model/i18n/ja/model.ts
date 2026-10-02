@@ -142,7 +142,9 @@ export const model: typeof en = {
       },
       app: {
         info: 'アプリ情報の読み込み',
-        checkForUpdates: 'アップデートの確認'
+        checkForUpdates: 'アップデートの確認',
+        telemetry: 'テレメトリ設定の読み込み',
+        setTelemetry: 'テレメトリ設定の変更'
       },
       system: {
         windowLayout: '画面の読み込み',

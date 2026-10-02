@@ -21,7 +21,7 @@ import { quuuWorkspaceDir } from './projects/builtIn.js'
 import { beginQuit, configureWindows, mainWindow, showWindow } from './windows.js'
 import { isReleaseBuild } from './updates/distribution.js'
 import type { AppUpdates } from './desktop/appUpdates.js'
-import { startTelemetry, stopTelemetry, telemetryActive } from './telemetry/index.js'
+import { onTelemetryChange, startTelemetry, stopTelemetry, telemetryActive, type TelemetryConfig } from './telemetry/index.js'
 import { readTelemetryConfig } from './telemetry/config.js'
 import { observeApp, reportLaunch } from './telemetry/app.js'
 import { observeElectron, reportQuit } from './telemetry/electron.js'
@@ -146,13 +146,6 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(async () => {
     // Before anything user-visible (menus, notifications, IPC reasons) is built.
     initMainI18n(app.getLocale())
-    // Opt-in (telemetry/config.ts). Started before the app is built so its first facts are kept.
-    const telemetry = readTelemetryConfig()
-    if (telemetry.enabled) {
-      await startTelemetry({ version: app.getVersion(), packaged: app.isPackaged }, telemetry)
-        .catch(error => { console.warn('Cannot start telemetry:', error) })
-    }
-    if (telemetryActive()) observeElectron(app)
     if (process.platform === 'darwin' && !app.isPackaged) {
       const icon = nativeImage.createFromPath(join(RESOURCES, 'icon.png'))
       if (!icon.isEmpty()) app.dock?.setIcon(icon)
@@ -170,8 +163,24 @@ if (!app.requestSingleInstanceLock()) {
     quuu.setAppControls(appControls)
     wire(quuu)
     registerIpc(quuu)
-    if (telemetryActive()) observeApp(quuu)
+    // Opt-in (telemetry/config.ts), applied before bootstrap so the runs recovery settles are kept,
+    // and again whenever `app.setTelemetry` changes it.
+    const observed = quuu
+    let observing = false
+    let launched = false
+    const applyTelemetry = async (config: TelemetryConfig): Promise<void> => {
+      await stopTelemetry()
+      if (!config.enabled) return
+      await startTelemetry({ version: app.getVersion(), packaged: app.isPackaged }, config)
+      if (!telemetryActive()) return
+      // Listeners stay once added; while export is off they return before doing any work.
+      if (!observing) { observing = true; observeElectron(app); observeApp(observed) }
+      if (launched) reportLaunch(observed)
+    }
+    onTelemetryChange(applyTelemetry)
+    await applyTelemetry(readTelemetryConfig()).catch(error => { console.warn('Cannot start telemetry:', error) })
     await quuu.bootstrap()
+    launched = true
     if (telemetryActive()) reportLaunch(quuu)
 
     // Built after bootstrap so "Go › Projects" can be populated

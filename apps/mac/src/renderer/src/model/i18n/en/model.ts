@@ -141,7 +141,9 @@ export const model = {
       },
       app: {
         info: 'read the app information',
-        checkForUpdates: 'check for updates'
+        checkForUpdates: 'check for updates',
+        telemetry: 'load telemetry settings',
+        setTelemetry: 'change telemetry settings'
       },
       system: {
         windowLayout: 'load the screen',

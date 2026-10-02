@@ -443,6 +443,10 @@ If you delete the whole folder, it can be recreated from Quuu's settings on the 
     projectTaskNotFound: 'Project task not found'
   },
 
+  telemetry: {
+    badEndpoint: 'Enter the OpenTelemetry endpoint as an http:// or https:// URL, for example http://192.168.10.4:4318.'
+  },
+
   network: {
     pairingClosed: 'Pairing is not open on the host. Open pairing in its Settings › Multiple Computers and try again.',
     wrongCode: 'That code does not match the one the host shows.',

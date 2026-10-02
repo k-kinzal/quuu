@@ -13,30 +13,30 @@ in `attributes.ts`.
 
 ## Turning it on
 
-Write `telemetry.json` in the data directory (`~/Library/Application Support/taskd/`)
-and restart Quuu:
+Use the CLI (or any caller of the operation contract). A change applies at once; no restart:
 
-```json
-{
-  "enabled": true,
-  "endpoint": "http://192.168.10.4:4318",
-  "headers": {},
-  "resourceAttributes": { "host.name": "kinzal-mbp" }
-}
+```sh
+quuu app set-telemetry '{"enabled":true,"endpoint":"http://192.168.10.4:4318","resourceAttributes":{"host.name":"kinzal-mbp"}}'
+quuu app telemetry          # saved choice, environment override, and whether it is exporting now
+quuu app set-telemetry '{"enabled":false}'
 ```
 
-| Setting | Effect |
-|---------|--------|
-| `enabled: true` in the file, or `QUUU_OTEL=1` | Turns export on |
-| `QUUU_OTEL=0` or `OTEL_SDK_DISABLED=true` | Always off, whatever the file says |
-| `endpoint` | OTLP/HTTP base URL; `/v1/traces`, `/v1/metrics` and `/v1/logs` are appended |
-| `headers` | Sent with every export (e.g. an auth token) |
-| `resourceAttributes` | Added to the resource, e.g. to tell two Macs apart |
+| Field | Effect |
+|-------|--------|
+| `enabled` | Turns export on or off. `QUUU_OTEL=1`/`0` or `OTEL_SDK_DISABLED=true` in Quuu's environment win over it; `override` names the one deciding |
+| `endpoint` | OTLP/HTTP base URL (`http`/`https`); `/v1/traces`, `/v1/metrics` and `/v1/logs` are appended |
+| `headers` | Sent with every export (e.g. an auth token). Replaced whole; only the names are ever read back (`headerNames`) |
+| `resourceAttributes` | Added to the resource, e.g. to tell two Macs apart. Replaced whole |
+
+Only the fields a patch names change. The choice is this computer's own: it is kept in
+`telemetry.json` in the data directory (mode 0600, written by the operation; do not edit it
+by hand), not in the app settings a satellite reads from its host, and `app.*` operations
+are always answered by the computer that receives them.
 
 Without `endpoint`, the exporters fall back to the standard `OTEL_EXPORTER_OTLP_*`
 variables. An `OTEL_EXPORTER_OTLP_ENDPOINT` left in a shell does **not** turn export
 on: a stray variable is not consent. While export is off, the SDK is never loaded.
-Transport is OTLP/HTTP with protobuf. The settings are read once at launch.
+Transport is OTLP/HTTP with protobuf.
 
 ## What is never exported
 

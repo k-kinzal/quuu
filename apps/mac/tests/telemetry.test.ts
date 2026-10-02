@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRouterClient } from '@orpc/server'
@@ -13,7 +13,7 @@ import * as repo from '../src/main/db/repo.js'
 import { createOperationsRouter } from '../src/main/api/router.js'
 import type { DesktopOperations, OperationHost } from '../src/main/api/host.js'
 import { readTelemetryConfig } from '../src/main/telemetry/config.js'
-import { observeOperation, startTelemetry, stopTelemetry, telemetryActive, type InstallSdk, type OperationCaller } from '../src/main/telemetry/index.js'
+import { observeOperation, onTelemetryChange, startTelemetry, stopTelemetry, telemetryActive, type InstallSdk, type OperationCaller } from '../src/main/telemetry/index.js'
 import { observeApp, reportLaunch } from '../src/main/telemetry/app.js'
 import { reportRenderer } from '../src/main/telemetry/ui.js'
 import { screenOf, startUsageReports, type ScreenState } from '../src/renderer/src/state/usage.js'
@@ -97,6 +97,45 @@ describe('telemetry settings', () => {
     expect(telemetryActive()).toBe(false)
     await expect(observeOperation('tasks.list', {}, { kind: 'window' }, undefined, () => Promise.resolve('ok'))).resolves.toBe('ok')
     expect(spans.getFinishedSpans()).toEqual([])
+  })
+})
+
+describe('configuring telemetry through the operations', () => {
+  it('saves a change privately, applies it at once and never reads a header value back', async () => {
+    onTelemetryChange(async config => {
+      await stopTelemetry()
+      if (config.enabled) await startTelemetry(BUILD, config, inMemory)
+    })
+    try {
+      const client = routerFor(makeApp(), { kind: 'cli' })
+      expect(await client.app.telemetry()).toMatchObject({ enabled: false, active: false, override: null })
+
+      const on = await client.app.setTelemetry({ enabled: true, endpoint: 'http://collector:4318/', headers: { authorization: 'Bearer secret' } })
+      expect(on).toEqual({ enabled: true, endpoint: 'http://collector:4318', headerNames: ['authorization'], resourceAttributes: {}, override: null, active: true })
+      expect(JSON.stringify(on)).not.toContain('secret')
+      const file = join(workdir, 'telemetry.json')
+      expect(statSync(file).mode & 0o777).toBe(0o600)
+      expect(JSON.parse(readFileSync(file, 'utf8'))).toMatchObject({ headers: { authorization: 'Bearer secret' } })
+
+      await expect(client.app.setTelemetry({ endpoint: 'collector:4318' })).rejects.toThrow()
+      expect((await client.app.telemetry()).endpoint).toBe('http://collector:4318')
+
+      // Only the named field changes; the endpoint and header stay for the next time it is on.
+      expect(await client.app.setTelemetry({ enabled: false })).toMatchObject({ enabled: false, active: false, endpoint: 'http://collector:4318', headerNames: ['authorization'] })
+      expect(telemetryActive()).toBe(false)
+    } finally {
+      onTelemetryChange(() => Promise.resolve())
+    }
+  })
+
+  it('names the environment variable that decides instead of the saved choice', async () => {
+    process.env.QUUU_OTEL = '0'
+    try {
+      const client = routerFor(makeApp(), { kind: 'cli' })
+      expect(await client.app.setTelemetry({ enabled: true })).toMatchObject({ enabled: true, override: 'QUUU_OTEL', active: false })
+    } finally {
+      delete process.env.QUUU_OTEL
+    }
   })
 })
 

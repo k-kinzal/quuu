@@ -15,3 +15,32 @@ export const AppInfoSchema = z.object({
   updates: UpdateStateSchema
 })
 export type AppInfo = z.infer<typeof AppInfoSchema>
+
+/**
+ * Whether this computer exports OpenTelemetry (docs/telemetry.md). Answered by the computer that
+ * receives it, even from a satellite's window: what it sends where is its own choice.
+ */
+export const TelemetryStatusSchema = z.object({
+  enabled: z.boolean(),
+  /** OTLP/HTTP base URL. Empty leaves it to `OTEL_EXPORTER_OTLP_ENDPOINT`. */
+  endpoint: z.string(),
+  /** Only the names; a value may be a token. */
+  headerNames: z.array(z.string()),
+  resourceAttributes: z.record(z.string(), z.string()),
+  /** An environment variable deciding instead of `enabled`. */
+  override: z.enum(['QUUU_OTEL', 'OTEL_SDK_DISABLED']).nullable(),
+  /** Exporting right now. */
+  active: z.boolean()
+})
+export type TelemetryStatus = z.infer<typeof TelemetryStatusSchema>
+
+/** Only the named fields change, and a change applies at once. */
+export const TelemetryPatchSchema = z.object({
+  enabled: z.boolean().optional(),
+  endpoint: z.string().max(2048).optional(),
+  /** Replaces every header. */
+  headers: z.record(z.string(), z.string()).optional(),
+  /** Replaces every extra resource attribute. */
+  resourceAttributes: z.record(z.string(), z.string()).optional()
+}).strict()
+

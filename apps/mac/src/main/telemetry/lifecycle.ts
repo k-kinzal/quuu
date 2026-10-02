@@ -5,7 +5,7 @@ import type { Run } from '../execution/types.js'
 import type { HookEvent } from '../hooks/types.js'
 import type { Task } from '../tasks/types.js'
 import { ATTR, EVENT, SPAN } from './attributes.js'
-import { emitEvent, recordRunDuration, tracer, truncate } from './index.js'
+import { emitEvent, recordRunDuration, telemetryActive, tracer, truncate } from './index.js'
 
 /** Run endings that mean something went wrong, as opposed to a limit or a person stopping it. */
 const FAILED_RUNS = new Set<Run['status']>(['failed', 'timeout'])
@@ -18,6 +18,8 @@ const FAILED_RUNS = new Set<Run['status']>(['failed', 'timeout'])
  */
 export function observeTaskLifecycle(db: Db): () => void {
   return repo.observeLifecycle(db, (task, event, run) => {
+    // Export can be switched off while the app runs; then describing a fact is wasted reads.
+    if (!telemetryActive()) return
     try { report(db, task, event, run) }
     catch (error) { console.warn('Cannot describe a task lifecycle event for telemetry', error) }
   })

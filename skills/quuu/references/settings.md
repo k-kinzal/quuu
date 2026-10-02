@@ -61,4 +61,19 @@ quuu app info                  # version, data directory, whether updates are av
 quuu app check-for-updates     # the menu's "Check for Updates…"; any dialog appears on the Mac
 ```
 
+## OpenTelemetry export
+
+Off unless asked. `app.*` acts on the computer that receives it, and a change applies at once.
+Send only the fields the request is about; `headers` and `resourceAttributes` replace the whole map.
+
+```sh
+quuu app telemetry
+quuu app set-telemetry '{"enabled":true,"endpoint":"http://HOST:4318"}'
+quuu app set-telemetry '{"enabled":false}'
+```
+
+`active` says whether it is exporting now; `override` names an environment variable (`QUUU_OTEL`,
+`OTEL_SDK_DISABLED`) deciding instead of `enabled`. Header values are never read back. What is
+recorded is in the repository's `docs/telemetry.md`.
+
 Language follows macOS and is not a setting.
