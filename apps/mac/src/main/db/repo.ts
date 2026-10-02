@@ -198,6 +198,23 @@ export function saveReviewSnapshot(db: Db, taskId: string, snapshot: ReviewSnaps
     .run(taskId, nowIso(), JSON.stringify(snapshot))
 }
 
+/** Review tasks with an open or not-yet-observed PR, without loading their file trees. */
+export function listReviewPullRequestTasks(db: Db): string[] {
+  const rows = db.prepare(`
+    SELECT t.id FROM tasks t
+      LEFT JOIN task_review_snapshots s ON s.task_id = t.id
+     WHERE t.status = 'review' AND t.archived = 0 AND (
+       EXISTS (SELECT 1 FROM json_each(s.snapshot, '$.pullRequests') pr
+                WHERE COALESCE(json_extract(pr.value, '$.state'), 'open') = 'open')
+       OR EXISTS (SELECT 1 FROM task_review_evidence e
+                   WHERE e.task_id = t.id AND e.kind = 'pull-request'
+                     AND NOT EXISTS (SELECT 1 FROM json_each(s.snapshot, '$.pullRequests') pr
+                                      WHERE json_extract(pr.value, '$.url') = e.value))
+     )
+     ORDER BY t.seq`).all() as Row[]
+  return rows.map(row => s(row.id))
+}
+
 export interface ReviewHistoryEntry {
   runId: string
   taskId: string

@@ -19,6 +19,9 @@ import { truncate } from '../util.js'
  */
 export const MAX_PULL_REQUEST_ROUNDS = 5
 
+/** Base branches can move long after CI finishes, so review keeps a minute-by-minute watch. */
+export const REVIEW_PULL_REQUEST_WATCH_MS = 60_000
+
 export type PullRequestTrouble = keyof PullRequestPrompts
 
 /**
@@ -46,7 +49,7 @@ export interface PullRequestFollowUpPorts {
   indexed(taskId: string): Promise<void>
   /** A full look at Git and GitHub for the task. The projection it produces is what decides. */
   refresh(taskId: string): Promise<ReviewSnapshot>
-  /** Send the task, still running, straight back to its agent with this message. Says whether it went. */
+  /** Continue a finished run's check, or queue a review task through ordinary task operations. */
   sendBack(taskId: string, message: string): boolean
   /** The look is over: a task not sent back lands in review, and the slot it kept goes. */
   conclude(taskId: string): void
@@ -55,7 +58,7 @@ export interface PullRequestFollowUpPorts {
 /**
  * Sends a task back to its agent when the Pull Request it produced is not in order.
  *
- * **It happens before the task reaches review.** A task whose run ended normally stays running,
+ * A task whose run ended normally stays running,
  * and keeps the run's slot, from the moment the run ends (`shouldHold`, asked by the scheduler
  * inside the transition) until the decision is made (`onCheck`); a task sent back is a follow-up,
  * first in line, so it takes that same slot and carries on. Landing in review first and being
@@ -63,19 +66,59 @@ export interface PullRequestFollowUpPorts {
  * free let another task start in between.
  *
  * Every decision is made on a fresh look at GitHub (`ReviewOperations` emits one per full
- * projection), never on the copy a failed fetch leaves behind. The task has to be still running
- * on a run that ended normally - that is, being looked at. A task already in review is left
- * there, whatever its checks say later, and one a person canceled, marked done or sent elsewhere
- * is theirs, not this automation's. The prompt is sent exactly as the person wrote it.
+ * projection), never on the copy a failed fetch leaves behind. Review tasks with open PRs are
+ * also checked periodically when their conflict prompt is enabled. Only a conflict sends them
+ * back; later CI changes do not. Canceled runs, archived tasks and tasks moved out of review
+ * are left alone. The prompt is sent exactly as the person wrote it.
  */
 export class PullRequestFollowUp extends EventEmitter {
   private rounds = new Map<string, number>()
+  private timer: NodeJS.Timeout | null = null
+  private stopped = false
+  private polling = false
 
   constructor(
     private db: Db,
     private getSettings: () => AppSettings,
     private ports: PullRequestFollowUpPorts
   ) { super() }
+
+  start(): void {
+    if (this.timer) return
+    this.stopped = false
+    this.timer = setInterval(() => { void this.pollReviews() }, REVIEW_PULL_REQUEST_WATCH_MS)
+    this.timer.unref?.()
+    // Saved PRs restore the watch even when no screen or conversation changes after a restart.
+    void this.pollReviews()
+  }
+
+  stop(): void {
+    this.stopped = true
+    if (this.timer) clearInterval(this.timer)
+    this.timer = null
+  }
+
+  private async pollReviews(): Promise<void> {
+    if (this.stopped || this.polling) return
+    this.polling = true
+    try {
+      for (const taskId of repo.listReviewPullRequestTasks(this.db)) {
+        if (this.stopped) break
+        const task = repo.getTask(this.db, taskId)
+        if (!task || task.status !== 'review' || task.archived) continue
+        const run = task.currentRunId ? repo.getRun(this.db, task.currentRunId) : null
+        const project = repo.getProject(this.db, task.projectId)
+        if (run?.status !== 'succeeded' || !project?.enabled) continue
+        if (!resolvePullRequestPrompts(this.getSettings(), project).conflict) continue
+        try { await this.ports.refresh(taskId) }
+        catch (error) { console.warn('Pull Request state could not be read while awaiting review', taskId, error) }
+      }
+    } catch (error) {
+      console.warn('Pull Request review watch failed', error)
+    } finally {
+      this.polling = false
+    }
+  }
 
   /**
    * Should a task whose run just ended normally stay running, keeping its slot, while this looks
@@ -111,19 +154,23 @@ export class PullRequestFollowUp extends EventEmitter {
 
   /** A full projection landed for the task. Decides, and says what it did. */
   onProjected(taskId: string, snapshot: ReviewSnapshot): 'sent' | 'clean' | 'left' {
+    if (this.stopped) return 'left'
     const task = repo.getTask(this.db, taskId)
-    if (!task || task.status !== 'running' || task.archived) return 'left'
+    if (!task || !['running', 'review'].includes(task.status) || task.archived) return 'left'
     const run = task.currentRunId ? repo.getRun(this.db, task.currentRunId) : null
     if (run?.status !== 'succeeded') return 'left'
     // The retained copy after a fetch that failed says nothing about now.
-    if (snapshot.pullRequestNotice) return 'left'
+    if (snapshot.pullRequestNotice || snapshot.error || snapshot.preparing) return 'left'
     const project = repo.getProject(this.db, task.projectId)
     if (!project) return 'left'
     const trouble = pullRequestTrouble(snapshot.pullRequests)
     if (!trouble) {
+      // GitHub may still be computing mergeability; that is not proof a repeated conflict ended.
+      if (task.status === 'review' && snapshot.pullRequests.some(pr => pr.state === 'open' && pr.mergeState === 'unknown')) return 'left'
       this.rounds.delete(taskId)
       return 'clean'
     }
+    if (task.status === 'review' && (trouble.kind !== 'conflict' || !project.enabled)) return 'left'
     const prompt = resolvePullRequestPrompts(this.getSettings(), project)[trouble.kind]
     if (!prompt) return 'left'
     const round = this.rounds.get(taskId) ?? 0

@@ -125,7 +125,12 @@ export class QuuuApp extends EventEmitter {
     this.pullRequestFollowUp = new PullRequestFollowUp(this.db, () => this.settings.getSettings(), {
       indexed: id => this.indexedLatestRun(id),
       refresh: id => this.reviews.refresh(id),
-      sendBack: (id, message) => this.scheduler.concludeCheck(id, message),
+      sendBack: (id, message) => {
+        if (repo.getTask(this.db, id)?.status === 'review') {
+          return this.tasks.send(id, message).ok
+        }
+        return this.scheduler.concludeCheck(id, message)
+      },
       conclude: id => { this.scheduler.concludeCheck(id) }
     })
     this.reviews.on('projected', (taskId: string, snapshot: ReviewSnapshot) => { this.pullRequestFollowUp.onProjected(taskId, snapshot) })
@@ -240,6 +245,7 @@ export class QuuuApp extends EventEmitter {
     try { this.sessions.sweepRetired() }
     catch (error) { console.warn('Cannot drop retired session pages', error) }
     this.refreshProjections()
+    this.pullRequestFollowUp.start()
     this.projectionTimer = setInterval(() => this.refreshProjections(), 5000)
     this.projectionTimer.unref?.()
     this.applyRetention()
@@ -331,6 +337,7 @@ export class QuuuApp extends EventEmitter {
 
 
   shutdown(): void {
+    this.pullRequestFollowUp.stop()
     if (this.projectionTimer) clearInterval(this.projectionTimer)
     if (this.retentionTimer) clearInterval(this.retentionTimer)
     this.sessions.stop()
