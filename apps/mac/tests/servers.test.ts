@@ -187,7 +187,7 @@ describe('the generated gRPC API', () => {
     repo.updateRun(app.db, runId, { status: 'succeeded' })
     await expect(execute(cli, ['tasks', 'logs', task.id], { env: { ...process.env, QUUU_CONNECTION_FILE: servers.connectionFile } }))
       .rejects.toMatchObject({ code: 1, stderr: `quuu: Session log is unavailable for run ${runId}\n` })
-  })
+  }, 15_000) // Real CLI startup, as above.
   it('keeps terminal ownership and event streams isolated and releases them on disconnect', async () => {
     const other = new QuuuHttpClient(connection.http, connection.token)
     const close = vi.spyOn(app.terminal, 'closeWorkbenchTerminal').mockImplementation(() => undefined)
