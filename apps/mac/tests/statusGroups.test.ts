@@ -52,6 +52,25 @@ describe('cutting into groups', () => {
     ])
   })
 
+  it('done lists the most recently done first, whatever order it was given in', () => {
+    const done = (id: string, doneAt: string | null): { id: string; status: TaskStatus; doneAt: string | null } => ({
+      id,
+      status: 'done',
+      doneAt
+    })
+    const groups = groupByStatus([
+      done('old', '2026-01-01T09:00:00.000Z'),
+      done('unknown', null),
+      done('latest', '2026-01-03T09:00:00.000Z'),
+      task('q', 'queued'),
+      done('middle', '2026-01-02T09:00:00.000Z')
+    ])
+    expect(groups.map((g) => g.tasks.map((t) => t.id))).toEqual([
+      ['q'],
+      ['latest', 'middle', 'old', 'unknown']
+    ])
+  })
+
   it('drops nothing', () => {
     const tasks = TASK_STATUSES.map((s, i) => task(String(i), s))
     const groups = groupByStatus(tasks)

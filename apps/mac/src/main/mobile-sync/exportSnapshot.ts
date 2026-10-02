@@ -201,7 +201,15 @@ export class SyncExporter {
   ): SyncSnapshot {
     const latest = new Map(repo.listLatestRunPerTask(this.db).map((r) => [r.taskId, r]))
 
-    const visible = tasks.filter((t) => !t.archived)
+    /*
+     * Done goes most recently done first, the order the Mac's done band shows. The iPhone keeps the
+     * exported order within a section, and the cut below keeps the newest only because of this.
+     */
+    const unfinished = tasks.filter((t) => !t.archived && t.status !== 'done')
+    const finished = tasks
+      .filter((t) => !t.archived && t.status === 'done')
+      .sort((a, b) => (a.doneAt === b.doneAt ? 0 : (a.doneAt ?? '') < (b.doneAt ?? '') ? 1 : -1))
+    const visible = [...unfinished, ...finished]
     /*
      * Everything unfinished, and only the newest done ones. **The number cut is carried along**
      * (so the iPhone can say that "all" is not really all).

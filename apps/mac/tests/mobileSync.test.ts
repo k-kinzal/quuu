@@ -271,6 +271,23 @@ describe('export', () => {
     expect(snapshot.value.tasks.filter((t) => t.status !== 'done')).toHaveLength(1)
   })
 
+  it('exports done tasks most recently done first, and the cut drops the oldest done', () => {
+    const ids: string[] = []
+    for (let i = 0; i < 60; i++) {
+      const id = makeTask(db, projectId, `完了 ${i}`)
+      // Done in reverse of creation, so creation order and done order disagree
+      const doneAt = new Date(Date.UTC(2026, 0, 1, 0, 60 - i)).toISOString()
+      repo.setTaskStatus(db, id, 'done', { doneAt })
+      ids.push(id)
+    }
+    new SyncExporter(db).export(folder, true)
+    const snapshot = parseSnapshot(readFileSync(join(dir, LAYOUT.snapshot), 'utf8'))
+    if (!snapshot.ok) throw new Error('unreadable')
+
+    // The first created was done last: it leads, and the last ten created are the ones cut
+    expect(snapshot.value.tasks.map((t) => t.id)).toEqual(ids.slice(0, 50))
+  })
+
   it('archived tasks are not included', () => {
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskArchived(db, taskId, true)
