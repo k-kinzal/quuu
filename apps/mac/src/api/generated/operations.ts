@@ -5,7 +5,6 @@ export const operationNames: string[] = [
   "runners.configure",
   "runners.pairing",
   "runners.revoke",
-  "runners.setCredential",
   "runners.signIn",
   "documents.list",
   "documents.read",

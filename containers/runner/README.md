@@ -55,7 +55,7 @@ directories. Keep private environment files and authentication outside Git.
 2. Allow inbound TCP on Quuu's selected port (default `47833`) in the desktop's firewall.
 3. Copy the **Start command** Quuu shows and run it on the Runner computer. It fills in the
    LAN URL, certificate fingerprint and PIN, and creates named volumes for the Runner data,
-   `~/.codex` and `~/.claude`. Replace the image with your toolchain image if needed.
+   `~/.codex`, `~/.claude` and `~/.config/cursor`. Replace the image with your toolchain image if needed.
    Because the PIN is spent by pairing, it is harmless once the Runner has connected.
 
 To manage the values yourself instead, create a private environment file and start the
@@ -79,7 +79,7 @@ docker run -d --name quuu-runner --restart unless-stopped \
   quuu-runner-agents:local
 ```
 
-Mount `/home/node/.codex` and `/home/node/.claude` as well to keep Runner-owned logins and
+Mount `/home/node/.codex`, `/home/node/.claude` and `/home/node/.config/cursor` as well to keep Runner-owned logins and
 agent sessions. Bind-mounted data directories must be writable by UID 1000. `/var/lib/quuu-runner` holds the pairing grant, independent checkouts and job
 journal. Keep it across container updates. Once paired, remove the PIN from the environment
 file and recreate the container with the same data volume. The saved grant handles reconnects.
@@ -88,26 +88,30 @@ Revoke an idle Runner in Quuu to invalidate that grant. Re-pairing requires remo
 
 ## Agent sign-in
 
-Do not copy this computer's agent logins to a Runner. Claude Code and Codex rotate their
-refresh tokens, so two machines sharing one login sign each other out: whichever refreshes
-first invalidates the other (`OAuth session expired and could not be refreshed`). Quuu
-instead gives each agent a credential that is safe to use on a Runner:
+Every agent is signed in the same way: on the Runner's row in **Settings → Connections →
+Runners**, click **Sign in to <agent>** and approve in the browser that opens. Quuu runs that
+agent's own sign-in on the Quuu computer, inside a throwaway home, hands the result to that
+one Runner and deletes it. The Runner owns the credential from then on; Quuu keeps no copy.
+Repeat for each Runner and agent you use. A Runner must run an image that reports sign-in
+state; older Runners show "sign-in not reported" until they are updated.
 
-| Agent | How | Where the secret lives |
+Never copy the Quuu computer's own agent logins to a Runner. Claude Code, Codex and Cursor
+rotate refresh tokens, so two machines holding one login sign each other out, and the copy
+fails with `OAuth session expired and could not be refreshed`. Each Quuu sign-in is a new,
+separate session, so Runners never interfere with each other or with the Quuu computer.
+
+| Agent | What the sign-in produces | Where the Runner keeps it |
 | --- | --- | --- |
-| Claude Code | Run `claude setup-token` on the Quuu computer and save the token under **Settings → Connections → Runners → Agent sign-in for Runners**. One token serves every Runner. It lasts one year and can only make model requests. | Quuu's Keychain (DPAPI on Windows). Lent to each Claude job as `CLAUDE_CODE_OAUTH_TOKEN` through the Runner's tmpfs, removed when the job is acknowledged. |
-| Cursor | Save an API key from the Cursor dashboard in the same place. | Same as Claude, as `CURSOR_API_KEY`. |
-| Codex | Click **Sign in to codex** on the Runner's row and approve in the browser. Quuu signs in on its own computer into a throwaway home, hands the result to that Runner once and deletes it. Repeat per Runner. | The Runner's `~/.codex/auth.json` (`$CODEX_HOME`). The Runner refreshes it; Quuu keeps no copy. |
+| Codex | A ChatGPT login | `~/.codex/auth.json` (`$CODEX_HOME`); the Runner refreshes it |
+| Claude Code | A one-year token that can only make model requests (`claude setup-token`) | `$QUUU_RUNNER_DATA/credentials/claude-oauth-token`, given to jobs as `CLAUDE_CODE_OAUTH_TOKEN` |
+| Cursor | A Cursor login | `~/.config/cursor/auth.json` |
 
-Tokens are sent only to a paired Runner over the pinned connection, only for a job that runs
-the matching agent and has not started yet. They never enter the instruction, the job journal
-or Quuu's database. A token Quuu lends takes precedence over a login stored on the Runner.
-Revoking a Runner stops the lending; if you no longer trust a Runner, also revoke the Claude
-token at claude.ai and the Cursor key in its dashboard, and sign that Runner's Codex session out.
-
-The Runner reports whether each agent has a credential (a login file or API key in its own
-environment). Quuu does not send new tasks to an agent that has none and no lent token.
-A credential's presence does not prove it is still valid.
+The credential crosses only the pinned connection to the paired Runner it was made for, never
+enters an instruction, the job journal or Quuu's database, and is written with mode 0600. To
+withdraw a Runner, revoke it in Quuu and sign its sessions out in each provider's account
+settings. The Runner reports whether each agent holds a credential (a login file, or an API
+key in its own environment); new tasks skip agents that have none. Presence does not prove
+the credential is still valid — sign in again if a run reports an authentication failure.
 
 TLS certificate pinning verifies the controller before sending the PIN, bearer grant or
 job results. Treat the Runner as a trusted machine: it can execute project instructions

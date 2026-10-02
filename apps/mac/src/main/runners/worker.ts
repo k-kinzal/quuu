@@ -10,8 +10,8 @@ import { killProcessGroup } from '../platform/runProcess.js'
 import { resolveLogPath } from '../session/logAdapters.js'
 import { pinnedRequest } from './tls.js'
 import { configuredRunnerLabels } from './labels.js'
-import { atomicJson, executeJob, jobAuthDir, writeAgentCredential, writeCredential } from './workerJob.js'
-import { SHARED_TOKEN_AGENTS, installRunnerLogin, signedInOnRunner } from './agentAuth.js'
+import { atomicJson, executeJob, jobAuthDir, writeCredential } from './workerJob.js'
+import { installRunnerLogin, isRunnerLoginAgent, signedInOnRunner } from './agentAuth.js'
 import { recordProcess, recordedProcess } from './processIdentity.js'
 import type { RemoteJobSpec, RemoteResult, RunnerAgent, RunnerReply, RunnerUpdate } from './types.js'
 
@@ -19,14 +19,14 @@ interface WorkerRecord { spec: RemoteJobSpec; startedAt: number; logOffset: numb
 interface Connection { url: string; fingerprint: string; id: string; token: string; capacity?: number }
 const safeId = (value: string): boolean => /^[\w-]{1,100}$/.test(value)
 
-export async function detectRunnerAgents(): Promise<RunnerAgent[]> {
+export async function detectRunnerAgents(root: string): Promise<RunnerAgent[]> {
   const names = (process.env.QUUU_RUNNER_AGENTS ?? 'codex,claude,cursor-agent').split(',').filter(Boolean)
   const agents: RunnerAgent[] = []
   for (const name of names) {
     if (!/^[\w.-]+$/.test(name)) continue
     try {
       const { stdout } = await promisify(execFile)(name, ['--version'], { timeout: 15_000, maxBuffer: 16_384 })
-      agents.push({ name, command: name, version: stdout.trim().slice(0, 300), signedIn: signedInOnRunner(name) })
+      agents.push({ name, command: name, version: stdout.trim().slice(0, 300), signedIn: signedInOnRunner(name, root) })
     } catch { /* Missing CLIs are not advertised. */ }
   }
   return agents
@@ -50,7 +50,7 @@ export class RunnerWorker {
     }
   }
   async tick(): Promise<void> {
-    if (Date.now() - this.checkedAt > 60_000) { this.agents = await detectRunnerAgents(); this.checkedAt = Date.now() }
+    if (Date.now() - this.checkedAt > 60_000) { this.agents = await detectRunnerAgents(this.root); this.checkedAt = Date.now() }
     const records = this.records().filter(record => !record.acknowledged)
     // Two bounded results plus log chunks fit under the listener's request limit.
     const batch = records.slice(this.cursor, this.cursor + 2)
@@ -64,18 +64,13 @@ export class RunnerWorker {
     for (const [id, credential] of Object.entries(reply.credentials)) {
       if (safeId(id)) writeCredential(this.root, id, credential)
     }
-    const variables: string[] = Object.values(SHARED_TOKEN_AGENTS)
-    for (const [id, env] of Object.entries(reply.agentCredentials ?? {})) {
-      const lent = Object.fromEntries(Object.entries(env).filter(([key, value]) => variables.includes(key) && typeof value === 'string'))
-      if (safeId(id)) writeAgentCredential(this.root, id, lent)
-    }
     for (const login of reply.logins ?? []) {
-      if (!safeId(login.id) || this.installed.includes(login.id)) continue
+      if (!safeId(login.id) || !isRunnerLoginAgent(login.agent) || this.installed.includes(login.id)) continue
       try {
-        installRunnerLogin(login.agent, login.credential)
+        installRunnerLogin(this.root, login.agent, login.credential)
         this.installed.push(login.id)
         this.checkedAt = 0
-        console.log(`Installed the ${login.agent} sign-in issued by Quuu`)
+        console.log(`Signed in to ${login.agent} through Quuu`)
       } catch (error) { console.error(error instanceof Error ? error.message : 'Could not install the sign-in') }
     }
     for (const acknowledgement of reply.acknowledgements) {
@@ -195,7 +190,7 @@ export async function workerMain(entry: string): Promise<void> {
     const pin = process.env.QUUU_RUNNER_PIN_FILE ? readFileSync(process.env.QUUU_RUNNER_PIN_FILE, 'utf8').trim() : process.env.QUUU_RUNNER_PIN ?? ''
     const capacity = Number(process.env.QUUU_RUNNER_CAPACITY ?? '2')
     const paired = await pinnedRequest(url, fingerprint, '/pair', { version: 1, pin, root,
-      name: process.env.QUUU_RUNNER_NAME ?? hostname(), capacity, labels: configuredRunnerLabels(), agents: await detectRunnerAgents() }) as { id: string; token: string }
+      name: process.env.QUUU_RUNNER_NAME ?? hostname(), capacity, labels: configuredRunnerLabels(), agents: await detectRunnerAgents(root) }) as { id: string; token: string }
     connection = { url, fingerprint, capacity, ...paired }
     atomicJson(configFile, connection)
   }

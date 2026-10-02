@@ -100,7 +100,5 @@ export interface RunnerReply {
   cancel: string[]
   acknowledgements: Array<{ id: string; logOffset: number; sessionOffset: number; finished: boolean }>
   credentials: Record<string, GitCredential>
-  /** Agent tokens lent to a job that has not started; like GitHub credentials, never journaled. */
-  agentCredentials?: Record<string, Record<string, string>>
   logins?: RunnerLoginDelivery[]
 }

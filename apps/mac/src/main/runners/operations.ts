@@ -17,23 +17,19 @@ import { issueToken } from '../platform/githubAuthRuntime.mjs'
 import { GITHUB_API_VERSION, githubAppKeyStore, githubRepositoryFromRemote } from '../platform/githubAuth.js'
 import type { Project } from '../projects/types.js'
 import { botLogin, hasGitHubAppAuthentication, resolveCommitIdentity } from '../settings/commitIdentity.js'
-import { platformSecretStore, type SecretStore } from '../platform/secretStore.js'
 import { newId, nowIso } from '../util.js'
 import { listenForRunners } from './listener.js'
 import { projectRepository } from './repository.js'
 import { matchesRunnerLabels } from './labels.js'
-import { SHARED_TOKEN_AGENTS, isSharedTokenAgent, sharedTokenAgents, type RunnerLoginAgent, type SharedTokenAgent } from './agentAuth.js'
+import type { RunnerLoginAgent } from './agentAuth.js'
 import { startLocalLogin, type StartLocalLogin } from './localLogin.js'
 import type { GitCredential, RemoteJob, RemoteJobSpec, RemoteRunner, RunnerAgent, RunnerConfig, RunnerPoll, RunnerReply, RunnerWorkspace } from './types.js'
 
 const ONLINE_MS = 20_000
-/** Keychain service for agent tokens lent to Runners. */
-export const RUNNER_AGENT_SECRETS = 'net.kinzal.quuu.runner-agents'
 interface PendingLogin {
   id: string
   agent: RunnerLoginAgent
   state: 'waiting' | 'delivering' | 'failed'
-  url: string
   error: string
   credential?: string
   cancel(): void
@@ -51,11 +47,8 @@ export class RunnerOperations extends EventEmitter {
   private credentials = new Map<string, GitCredential>()
   private issuing = new Map<string, Promise<GitCredential>>()
   private polls = new Set<string>()
-  private tokens = new Map<SharedTokenAgent, string>()
   private logins = new Map<string, PendingLogin>()
-  private store: SecretStore | undefined
-  constructor(private db: Db, private changed: () => void,
-    private options: { secrets?: SecretStore; login?: StartLocalLogin } = {}) { super() }
+  constructor(private db: Db, private changed: () => void, private options: { login?: StartLocalLogin } = {}) { super() }
 
   config(): RunnerConfig { return { enabled: false, port: 47833, ...JSON.parse(repo.getSetting(this.db, 'runners.config') ?? '{}') as Partial<RunnerConfig> } }
   async start(): Promise<void> {
@@ -92,12 +85,11 @@ export class RunnerOperations extends EventEmitter {
       fingerprint: this.fingerprint, error: this.error,
       urls: this.server ? Object.values(networkInterfaces()).flatMap(items => (items ?? [])
         .filter(item => item.family === 'IPv4' && !item.internal).map(item => `https://${item.address}:${this.port}`)) : [],
-      credentials: sharedTokenAgents.map(agent => ({ agent, variable: SHARED_TOKEN_AGENTS[agent], configured: this.lends(agent) })),
       runners: repo.listRemoteRunners(this.db).map(({ tokenHash: _tokenHash, ...runner }) => {
         const login = this.logins.get(runner.id)
         return { ...runner, labels: runner.labels ?? [],
-          agents: runner.agents.map(agent => ({ name: agent.name, command: agent.command, version: agent.version, auth: this.authentication(agent) })),
-          ...(login ? { login: { agent: login.agent, state: login.state, url: login.url, error: login.error } } : {}),
+          agents: runner.agents.map(agent => ({ name: agent.name, command: agent.command, version: agent.version, auth: authentication(agent) })),
+          ...(login ? { login: { agent: login.agent, state: login.state, error: login.error } } : {}),
           online: this.online(runner), active: repo.listRemoteJobs(this.db, runner.id).length }
       }) }
   }
@@ -129,36 +121,22 @@ export class RunnerOperations extends EventEmitter {
     this.changed()
   }
 
-  /** Tokens Quuu lends to Runners, kept in the platform key store. An empty value forgets it. */
-  async setCredential(input: { agent: SharedTokenAgent; value: string }): Promise<ReturnType<RunnerOperations['status']>> {
-    const value = input.value.trim()
-    if (!isSharedTokenAgent(input.agent)) throw new Error(t('runners.agentMissing', { name: input.agent }))
-    if (value && !/^[\x21-\x7e]{16,4096}$/.test(value)) throw new Error(t('runners.tokenInvalid'))
-    const lent = this.lent()
-    if (value) {
-      await this.secrets().write(input.agent, value)
-      this.tokens.set(input.agent, value)
-    } else {
-      await this.secrets().remove(input.agent)
-      this.tokens.delete(input.agent)
-    }
-    repo.setSetting(this.db, 'runners.credentials', JSON.stringify({ ...lent, [input.agent]: !!value }))
-    this.changed()
-    return this.status()
-  }
-
   /**
-   * Mint a login for one Runner by signing in on this computer, then hand it over once. The Runner
-   * owns and refreshes it from then on; Quuu keeps no copy.
+   * Sign one Runner in to an agent: run the agent's own browser sign-in on this computer, then hand
+   * the result over once. The Runner owns it from then on; Quuu keeps no copy. Every agent takes
+   * this same path.
    */
-  async signIn(input: { runnerId: string; agent: RunnerLoginAgent }): Promise<ReturnType<RunnerOperations['status']>> {
+  signIn(input: { runnerId: string; agent: RunnerLoginAgent }): ReturnType<RunnerOperations['status']> {
     const runner = this.requireRunner(input.runnerId)
     if (!this.online(runner)) throw new Error(t('runners.disconnected'))
-    if (!runner.agents.some(agent => agent.name === input.agent)) throw new Error(t('runners.agentMissing', { name: input.agent }))
+    const advertised = runner.agents.find(agent => agent.name === input.agent)
+    if (!advertised) throw new Error(t('runners.agentMissing', { name: input.agent }))
+    // A worker that does not report sign-in also cannot receive one.
+    if (advertised.signedIn === undefined) throw new Error(t('runners.updateRunner', { name: runner.name }))
     this.logins.get(runner.id)?.cancel()
     const command = repo.listAgents(this.db).find(agent => runnerAgentName(agent.command) === input.agent)?.command ?? input.agent
     const started = (this.options.login ?? startLocalLogin)(input.agent, command)
-    const login: PendingLogin = { id: newId('login'), agent: input.agent, state: 'waiting', url: '', error: '', cancel: started.cancel }
+    const login: PendingLogin = { id: newId('login'), agent: input.agent, state: 'waiting', error: '', cancel: started.cancel }
     this.logins.set(runner.id, login)
     const current = (): boolean => this.logins.get(runner.id) === login
     started.credential.then(credential => {
@@ -172,27 +150,8 @@ export class RunnerOperations extends EventEmitter {
       login.error = error instanceof Error ? error.message : String(error)
       this.changed()
     })
-    login.url = await Promise.race([started.url, delay(15_000).then(() => '')])
     this.changed()
     return this.status()
-  }
-  private secrets(): SecretStore { return this.store ??= this.options.secrets ?? platformSecretStore(RUNNER_AGENT_SECRETS) }
-  private lent(): Partial<Record<SharedTokenAgent, boolean>> { return JSON.parse(repo.getSetting(this.db, 'runners.credentials') ?? '{}') as Partial<Record<SharedTokenAgent, boolean>> }
-  private lends(agent: string): boolean { return isSharedTokenAgent(agent) && this.lent()[agent] === true }
-  private authentication(agent: RunnerAgent): 'quuu' | 'runner' | 'missing' | 'unknown' {
-    if (this.lends(agent.name)) return 'quuu'
-    return agent.signedIn === undefined ? 'unknown' : agent.signedIn ? 'runner' : 'missing'
-  }
-  private async lentToken(job: RemoteJob): Promise<Record<string, string> | null> {
-    const name = runnerAgentName(job.spec.command)
-    if ((job.spec.action !== 'agent' && job.spec.action !== 'report') || !isSharedTokenAgent(name) || !this.lends(name)) return null
-    let token = this.tokens.get(name)
-    if (!token) {
-      token = await this.secrets().read(name) ?? ''
-      if (!token) throw new Error(t('runners.tokenUnreadable', { name }))
-      this.tokens.set(name, token)
-    }
-    return { [SHARED_TOKEN_AGENTS[name]]: token }
   }
   private online(runner: Pick<RemoteRunner, 'revoked' | 'lastSeen'>): boolean { return !runner.revoked && Date.now() - Date.parse(runner.lastSeen) < ONLINE_MS && !!this.server }
   private requireRunner(id: string): RemoteRunner {
@@ -200,10 +159,10 @@ export class RunnerOperations extends EventEmitter {
     if (!runner) throw new Error(t('runners.notFound'))
     return runner
   }
-  /** Installed, and either signed in on the Runner or covered by a token Quuu lends. */
+  /** Installed and not known to be signed out. Older workers do not report sign-in. */
   supports(runner: RemoteRunner, agent: Agent): boolean {
     const name = runnerAgentName(agent.command)
-    return runner.agents.some(item => item.name === name && (item.signedIn !== false || this.lends(name)))
+    return runner.agents.some(item => item.name === name && item.signedIn !== false)
   }
 
   /** Every auxiliary target needs a usable member on the same machine as the task checkout. */
@@ -377,9 +336,6 @@ export class RunnerOperations extends EventEmitter {
           const credential = await this.credential(job)
           if (this.stopped || !this.db.isOpen) break
           if (credential) reply.credentials[job.id] = credential
-          const lent = job.status === 'queued' ? await this.lentToken(job) : null
-          if (this.stopped || !this.db.isOpen) break
-          if (lent) (reply.agentCredentials ??= {})[job.id] = lent
           // A lost response resends the same immutable id; the worker's durable journal deduplicates it.
           if (job.status === 'queued') reply.jobs.push(job.spec)
         } catch (error) {
@@ -399,6 +355,10 @@ export class RunnerOperations extends EventEmitter {
   }
 }
 
+function authentication(agent: RunnerAgent): 'signedIn' | 'missing' | 'unknown' {
+  return agent.signedIn === undefined ? 'unknown' : agent.signedIn ? 'signedIn' : 'missing'
+}
+
 /** One command that starts a paired Runner with Quuu's values filled in; the PIN is single-use. */
 export function runnerLaunchCommand(url: string, fingerprint: string, pin: string, suffix = randomBytes(2).toString('hex')): string {
   const name = `quuu-runner-${suffix}`
@@ -408,6 +368,7 @@ export function runnerLaunchCommand(url: string, fingerprint: string, pin: strin
     `--mount type=volume,source=${name}-data,target=/var/lib/quuu-runner`,
     `--mount type=volume,source=${name}-codex,target=/home/node/.codex`,
     `--mount type=volume,source=${name}-claude,target=/home/node/.claude`,
+    `--mount type=volume,source=${name}-cursor,target=/home/node/.config/cursor`,
     '--tmpfs /run/quuu-runner:uid=1000,gid=1000,mode=0700',
     'quuu-runner-agents:local'].join(' \\\n  ')
 }

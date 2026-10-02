@@ -11,6 +11,7 @@ import { captureReviewBaseline, snapshotWorktree } from '../review/git.js'
 import { ReviewService } from '../review/service.js'
 import { DEFAULT_SETTINGS } from '../settings/types.js'
 import { normalizeRepository } from './repository.js'
+import { runnerAgentEnvironment } from './agentAuth.js'
 import { recordProcess } from './processIdentity.js'
 import { resolveLogPath } from '../session/logAdapters.js'
 import type { GitCredential, RemoteJobSpec, RemoteResult } from './types.js'
@@ -30,17 +31,11 @@ export function writeCredential(root: string, id: string, credential: GitCredent
   writeGitHubHosts(dir, credential.user, credential.token)
   atomicJson(join(dir, 'repository.json'), { repository: credential.repository })
 }
-/** A token Quuu lends to this job's agent. It lives beside the GitHub credential and goes with it. */
-export function writeAgentCredential(root: string, id: string, env: Record<string, string>): void {
-  const dir = jobAuthDir(root, id)
-  mkdirSync(dir, { recursive: true, mode: 0o700 })
-  atomicJson(join(dir, 'agent.json'), env)
-}
 function authEnvironment(root: string, spec: RemoteJobSpec): NodeJS.ProcessEnv {
   const dir = jobAuthDir(root, spec.id)
   const env: NodeJS.ProcessEnv = { ...process.env, ...spec.env, ELECTRON_RUN_AS_NODE: undefined, NODE_OPTIONS: undefined,
     QUUU_RUN_ID: spec.id, QUUU_TASK_ID: spec.taskId, QUUU_PROJECT: spec.project.name, GIT_TERMINAL_PROMPT: '0' }
-  if (existsSync(join(dir, 'agent.json'))) Object.assign(env, JSON.parse(readFileSync(join(dir, 'agent.json'), 'utf8')) as Record<string, string>)
+  Object.assign(env, runnerAgentEnvironment(root))
   if (existsSync(join(dir, 'hosts.yml'))) {
     Object.assign(env, { GH_CONFIG_DIR: dir, GH_TOKEN: undefined, GITHUB_TOKEN: undefined, GH_PROMPT_DISABLED: '1',
       GH_REPO: (JSON.parse(readFileSync(join(dir, 'repository.json'), 'utf8')) as { repository: string }).repository,

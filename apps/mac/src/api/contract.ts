@@ -1,4 +1,4 @@
-import { RunnerConfigSchema, RunnerStatusSchema, RunnerPairingSchema, RunnerCredentialInputSchema, RunnerSignInInputSchema } from './schemas/runners.js'
+import { RunnerConfigSchema, RunnerStatusSchema, RunnerPairingSchema, RunnerSignInInputSchema } from './schemas/runners.js'
 import { HookRunSchema, TaskHookSchema } from './schemas/hooks.js'
 import { AuxiliaryPageInputSchema, AuxiliaryPageSchema, AuxiliaryImageInputSchema } from './schemas/auxiliary.js'
 import { TaskListInputSchema, TaskPageSchema, LogPageInputSchema, LogPageSchema } from './schemas/history.js'
@@ -31,7 +31,6 @@ export const contract = {
     configure: procedure.input(RunnerConfigSchema).output(RunnerStatusSchema),
     pairing: procedure.output(RunnerPairingSchema),
     revoke: procedure.input(z.string()).output(z.void()),
-    setCredential: procedure.input(RunnerCredentialInputSchema).output(RunnerStatusSchema),
     signIn: procedure.input(RunnerSignInInputSchema).output(RunnerStatusSchema)
   },
   documents: {

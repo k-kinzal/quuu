@@ -12,7 +12,6 @@ import { HookOperations } from '../src/main/hooks/operations.js'
 import { ReportOperations } from '../src/main/report/operations.js'
 import { RunnerOperations, runnerLaunchCommand } from '../src/main/runners/operations.js'
 import type { StartLocalLogin } from '../src/main/runners/localLogin.js'
-import type { SecretStore } from '../src/main/platform/secretStore.js'
 import { RunnerWorker } from '../src/main/runners/worker.js'
 import { pinnedRequest } from '../src/main/runners/tls.js'
 import { normalizeRepository, projectRepository } from '../src/main/runners/repository.js'
@@ -26,21 +25,15 @@ vi.mock('../src/main/platform/githubAuthRuntime.mjs', async importOriginal => ({
 }))
 
 let dir: string, db: Db, remote: RunnerOperations, runner: Runner, scheduler: Scheduler
-let secrets: Map<string, string>, login: StartLocalLogin
-const store: SecretStore = {
-  read: account => Promise.resolve(secrets.get(account) ?? null),
-  write: (account, value) => { secrets.set(account, value); return Promise.resolve() },
-  remove: account => { secrets.delete(account); return Promise.resolve() }
-}
+let login: StartLocalLogin
 beforeEach(async () => {
-  secrets = new Map()
   login = () => { throw new Error('No sign-in expected') }
   dir = mkdtempSync(join(tmpdir(), 'quuu-runners-'))
   vi.stubEnv('QUUU_USER_DATA', join(dir, 'controller'))
   vi.stubEnv('QUUU_RUNNER_AGENTS', 'bash')
   vi.stubEnv('QUUU_RUNNER_LABELS', '')
   db = memoryDb()
-  remote = new RunnerOperations(db, () => {}, { secrets: store, login: (agent, command) => login(agent, command) })
+  remote = new RunnerOperations(db, () => {}, { login: (agent, command) => login(agent, command) })
   runner = new Runner(db, remote)
   scheduler = new Scheduler(db, runner)
   await remote.configure({ enabled: true, port: 0 })
@@ -139,14 +132,14 @@ it('updates advertised labels on reconnect and removes them when an older worker
 
 it('keeps an assigned workspace on its original Runner after project labels change', async () => {
   const original = await pair(['rust'])
-  await pair(['python'])
+  await pair(['go'])
   const { projectId, agentId } = project()
   const taskId = makeTask(db, projectId, 'Existing conversation')
   const agent = repo.getAgent(db, agentId)!
   const prj = repo.updateProject(db, projectId, { runnerLabels: ['rust'] })
   const workspace = remote.choose(taskId, prj, agent)!
   remote.reserve(workspace)
-  const updated = { ...prj, runnerLabels: ['python'] }
+  const updated = { ...prj, runnerLabels: ['go'] }
   expect(remote.choose(taskId, updated, agent)).toEqual(workspace)
   expect(remote.chooseForHook(taskId, updated, agent)).toEqual(workspace)
   const registered = repo.listRemoteRunners(db).find(item => item.id === original.grant.id)!
@@ -315,35 +308,75 @@ it('extracts SSH GitHub remotes and refuses credential-bearing or local transpor
   expect(projectRepository(source)).toEqual({ repository: 'https://example.test/repository.git', subdirectory: '' })
 })
 
-it('lends a saved agent token only to that agent\'s unstarted job and keeps it out of every journal', async () => {
+/** A sign-in that "approves" at once, standing in for the agent's browser flow on this computer. */
+function approve(credential: string, commands: string[] = []): StartLocalLogin {
+  return (_agent, command) => { commands.push(command); return { credential: Promise.resolve(credential), cancel() {} } }
+}
+const auth = (name: string) => remote.status().runners[0].agents.find(agent => agent.name === name)?.auth
+
+it('signs Claude Code in through the same per-Runner path and keeps its token out of every journal', async () => {
   fakeCli('claude')
   vi.stubEnv('QUUU_RUNNER_AGENTS', 'claude')
-  vi.stubEnv('CLAUDE_CODE_OAUTH_TOKEN', '')
-  vi.stubEnv('QUUU_RUNNER_SECRETS', join(dir, 'tmpfs'))
+  for (const name of ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN']) vi.stubEnv(name, '')
+  vi.stubEnv('CLAUDE_CONFIG_DIR', join(dir, 'claude-home'))
   const { worker } = await pair()
   await worker.tick()
+  expect(auth('claude')).toBe('missing')
   const { projectId } = project('printf "token-length=%s\\n" "${#CLAUDE_CODE_OAUTH_TOKEN}"', 'claude')
   const token = 'sk-ant-oat01-fixture-token-value'
-  const saved = await remote.setCredential({ agent: 'claude', value: token })
-  expect(saved.credentials).toContainEqual({ agent: 'claude', variable: 'CLAUDE_CODE_OAUTH_TOKEN', configured: true })
-  expect(saved.runners[0].agents[0].auth).toBe('quuu')
-  expect(JSON.stringify(saved)).not.toContain(token)
-  const taskId = makeTask(db, projectId, 'Borrow the Claude token')
+  const commands: string[] = []
+  login = approve(token, commands)
+  const started = remote.signIn({ runnerId: remote.status().runners[0].id, agent: 'claude' })
+  expect(commands).toEqual(['claude'])
+  expect(JSON.stringify(started)).not.toContain(token)
+  await until(worker, () => auth('claude') === 'signedIn' && !remote.status().runners[0].login)
+  const file = join(dir, 'worker', 'credentials', 'claude-oauth-token')
+  expect(statSync(file).mode & 0o777).toBe(0o600)
+  const taskId = makeTask(db, projectId, 'Use the Runner sign-in')
   const claim = scheduler.claimNext()!
   await until(worker, () => repo.getTask(db, taskId)?.status === 'review')
   await until(worker, () => repo.listRemoteJobs(db).length === 0)
   expect(readFileSync(repo.getRun(db, claim.run.id)!.stdoutLogPath, 'utf8')).toContain(`token-length=${token.length}`)
   const journal = join(dir, 'worker', 'jobs', claim.run.id)
-  for (const file of readdirSync(journal)) expect(readFileSync(join(journal, file), 'utf8')).not.toContain(token)
+  for (const name of readdirSync(journal)) expect(readFileSync(join(journal, name), 'utf8')).not.toContain(token)
   expect(JSON.stringify(remote.job(claim.run.id))).not.toContain(token)
-  expect(existsSync(join(dir, 'tmpfs', claim.run.id))).toBe(false)
-  expect(repo.getSetting(db, 'runners.credentials')).not.toContain(token)
-  await remote.setCredential({ agent: 'claude', value: '' })
-  expect(secrets.has('claude')).toBe(false)
-  await expect(remote.setCredential({ agent: 'claude', value: 'has spaces in it but long' })).rejects.toThrow()
+  expect(JSON.stringify(remote.status())).not.toContain(token)
 }, 30_000)
 
-it('routes away from a Runner whose agent is not signed in unless Quuu lends a token', async () => {
+it('signs Codex and Cursor in through that same path, each into the place the Runner reads', async () => {
+  fakeCli('codex'); fakeCli('cursor-agent')
+  vi.stubEnv('QUUU_RUNNER_AGENTS', 'codex,cursor-agent')
+  for (const name of ['OPENAI_API_KEY', 'CODEX_API_KEY', 'CURSOR_API_KEY']) vi.stubEnv(name, '')
+  vi.stubEnv('CODEX_HOME', join(dir, 'codex-home'))
+  vi.stubEnv('XDG_CONFIG_HOME', join(dir, 'config'))
+  const { worker } = await pair()
+  await worker.tick()
+  const runnerId = remote.status().runners[0].id
+  for (const [agent, file] of [['codex', join(dir, 'codex-home', 'auth.json')], ['cursor-agent', join(dir, 'config', 'cursor', 'auth.json')]] as const) {
+    expect(auth(agent)).toBe('missing')
+    const credential = JSON.stringify({ refreshToken: `${agent}-runner-only` })
+    login = approve(credential)
+    expect(remote.signIn({ runnerId, agent }).runners[0].login).toMatchObject({ agent })
+    await until(worker, () => auth(agent) === 'signedIn' && !remote.status().runners[0].login)
+    expect(readFileSync(file, 'utf8')).toBe(credential)
+    expect(statSync(file).mode & 0o777).toBe(0o600)
+  }
+})
+
+it('reports a failed sign-in and refuses one an older Runner cannot receive', async () => {
+  const { url, fingerprint, grant } = await pair()
+  const poll = (agents: unknown[]) => pinnedRequest(url, fingerprint, '/poll', { version: 1, updates: [], agents }, grant.token)
+  await poll([{ name: 'codex', command: 'codex', version: 'old' }])
+  expect(auth('codex')).toBe('unknown')
+  expect(() => remote.signIn({ runnerId: grant.id, agent: 'codex' })).toThrow()
+  await poll([{ name: 'codex', command: 'codex', version: 'new', signedIn: false }])
+  login = () => ({ credential: Promise.reject(new Error('Sign-in was not completed')), cancel() {} })
+  remote.signIn({ runnerId: grant.id, agent: 'codex' })
+  await delay(10)
+  expect(remote.status().runners[0].login).toMatchObject({ state: 'failed', error: 'Sign-in was not completed' })
+})
+
+it('routes away from a Runner whose agent is not signed in', async () => {
   const { url, fingerprint, grant } = await pair()
   const { projectId, agentId } = project('true', 'claude')
   const poll = (signedIn: boolean) => pinnedRequest(url, fingerprint, '/poll', { version: 1, updates: [],
@@ -351,37 +384,11 @@ it('routes away from a Runner whose agent is not signed in unless Quuu lends a t
   await poll(false)
   const taskId = makeTask(db, projectId, 'Needs a signed-in agent')
   const agent = repo.getAgent(db, agentId)!, prj = repo.getProject(db, projectId)!
-  expect(remote.status().runners[0].agents[0].auth).toBe('missing')
+  expect(auth('claude')).toBe('missing')
   expect(remote.choose(taskId, prj, agent)).toBeNull()
   await poll(true)
-  expect(remote.status().runners[0].agents[0].auth).toBe('runner')
+  expect(auth('claude')).toBe('signedIn')
   expect(remote.choose(taskId, prj, agent)?.runnerId).toBe(grant.id)
-  await poll(false)
-  await remote.setCredential({ agent: 'claude', value: 'sk-ant-oat01-fixture-token-value' })
-  expect(remote.choose(taskId, prj, agent)?.runnerId).toBe(grant.id)
-})
-
-it('hands a login minted for one Runner over once and forgets it after the Runner confirms', async () => {
-  fakeCli('codex')
-  vi.stubEnv('QUUU_RUNNER_AGENTS', 'bash,codex')
-  vi.stubEnv('CODEX_HOME', join(dir, 'codex-home'))
-  vi.stubEnv('OPENAI_API_KEY', '')
-  vi.stubEnv('CODEX_API_KEY', '')
-  const { worker } = await pair()
-  await worker.tick()
-  expect(remote.status().runners[0].agents.find(agent => agent.name === 'codex')?.auth).toBe('missing')
-  const credential = JSON.stringify({ tokens: { refresh_token: 'runner-only-refresh' } })
-  const commands: string[] = []
-  login = (_agent, command) => { commands.push(command); return { url: Promise.resolve('https://auth.example.test/authorize'), credential: Promise.resolve(credential), cancel() {} } }
-  const started = await remote.signIn({ runnerId: remote.status().runners[0].id, agent: 'codex' })
-  expect(commands).toEqual(['codex'])
-  expect(started.runners[0].login).toMatchObject({ agent: 'codex', url: 'https://auth.example.test/authorize' })
-  expect(JSON.stringify(started)).not.toContain('runner-only-refresh')
-  await until(worker, () => !remote.status().runners[0].login)
-  const file = join(dir, 'codex-home', 'auth.json')
-  expect(readFileSync(file, 'utf8')).toBe(credential)
-  expect(statSync(file).mode & 0o777).toBe(0o600)
-  await until(worker, () => remote.status().runners[0].agents.find(agent => agent.name === 'codex')?.auth === 'runner')
 })
 
 it('fills the start command with the controller values and persistent agent homes', () => {

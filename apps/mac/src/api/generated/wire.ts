@@ -1151,32 +1151,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "kind": "string"
           }
         },
-        "credentials": {
-          "kind": "array",
-          "items": {
-            "kind": "object",
-            "fields": {
-              "agent": {
-                "kind": "string",
-                "choices": [
-                  "claude",
-                  "cursor-agent"
-                ]
-              },
-              "variable": {
-                "kind": "string"
-              },
-              "configured": {
-                "kind": "boolean"
-              }
-            },
-            "required": [
-              "agent",
-              "variable",
-              "configured"
-            ]
-          }
-        },
         "runners": {
           "kind": "array",
           "items": {
@@ -1205,8 +1179,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                     "auth": {
                       "kind": "string",
                       "choices": [
-                        "quuu",
-                        "runner",
+                        "signedIn",
                         "missing",
                         "unknown"
                       ]
@@ -1226,7 +1199,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "agent": {
                     "kind": "string",
                     "choices": [
-                      "codex"
+                      "codex",
+                      "claude",
+                      "cursor-agent"
                     ]
                   },
                   "state": {
@@ -1237,9 +1212,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "failed"
                     ]
                   },
-                  "url": {
-                    "kind": "string"
-                  },
                   "error": {
                     "kind": "string"
                   }
@@ -1247,7 +1219,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                 "required": [
                   "agent",
                   "state",
-                  "url",
                   "error"
                 ]
               },
@@ -1297,7 +1268,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "fingerprint",
         "error",
         "urls",
-        "credentials",
         "runners"
       ]
     }
@@ -1343,32 +1313,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "kind": "string"
           }
         },
-        "credentials": {
-          "kind": "array",
-          "items": {
-            "kind": "object",
-            "fields": {
-              "agent": {
-                "kind": "string",
-                "choices": [
-                  "claude",
-                  "cursor-agent"
-                ]
-              },
-              "variable": {
-                "kind": "string"
-              },
-              "configured": {
-                "kind": "boolean"
-              }
-            },
-            "required": [
-              "agent",
-              "variable",
-              "configured"
-            ]
-          }
-        },
         "runners": {
           "kind": "array",
           "items": {
@@ -1397,8 +1341,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                     "auth": {
                       "kind": "string",
                       "choices": [
-                        "quuu",
-                        "runner",
+                        "signedIn",
                         "missing",
                         "unknown"
                       ]
@@ -1418,7 +1361,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "agent": {
                     "kind": "string",
                     "choices": [
-                      "codex"
+                      "codex",
+                      "claude",
+                      "cursor-agent"
                     ]
                   },
                   "state": {
@@ -1429,9 +1374,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "failed"
                     ]
                   },
-                  "url": {
-                    "kind": "string"
-                  },
                   "error": {
                     "kind": "string"
                   }
@@ -1439,7 +1381,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                 "required": [
                   "agent",
                   "state",
-                  "url",
                   "error"
                 ]
               },
@@ -1489,7 +1430,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "fingerprint",
         "error",
         "urls",
-        "credentials",
         "runners"
       ]
     }
@@ -1539,202 +1479,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       "kind": "void"
     }
   },
-  "runners.setCredential": {
-    "method": "runnersSetCredential",
-    "input": {
-      "kind": "object",
-      "fields": {
-        "agent": {
-          "kind": "string",
-          "choices": [
-            "claude",
-            "cursor-agent"
-          ]
-        },
-        "value": {
-          "kind": "string"
-        }
-      },
-      "required": [
-        "agent",
-        "value"
-      ]
-    },
-    "output": {
-      "kind": "object",
-      "fields": {
-        "enabled": {
-          "kind": "boolean"
-        },
-        "port": {
-          "kind": "number"
-        },
-        "listening": {
-          "kind": "boolean"
-        },
-        "fingerprint": {
-          "kind": "string"
-        },
-        "error": {
-          "kind": "string"
-        },
-        "urls": {
-          "kind": "array",
-          "items": {
-            "kind": "string"
-          }
-        },
-        "credentials": {
-          "kind": "array",
-          "items": {
-            "kind": "object",
-            "fields": {
-              "agent": {
-                "kind": "string",
-                "choices": [
-                  "claude",
-                  "cursor-agent"
-                ]
-              },
-              "variable": {
-                "kind": "string"
-              },
-              "configured": {
-                "kind": "boolean"
-              }
-            },
-            "required": [
-              "agent",
-              "variable",
-              "configured"
-            ]
-          }
-        },
-        "runners": {
-          "kind": "array",
-          "items": {
-            "kind": "object",
-            "fields": {
-              "id": {
-                "kind": "string"
-              },
-              "name": {
-                "kind": "string"
-              },
-              "agents": {
-                "kind": "array",
-                "items": {
-                  "kind": "object",
-                  "fields": {
-                    "name": {
-                      "kind": "string"
-                    },
-                    "command": {
-                      "kind": "string"
-                    },
-                    "version": {
-                      "kind": "string"
-                    },
-                    "auth": {
-                      "kind": "string",
-                      "choices": [
-                        "quuu",
-                        "runner",
-                        "missing",
-                        "unknown"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "name",
-                    "command",
-                    "version",
-                    "auth"
-                  ]
-                }
-              },
-              "login": {
-                "kind": "object",
-                "fields": {
-                  "agent": {
-                    "kind": "string",
-                    "choices": [
-                      "codex"
-                    ]
-                  },
-                  "state": {
-                    "kind": "string",
-                    "choices": [
-                      "waiting",
-                      "delivering",
-                      "failed"
-                    ]
-                  },
-                  "url": {
-                    "kind": "string"
-                  },
-                  "error": {
-                    "kind": "string"
-                  }
-                },
-                "required": [
-                  "agent",
-                  "state",
-                  "url",
-                  "error"
-                ]
-              },
-              "labels": {
-                "kind": "array",
-                "items": {
-                  "kind": "string"
-                }
-              },
-              "capacity": {
-                "kind": "number"
-              },
-              "root": {
-                "kind": "string"
-              },
-              "lastSeen": {
-                "kind": "string"
-              },
-              "revoked": {
-                "kind": "boolean"
-              },
-              "online": {
-                "kind": "boolean"
-              },
-              "active": {
-                "kind": "number"
-              }
-            },
-            "required": [
-              "id",
-              "name",
-              "agents",
-              "capacity",
-              "root",
-              "lastSeen",
-              "revoked",
-              "online",
-              "active"
-            ]
-          }
-        }
-      },
-      "required": [
-        "enabled",
-        "port",
-        "listening",
-        "fingerprint",
-        "error",
-        "urls",
-        "credentials",
-        "runners"
-      ]
-    }
-  },
   "runners.signIn": {
     "method": "runnersSignIn",
     "input": {
@@ -1746,7 +1490,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "agent": {
           "kind": "string",
           "choices": [
-            "codex"
+            "codex",
+            "claude",
+            "cursor-agent"
           ]
         }
       },
@@ -1779,32 +1525,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "kind": "string"
           }
         },
-        "credentials": {
-          "kind": "array",
-          "items": {
-            "kind": "object",
-            "fields": {
-              "agent": {
-                "kind": "string",
-                "choices": [
-                  "claude",
-                  "cursor-agent"
-                ]
-              },
-              "variable": {
-                "kind": "string"
-              },
-              "configured": {
-                "kind": "boolean"
-              }
-            },
-            "required": [
-              "agent",
-              "variable",
-              "configured"
-            ]
-          }
-        },
         "runners": {
           "kind": "array",
           "items": {
@@ -1833,8 +1553,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                     "auth": {
                       "kind": "string",
                       "choices": [
-                        "quuu",
-                        "runner",
+                        "signedIn",
                         "missing",
                         "unknown"
                       ]
@@ -1854,7 +1573,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "agent": {
                     "kind": "string",
                     "choices": [
-                      "codex"
+                      "codex",
+                      "claude",
+                      "cursor-agent"
                     ]
                   },
                   "state": {
@@ -1865,9 +1586,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "failed"
                     ]
                   },
-                  "url": {
-                    "kind": "string"
-                  },
                   "error": {
                     "kind": "string"
                   }
@@ -1875,7 +1593,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                 "required": [
                   "agent",
                   "state",
-                  "url",
                   "error"
                 ]
               },
@@ -1925,7 +1642,6 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         "fingerprint",
         "error",
         "urls",
-        "credentials",
         "runners"
       ]
     }

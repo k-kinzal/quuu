@@ -458,7 +458,6 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       configure: os.runners.configure.handler(({ input }) => app.runners.configure(input)),
       pairing: os.runners.pairing.handler(() => app.runners.pairing()),
       revoke: os.runners.revoke.handler(({ input }) => app.runners.revoke(input)),
-      setCredential: os.runners.setCredential.handler(({ input }) => app.runners.setCredential(input)),
       signIn: os.runners.signIn.handler(({ input }) => app.runners.signIn(input))
     },
     snapshot: snapshot,

@@ -1,50 +1,57 @@
-import { existsSync, mkdirSync, renameSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 /**
- * How each agent CLI authenticates on a Runner without copying this computer's own login.
+ * How each agent CLI is signed in on a Runner, in one place for the controller and the worker.
  *
- * Copying a login hands two machines the same rotating refresh token; whichever refreshes first
- * signs the other out. So a Runner either borrows a non-rotating token that Quuu keeps in its key
- * store (lent per job, never written to the Runner's disk), or owns a login of its own that was
- * minted for that Runner alone.
+ * A Runner never receives a copy of this computer's own login: Claude Code, Codex and Cursor
+ * rotate refresh tokens, so two holders of one login sign each other out. Every agent instead
+ * goes through the same path — Quuu runs the agent's own browser sign-in on this computer into a
+ * throwaway home, hands the result to exactly one Runner, and forgets it. Only what that sign-in
+ * produces differs, and only this file knows it.
  */
-export const SHARED_TOKEN_AGENTS = {
-  /** `claude setup-token`: a one-year token that can only make model requests. */
-  claude: 'CLAUDE_CODE_OAUTH_TOKEN',
-  /** An API key from the Cursor dashboard. */
-  'cursor-agent': 'CURSOR_API_KEY'
-} as const
-export type SharedTokenAgent = keyof typeof SHARED_TOKEN_AGENTS
-export const sharedTokenAgents = Object.keys(SHARED_TOKEN_AGENTS) as SharedTokenAgent[]
-export function isSharedTokenAgent(name: string): name is SharedTokenAgent { return Object.hasOwn(SHARED_TOKEN_AGENTS, name) }
-
-/** Agents whose subscription login rotates its refresh token; each Runner gets its own session. */
-export const RUNNER_LOGIN_AGENTS = ['codex'] as const
+export const RUNNER_LOGIN_AGENTS = ['codex', 'claude', 'cursor-agent'] as const
 export type RunnerLoginAgent = typeof RUNNER_LOGIN_AGENTS[number]
+export function isRunnerLoginAgent(name: string): name is RunnerLoginAgent { return (RUNNER_LOGIN_AGENTS as readonly string[]).includes(name) }
 
 const env = (name: string): boolean => !!process.env[name]?.trim()
-const codexHome = (): string => process.env.CODEX_HOME || join(homedir(), '.codex')
+const codexAuth = (): string => join(process.env.CODEX_HOME || join(homedir(), '.codex'), 'auth.json')
+const cursorAuth = (): string => join(process.env.XDG_CONFIG_HOME || join(homedir(), '.config'), 'cursor', 'auth.json')
+/** `claude setup-token` yields a token Claude Code reads only from its environment, so the worker keeps it. */
+const claudeToken = (root: string): string => join(root, 'credentials', 'claude-oauth-token')
 
-/** Whether the Runner's own environment holds a credential for the agent. `undefined` for agents Quuu does not know. */
-export function signedInOnRunner(name: string): boolean | undefined {
+/** Whether the Runner holds a credential for the agent. `undefined` for agents Quuu does not know. */
+export function signedInOnRunner(name: string, root: string): boolean | undefined {
   switch (name) {
-    case 'codex': return env('CODEX_API_KEY') || env('OPENAI_API_KEY') || existsSync(join(codexHome(), 'auth.json'))
-    case 'claude': return env('ANTHROPIC_API_KEY') || env('ANTHROPIC_AUTH_TOKEN') || env('CLAUDE_CODE_OAUTH_TOKEN') ||
+    case 'codex': return env('CODEX_API_KEY') || env('OPENAI_API_KEY') || existsSync(codexAuth())
+    case 'claude': return env('ANTHROPIC_API_KEY') || env('ANTHROPIC_AUTH_TOKEN') || env('CLAUDE_CODE_OAUTH_TOKEN') || existsSync(claudeToken(root)) ||
       existsSync(join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), '.credentials.json'))
-    case 'cursor-agent': return env('CURSOR_API_KEY') || existsSync(join(homedir(), '.config', 'cursor', 'auth.json'))
+    case 'cursor-agent': return env('CURSOR_API_KEY') || existsSync(cursorAuth())
     default: return undefined
   }
 }
 
-/** The fixed place each Runner-owned login is written. The controller never chooses a path. */
-export function installRunnerLogin(agent: RunnerLoginAgent, content: string): void {
-  if (agent !== 'codex') throw new Error('Unsupported Runner login')
-  const value: unknown = JSON.parse(content)
-  if (!value || typeof value !== 'object') throw new Error('Invalid Codex login')
-  mkdirSync(codexHome(), { recursive: true, mode: 0o700 })
-  const file = join(codexHome(), 'auth.json')
-  writeFileSync(`${file}.tmp`, JSON.stringify(value), { mode: 0o600 })
+/** Write a sign-in where that agent reads it on Linux. The controller never chooses a path. */
+export function installRunnerLogin(root: string, agent: RunnerLoginAgent, credential: string): void {
+  if (agent === 'claude') {
+    if (!/^sk-ant-[\w-]{16,4096}$/.test(credential)) throw new Error('Invalid Claude Code token')
+    writePrivate(claudeToken(root), credential)
+    return
+  }
+  const value: unknown = JSON.parse(credential)
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Invalid ${agent} sign-in`)
+  writePrivate(agent === 'codex' ? codexAuth() : cursorAuth(), JSON.stringify(value))
+}
+
+/** Environment every job on this Runner gets from its own sign-ins. */
+export function runnerAgentEnvironment(root: string): Record<string, string> {
+  const file = claudeToken(root)
+  return existsSync(file) && !env('CLAUDE_CODE_OAUTH_TOKEN') ? { CLAUDE_CODE_OAUTH_TOKEN: readFileSync(file, 'utf8').trim() } : {}
+}
+
+function writePrivate(file: string, content: string): void {
+  mkdirSync(dirname(file), { recursive: true, mode: 0o700 })
+  writeFileSync(`${file}.tmp`, content, { mode: 0o600 })
   renameSync(`${file}.tmp`, file)
 }

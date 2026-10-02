@@ -255,10 +255,10 @@ refreshes while the controller is connected. Project toolchains belong to the
 image user's runtime setup.
 
 Agent sign-in never copies the controller's own login, because rotating refresh tokens
-make two holders sign each other out. Non-rotating tokens (`claude setup-token`, Cursor
-API keys) stay in the controller's key store and are lent per unstarted job on the same
-out-of-journal channel as GitHub tokens. Rotating subscription logins (Codex) are minted
-on the controller into a throwaway home for exactly one Runner, delivered once and
-forgotten after the Runner confirms; the Runner owns and refreshes them. Workers report
-whether each agent has a credential, and routing skips agents with neither that nor a
-lent token. `runners/agentAuth` is the one place that knows each agent's variables and files.
+make two holders sign each other out. Every agent takes one path: the controller runs the
+agent's own browser sign-in into a throwaway home (Claude Code's through the native PTY
+helper, since it renders its token only on a terminal), delivers the result once to exactly
+one Runner outside the job journal, and forgets it after the Runner confirms. The Runner
+owns the credential from then on. Workers report whether each agent has a credential, and
+routing skips agents without one. `runners/agentAuth` is the one place that knows what each
+agent's sign-in produces and where a Runner keeps it.

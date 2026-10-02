@@ -64,7 +64,7 @@ prerequisites, rather than assuming every adjacent switch is its parent.
 | Report AI | Writer, project instructions and task instructions |
 | Each PR follow-up condition | Its prompt, in app and project settings |
 | HTTP/gRPC and MCP | Port, Apply and current endpoint/status |
-| Runner listener | Port, Apply, pairing action, pairing details with the start command, and lent agent tokens (each with its own Save/Remove) |
+| Runner listener | Port, Apply, pairing action and pairing details with the start command |
 | Multiple-PC host | Port, Apply, address and pairing controls |
 | Project runner execution | Label/repository drafts and their Save actions |
 
@@ -112,7 +112,7 @@ while enabled; iPhone sync already prevents Sync Now while disabled.
 | iPhone: sync enable, status, sync action, errors, conflicts | Switch plus status/action row; errors and conflict resolution retain their existing behavior |
 | Multiple PCs: host, port, address, PIN, devices | Host switch; numeric input plus apply; compact pairing action/readout; device actions beside each device |
 | Multiple PCs: satellite, state, discovered peers, address/PIN | Satellite switch; state/action block; address and PIN with adjacent pairing action |
-| External connections: Runner, port, PIN, agent sign-in, connected runners | Switch; port plus save; compact pairing with a copyable start command; password fields for lent tokens; per-runner status/capacity/revoke and per-agent sign-in state grouped together |
+| External connections: Runner, port, PIN, agent sign-in, connected runners | Switch; port plus save; compact pairing with a copyable start command; per-runner status/capacity/revoke and one sign-in action per agent grouped together |
 | External connections: HTTP/gRPC and MCP | Switch, port/apply row, endpoint or error readout per service |
 | External connections: connection file | Selectable path and supporting information grouped together |
 | Appearance: theme | Three visible radio segments (dark, light, system) |
