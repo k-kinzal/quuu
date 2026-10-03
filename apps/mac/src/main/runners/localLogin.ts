@@ -2,6 +2,7 @@ import { spawn, type ChildProcess } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { createRequire } from 'node:module'
 import { nativeHelperPath } from '../platform/nativeHelpers.js'
 import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
@@ -16,6 +17,7 @@ export interface LocalLogin {
 export type StartLocalLogin = (agent: RunnerLoginAgent, command: string) => LocalLogin
 
 const LOGIN_TIMEOUT_MS = 10 * 60_000
+const { Terminal } = createRequire(import.meta.url)('@xterm/xterm') as typeof import('@xterm/xterm')
 
 /**
  * The agent's own browser sign-in, run on this computer where its callback is reachable. Each run
@@ -46,14 +48,18 @@ const RECIPES: Record<RunnerLoginAgent, Recipe> = {
     args: ['setup-token'],
     env: () => ({}),
     terminal: true,
-    result: (_home, output) => /(sk-ant-oat\d+-[\w-]{20,})[^\w-]/.exec(output)?.[1] ?? null
+    result: (_home, output) => /(sk-ant-oat\d+-[\w-]{20,})(?=\s|$)/.exec(output)?.[1] ?? null
   }
 }
 
 export const startLocalLogin: StartLocalLogin = (agent, command) => {
   const recipe = RECIPES[agent]
   const home = mkdtempSync(join(tmpdir(), 'quuu-runner-login-'))
+  // Claude redraws only changed cells, even inside a token. Restore the screen with the same
+  // terminal engine as the workbench; stripping ANSI would lose the cells it reused.
+  const terminal = recipe.terminal ? new Terminal({ cols: 1000, rows: 50, scrollback: 100, allowProposedApi: true }) : null
   let canceled = false
+  let timedOut = false
   let child: ChildProcess | null = null
   const stop = (): void => {
     child?.stdin?.end()
@@ -63,32 +69,40 @@ export const startLocalLogin: StartLocalLogin = (agent, command) => {
     try {
       const env = withPath({ ...process.env, ...recipe.env(home), ELECTRON_RUN_AS_NODE: undefined }, await resolveLoginPath())
       if (canceled) throw new Error('Sign-in was canceled')
-      let output = '', found: string | null = null
       const code = await new Promise<number | null>((resolve, reject) => {
         const helper = recipe.terminal ? nativeHelperPath('quuu-pty') : null
         if (recipe.terminal && !helper) { reject(new Error('The terminal helper is missing')); return }
         child = helper
-          // The helper starts a login shell on a wide terminal, so the token is never wrapped.
+          // Match the emulated screen so cursor movement addresses the same cells.
           ? spawn(helper, ['/bin/sh', home, '1000', '50'], { env, stdio: ['pipe', 'pipe', 'pipe', 'pipe'], detached: true })
           : spawn(command, recipe.args, { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true })
         if (helper) child.stdin?.write(`exec ${[command, ...recipe.args].map(shQuote).join(' ')}\n`)
         const read = (chunk: Buffer): void => {
-          // Escape sequences stand in for spaces on a terminal; keep a boundary where they were.
-          // eslint-disable-next-line no-control-regex -- matching terminal escape sequences is the point
-          output = (output + chunk.toString().replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, ' ')).slice(-65_536)
-          if (helper && !found && (found = recipe.result(home, output))) stop()
+          terminal?.write(chunk)
         }
         child.stdout?.on('data', read)
         child.stderr?.on('data', read)
-        const timer = setTimeout(stop, LOGIN_TIMEOUT_MS)
+        const timer = setTimeout(() => { timedOut = true; stop() }, LOGIN_TIMEOUT_MS)
         child.once('error', reject)
         child.once('close', exit => { clearTimeout(timer); resolve(exit) })
       })
       if (canceled) throw new Error('Sign-in was canceled')
-      const result = found ?? (code === 0 ? recipe.result(home, output) : null)
+      let output = ''
+      if (terminal) {
+        // PTY writes are asynchronous. Wait for the final redraw and process exit; a token
+        // prefix at the end of an earlier chunk must never be delivered as a whole credential.
+        await new Promise<void>(resolve => terminal.write('', resolve))
+        const buffer = terminal.buffer.active
+        for (let row = 0; row < buffer.length; row++) {
+          const line = buffer.getLine(row)
+          output += `${line?.isWrapped ? '' : '\n'}${line?.translateToString(true) ?? ''}`
+        }
+      }
+      const result = !timedOut && code === 0 ? recipe.result(home, output) : null
       if (!result) throw new Error('Sign-in was not completed')
       return result
     } finally {
+      terminal?.dispose()
       rmSync(home, { recursive: true, force: true })
     }
   })()
