@@ -5,10 +5,10 @@ import type { ReviewEvidence } from '../review/types.js'
 import type { ReviewCommentInput, ReviewFileRequest } from '../review/types.js'
 import type { ReportRequest } from '../report/prompt.js'
 
-import type { RunnerLoginAgent } from './agentAuth.js'
+import type { RunnerAuthentication, RunnerLoginAgent } from './agentAuth.js'
 
 /** `signedIn` is the Runner's own credential check; older workers omit it. */
-export interface RunnerAgent { name: string; command: string; version: string; signedIn?: boolean }
+export interface RunnerAgent { name: string; command: string; version: string; signedIn?: boolean; auth?: RunnerAuthentication }
 export interface RemoteRunner {
   id: string
   name: string

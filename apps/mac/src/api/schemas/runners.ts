@@ -9,8 +9,8 @@ export const RunnerConfigSchema = z.object({ enabled: z.boolean(), port: z.numbe
 export const RunnerStatusSchema = z.object({
   enabled: z.boolean(), port: z.number(), listening: z.boolean(), fingerprint: z.string(), error: z.string(), urls: z.string().array(),
   runners: z.object({ id: z.string(), name: z.string(), agents: z.object({ name: z.string(), command: z.string(), version: z.string(),
-    /** Whether the Runner holds a credential for the agent; unknown for an older Runner. */
-    auth: z.enum(['signedIn', 'missing', 'unknown']) }).array(),
+    /** Provider-confirmed sign-in, missing/rejected credentials, or an unverified older login. */
+    auth: z.enum(['signedIn', 'missing', 'unknown', 'expired', 'unverified']) }).array(),
     login: z.object({ agent: RunnerLoginAgentSchema, state: z.enum(['waiting', 'delivering', 'failed']), error: z.string() }).optional(),
     labels: RunnerLabelsSchema.optional(),
     capacity: z.number(), root: z.string(), lastSeen: z.string(), revoked: z.boolean(), online: z.boolean(), active: z.number() }).array()

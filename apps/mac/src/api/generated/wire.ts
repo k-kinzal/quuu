@@ -1181,7 +1181,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "choices": [
                         "signedIn",
                         "missing",
-                        "unknown"
+                        "unknown",
+                        "expired",
+                        "unverified"
                       ]
                     }
                   },
@@ -1343,7 +1345,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "choices": [
                         "signedIn",
                         "missing",
-                        "unknown"
+                        "unknown",
+                        "expired",
+                        "unverified"
                       ]
                     }
                   },
@@ -1555,7 +1559,9 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "choices": [
                         "signedIn",
                         "missing",
-                        "unknown"
+                        "unknown",
+                        "expired",
+                        "unverified"
                       ]
                     }
                   },

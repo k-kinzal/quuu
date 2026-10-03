@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createRouterClient, implement, ORPCError } from '@orpc/server'
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
@@ -166,4 +166,47 @@ it('offers the same sign-in for every agent on a Runner and shows its progress',
   await waitFor(() => expect(signIns).toEqual([{ runnerId: 'r1', agent: 'claude' }]))
   expect(await screen.findByText(t('runnerSettings.loginWaiting', { name: 'claude' }))).toBeVisible()
   await waitFor(() => expect(screen.getAllByRole('button', { name: t('runnerSettings.signIn', { name: 'codex' }) })[0]).toBeDisabled())
+})
+
+it('shows authentication expiry and reauthentication on the affected agent row until the Runner confirms the new login', async () => {
+  let status: RunnerStatus = { enabled: true, port: 47833, listening: true, fingerprint: 'fp', error: '', urls: [],
+    runners: [{ id: 'rust', name: 'Rust Runner', capacity: 1, root: '/worker', lastSeen: '', revoked: false, online: true, active: 0,
+      agents: [{ name: 'claude', command: 'claude', version: '2', auth: 'expired' },
+        { name: 'codex', command: 'codex', version: '1', auth: 'signedIn' },
+        { name: 'cursor-agent', command: 'cursor-agent', version: '3', auth: 'unverified' }] }] }
+  const signIns: Array<{ runnerId: string; agent: string }> = []
+  const os = implement(contract)
+  Object.defineProperty(window, 'quuu', { configurable: true, value: createRouterClient({ runners: {
+    status: os.runners.status.handler(() => status),
+    signIn: os.runners.signIn.handler(({ input }) => {
+      signIns.push(input)
+      status = { ...status, runners: status.runners.map(runner => ({ ...runner, login: { agent: input.agent, state: 'waiting', error: '' } })) }
+      return status
+    })
+  } }) })
+  render(<ThemeProvider><RunnerConnections /></ThemeProvider>)
+  const claude = within(await screen.findByRole('group', { name: 'claude' }))
+  const line = (auth: string) => t('runnerSettings.agentLine', { name: 'claude', version: '2', auth })
+  expect(claude.getByText(line(t('runnerSettings.auth.expired')))).toBeVisible()
+  expect(claude.getByText(t('runnerSettings.authExpired', { name: 'claude' }))).toBeVisible()
+  const retry = claude.getByRole('button', { name: t('runnerSettings.signInAgain', { name: 'claude' }) })
+  fireEvent.click(retry)
+  await waitFor(() => expect(signIns).toEqual([{ runnerId: 'rust', agent: 'claude' }]))
+  expect(await claude.findByText(t('runnerSettings.loginWaiting', { name: 'claude' }))).toBeVisible()
+  act(() => {
+    status = { ...status, runners: status.runners.map(runner => ({ ...runner, login: { agent: 'claude', state: 'delivering', error: '' } })) }
+    queryClient.setQueryData(['runners.status'], status)
+  })
+  expect(await claude.findByText(t('runnerSettings.loginDelivering'))).toBeVisible()
+  expect(claude.getByText(line(t('runnerSettings.auth.expired')))).toBeVisible()
+  expect(retry).toBeDisabled()
+  act(() => {
+    status = { ...status, runners: status.runners.map(runner => ({ ...runner, login: undefined,
+      agents: runner.agents.map(agent => agent.name === 'claude' ? { ...agent, auth: 'signedIn' } : agent) })) }
+    queryClient.setQueryData(['runners.status'], status)
+  })
+  expect(await claude.findByText(line(t('runnerSettings.auth.signedIn')))).toBeVisible()
+  expect(claude.queryByText(t('runnerSettings.authExpired', { name: 'claude' }))).not.toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'codex' })).queryByText(t('runnerSettings.authExpired', { name: 'codex' }))).not.toBeInTheDocument()
+  expect(within(screen.getByRole('group', { name: 'cursor-agent' })).getByText(t('runnerSettings.authUnverified'))).toBeVisible()
 })

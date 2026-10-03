@@ -1102,7 +1102,11 @@ Runner with Quuu's LAN URL and certificate fingerprint. The project needs a Git
 remote and the Runner needs the task, hook and task-report agents installed and
 signed in. Quuu shows a ready-made `docker run` command with the PIN. Sign every agent
 in the same way: **Sign in to <agent>** on the Runner's row runs that agent's browser sign-in
-on this Mac and hands the result to that Runner only. Never copy this Mac's agent logins;
+on this Mac and hands the result to that Runner only. Each agent row distinguishes signed in,
+not signed in, authentication expired, and authentication not verified. Expired or rejected
+credentials show a reauthentication action on that row and cannot receive tasks. A credential
+file alone never means signed in; completion of sign-in or a successful run confirms it.
+Never copy this Mac's agent logins;
 they rotate and sign each other out. Set **Required Runner labels** in project settings (for example
 `rust, linux`) to require every label advertised through `QUUU_RUNNER_LABELS`.
 An empty selector accepts any Runner; if no eligible Runner is available, new tasks

@@ -1,4 +1,4 @@
-import { Button, CodeBlock, SettingToggle, InputAction, SettingsBlock, SettingRow, FieldHint, NumberInput, Row, SettingsGroup, Text } from '@design-system/react'
+import { Button, CodeBlock, Column, SettingToggle, InputAction, SettingsBlock, SettingRow, FieldHint, NumberInput, Row, SettingsGroup, Text } from '@design-system/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { RunnerPairing, RunnerStatus } from '../../../../api/types.js'
@@ -59,15 +59,19 @@ export function RunnerConnections(): JSX.Element {
       </Row>
       <FieldHint>{t('runnerSettings.labels', { labels: runner.labels?.join(', ') || t('runnerSettings.noLabels') })}</FieldHint>
       {runner.agents.length === 0 && <FieldHint>{t('runnerSettings.noAgents')}</FieldHint>}
-      {runner.agents.map(agent => <Row key={agent.name} justify="between" wrap gap="md">
-        <FieldHint tone={agent.auth === 'missing' ? 'danger' : undefined}>{t('runnerSettings.agentLine', { name: agent.name, version: agent.version, auth: t(`runnerSettings.auth.${agent.auth}`) })}</FieldHint>
-        {isLoginAgent(agent.name) && <Button variant="ghost" disabled={!runner.online || agent.auth === 'unknown' || signIn.isPending || runner.login?.state === 'waiting'}
+      {runner.agents.map(agent => <Column key={agent.name} gap="xs" role="group" aria-label={agent.name}>
+        <Row justify="between" wrap gap="md">
+        <FieldHint tone={agent.auth === 'missing' || agent.auth === 'expired' ? 'danger' : undefined}>{t('runnerSettings.agentLine', { name: agent.name, version: agent.version, auth: t(`runnerSettings.auth.${agent.auth}`) })}</FieldHint>
+        {isLoginAgent(agent.name) && <Button variant={agent.auth === 'expired' ? 'outline' : 'ghost'} disabled={!runner.online || agent.auth === 'unknown' || signIn.isPending || runner.login?.state === 'waiting' || runner.login?.state === 'delivering'}
           onClick={() => { if (isLoginAgent(agent.name)) signIn.mutate({ runnerId: runner.id, agent: agent.name }) }}>
-          {t(agent.auth === 'signedIn' ? 'runnerSettings.signInAgain' : 'runnerSettings.signIn', { name: agent.name })}
+          {t(['signedIn', 'expired', 'unverified'].includes(agent.auth) ? 'runnerSettings.signInAgain' : 'runnerSettings.signIn', { name: agent.name })}
         </Button>}
-      </Row>)}
+        </Row>
+        {agent.auth === 'expired' && <FieldHint tone="danger">{t('runnerSettings.authExpired', { name: agent.name })}</FieldHint>}
+        {agent.auth === 'unverified' && <FieldHint>{t('runnerSettings.authUnverified')}</FieldHint>}
+        {runner.login?.agent === agent.name && <RunnerLogin login={runner.login} />}
+      </Column>)}
       {runner.agents.some(agent => agent.auth === 'unknown') && <FieldHint>{t('runnerSettings.updateRunner')}</FieldHint>}
-      {runner.login && <RunnerLogin login={runner.login} />}
     </SettingsBlock>)}
     {(error || status.data?.error) && <SettingsBlock><FieldHint tone="danger">{error?.message || status.data?.error}</FieldHint></SettingsBlock>}
   </SettingsGroup>
@@ -79,4 +83,3 @@ function RunnerLogin({ login }: { login: NonNullable<RunnerItem['login']> }): JS
   if (login.state === 'delivering') return <FieldHint>{t('runnerSettings.loginDelivering')}</FieldHint>
   return <FieldHint>{t('runnerSettings.loginWaiting', { name: login.agent })}</FieldHint>
 }
-

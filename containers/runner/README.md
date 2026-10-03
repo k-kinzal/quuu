@@ -109,9 +109,20 @@ separate session, so Runners never interfere with each other or with the Quuu co
 The credential crosses only the pinned connection to the paired Runner it was made for, never
 enters an instruction, the job journal or Quuu's database, and is written with mode 0600. To
 withdraw a Runner, revoke it in Quuu and sign its sessions out in each provider's account
-settings. The Runner reports whether each agent holds a credential (a login file, or an API
-key in its own environment); new tasks skip agents that have none. Presence does not prove
-the credential is still valid — sign in again if a run reports an authentication failure.
+settings. Each agent row reports its own authentication state. Empty, malformed or expired
+credentials and authentication rejected by a run show **authentication expired**, with a
+sign-in-again action and an explanation that tasks need reauthentication. Failed credentials
+are excluded from scheduling, including follow-ups on that Runner. The failure survives
+heartbeats and restarts until the credential is replaced through sign-in.
+
+**Signed in** requires a completed provider sign-in delivered to this Runner or a successful
+agent run using that credential. Existing credentials and older workers that only report file
+presence show **authentication not verified**; they may attempt a run, but are not described as
+signed in. A renewable token whose access token expired also awaits confirmation after the CLI
+refreshes it. An absent credential shows **not signed in**. Authentication facts are bound to
+the credential's digest, so an old run cannot invalidate a replacement login. Per-job account
+overrides do not change the Runner's own sign-in state. Revocation is detected when the provider
+rejects a request; no background model requests are made just to update this display.
 
 TLS certificate pinning verifies the controller before sending the PIN, bearer grant or
 job results. Treat the Runner as a trusted machine: it can execute project instructions
@@ -186,8 +197,8 @@ Additional environment variables:
 | `QUUU_RUNNER_LABELS` | empty | Comma-separated environment labels, advertised at pairing and on every poll; restart the container after changing them |
 | `QUUU_RUNNER_CAPACITY` | `2` | Concurrent remote jobs, 1–64; fixed at pairing |
 
-`--version` proves installation. Sign-in status is a presence check, not proof of model
-access. Arbitrary command hooks need their tools
+`--version` proves installation. Authentication status is reported separately for each agent.
+Arbitrary command hooks need their tools
 installed too. Codex and Claude structured session logs are mirrored; agents whose native
 history is a database currently show their stdout in Quuu.
 

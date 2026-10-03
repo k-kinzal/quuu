@@ -162,7 +162,7 @@ export class RunnerOperations extends EventEmitter {
   /** Installed and not known to be signed out. Older workers do not report sign-in. */
   supports(runner: RemoteRunner, agent: Agent): boolean {
     const name = runnerAgentName(agent.command)
-    return runner.agents.some(item => item.name === name && item.signedIn !== false)
+    return runner.agents.some(item => item.name === name && !['missing', 'expired'].includes(authentication(item)))
   }
 
   /** Every auxiliary target needs a usable member on the same machine as the task checkout. */
@@ -355,8 +355,8 @@ export class RunnerOperations extends EventEmitter {
   }
 }
 
-function authentication(agent: RunnerAgent): 'signedIn' | 'missing' | 'unknown' {
-  return agent.signedIn === undefined ? 'unknown' : agent.signedIn ? 'signedIn' : 'missing'
+function authentication(agent: RunnerAgent): NonNullable<RunnerAgent['auth']> | 'unknown' {
+  return agent.auth ?? (agent.signedIn === undefined ? 'unknown' : agent.signedIn ? 'unverified' : 'missing')
 }
 
 /** One command that starts a paired Runner with Quuu's values filled in; the PIN is single-use. */

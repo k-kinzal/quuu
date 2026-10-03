@@ -364,7 +364,7 @@ it('signs Codex and Cursor in through that same path, each into the place the Ru
   const runnerId = remote.status().runners[0].id
   for (const [agent, file] of [['codex', join(dir, 'codex-home', 'auth.json')], ['cursor-agent', join(dir, 'config', 'cursor', 'auth.json')]] as const) {
     expect(auth(agent)).toBe('missing')
-    const credential = JSON.stringify({ refreshToken: `${agent}-runner-only` })
+    const credential = JSON.stringify(agent === 'codex' ? { tokens: { access_token: `${agent}-runner-only` } } : { accessToken: `${agent}-runner-only` })
     login = approve(credential)
     expect(remote.signIn({ runnerId, agent }).runners[0].login).toMatchObject({ agent })
     await until(worker, () => auth(agent) === 'signedIn' && !remote.status().runners[0].login)
@@ -397,9 +397,40 @@ it('routes away from a Runner whose agent is not signed in', async () => {
   expect(auth('claude')).toBe('missing')
   expect(remote.choose(taskId, prj, agent)).toBeNull()
   await poll(true)
-  expect(auth('claude')).toBe('signedIn')
+  expect(auth('claude')).toBe('unverified')
   expect(remote.choose(taskId, prj, agent)?.runnerId).toBe(grant.id)
 })
+
+it('marks only the failed Runner agent expired, preserves that state across worker recovery and clears it after sign-in', async () => {
+  fakeCli('claude'); fakeCli('cursor-agent')
+  vi.stubEnv('QUUU_RUNNER_AGENTS', 'claude,cursor-agent')
+  for (const name of ['CLAUDE_CODE_OAUTH_TOKEN', 'ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'CURSOR_API_KEY']) vi.stubEnv(name, '')
+  vi.stubEnv('CLAUDE_CONFIG_DIR', join(dir, 'claude-home'))
+  vi.stubEnv('XDG_CONFIG_HOME', join(dir, 'config'))
+  const paired = await pair()
+  let worker = paired.worker
+  await worker.tick()
+  login = approve('sk-ant-oat01-fixture-original-login')
+  remote.signIn({ runnerId: paired.grant.id, agent: 'claude' })
+  await until(worker, () => auth('claude') === 'signedIn' && !remote.status().runners[0].login)
+  const { projectId, agentId } = project('echo "Failed to authenticate: OAuth session expired and could not be refreshed"; exit 1', 'claude')
+  const taskId = makeTask(db, projectId, 'Recover authentication')
+  const claim = scheduler.claimNext()!
+  await until(worker, () => repo.getRun(db, claim.run.id)?.status === 'failed')
+  expect(repo.getRun(db, claim.run.id)?.errorKind).toBe('auth')
+  expect(auth('claude')).toBe('expired')
+  expect(auth('cursor-agent')).toBe('missing')
+  expect(repo.listCooldowns(db)).toEqual([])
+  expect(remote.canUseAgent(taskId, repo.getAgent(db, agentId)!)).toBe(false)
+  worker = new RunnerWorker(join(dir, 'worker'), resolve('out/runner/quuu-runner.mjs'), { ...paired.grant, url: paired.url, fingerprint: paired.fingerprint })
+  await worker.tick()
+  expect(auth('claude')).toBe('expired')
+  expect(new RunnerOperations(db, () => {}).status().runners[0].agents.find(agent => agent.name === 'claude')?.auth).toBe('expired')
+  login = approve('sk-ant-oat01-fixture-replacement-login')
+  remote.signIn({ runnerId: paired.grant.id, agent: 'claude' })
+  await until(worker, () => auth('claude') === 'signedIn' && !remote.status().runners[0].login)
+  expect(remote.canUseAgent(taskId, repo.getAgent(db, agentId)!)).toBe(true)
+}, 30_000)
 
 it('fills the start command with the controller values and persistent agent homes', () => {
   const command = runnerLaunchCommand('https://192.0.2.1:47833', 'ab'.repeat(32), '01234567', 'beef')

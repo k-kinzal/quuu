@@ -6,16 +6,19 @@ import { promisify } from 'node:util'
 import { setTimeout as delay } from 'node:timers/promises'
 import { adapterFor } from '../agent-adapters/registry.js'
 import { isStoreParser } from '../agent-adapters/types.js'
-import { killProcessGroup } from '../platform/runProcess.js'
+import { killProcessGroup, readLogTail } from '../platform/runProcess.js'
 import { resolveLogPath } from '../session/logAdapters.js'
 import { pinnedRequest } from './tls.js'
 import { configuredRunnerLabels } from './labels.js'
 import { atomicJson, executeJob, jobAuthDir, writeCredential } from './workerJob.js'
-import { installRunnerLogin, isRunnerLoginAgent, signedInOnRunner } from './agentAuth.js'
+import { authenticationOnRunner, installRunnerLogin, isRunnerLoginAgent, recordRunnerAuthentication, usesRunnerAuthentication } from './agentAuth.js'
 import { recordProcess, recordedProcess } from './processIdentity.js'
 import type { RemoteJobSpec, RemoteResult, RunnerAgent, RunnerReply, RunnerUpdate } from './types.js'
 
-interface WorkerRecord { spec: RemoteJobSpec; startedAt: number; logOffset: number; sessionOffset: number; sessionId: string; acknowledged: boolean }
+interface WorkerRecord {
+  spec: RemoteJobSpec; startedAt: number; logOffset: number; sessionOffset: number; sessionId: string; acknowledged: boolean
+  authentication?: { fingerprint: string; observed?: boolean }
+}
 interface Connection { url: string; fingerprint: string; id: string; token: string; capacity?: number }
 const safeId = (value: string): boolean => /^[\w-]{1,100}$/.test(value)
 
@@ -26,10 +29,15 @@ export async function detectRunnerAgents(root: string): Promise<RunnerAgent[]> {
     if (!/^[\w.-]+$/.test(name)) continue
     try {
       const { stdout } = await promisify(execFile)(name, ['--version'], { timeout: 15_000, maxBuffer: 16_384 })
-      agents.push({ name, command: name, version: stdout.trim().slice(0, 300), signedIn: signedInOnRunner(name, root) })
+      agents.push({ name, command: name, version: stdout.trim().slice(0, 300) })
     } catch { /* Missing CLIs are not advertised. */ }
   }
-  return agents
+  return agents.map(agent => withAuthentication(agent, root))
+}
+
+function withAuthentication(agent: RunnerAgent, root: string): RunnerAgent {
+  const auth = authenticationOnRunner(agent.name, root)?.auth
+  return { ...agent, ...(auth ? { auth, signedIn: auth !== 'missing' && auth !== 'expired' } : {}) }
 }
 
 export class RunnerWorker {
@@ -56,6 +64,8 @@ export class RunnerWorker {
     const batch = records.slice(this.cursor, this.cursor + 2)
     this.cursor = this.cursor + 2 >= records.length ? 0 : this.cursor + 2
     const updates = batch.map(record => this.update(record))
+    // Credential expiry and failed runs must be visible on the very next heartbeat.
+    this.agents = this.agents.map(agent => withAuthentication(agent, this.root))
     const installed = [...this.installed]
     const reply = await pinnedRequest(this.connection.url, this.connection.fingerprint, '/poll', {
       version: 1, labels: configuredRunnerLabels(), agents: this.agents, updates, ...(installed.length ? { installed } : {})
@@ -110,7 +120,10 @@ export class RunnerWorker {
     if (spec.workspace.cwd !== join(this.root, 'workspaces', spec.taskId, spec.workspace.subdirectory) ||
       spec.workspace.subdirectory.split('/').includes('..')) throw new Error('Invalid Runner workspace')
     mkdirSync(dir, { recursive: true, mode: 0o700 })
-    this.save({ spec, startedAt: Date.now(), logOffset: 0, sessionOffset: 0, sessionId: spec.sessionId, acknowledged: false })
+    const fingerprint = ['agent', 'report'].includes(spec.action) && usesRunnerAuthentication(spec.command, spec.env)
+      ? authenticationOnRunner(spec.command, this.root)?.fingerprint : undefined
+    this.save({ spec, startedAt: Date.now(), logOffset: 0, sessionOffset: 0, sessionId: spec.sessionId, acknowledged: false,
+      ...(fingerprint ? { authentication: { fingerprint } } : {}) })
     atomicJson(join(dir, 'spec.json'), spec)
     if (canceled) { atomicJson(join(dir, 'result.json'), { ...this.failed(spec, ''), canceled: true }); return }
     const fd = openSync(join(dir, 'stdout.log'), 'a', 0o600)
@@ -146,6 +159,17 @@ export class RunnerWorker {
     }
     const result = existsSync(resultPath) && log.end && session.end
       ? { ...JSON.parse(readFileSync(resultPath, 'utf8')) as RemoteResult, sessionId: record.sessionId } : undefined
+    if (result && record.authentication && !record.authentication.observed) {
+      if (result.started && !result.error) {
+        const classification = adapter.classify({ exitCode: result.exitCode, signal: null, output: readLogTail(stdout),
+          limitPatterns: [], canceled: result.canceled, timedOut: result.timedOut })
+        if (classification.kind === 'auth' || classification.kind === null) {
+          recordRunnerAuthentication(this.root, spec.command, record.authentication.fingerprint, classification.kind === 'auth' ? 'expired' : 'signedIn')
+        }
+      }
+      record.authentication.observed = true
+      this.save(record)
+    }
     return { id: spec.id, logOffset: record.logOffset, log: log.data, sessionOffset: record.sessionOffset,
       session: session.data, sessionId: record.sessionId, ...(result ? { result } : {}) }
   }

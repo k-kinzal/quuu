@@ -9,6 +9,9 @@ const AUTH_PATTERNS = [
   '\\b401\\b',
   '\\b403\\b',
   'authentication',
+  'failed to authenticate',
+  'OAuth session expired',
+  'refresh_token_(?:reused|expired|invalidated)',
   'invalid api key',
   'please run .*login',
   'not logged in'

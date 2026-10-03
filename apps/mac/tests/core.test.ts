@@ -102,6 +102,13 @@ describe('run result classification', () => {
     ).toBe('auth')
   })
 
+  it('recognizes expired OAuth sessions without mistaking successful prose for an auth failure', () => {
+    const output = 'Failed to authenticate: OAuth session expired and could not be refreshed'
+    expect(classifyRunResult({ ...base, exitCode: 1, output }).kind).toBe('auth')
+    expect(classifyRunResult({ ...base, exitCode: 0, output }).kind).toBeNull()
+    expect(classifyRunResult({ ...base, exitCode: 1, output: 'Build failed' }).kind).toBe('nonzero-exit')
+  })
+
   it('supports custom patterns', () => {
     expect(
       classifyRunResult({

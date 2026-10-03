@@ -705,6 +705,9 @@ export class Scheduler extends EventEmitter {
   private coolDown(run: Run, classification: Classification): void {
     const adapter = adapterFor(run.logAdapter ?? 'stdout')
     const hit = repo.getAgent(this.db, run.agentId)
+    // A Runner's rejected login is blocked on that computer until reauthentication. It says
+    // nothing about the same definition's independent login on this computer or other Runners.
+    if (classification.kind === 'auth' && run.runnerId && hit && !this.runner.availableAgent(run.taskId, hit)) return
     const scope = classification.kind === 'limit' ? adapter.limitScope(classification.message) : null
     const holders = scope !== null && hit !== null
       ? limitHolders(hit, repo.listAgents(this.db), scope, (agent) => adapter.modelOf(agent)).map((agent) => agent.id)
