@@ -3,6 +3,7 @@ import * as repo from '../src/main/db/repo.js'
 import { extractReviewEvidence } from '../src/main/review/evidence.js'
 import { ReviewOperations } from '../src/main/review/operations.js'
 import { ReviewService } from '../src/main/review/service.js'
+import { RunnerOperations } from '../src/main/runners/operations.js'
 import type { ReviewSnapshot } from '../src/main/review/types.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
 import type { SessionMessage } from '../src/main/session/types.js'
@@ -25,10 +26,10 @@ it('extracts successful git and PR receipts from wrapped command output, excludi
     { ...tool('[main badcafe] example'), role: 'user' },
     tool('[main deadbee] fixture text', 'Read', { file_path: 'test.txt' }),
     { ...tool(null), blocks: [{ kind: 'thinking', text: 'I could open https://github.com/owner/repo/pull/99' }] }
-  ])).toEqual({ commits: ['abcdef123', '1234567'], pullRequests: ['https://github.com/owner/repo/pull/42'] })
+  ])).toEqual({ commits: ['abcdef123', '1234567'], pullRequestCandidates: ['https://github.com/owner/repo/pull/42'] })
 })
 
-it('does not turn fixture URLs read through shell tools or quoted in conversation into PRs', () => {
+it('extracts only URL-shaped output candidates, not source snippets or assistant prose', () => {
   const url = 'https://github.com/openai/quuu/pull/42'
   const source = `pullRequests: [{ number: 42, url: '${url}' }]`
   expect(extractReviewEvidence([
@@ -38,7 +39,7 @@ it('does not turn fixture URLs read through shell tools or quoted in conversatio
     tool(url, 'Bash', { command: 'cat README.md' }),
     tool(url, 'Read', { file_path: 'gh pr create.txt' }),
     { ...tool(null), blocks: [{ kind: 'text', text: `Example: ${url}\n\n\`\`\`ts\n${source}\n\`\`\`` }] }
-  ]).pullRequests).toEqual([])
+  ]).pullRequestCandidates).toEqual([url])
 })
 
 it('keeps plain, nested JSON and API creation receipts without counting PR bodies or failed results', () => {
@@ -56,7 +57,7 @@ it('keeps plain, nested JSON and API creation receipts without counting PR bodie
     tool(JSON.stringify({ exit_code: 1, output: sample }), 'exec_command', { cmd: 'gh pr view' }),
     tool(JSON.stringify({ isError: true, content: [{ text: sample }] }), 'create_pull_request', {}),
     failed
-  ]).pullRequests).toEqual([url])
+  ]).pullRequestCandidates).toEqual([url])
 })
 
 /**
@@ -68,7 +69,7 @@ it('keeps plain, nested JSON and API creation receipts without counting PR bodie
  * receipt, that Pull Request becomes the task's own work: it opens as a tab on the task and the
  * change report is told this is what the work produced.
  */
-it('does not take a Pull Request the command went to look at as the work of this task', () => {
+it('keeps inspected URLs as candidates for ownership verification', () => {
   const foreign = 'https://github.com/other/project/pull/7'
   const own = 'https://github.com/owner/repo/pull/42'
   expect(extractReviewEvidence([
@@ -78,14 +79,14 @@ it('does not take a Pull Request the command went to look at as the work of this
     tool(foreign, 'Bash', { command: 'gh pr view 7 --repo other/project' }),
     // The branch the run is standing on names nothing, and acting on one is doing it
     tool(own, 'Bash', { command: 'gh pr view --json url' })
-  ]).pullRequests).toEqual([own])
+  ]).pullRequestCandidates).toEqual([foreign, own])
 })
 
 it('keeps a Pull Request the run acted on even when the command named it', () => {
   const url = 'https://github.com/owner/repo/pull/39'
   expect(extractReviewEvidence([
     tool(`Merging pull request\n${url}\n`, 'Bash', { command: `gh pr merge ${url} --squash` })
-  ]).pullRequests).toEqual([url])
+  ]).pullRequestCandidates).toEqual([url])
 })
 
 it.each([
@@ -97,16 +98,16 @@ it.each([
   const url = 'https://github.com/owner/repo/pull/42'
   expect(extractReviewEvidence([
     tool(`${url}\nShell cwd was reset to /tmp/project`, name, input)
-  ]).pullRequests).toEqual([url])
+  ]).pullRequestCandidates).toEqual([url])
 })
 
-it('still excludes explicitly inspected PRs and failed receipts in multiline commands', () => {
+it('extracts inspected candidates without using command text as ownership proof', () => {
   const url = 'https://github.com/other/project/pull/7'
   expect(extractReviewEvidence([
     tool(url, 'Bash', { command: `cd /tmp/worktree\ngh pr view ${url}` }),
     tool(url, 'Bash', { command: 'cd /tmp/worktree\ngh pr view 7 --repo other/project' }),
     tool(JSON.stringify({ exit_code: 1, output: url }), 'exec_command', { cmd: 'cd /tmp/worktree\ngh pr create' })
-  ]).pullRequests).toEqual([])
+  ]).pullRequestCandidates).toEqual([url])
 })
 
 it('keeps PR receipts from later calls in a script wrapper and from resumed output', () => {
@@ -116,7 +117,7 @@ it('keeps PR receipts from later calls in a script wrapper and from resumed outp
     tool(JSON.stringify({ output: first }), 'exec_command',
       'text(await tools.exec_command({cmd: "git status"}));\ntext(await tools.exec_command({cmd: "gh pr create"}))', 'git status'),
     tool(second, 'wait', { cell_id: '1' }, 'gh pr create')
-  ]).pullRequests).toEqual([first, second])
+  ]).pullRequestCandidates).toEqual([first, second])
 })
 
 let db: ReturnType<typeof memoryDb>
@@ -144,6 +145,21 @@ it('returns a saved review after restart without executing Git or GitHub', () =>
   expect(operations.reviewSnapshot(taskId)).toEqual(snapshot())
   expect(compute).not.toHaveBeenCalled()
   expect(infer).not.toHaveBeenCalled()
+})
+
+it.each([false, true])('requires persisted proof before accepting a Runner PR projection (%s)', async confirmed => {
+  const remote = new RunnerOperations(db, () => {})
+  vi.spyOn(remote, 'workspace').mockReturnValue({ taskId, runnerId: 'runner', repository: 'https://github.com/example/project.git', subdirectory: '', cwd: '/remote' })
+  const pr = { number: 584, title: 'Result', url: 'https://github.com/example/project/pull/584', headRefName: 'feature', baseRefName: 'main',
+    headSha: 'a'.repeat(40), draft: false, updatedAt: '', check: 'neutral' as const, mergeState: 'unknown' as const, state: 'merged' as const, files: [] }
+  if (confirmed) repo.recordVerifiedPullRequest(db, taskId, { url: pr.url, repository: 'example/project', headSha: pr.headSha })
+  vi.spyOn(remote, 'inspect').mockResolvedValue({ ...snapshot(), pullRequests: [pr] })
+  operations.stop()
+  operations = new ReviewOperations(db, () => DEFAULT_SETTINGS, service, () => { throw new Error('Must use Runner') }, remote)
+  const result = await operations.refresh(taskId)
+  expect(result.pullRequests).toEqual(confirmed ? [pr] : [])
+  expect(Boolean(result.pullRequestNotice)).toBe(!confirmed)
+  remote.stop()
 })
 
 it('refreshes legacy combined changes while preserving saved commits during the upgrade', async () => {
@@ -196,7 +212,7 @@ it('hands the recorded commits and the run windows to the service, and retains P
   const compute = vi.spyOn(service, 'snapshot').mockResolvedValue({ ...snapshot(), pullRequestNotice: 'offline' })
   const saved = await operations.refresh(taskId)
   const run = repo.listRunsByTask(db, taskId)[0]
-  expect(compute.mock.calls[0]?.[6]).toEqual({ windows: [{ from: run.startedAt, to: null }], recorded: ['a'.repeat(40)] })
+  expect(compute.mock.calls[0]?.[6]).toMatchObject({ windows: [{ from: run.startedAt, to: null }], recorded: ['a'.repeat(40)] })
   expect(saved.pullRequests).toEqual(old.pullRequests)
   expect(saved.pullRequestNotice).toBe('offline')
 })

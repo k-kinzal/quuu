@@ -243,10 +243,16 @@ export class RunnerOperations extends EventEmitter {
     const runs = repo.listRunsByTask(this.db, taskId)
     this.enqueue({ id, taskId, projectId: project.id, workspace, action, command: '', args: [], env: {}, sessionId: '',
       adapter: 'stdout', timeoutSeconds: 120, createWorkspace: false, project,
-      review: { baseline: repo.getTaskReviewBase(this.db, taskId), evidence: repo.reviewEvidence(this.db, taskId),
+      // Older workers treat this legacy field as confirmed URLs. Never send candidates there.
+      review: { baseline: repo.getTaskReviewBase(this.db, taskId), evidence: { ...repo.reviewEvidence(this.db, taskId), pullRequests: [] },
         windows: runs.map(run => ({ from: run.startedAt, to: run.endedAt })),
         recorded: repo.getReviewSnapshot(this.db, taskId)?.snapshot.commits.map(commit => commit.sha) ?? [] }, ...input })
-    return (await this.wait(id, 120_000)).result?.value
+    const result = (await this.wait(id, 120_000)).result
+    if (result?.reviewProofs && repo.getTask(this.db, taskId)) {
+      repo.recordObservedCommits(this.db, taskId, result.reviewProofs.commits)
+      for (const proof of result.reviewProofs.pullRequests) repo.recordVerifiedPullRequest(this.db, taskId, proof)
+    }
+    return result?.value
   }
   logOnRunner(taskId: string, runId: string): string {
     const workspace = this.workspace(taskId)

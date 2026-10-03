@@ -103,7 +103,8 @@ packages/            the independent Design System
 | `apps/mac/src/main/session/types.ts` | the **structured session log** (`SessionMessage`). Every adapter's parser writes this shape; everything Quuu derives from a session reads it, never the provider's file |
 | `apps/mac/src/main/session/derive.ts` | what is derived from the structured log as it is indexed (`SessionDerivation`): applied inside the transaction that persists each page, re-applied from the durable pages when `DERIVATION_VERSION` moves |
 | `apps/mac/src/main/session/workplace.ts` | where the agent worked, read off the structured log's `cwd` and shell moves and kept in `session_workdirs`. The terminal, the review and the report open what it derived |
-| `apps/mac/src/main/review/evidence.ts` | the commits and Pull Requests a session produced, filed against the task as its pages land |
+| `apps/mac/src/main/review/evidence.ts` | commit receipts and PR candidates, filed against the task as its pages land |
+| `apps/mac/src/main/review/reconcilePullRequests.ts` | confirms PR associations against observed task commits and GitHub's exact head repository/SHA; persists proofs separately from candidates |
 | `apps/mac/src/main/agents/cli.ts` | CLI compatibility queries; native syntax lives per provider in `main/agent-clis/` |
 | `apps/mac/src/main/agent-adapters/opencode/store.ts` | the one CLI whose sessions are **not files**: opencode keeps every session in a single SQLite store, so it is named by id, never by path |
 | `apps/mac/src/main/platform/terminal.ts` | opens a terminal (writes a `.command`, hands it to `open`) |

@@ -400,7 +400,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 37
+  const target = 38
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -775,6 +775,17 @@ function migrate(db: Db): void {
   if (current < 36) addColumnIfMissing(db, 'task_reports', 'conversation', "TEXT NOT NULL DEFAULT '{}'")
 
   if (current < 37) addColumnIfMissing(db, 'projects', 'runner_labels', "TEXT NOT NULL DEFAULT '[]'")
+
+  // v38: legacy receipts and fetched metadata never proved task ownership. Keep
+  // their URLs as candidates, and rebuild current PR projections from proofs.
+  // Historical run reviews remain immutable records of what was shown then.
+  if (current < 38) {
+    db.exec(`INSERT OR IGNORE INTO task_review_evidence (task_id, kind, value)
+      SELECT s.task_id, 'pull-request', json_extract(pr.value, '$.url')
+        FROM task_review_snapshots s, json_each(s.snapshot, '$.pullRequests') pr
+       WHERE json_type(pr.value, '$.url') = 'text';
+      UPDATE task_review_snapshots SET snapshot = json_set(snapshot, '$.pullRequests', json('[]'))`)
+  }
 
   setSchemaVersion(db, target)
 }

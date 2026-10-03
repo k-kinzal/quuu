@@ -36,7 +36,7 @@ opencode). That record is the only thing the rest of Quuu reads about a conversa
 | What is read off it | Owner | Kept in |
 |---|---|---|
 | Pages of the conversation | `session/index.ts` | `session_messages` |
-| Commits and Pull Requests the task produced | `review/evidence.ts` | `task_review_evidence` |
+| Commit receipts and PR candidate URLs | `review/evidence.ts` | `task_review_evidence` |
 | Where the agent worked (`cwd`, `cd`, `git -C`, `git worktree add`) | `session/workplace.ts` | `session_workdirs` |
 
 The last two are `SessionDerivation`s (`session/derive.ts`). The index applies them inside the
@@ -49,6 +49,12 @@ new parser, and one whose file the CLI already deleted keeps the pages it has - 
 only copy left. Pages leave only through retention (`retentionDays`, off by default), which
 empties a session that has not changed within the period but keeps its row, its working
 directories and everything it filed against the task.
+
+PR candidates are not ownership facts. Git reflog provenance and GitHub's exact
+head repository/SHA establish a durable association in `review/reconcilePullRequests.ts`.
+Neither tool display labels nor JavaScript command matching can promote a candidate.
+The incident, supported envelopes, replay guarantees and remaining limits are in
+[Pull request evidence and verification](pull-request-evidence.md).
 
 Whatever a rule needs has to arrive on the record. The working directory is the example: it
 used to be scanned out of the raw file with a regular expression, which matched Claude's

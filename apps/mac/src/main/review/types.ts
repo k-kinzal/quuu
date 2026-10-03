@@ -206,4 +206,16 @@ export interface ReviewActionResult {
   reason?: string
 }
 
-export interface ReviewEvidence { commits: string[]; pullRequests: string[] }
+/** A local reflog attributed this exact commit to one of the task's run windows. */
+export interface ObservedCommit { repository: string; sha: string }
+
+/** GitHub named this repository and head SHA when the association was verified. */
+export interface VerifiedPullRequest { url: string; repository: string; headSha: string }
+
+export interface ReviewEvidence {
+  commits: string[]
+  /** URLs seen in tool output, including legacy heuristic receipts. Not proof of ownership. */
+  pullRequestCandidates: string[]
+  observedCommits?: ObservedCommit[]
+  verifiedPullRequests?: VerifiedPullRequest[]
+}

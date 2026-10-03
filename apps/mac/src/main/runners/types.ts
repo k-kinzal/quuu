@@ -1,7 +1,7 @@
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Project } from '../projects/types.js'
 import type { ReviewBaseline } from '../review/git.js'
-import type { ReviewEvidence } from '../review/types.js'
+import type { ObservedCommit, ReviewEvidence, VerifiedPullRequest } from '../review/types.js'
 import type { ReviewCommentInput, ReviewFileRequest } from '../review/types.js'
 import type { ReportRequest } from '../report/prompt.js'
 
@@ -46,7 +46,7 @@ export interface RemoteJobSpec {
   createWorkspace: boolean
   project: Project
   report?: { request: ReportRequest; template: string[] }
-  review?: { baseline: ReviewBaseline | null; evidence: ReviewEvidence; windows: Array<{ from: string; to: string | null }>; recorded: string[] }
+  review?: { baseline: ReviewBaseline | null; evidence: ReviewEvidence & { pullRequests?: string[] }; windows: Array<{ from: string; to: string | null }>; recorded: string[] }
   file?: ReviewFileRequest
   comment?: ReviewCommentInput
 }
@@ -73,6 +73,7 @@ export interface RemoteResult {
   sessionId: string
   baseline?: ReviewBaseline
   value?: unknown
+  reviewProofs?: { commits: ObservedCommit[]; pullRequests: VerifiedPullRequest[] }
   page?: string
 }
 

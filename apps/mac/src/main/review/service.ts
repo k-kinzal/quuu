@@ -12,11 +12,12 @@ import type { ReviewBaseline } from './git.js'
 import { changesBetween, inferReviewBaseline, snapshotWorktree } from './git.js'
 import { parseStatusEntries } from './gitFormat.js'
 import type { ReviewEvidence } from './evidence.js'
-import { gh, pullRequests, pullRequestUrl } from './github.js'
+import { gh, pullRequestUrl } from './github.js'
+import { reconcilePullRequests } from './reconcilePullRequests.js'
 import type { RunWindow } from './ownership.js'
 import { ownChanges, taskCommits } from './ownership.js'
 import { buildFileTree } from './tree.js'
-import type { ProjectFiles, ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewSnapshot } from './types.js'
+import type { ObservedCommit, ProjectFiles, ReviewActionResult, ReviewCommentInput, ReviewFile, ReviewFileRequest, ReviewSnapshot, VerifiedPullRequest } from './types.js'
 
 /** Assembles the listing and the file fetches. It owns neither a terminal's lifetime nor the DB. */
 export class ReviewService {
@@ -35,7 +36,9 @@ export class ReviewService {
     baseline: ReviewBaseline | null,
     evidence?: ReviewEvidence,
     localReady?: (snapshot: ReviewSnapshot) => void | Promise<void>,
-    work?: { windows: RunWindow[]; recorded: string[] }
+    work?: { windows: RunWindow[]; recorded: string[];
+      observed?: (commits: ObservedCommit[]) => void;
+      verified?: (proof: VerifiedPullRequest) => void }
   ): Promise<ReviewSnapshot> {
     const [files, branchResult, origin, current] = await Promise.all([
       projectFiles(cwd),
@@ -43,7 +46,7 @@ export class ReviewService {
       git(cwd, ['config', '--get', 'remote.origin.url']),
       baseline ? snapshotWorktree(cwd, true) : Promise.resolve(null)
     ])
-    const { commits, judged } = await taskCommits(cwd, baseline?.baseHead ?? null, baseline && current?.head ? current.head : null, {
+    const { commits, judged, observed } = await taskCommits(cwd, baseline?.baseHead ?? null, baseline && current?.head ? current.head : null, {
       windows: work?.windows,
       receipts: evidence?.commits ?? [],
       recorded: work?.recorded ?? []
@@ -101,7 +104,11 @@ export class ReviewService {
       projectTasks: discoverProjectTasks(cwd)
     }
     await localReady?.(local)
-    const prs = await pullRequests(cwd, project, settings, baseline?.startedAt ?? null, evidence?.pullRequests)
+    const repository = local.repository
+    const observedHere = repository ? observed.map(sha => ({ repository, sha })) : []
+    work?.observed?.(observedHere)
+    const prs = await reconcilePullRequests(cwd, project, settings, baseline?.startedAt ?? null,
+      evidence ?? { commits: [], pullRequestCandidates: [] }, [...(evidence?.observedCommits ?? []), ...observedHere], work?.verified)
     return { ...local, pullRequests: prs.items, pullRequestNotice: prs.notice }
   }
 

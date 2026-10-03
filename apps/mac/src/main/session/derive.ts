@@ -42,6 +42,7 @@ export interface SessionDerivation {
  * every derivation - the original log need not exist any more, and nothing is parsed twice.
  * v3: the working directory is derived from the structured log and kept, instead of being
  * scanned out of the raw file on every look.
+ * v5: PR URLs are candidates; decode JSONL and waits independently of display names.
  * v4: recognize PR operations in multiline shell commands without JSON-escaped whitespace.
  */
-export const DERIVATION_VERSION = 4
+export const DERIVATION_VERSION = 5

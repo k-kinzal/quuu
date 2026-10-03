@@ -19,7 +19,7 @@ import type { Task, TaskDependency, TaskInput, TaskPatch } from '../tasks/types.
 import type { SyncOutcome, SyncReceipt } from '../mobile-sync/protocol.js'
 import type { SessionMessage } from '../session/types.js'
 import type { ReportStatus, StoredReport, StoredProjectReport } from '../report/types.js'
-import type { ReviewSnapshot } from '../review/types.js'
+import type { ObservedCommit, ReviewEvidence, ReviewSnapshot, VerifiedPullRequest } from '../review/types.js'
 import { b2i, i2b, newId, nowIso, parseJson } from '../util.js'
 import type { Db } from './database.js'
 
@@ -155,7 +155,7 @@ export function readSessionImage(db: Db, key: string, id: string): string | null
   return row ? s(row.data_url) : null
 }
 
-export function recordReviewEvidence(db: Db, taskId: string, kind: 'commit' | 'pull-request', value: string): void {
+export function recordReviewEvidence(db: Db, taskId: string, kind: 'commit' | 'pull-request' | 'observed-commit' | 'verified-pull-request', value: string): void {
   db.prepare('INSERT OR IGNORE INTO task_review_evidence (task_id, kind, value) VALUES (?, ?, ?)').run(taskId, kind, value)
 }
 
@@ -168,9 +168,24 @@ export function clearReviewEvidence(db: Db, taskId: string, kind: 'commit' | 'pu
   db.prepare('DELETE FROM task_review_evidence WHERE task_id = ? AND kind = ?').run(taskId, kind)
 }
 
-export function reviewEvidence(db: Db, taskId: string): { commits: string[]; pullRequests: string[] } {
+export function recordObservedCommits(db: Db, taskId: string, commits: ObservedCommit[]): void {
+  inTransaction(db, () => {
+    for (const commit of commits) recordReviewEvidence(db, taskId, 'observed-commit', JSON.stringify(commit))
+  })
+}
+
+export function recordVerifiedPullRequest(db: Db, taskId: string, proof: VerifiedPullRequest): void {
+  recordReviewEvidence(db, taskId, 'verified-pull-request', JSON.stringify(proof))
+}
+
+export function reviewEvidence(db: Db, taskId: string): ReviewEvidence {
   const rows = db.prepare('SELECT kind, value FROM task_review_evidence WHERE task_id = ?').all(taskId) as Row[]
-  return { commits: rows.filter(row => row.kind === 'commit').map(row => s(row.value)), pullRequests: rows.filter(row => row.kind === 'pull-request').map(row => s(row.value)) }
+  return {
+    commits: rows.filter(row => row.kind === 'commit').map(row => s(row.value)),
+    pullRequestCandidates: rows.filter(row => row.kind === 'pull-request').map(row => s(row.value)),
+    observedCommits: rows.filter(row => row.kind === 'observed-commit').map(row => JSON.parse(s(row.value)) as ObservedCommit),
+    verifiedPullRequests: rows.filter(row => row.kind === 'verified-pull-request').map(row => JSON.parse(s(row.value)) as VerifiedPullRequest)
+  }
 }
 
 /** Read the change token without loading a potentially multi-megabyte file tree. */

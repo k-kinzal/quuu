@@ -11,6 +11,11 @@ through its existing MessagePort IPC. HTTP is not in that path. Session ingestio
 is incremental and durable; conversation views and external analysis read bounded
 pages. State changes are committed before notifications and execution are triggered.
 
+Session observations and verified external effects have distinct contracts.
+PR URLs extracted from logs remain candidates until GitHub's head repository/SHA
+matches a reflog-attributed task commit. Only verified associations feed PR views,
+reports and automatic follow-up; see [the evidence contract](pull-request-evidence.md).
+
 Quuu uses ordinary functions and feature-owned operations. It does not adopt DDD,
 Clean Architecture, a generic repository abstraction, or an interface for every
 function. Features include actual execution responsibilities. New layers must

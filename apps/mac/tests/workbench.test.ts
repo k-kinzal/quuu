@@ -20,6 +20,7 @@ import { readCoverage } from '../src/main/review/coverage.js'
 import { buildFileTree } from '../src/main/review/tree.js'
 import { extractSymbols, parseUnifiedDiff } from '../src/main/review/code.js'
 import { parseStatusEntries } from '../src/main/review/gitFormat.js'
+import { taskCommits } from '../src/main/review/ownership.js'
 
 let dir: string
 
@@ -444,7 +445,7 @@ it('reads and retains a session commit after checkout moves HEAD back before it'
   const sha = runGit('rev-parse', 'HEAD').trim()
   runGit('checkout', '--detach', '-q', before)
   const service = new ReviewService()
-  const snapshot = await service.snapshot(dir, project(), DEFAULT_SETTINGS, baseline, { commits: [sha.slice(0, 7)], pullRequests: [] })
+  const snapshot = await service.snapshot(dir, project(), DEFAULT_SETTINGS, baseline, { commits: [sha.slice(0, 7)], pullRequestCandidates: [] })
   expect(snapshot.commits.map(commit => commit.sha)).toEqual([sha])
   await service.retain('checkout-receipt', snapshot)
   expect(runGit('rev-parse', `refs/quuu/results/checkout-receipt/commits/${sha}`).trim()).toBe(sha)
@@ -493,6 +494,8 @@ describe('whose work the checkout holds', () => {
     expect(snapshot.commits.map((commit) => commit.subject)).toEqual(['task work'])
     expect(snapshot.changes.map((file) => file.path)).toEqual(['notes.md', 'result.ts'])
     expect(snapshot.localChanges.map((file) => file.path)).toEqual(['notes.md'])
+    const ownership = await taskCommits(dir, baseline.baseHead, runGit('rev-parse', 'HEAD').trim(), { windows, receipts: [], recorded: [] })
+    expect(ownership.observed).toEqual(snapshot.commits.map(commit => commit.sha))
   })
 
   it('keeps a commit the task made on a branch the checkout has since left, and drops other work the last review had named', async () => {
@@ -518,6 +521,10 @@ describe('whose work the checkout holds', () => {
     const snapshot = await new ReviewService().snapshot(dir, project(), DEFAULT_SETTINGS, baseline, undefined, undefined, { windows, recorded: [] })
     expect(snapshot.commits.map((commit) => commit.subject)).toEqual(['Arrived by pull'])
     expect(snapshot.changes.map((file) => file.path)).toEqual(['other.ts'])
+    const ownership = await taskCommits(dir, baseline.baseHead, runGit('rev-parse', 'HEAD').trim(), {
+      windows, receipts: snapshot.commits.map(commit => commit.sha), recorded: snapshot.commits.map(commit => commit.sha)
+    })
+    expect(ownership.observed).toEqual([])
   })
 
   it('does not take the commit the task started from as its own when it landed within the same second', async () => {
@@ -526,6 +533,8 @@ describe('whose work the checkout holds', () => {
     const snapshot = await new ReviewService().snapshot(dir, project(), DEFAULT_SETTINGS, baseline, undefined, undefined, { windows, recorded: [] })
     expect(snapshot.commits).toEqual([])
     expect(snapshot.changes).toEqual([])
+    const ownership = await taskCommits(dir, baseline.baseHead, runGit('rev-parse', 'HEAD').trim(), { windows, receipts: [], recorded: [] })
+    expect(ownership.observed).toEqual([])
   })
 })
 

@@ -299,6 +299,18 @@ describe('writing one', () => {
     expect(prompt.indexOf(third.promptPreview)).toBeLessThan(prompt.indexOf(last.promptPreview))
   }, LAUNCHES)
 
+  it('gives the report only verified PRs and never promotes log candidates into task work', async () => {
+    const taskId = makeTask(db, projectId, 'Explain the result')
+    addRun(taskId)
+    const candidate = 'https://github.com/other/project/pull/99'
+    const verified = 'https://github.com/example/project/pull/584'
+    repo.recordReviewEvidence(db, taskId, 'pull-request', candidate)
+    repo.recordVerifiedPullRequest(db, taskId, { url: verified, repository: 'example/project', headSha: 'a'.repeat(40) })
+    const text = await generatedPrompt(taskId)
+    expect(text).toContain(verified)
+    expect(text).not.toContain(candidate)
+  }, LAUNCHES)
+
   it('regenerates from the task start through the latest work even when the review cache is stale', async () => {
     initGit()
     const git = (...args: string[]): string => execFileSync('/usr/bin/git', args, { cwd: work, encoding: 'utf8' }).trim()

@@ -361,7 +361,7 @@ export class ReportOperations extends EventEmitter {
       ? ownChanges(cumulative, commits, pending.filter((file) => since.has(file.path) || (file.previousPath ? since.has(file.previousPath) : false)))
       : cumulative
     const pullRequests = [
-      ...new Set([...(snapshot?.pullRequests ?? []).map((pr) => pr.url), ...evidence.pullRequests])
+      ...new Set([...(snapshot?.pullRequests ?? []).map((pr) => pr.url), ...(evidence.verifiedPullRequests ?? []).map(pr => pr.url)])
     ]
     return {
       revision: comparison ? { ...comparison, inferred: baseline !== savedBase, foreign } : null,

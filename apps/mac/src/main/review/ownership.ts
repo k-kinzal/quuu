@@ -46,6 +46,8 @@ export interface TaskCommits {
   foreign: number
   /** Whether the checkout could testify. When it could not, `commits` is the whole range. */
   judged: boolean
+  /** Only reflog-attributed commits; never the fallback range or prose receipts. */
+  observed: string[]
 }
 
 /**
@@ -123,6 +125,7 @@ export async function taskCommits(
   const created = work.windows ? await commitsCreatedDuring(cwd, work.windows) : null
   const judged = created !== null
   const own = new Set(judged ? created : known)
+  const observed = new Set(created ?? [])
 
   // A receipt may be short; the range settles it before the repository is asked again
   const inRange = (sha: string): string | null =>
@@ -137,7 +140,10 @@ export async function taskCommits(
     if (known.includes(sha)) continue
     // Created here in the window, yet already part of the start: the previous task's last commit,
     // landing within the second the run began. Not this task's.
-    if (baseHead && (await git(cwd, ['merge-base', '--is-ancestor', sha, baseHead])).code === 0) own.delete(sha)
+    if (baseHead && (await git(cwd, ['merge-base', '--is-ancestor', sha, baseHead])).code === 0) {
+      own.delete(sha)
+      observed.delete(sha)
+    }
     // Otherwise no longer reachable: the checkout moved to another branch since
     else unread.push(sha)
   }
@@ -148,7 +154,8 @@ export async function taskCommits(
     if (!commits.some((existing) => existing.sha === commit.sha)) commits.push(commit)
   }
   commits.sort((a, b) => b.committedAt.localeCompare(a.committedAt))
-  return { commits, foreign: judged ? known.filter((sha) => !own.has(sha)).length : 0, judged }
+  return { commits, foreign: judged ? known.filter((sha) => !own.has(sha)).length : 0, judged,
+    observed: [...observed].filter(sha => commits.some(commit => commit.sha === sha)) }
 }
 
 /**

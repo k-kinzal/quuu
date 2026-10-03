@@ -347,6 +347,8 @@ export const en = {
     githubOnly: 'Only GitHub pull requests can be opened',
     viewAreaUnreadable: 'Cannot read the pull request view area',
     fetchFailed: 'Could not fetch pull requests',
+    prVerificationIncomplete: 'Pull request verification is incomplete. Refresh to retry.',
+    prOwnershipUnknown: 'Pull request URLs were found, but this task’s commit ownership could not be verified.',
     filePathUnreadable: 'Cannot read the file path',
     outsideProject: 'Files outside the project cannot be opened',
     taskDiffRevisionUnreadable: 'Cannot read the revision of the task diff',

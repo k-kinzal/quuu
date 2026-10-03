@@ -93,9 +93,15 @@ export async function executeJob(root: string, spec: RemoteJobSpec): Promise<voi
     const service = new ReviewService()
     if (spec.action === 'snapshot') {
       const info = spec.review!
+      const proofs: NonNullable<RemoteResult['reviewProofs']> = { commits: [], pullRequests: [] }
+      // A persisted inspection job may have been written by an older host.
+      const evidence = { ...info.evidence, pullRequestCandidates: info.evidence.pullRequestCandidates ?? info.evidence.pullRequests ?? [] }
       const snapshot = await service.snapshot(cwd, project, DEFAULT_SETTINGS, info.baseline ?? result.baseline ?? null,
-        info.evidence, undefined, { windows: info.windows, recorded: info.recorded })
+        evidence, undefined, { windows: info.windows, recorded: info.recorded,
+          observed: commits => { proofs.commits.push(...commits) },
+          verified: proof => { proofs.pullRequests.push(proof) } })
       await service.retain(spec.taskId, snapshot)
+      result.reviewProofs = proofs
       result.value = snapshot
       result.exitCode = 0
     } else if (spec.action === 'file') {

@@ -7,6 +7,7 @@ import { makeAgent, makeProject, memoryDb } from './helpers.js'
 
 vi.mock('../src/main/review/command.js', () => ({ command: vi.fn(), git: vi.fn() }))
 afterEach(() => vi.resetAllMocks())
+const proof = (url: string) => ({ url, repository: 'owner/repo', headSha: 'a'.repeat(40) })
 
 it('fetches recorded PRs from the upstream repository after a branch switch and includes every page of files', async () => {
   const db = memoryDb()
@@ -22,7 +23,7 @@ it('fetches recorded PRs from the upstream repository after a branch switch and 
       ]) })
     })
     const result = await pullRequests('/tmp', repo.getProject(db, projectId)!, DEFAULT_SETTINGS,
-      '2026-09-09T00:00:00Z', ['https://github.com/upstream/repo/pull/42', 'https://github.com/upstream/repo/pull/42', 'https://example.invalid/other/repo/pull/99'])
+      '2026-09-09T00:00:00Z', ['https://github.com/upstream/repo/pull/42', 'https://github.com/upstream/repo/pull/42', 'https://example.invalid/other/repo/pull/99'].map(proof))
     expect(result.items).toHaveLength(1)
     expect(result.items[0].files).toHaveLength(101)
     expect(result.items[0].files.at(-1)).toEqual({ path: 'renamed.ts', previousPath: 'old.ts', change: 'renamed' })
@@ -34,13 +35,13 @@ it('fetches recorded PRs from the upstream repository after a branch switch and 
 })
 
 
-it('keeps a creation receipt visible when GitHub rejects the first fetch', async () => {
+it('keeps a verified association visible when GitHub rejects the first fetch', async () => {
   const db = memoryDb()
   try {
     const agent = makeAgent(db, { name: 'Fixture' })
     const project = makeProject(db, { name: 'Fixture', targetId: agent, commitIdentityMode: 'off' })
     vi.mocked(command).mockResolvedValue({ code: 1, stdout: '', stderr: 'offline' })
-    const result = await pullRequests('/tmp', repo.getProject(db, project)!, DEFAULT_SETTINGS, '2026-09-09T00:00:00Z', ['https://github.com/upstream/repo/pull/42'])
+    const result = await pullRequests('/tmp', repo.getProject(db, project)!, DEFAULT_SETTINGS, '2026-09-09T00:00:00Z', [proof('https://github.com/upstream/repo/pull/42')])
     expect(result.items).toMatchObject([{ number: 42, url: 'https://github.com/upstream/repo/pull/42', files: [] }])
     expect(result.notice).toBe('offline')
   } finally { db.close() }
@@ -60,19 +61,20 @@ it('reads the merge state and whether the PR is still open beside the CI rollup'
     vi.mocked(git).mockResolvedValue({ code: 0, stdout: 'git@github.com:owner/repo.git\n', stderr: '' })
     const pr = (number: number, extra: Record<string, unknown>) => ({ number, title: `PR ${String(number)}`, url: `https://github.com/owner/repo/pull/${String(number)}`,
       updatedAt: '2026-09-10T00:00:00Z', headRefName: 'feature', baseRefName: 'main', headRefOid: 'a'.repeat(40), isDraft: false, files: [], ...extra })
-    vi.mocked(command).mockResolvedValue({ code: 0, stderr: '', stdout: JSON.stringify([
+    const pulls = [
       pr(1, { state: 'OPEN', mergeable: 'CONFLICTING', mergeStateStatus: 'DIRTY', statusCheckRollup: [{ status: 'IN_PROGRESS' }] }),
       pr(2, { state: 'OPEN', mergeable: 'MERGEABLE', mergeStateStatus: 'BLOCKED', statusCheckRollup: [{ conclusion: 'FAILURE' }] }),
       pr(3, { state: 'MERGED', mergeable: 'UNKNOWN', mergeStateStatus: 'UNKNOWN', statusCheckRollup: [{ conclusion: 'SUCCESS' }] }),
       pr(4, { state: 'CLOSED', mergeable: 'MERGEABLE', mergeStateStatus: 'DIRTY', statusCheckRollup: [] })
-    ]) })
-    const result = await pullRequests('/tmp', repo.getProject(db, project)!, DEFAULT_SETTINGS, '2026-09-09T00:00:00Z')
+    ]
+    vi.mocked(command).mockImplementation((_executable, args) => Promise.resolve({ code: 0, stderr: '', stdout: JSON.stringify(args[0] === 'pr' ? pulls.find(item => item.url === args[2]) : [[]]) }))
+    const result = await pullRequests('/tmp', repo.getProject(db, project)!, DEFAULT_SETTINGS, '2026-09-09T00:00:00Z', pulls.map(item => proof(item.url)))
     expect(result.items.map(item => [item.number, item.check, item.mergeState, item.state])).toEqual([
       [1, 'pending', 'conflicting', 'open'],
       [2, 'failure', 'clean', 'open'],
       [3, 'success', 'unknown', 'merged'],
       [4, 'neutral', 'conflicting', 'closed']
     ])
-    expect(vi.mocked(command).mock.calls[0]?.[1]).toContain('number,title,url,headRefName,baseRefName,headRefOid,isDraft,updatedAt,statusCheckRollup,mergeable,mergeStateStatus,state,files')
+    expect(vi.mocked(command).mock.calls[0]?.[1]).toContain('number,title,url,headRefName,baseRefName,headRefOid,isDraft,updatedAt,statusCheckRollup,mergeable,mergeStateStatus,state')
   } finally { db.close() }
 })

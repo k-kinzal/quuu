@@ -348,6 +348,8 @@ export const ja: typeof en = {
     githubOnly: 'GitHub の Pull Request だけを開けます',
     viewAreaUnreadable: 'Pull Request の表示領域を読めません',
     fetchFailed: 'Pull Request を取得できませんでした',
+    prVerificationIncomplete: 'Pull Request の照合が完了していません。更新すると再試行します。',
+    prOwnershipUnknown: 'Pull Request のURLは見つかりましたが、このタスクのコミットとの対応を確認できませんでした。',
     filePathUnreadable: 'ファイルのパスを読めません',
     outsideProject: 'プロジェクトの外にあるファイルは開けません',
     taskDiffRevisionUnreadable: 'タスクの差分の版を読めません',

@@ -1,11 +1,11 @@
 import { t } from '../i18n/index.js'
-import { cleanupGitHubAuth, githubRepositoryFromRemote, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
+import { cleanupGitHubAuth, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
 import type { Project } from '../projects/types.js'
 import { resolveCommitIdentity } from '../settings/commitIdentity.js'
 import type { AppSettings } from '../settings/types.js'
 import type { CommandResult } from './command.js'
-import { command, git } from './command.js'
-import type { FileChangeKind, PullRequestMergeState, PullRequestState, ReviewPullRequest } from './types.js'
+import { command } from './command.js'
+import type { FileChangeKind, PullRequestMergeState, PullRequestState, ReviewPullRequest, VerifiedPullRequest } from './types.js'
 import { runtimeEnv } from '../platform/processEnv.js'
 
 /** Everything the review reads off one Pull Request. Both the single fetch and the listing ask for it. */
@@ -121,7 +121,7 @@ async function recordedPullRequests(cwd: string, project: Project, settings: App
     } catch (error) {
       notices.push(error instanceof Error ? error.message : t('review.fetchFailed'))
     }
-    // A successful creation receipt remains visible even if GitHub cannot be reached yet.
+    // A verified association remains visible even if GitHub cannot be reached yet.
     items.push(item)
   }
   return { items, ...(notices.length ? { notice: notices.join('\n') } : {}) }
@@ -132,61 +132,8 @@ export async function pullRequests(
   project: Project,
   settings: AppSettings,
   since: string | null,
-  recordedUrls?: string[]
+  verified: VerifiedPullRequest[]
 ): Promise<{ items: ReviewPullRequest[]; notice?: string }> {
-  // A task that has not started yet shows none of the PRs the repository already had.
   if (!since) return { items: [] }
-  if (recordedUrls) return recordedPullRequests(cwd, project, settings, recordedUrls)
-  const remote = await git(cwd, ['config', '--get', 'remote.origin.url'])
-  if (remote.code !== 0 || !githubRepositoryFromRemote(remote.stdout.trim())) return { items: [] }
-  try {
-    const result = await gh(cwd, project, settings, [
-      'pr',
-      'list',
-      '--state',
-      'all',
-      '--search',
-      `updated:>=${since.slice(0, 10)}`,
-      '--limit',
-      '1000',
-      '--json',
-      `${PULL_REQUEST_FIELDS},files`
-    ])
-    if (result.code !== 0) {
-      return { items: [], notice: result.stderr.trim() || t('review.fetchFailed') }
-    }
-    const value: unknown = JSON.parse(result.stdout)
-    const parsed = Array.isArray(value)
-      ? value.filter(isRecord).filter((item) => {
-        const updated = Date.parse(textValue(item.updatedAt))
-        return Number.isFinite(updated) && updated >= Date.parse(since)
-      })
-      : []
-    return {
-      items: parsed.map((item) => ({
-        number: Number(item.number),
-        title: textValue(item.title),
-        url: textValue(item.url),
-        headRefName: textValue(item.headRefName),
-        baseRefName: textValue(item.baseRefName),
-        headSha: textValue(item.headRefOid),
-        draft: Boolean(item.isDraft),
-        updatedAt: textValue(item.updatedAt),
-        check: pullRequestCheck(item.statusCheckRollup),
-        mergeState: pullRequestMergeState(item.mergeable, item.mergeStateStatus),
-        state: pullRequestState(item.state),
-        files: Array.isArray(item.files)
-          ? item.files.filter(isRecord).map((file) => ({
-            path: textValue(file.path),
-            change: pullFileChange(file)
-          }))
-          : []
-      }))
-    }
-  } catch (error) {
-    return {
-      items: [],
-      notice: error instanceof Error ? error.message : t('review.fetchFailed')
-    }
-  }
+  return recordedPullRequests(cwd, project, settings, verified.map(proof => proof.url))
 }

@@ -20,6 +20,30 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
+it('demotes legacy PR projections to candidates and keeps verified associations across reopening', () => {
+  const old = openDatabase(path)
+  const projectId = makeProject(old, { name: 'PR migration', targetId: makeAgent(old, { name: 'Agent' }) })
+  const taskId = makeTask(old, projectId, 'Existing task')
+  const url = 'https://github.com/example/project/pull/584'
+  const commit = { repository: 'example/project', sha: 'a'.repeat(40) }
+  const proof = { url, repository: commit.repository, headSha: commit.sha }
+  const snapshot = { cwd: '/tmp', pullRequests: [{ url }], commits: [{ sha: commit.sha }] } as ReviewSnapshot
+  repo.saveReviewSnapshot(old, taskId, snapshot)
+  old.exec("UPDATE meta SET value = '37' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getReviewSnapshot(upgraded, taskId)?.snapshot).toEqual({ ...snapshot, pullRequests: [] })
+  expect(repo.reviewEvidence(upgraded, taskId).pullRequestCandidates).toEqual([url])
+  expect(repo.reviewEvidence(upgraded, taskId).verifiedPullRequests).toEqual([])
+  repo.recordObservedCommits(upgraded, taskId, [commit])
+  repo.recordVerifiedPullRequest(upgraded, taskId, proof)
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.reviewEvidence(reopened, taskId)).toMatchObject({ observedCommits: [commit], verifiedPullRequests: [proof] })
+  expect(repo.getTask(reopened, taskId)?.status).toBe('queued')
+  reopened.close()
+})
+
 it('adds empty Runner selectors to existing projects and preserves edits across reopening', () => {
   const old = openDatabase(path)
   const agentId = makeAgent(old, { name: 'Runner migration' })
@@ -219,7 +243,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('37')
+    expect(version.value).toBe('38')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -287,7 +311,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('37')
+    expect(version.value).toBe('38')
     db.close()
   })
 
@@ -538,7 +562,7 @@ describe('schema migration', () => {
     migrated.close()
   })
 
-  it.each([false, true])('removes legacy phantom PRs while preserving fetched PRs and other saved review data (%s)', fetched => {
+  it.each([false, true])('keeps fetched legacy PRs as candidates while preserving local review data (%s)', fetched => {
     makeV2Database()
     const old = openDatabase(path)
     const phantom = { number: 42, url: 'https://github.com/openai/quuu/pull/42', title: 'Pull Request #42',
@@ -563,15 +587,15 @@ describe('schema migration', () => {
 
     const migrated = openDatabase(path)
     expect(repo.getReviewSnapshot(migrated, 'tsk')?.snapshot).toEqual({ ...snapshot,
-      pullRequests: fetched ? [verified] : [], pullRequestNotice: undefined })
-    expect(repo.reviewEvidence(migrated, 'tsk')).toEqual({ commits: ['aaaaaaa'], pullRequests: fetched ? [verified.url] : [] })
+      pullRequests: [], pullRequestNotice: undefined })
+    expect(repo.reviewEvidence(migrated, 'tsk')).toEqual({ commits: ['aaaaaaa'], pullRequestCandidates: fetched ? [verified.url] : [], observedCommits: [], verifiedPullRequests: [] })
     expect(repo.getSessionIndex(migrated, 'log')).toMatchObject({ stamp: 'stamp', generation: 'generation', evidenceVersion: 0 })
     expect(repo.readSessionMessages(migrated, 'log', 'generation', 0, 1)).toEqual([{}])
     expect(repo.getTask(migrated, 'tsk')).toEqual(task)
     repo.recordReviewEvidence(migrated, 'tsk', 'pull-request', verified.url)
     migrated.close()
     const reopened = openDatabase(path)
-    expect(repo.reviewEvidence(reopened, 'tsk').pullRequests).toEqual([verified.url])
+    expect(repo.reviewEvidence(reopened, 'tsk').pullRequestCandidates).toEqual([verified.url])
     reopened.close()
   })
 

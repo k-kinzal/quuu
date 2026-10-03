@@ -265,6 +265,9 @@ export class ReviewOperations extends EventEmitter {
     if (this.remote?.workspace(taskId)) {
       const snapshot = await this.remote.inspect(taskId, 'snapshot') as ReviewSnapshot
       if (this.stopped || !repo.getTask(this.db, taskId)) return
+      const verified = new Set(repo.reviewEvidence(this.db, taskId).verifiedPullRequests?.map(proof => proof.url))
+      if (snapshot.pullRequests.some(pr => !verified.has(pr.url))) snapshot.pullRequestNotice = t('review.prOwnershipUnknown')
+      snapshot.pullRequests = snapshot.pullRequests.filter(pr => verified.has(pr.url))
       repo.saveReviewSnapshot(this.db, taskId, snapshot)
       // The runner's checkout is not here, so its trees cannot be pinned from this side.
       await this.recordRunEnd(taskId, snapshot, lookedAt, false)
@@ -292,7 +295,13 @@ export class ReviewOperations extends EventEmitter {
      */
     const work = {
       windows: runs.map(run => ({ from: run.startedAt, to: run.endedAt })),
-      recorded: previous?.cwd === place.dir ? previous.commits.map(commit => commit.sha) : []
+      recorded: previous?.cwd === place.dir ? previous.commits.map(commit => commit.sha) : [],
+      observed: (commits: Parameters<typeof repo.recordObservedCommits>[2]): void => {
+        if (!this.stopped && repo.getTask(this.db, taskId)) repo.recordObservedCommits(this.db, taskId, commits)
+      },
+      verified: (proof: Parameters<typeof repo.recordVerifiedPullRequest>[2]): void => {
+        if (!this.stopped && repo.getTask(this.db, taskId)) repo.recordVerifiedPullRequest(this.db, taskId, proof)
+      }
     }
     const snapshot = await this.review.snapshot(place.dir, place.project, this.getSettings(), baseline,
       repo.reviewEvidence(this.db, taskId), async local => {

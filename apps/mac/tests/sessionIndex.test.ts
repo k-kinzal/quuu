@@ -1,4 +1,4 @@
-import { appendFileSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { appendFileSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -133,7 +133,7 @@ it.each([false, true])('rebuilds outdated PR evidence from bounded cached pages,
   expect(parse).not.toHaveBeenCalled()
   expect(receive.mock.calls).toHaveLength(4)
   expect(receive.mock.calls.every(call => call[1].length <= SESSION_PAGE)).toBe(true)
-  expect(repo.reviewEvidence(db, taskId).pullRequests).toEqual([url])
+  expect(repo.reviewEvidence(db, taskId).pullRequestCandidates).toEqual([url])
   expect(repo.getSessionIndex(db, key)?.evidenceVersion).toBe(DERIVATION_VERSION)
   expect(indexed).toHaveBeenCalledWith(key, taskId)
   receive.mockClear()
@@ -150,7 +150,7 @@ it.each([false, true])('rebuilds outdated PR evidence from bounded cached pages,
  * unit, not the session: a task that ran twice must not have its second reading wipe what the
  * first one just re-derived.
  */
-it('drops a Pull Request the run only read, and keeps what its other session produced', async () => {
+it('rebuilds candidates across every session without claiming ownership', async () => {
   const foreign = 'https://github.com/other/project/pull/7'
   const own = 'https://github.com/upstream/repo/pull/42'
   const followUp = 'https://github.com/upstream/repo/pull/43'
@@ -166,14 +166,14 @@ it('drops a Pull Request the run only read, and keeps what its other session pro
   const runs = [repo.getRun(db, runId)!, repo.getRun(db, laterId)!]
   for (const run of runs) index.request(run, sessionReadTarget(db, run))
   await index.settled()
-  expect(repo.reviewEvidence(db, taskId).pullRequests.sort()).toEqual([own, followUp].sort())
+  expect(repo.reviewEvidence(db, taskId).pullRequestCandidates.sort()).toEqual([foreign, own, followUp].sort())
 
   // What the old rule left behind: the Pull Request the run only went to look at
   repo.recordReviewEvidence(db, taskId, 'pull-request', foreign)
   for (const run of runs) repo.finishSessionEvidence(db, sessionKey(sessionReadTarget(db, run)), 0)
   for (const run of runs) index.request(run, sessionReadTarget(db, run))
   await index.settled()
-  expect(repo.reviewEvidence(db, taskId).pullRequests.sort()).toEqual([own, followUp].sort())
+  expect(repo.reviewEvidence(db, taskId).pullRequestCandidates.sort()).toEqual([foreign, own, followUp].sort())
 })
 
 it('joins a late tool result across hundreds of messages and records its commit at ingestion', async () => {
@@ -191,6 +191,36 @@ it('joins a late tool result across hundreds of messages and records its commit 
   expect(tool.kind === 'tool' && tool.tool.result).toContain('[main 123abcd]')
   expect(repo.reviewEvidence(db, taskId).commits).toEqual(['123abcd'])
   expect(writes.mock.calls.reduce((total, call) => total + call[4].length, 0)).toBe(1)
+})
+
+it('indexes an async PR wait across pages and rederives its candidate after restart without its source', async () => {
+  const lines = readFileSync(new URL('./fixtures/sessions/codex-async-pr.jsonl', import.meta.url), 'utf8').trim().split('\n')
+  const url = 'https://github.com/example/project/pull/584'
+  const codex = makeAgent(db, { name: 'Codex', logAdapter: 'codex' })
+  runId = occupy(db, taskId, codex, { stdoutLogPath: join(dir, 'codex-stdout.log') })
+  repo.updateRun(db, runId, { sessionLogPath: logPath })
+  const run = repo.getRun(db, runId)!
+  writeFileSync(logPath, lines.slice(0, 2).join('\n') + '\n')
+  index.request(run)
+  await index.settled()
+  expect(repo.reviewEvidence(db, taskId).pullRequestCandidates).toEqual([])
+  appendFileSync(logPath, Array.from({ length: 300 }, (_, i) => line({ type: 'response_item', payload: {
+    type: 'message', role: 'assistant', content: [{ type: 'output_text', text: `Work ${i}` }]
+  } })).join('') + lines.slice(2).join('\n') + '\n')
+  index.request(run)
+  await index.settled()
+  expect(repo.reviewEvidence(db, taskId).pullRequestCandidates).toEqual([url])
+  const target = sessionReadTarget(db, run)
+  repo.finishSessionEvidence(db, sessionKey(target), 4)
+  repo.clearReviewEvidence(db, taskId, 'pull-request')
+  const proof = { url, repository: 'example/project', headSha: 'a'.repeat(40) }
+  repo.recordVerifiedPullRequest(db, taskId, proof)
+  rmSync(logPath)
+  index.stop()
+  index = new SessionIndex(db, [reviewEvidenceDerivation])
+  index.request(run)
+  await index.settled()
+  expect(repo.reviewEvidence(db, taskId)).toMatchObject({ pullRequestCandidates: [url], verifiedPullRequests: [proof] })
 })
 
 it('replaces a truncated or rotated source without leaving stale messages', async () => {

@@ -359,7 +359,7 @@ it('sends the CI wait prompt for a PR created on a later command line before con
     return Promise.resolve()
   })
   ports.refresh.mockImplementation(id => {
-    const urls = repo.reviewEvidence(db, id).pullRequests
+    const urls = repo.reviewEvidence(db, id).pullRequestCandidates
     const fresh = snapshot(urls.includes(pr.url) ? [pr] : [])
     followUp.onProjected(id, fresh)
     return Promise.resolve(fresh)
