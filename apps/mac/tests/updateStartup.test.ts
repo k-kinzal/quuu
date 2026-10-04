@@ -5,7 +5,7 @@ import { createHash } from 'node:crypto'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const host = vi.hoisted(() => ({
-  directory: '', release: true,
+  directory: '', release: true, nativeNotifications: false,
   events: new Map<string, (...args: unknown[]) => void>(),
   order: [] as string[],
   quit: vi.fn(), show: vi.fn(), menu: vi.fn(),
@@ -13,7 +13,7 @@ const host = vi.hoisted(() => ({
   initialized: vi.fn(),
   close: vi.fn(),
   ready: vi.fn<() => Promise<void>>(), command: vi.fn(),
-  settings: { serverStatus: {}, on: vi.fn(), load: vi.fn(), getSettings: () => ({ theme: 'system', httpEnabled: false, mcpEnabled: false }) },
+  settings: { serverStatus: {}, on: vi.fn(), load: vi.fn(), getSettings: () => ({ theme: 'system', httpEnabled: false, mcpEnabled: false, nativeNotifications: host.nativeNotifications }) },
   network: { on: vi.fn(), setPairer: vi.fn(), hosting: () => null, status: () => ({ satellite: { enabled: false } }) }
 }))
 vi.mock('electron', () => ({
@@ -66,6 +66,7 @@ beforeEach(() => {
   host.directory = mkdtempSync(join(tmpdir(), 'quuu-update-startup-'))
   Object.defineProperty(process, 'resourcesPath', { value: host.directory, configurable: true })
   host.release = true
+  host.nativeNotifications = false
   host.events.clear()
   host.order.length = 0
   host.start.mockResolvedValue(undefined)
@@ -121,6 +122,20 @@ it('opens the notification destination after bootstrap when macOS launches the a
   expect(host.command).toHaveBeenCalledOnce()
   host.events.get('activate')?.()
   expect(host.command).toHaveBeenCalledOnce()
+})
+
+it('shows the window without waiting for macOS to finish its notification permission prompt', async () => {
+  host.nativeNotifications = true
+  const notifications = await import('../src/main/desktop/notifications.js')
+  const restore = vi.spyOn(notifications, 'restoreNativeNotifications').mockReturnValue(new Promise(() => {}))
+  try {
+    await import('../src/main/index.js')
+    await vi.waitFor(() => expect(host.show).toHaveBeenCalledOnce())
+    expect(restore).toHaveBeenCalledOnce()
+    const open = restore.mock.calls[0][0]
+    open('notified-task')
+    expect(host.command).toHaveBeenCalledWith('task.open', { taskId: 'notified-task' }, 'notification')
+  } finally { restore.mockRestore() }
 })
 
 it('stops checks and closes SQLite before handing shutdown to the native installer', async () => {

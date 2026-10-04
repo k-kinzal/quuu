@@ -162,7 +162,8 @@ if (!app.requestSingleInstanceLock()) {
 
     quuu = new QuuuApp()
     quuu.settings.load()
-    if (quuu.settings.getSettings().nativeNotifications) await restoreNativeNotifications(openNotification)
+    // macOS may wait for the first notification permission response. The window must still open.
+    if (quuu.settings.getSettings().nativeNotifications) void restoreNativeNotifications(openNotification)
     quuu.settings.serverStatus.connectionFile = join(userDataDir(), 'connections.json')
     try { unlinkSync(quuu.settings.serverStatus.connectionFile) }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('Cannot remove stale connection information:', error) }
