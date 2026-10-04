@@ -295,12 +295,19 @@ export function Menu({
    */
   useEffect(() => {
     if (!open || position.visibility !== 'visible') return
-    // Wait for the hidden-to-visible style change before asking Chromium to focus a row.
-    const frame = requestAnimationFrame(() => {
-      const row = rowRefs.current[active]
-      if (row) row.focus()
-      else panelRef.current?.focus()
-    })
+    let frame = 0
+    const focus = (): void => {
+      const target = rowRefs.current[active] ?? panelRef.current
+      if (!target) return
+      // Chromium can still resolve a row as hidden after the panel's inline style
+      // changes. A focus request during that interval is silently ignored.
+      if (getComputedStyle(target).visibility !== 'visible') {
+        frame = requestAnimationFrame(focus)
+        return
+      }
+      target.focus()
+    }
+    focus()
     return () => cancelAnimationFrame(frame)
     // Watch `visible` too. Opening the remainder swaps out the DOM including the pressed row, leaving the hand in mid-air
   }, [open, position.visibility, active, visible, panelRef])
