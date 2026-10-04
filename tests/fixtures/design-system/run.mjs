@@ -147,6 +147,19 @@ void app.whenReady().then(async () => {
     app.exit(0)
   } catch (error) {
     console.error(currentCheck, error)
+    try {
+      await window.webContents.debugger.sendCommand('DOM.enable')
+      await window.webContents.debugger.sendCommand('CSS.enable')
+      const { root } = await window.webContents.debugger.sendCommand('DOM.getDocument')
+      const { nodeId } = await window.webContents.debugger.sendCommand('DOM.querySelector', { nodeId: root.nodeId, selector: ':focus' })
+      const { matchedCSSRules } = await window.webContents.debugger.sendCommand('CSS.getMatchedStylesForNode', { nodeId })
+      console.error('Outline cascade', JSON.stringify(matchedCSSRules.map(({ rule }) => ({
+        origin: rule.origin, selector: rule.selectorList.text,
+        properties: rule.style.cssProperties.filter(property => property.name.startsWith('outline') || property.name === 'all')
+      })).filter(rule => rule.properties.length)))
+    } catch (diagnosticError) {
+      console.error('CSS diagnostics unavailable', diagnosticError)
+    }
     console.error('Focus state', await window.webContents.executeJavaScript(`JSON.stringify({
       documentFocused: document.hasFocus(), active: document.activeElement?.outerHTML,
       focused: document.activeElement?.matches(':focus'), focusVisible: document.activeElement?.matches(':focus-visible')
