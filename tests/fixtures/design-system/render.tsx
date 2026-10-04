@@ -16,8 +16,8 @@ function element(name: string, selector?: string): HTMLElement {
   return node
 }
 
-function equal(actual: unknown, expected: unknown, message: string): void {
-  if (actual !== expected) throw new Error(`${message}: ${String(actual)} != ${String(expected)}`)
+function equal(actual: unknown, expected: unknown, message: string | (() => string)): void {
+  if (actual !== expected) throw new Error(`${typeof message === 'function' ? message() : message}: ${String(actual)} != ${String(expected)}`)
 }
 
 function sameGeometry(names: string[]): void {
@@ -50,9 +50,17 @@ async function focusTarget(target: HTMLElement, name: string): Promise<void> {
 
 function focusState(target: HTMLElement, vessel = target): object {
   const style = getComputedStyle(vessel)
+  const matchingRules = (rules: CSSRuleList): string[] => Array.from(rules).flatMap(rule => {
+    if (rule instanceof CSSStyleRule && (target.matches(rule.selectorText) || vessel.matches(rule.selectorText))) return [rule.cssText]
+    return rule instanceof CSSGroupingRule ? matchingRules(rule.cssRules) : []
+  })
   return { documentFocused: document.hasFocus(), active: document.activeElement?.outerHTML,
     focused: target.matches(':focus'), focusVisible: target.matches(':focus-visible'),
-    outline: style.outline, outlineOffset: style.outlineOffset, target: target.outerHTML }
+    outline: style.outline, outlineOffset: style.outlineOffset, target: target.outerHTML,
+    userAgent: navigator.userAgent,
+    forcedColors: matchMedia('(forced-colors: active)').matches,
+    moreContrast: matchMedia('(prefers-contrast: more)').matches,
+    rules: Array.from(document.styleSheets).flatMap(sheet => matchingRules(sheet.cssRules)) }
 }
 
 async function check(scheme: ColorScheme, density: Density): Promise<string> {
@@ -75,7 +83,7 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
     const style = await focus(name, selector)
     for (const key of ['color', 'width', 'offset'] as const) {
       const prop = { color: 'outlineColor', width: 'outlineWidth', offset: 'outlineOffset' } as const
-      equal(style[prop[key]], ring[key], `${name}: focus ${key} (${JSON.stringify(focusState(element(name, selector), element(name)))})`)
+      equal(style[prop[key]], ring[key], () => `${name}: focus ${key} (${JSON.stringify(focusState(element(name, selector), element(name)))})`)
     }
   }
   for (const [name, selector] of [['icon', 'button'], ['tabs', '[role="tab"]']] as const) {
