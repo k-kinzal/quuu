@@ -325,7 +325,9 @@ export class RunnerOperations extends EventEmitter {
           // Completion is acknowledged only after every byte in this update was committed.
           if (update.result && job.logOffset === update.logOffset + Buffer.from(update.log, 'base64').length &&
             job.sessionOffset === update.sessionOffset + Buffer.from(update.session, 'base64').length) {
-            job.result = update.result
+            // A child can exit before its supervisor handles SIGTERM. The accepted
+            // cancellation is already durable here and must survive that race.
+            job.result = { ...update.result, canceled: job.cancelRequested || update.result.canceled }
             job.status = 'finished'
           }
           inTransaction(this.db, () => { repo.saveRemoteJob(this.db, job); this.emit('job', job, update.sessionId) })

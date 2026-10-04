@@ -232,6 +232,23 @@ it('cancels running work and does not replay a completed delivery', async () => 
   expect(repo.listRunsByTask(db, claim.run.taskId)).toHaveLength(1)
 }, 30_000)
 
+it('preserves an accepted cancellation when the exit receipt arrives before the signal handler', async () => {
+  const { grant, url, fingerprint, body } = await pair()
+  const { projectId } = project()
+  const taskId = makeTask(db, projectId, 'Cancel before the exit receipt')
+  const claim = scheduler.claimNext()!
+  runner.cancel(claim.run.id)
+  // The child can exit before its supervisor processes SIGTERM. The controller
+  // has already persisted the user's cancellation and must retain that outcome.
+  await pinnedRequest(url, fingerprint, '/poll', { version: 1, agents: body.agents, updates: [{
+    id: claim.run.id, logOffset: 0, log: '', sessionOffset: 0, session: '', sessionId: '',
+    result: { started: true, exitCode: null, canceled: false, timedOut: false, error: '', sessionId: '' }
+  }] }, grant.token)
+  expect(repo.getRun(db, claim.run.id)?.status).toBe('canceled')
+  expect(remote.job(claim.run.id)?.result?.canceled).toBe(true)
+  expect(repo.getTask(db, taskId)?.status).toBe('review')
+})
+
 it('sends repository-scoped installation credentials separately from durable instructions', async () => {
   const { grant, url, fingerprint } = await pair()
   const { projectId } = project()
