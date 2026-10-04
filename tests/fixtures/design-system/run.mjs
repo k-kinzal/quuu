@@ -11,6 +11,24 @@ void app.whenReady().then(async () => {
     // Exercise native focus selectors without taking the user's foreground window.
     window.webContents.debugger.attach('1.3')
     await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true })
+    // Keep the recent native focus history for failures that only reproduce on a runner.
+    await window.webContents.executeJavaScript(`(() => {
+      window.focusTrace = []
+      const record = entry => {
+        window.focusTrace.push({ time: performance.now(), ...entry })
+        if (window.focusTrace.length > 40) window.focusTrace.shift()
+      }
+      for (const type of ['focusin', 'focusout']) {
+        document.addEventListener(type, event => record({ type, target: event.target.outerHTML?.slice(0, 500) }))
+      }
+      const focus = HTMLElement.prototype.focus
+      HTMLElement.prototype.focus = function(options) {
+        focus.call(this, options)
+        record({ type: 'focus call', target: this.outerHTML.slice(0, 500),
+          accepted: document.activeElement === this,
+          visibility: getComputedStyle(this).visibility, connected: this.isConnected })
+      }
+    })()`)
     // Input acknowledgements keep keyboard focus and hover ordering deterministic under load.
     const input = async event => {
       if (event.type.startsWith('key')) {
@@ -174,7 +192,13 @@ void app.whenReady().then(async () => {
     }
     console.error('Focus state', await window.webContents.executeJavaScript(`JSON.stringify({
       documentFocused: document.hasFocus(), active: document.activeElement?.outerHTML,
-      focused: document.activeElement?.matches(':focus'), focusVisible: document.activeElement?.matches(':focus-visible')
+      focused: document.activeElement?.matches(':focus'), focusVisible: document.activeElement?.matches(':focus-visible'),
+      trace: window.focusTrace,
+      menus: Array.from(document.querySelectorAll('[role="menu"]')).map(menu => ({
+        html: menu.outerHTML, visibility: getComputedStyle(menu).visibility,
+        display: getComputedStyle(menu).display, bounds: menu.getBoundingClientRect().toJSON(),
+        animations: menu.getAnimations().map(animation => ({playState: animation.playState, currentTime: animation.currentTime}))
+      }))
     })`).catch(() => 'Renderer unavailable'))
     app.exit(1)
   }
