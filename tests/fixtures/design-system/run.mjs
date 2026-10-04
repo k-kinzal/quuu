@@ -21,13 +21,6 @@ void app.whenReady().then(async () => {
       for (const type of ['focusin', 'focusout']) {
         document.addEventListener(type, event => record({ type, target: event.target.outerHTML?.slice(0, 500) }))
       }
-      const focus = HTMLElement.prototype.focus
-      HTMLElement.prototype.focus = function(options) {
-        focus.call(this, options)
-        record({ type: 'focus call', target: this.outerHTML.slice(0, 500),
-          accepted: document.activeElement === this,
-          visibility: getComputedStyle(this).visibility, connected: this.isConnected })
-      }
     })()`)
     // Input acknowledgements keep keyboard focus and hover ordering deterministic under load.
     const input = async event => {
@@ -136,9 +129,14 @@ void app.whenReady().then(async () => {
     }
     for (const scheme of ['dark', 'light']) {
       currentCheck = `${scheme}: explorer resizing`
-      const render = width => window.webContents.executeJavaScript(`window.renderExplorer(${width}, '${scheme}')`)
+      const waitForWidth = (width, message) => waitFor(`window.explorerGeometry().width === ${width}`, message)
+      const render = async (width, explorerWidth) => {
+        await window.webContents.executeJavaScript(`window.renderExplorer(${width}, '${scheme}')`)
+        // ResizeObserver, React and the resolved CSS width settle in separate updates.
+        await waitForWidth(explorerWidth, `explorer settles at ${explorerWidth}px inside ${width}px`)
+      }
       const geometry = () => window.webContents.executeJavaScript('window.explorerGeometry()')
-      const drag = async delta => {
+      const drag = async (delta, width) => {
         const point = await geometry()
         // Start on the enlarged target, not on the single painted pixel.
         const x = point.x + 2
@@ -147,27 +145,27 @@ void app.whenReady().then(async () => {
         await input({ type: 'mouseMove', x: x + delta, y: point.y })
         await setTimeout(30)
         await input({ type: 'mouseUp', button: 'left', clickCount: 1, x: x + delta, y: point.y })
-        await setTimeout(30)
+        await waitForWidth(width, `drag settles at ${width}px`)
       }
-      await render(720)
-      await drag(100)
+      await render(720, 256)
+      await drag(100, 356)
       assert.equal((await geometry()).width, 356, 'dragging grows the explorer')
-      await render(360)
+      await render(360, 199)
       let narrow = await geometry()
       assert.equal(narrow.width, 199, 'nested layout preserves room for selected content')
       assert.equal(narrow.content, 160)
       assert.equal(narrow.value, narrow.width, 'accessible value reports the displayed width')
       assert.equal(narrow.overflow, false)
-      await render(720)
+      await render(720, 356)
       assert.equal((await geometry()).width, 356, 'window shrink preserves the preferred width')
-      await render(360)
-      await drag(-40)
+      await render(360, 199)
+      await drag(-40, 159)
       narrow = await geometry()
       assert.equal(narrow.width, 159, 'constrained dragging begins at the visible boundary')
       await window.webContents.executeJavaScript('document.querySelector("[role=separator]").focus()')
       await input({ type: 'keyDown', keyCode: 'Home' })
       await input({ type: 'keyUp', keyCode: 'Home' })
-      await setTimeout(30)
+      await waitForWidth(120, 'Home reaches the narrow explorer width')
       assert.equal((await geometry()).width, 120, 'keyboard reaches the narrow explorer width')
       // Leave the specimen unmounted so the next scheme starts with a fresh preference.
       await window.webContents.executeJavaScript(`window.checkControls('${scheme}', 'compact')`)
@@ -177,6 +175,9 @@ void app.whenReady().then(async () => {
     app.exit(0)
   } catch (error) {
     console.error(currentCheck, error)
+    if (currentCheck.includes('explorer resizing')) {
+      console.error('Explorer geometry', await window.webContents.executeJavaScript('window.explorerGeometry()').catch(() => 'Renderer unavailable'))
+    }
     try {
       await window.webContents.debugger.sendCommand('DOM.enable')
       await window.webContents.debugger.sendCommand('CSS.enable')
