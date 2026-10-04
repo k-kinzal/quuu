@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
 import { Menu, useMenu } from '../../../packages/design-system/src/components/surfaces/Menu.js'
 import type { MenuItemSpec } from '../../../packages/design-system/src/components/surfaces/Menu.js'
@@ -86,6 +86,14 @@ function show(): void {
 }
 
 describe('opening the folded remainder', () => {
+  it('focuses the first enabled item so Escape reaches the opened menu', async () => {
+    show()
+    const menu = open()
+    await waitFor(() => expect(document.activeElement).toBe(within(menu).getByText('候補 0').closest('button')))
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' })
+    expect(screen.queryByRole('menu', { name: '候補' })).toBeNull()
+  })
+
   it('replaces that row with the remainder on a press (the surface stays open)', () => {
     show()
     const menu = open()
@@ -113,14 +121,14 @@ describe('opening the folded remainder', () => {
   })
 
   /* The pressed row disappears, so without moving the hand the arrow keys after it stop working */
-  it('moves the hand to the head of the remainder (so keys can keep walking it)', () => {
+  it('moves the hand to the head of the remainder (so keys can keep walking it)', async () => {
     show()
     const menu = open()
     fireEvent.click(within(menu).getByText('ほか 3 件を出す'))
-    expect(document.activeElement?.textContent).toBe('候補 1')
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('候補 1'))
 
     fireEvent.keyDown(menu, { key: 'ArrowDown' })
-    expect(document.activeElement?.textContent).toBe('候補 2')
+    await waitFor(() => expect(document.activeElement?.textContent).toBe('候補 2'))
   })
 
   it('returns to the folded shape when reopened (it does not remember the earlier unfold)', () => {
