@@ -8,16 +8,9 @@ void app.whenReady().then(async () => {
   try {
     window.webContents.on('console-message', details => { if (details.level === 'error') console.error(details.message) })
     await window.loadURL(process.argv[2])
+    // Exercise native focus selectors without taking the user's foreground window.
     window.webContents.debugger.attach('1.3')
-    if (process.env.CI) {
-      // CI has its own desktop. Exercise actual window focus there: a hidden macOS
-      // renderer can match :focus while reporting native outline defaults.
-      window.show()
-      window.webContents.focus()
-    } else {
-      // Keep local runs from taking the user's foreground window.
-      await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true })
-    }
+    await window.webContents.debugger.sendCommand('Emulation.setFocusEmulationEnabled', { enabled: true })
     // Input acknowledgements keep keyboard focus and hover ordering deterministic under load.
     const input = async event => {
       if (event.type.startsWith('key')) {

@@ -30,10 +30,17 @@ function sameGeometry(names: string[]): void {
   }
 }
 
-async function focus(name: string, selector?: string): Promise<CSSStyleDeclaration> {
+async function focus(name: string, selector?: string, expected?: Partial<CSSStyleDeclaration>): Promise<CSSStyleDeclaration> {
   const target = element(name, selector)
   await focusTarget(target, name)
-  return getComputedStyle(element(name))
+  const style = getComputedStyle(element(name))
+  const deadline = performance.now() + 2000
+  // Focus events can precede the renderer's resolved style update. Keep the
+  // exact appearance assertions below, but allow that update to finish first.
+  while (expected && Object.entries(expected).some(([property, value]) => style[property as keyof CSSStyleDeclaration] !== value) && performance.now() < deadline) {
+    await frame()
+  }
+  return style
 }
 
 async function focusTarget(target: HTMLElement, name: string): Promise<void> {
@@ -57,6 +64,8 @@ function focusState(target: HTMLElement, vessel = target): object {
   return { documentFocused: document.hasFocus(), active: document.activeElement?.outerHTML,
     focused: target.matches(':focus'), focusVisible: target.matches(':focus-visible'),
     outline: style.outline, outlineOffset: style.outlineOffset, target: target.outerHTML,
+    animation: style.animation, transition: style.transition, appearance: style.appearance,
+    animations: target.getAnimations().map(animation => ({ playState: animation.playState, currentTime: animation.currentTime })),
     userAgent: navigator.userAgent,
     forcedColors: matchMedia('(forced-colors: active)').matches,
     moreContrast: matchMedia('(prefers-contrast: more)').matches,
@@ -80,7 +89,7 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
   equal(ring.offset, '1px', 'standalone focus is outside the frame')
   equal(getComputedStyle(element('search', 'input')).outlineStyle, 'none', 'only the vessel draws focus')
   for (const [name, selector] of [['filter'], ['text', 'input'], ['number', 'input'], ['select', '[role="combobox"]'], ['readonly', 'input'], ['inline'], ['prose'], ['composer', 'textarea'], ['button']] as const) {
-    const style = await focus(name, selector)
+    const style = await focus(name, selector, { outlineColor: ring.color, outlineWidth: ring.width, outlineOffset: ring.offset })
     for (const key of ['color', 'width', 'offset'] as const) {
       const prop = { color: 'outlineColor', width: 'outlineWidth', offset: 'outlineOffset' } as const
       equal(style[prop[key]], ring[key], () => `${name}: focus ${key} (${JSON.stringify(focusState(element(name, selector), element(name)))})`)
