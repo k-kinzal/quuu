@@ -35,6 +35,20 @@ void app.whenReady().then(async () => {
       }
       await window.webContents.executeJavaScript(check)
     }
+    const waitFor = async (condition, message) => {
+      const deadline = Date.now() + 5000
+      while (!await window.webContents.executeJavaScript(condition)) {
+        if (Date.now() >= deadline) throw new Error(message)
+        await setTimeout(30)
+      }
+    }
+    const closeMenu = async () => {
+      // Menu focus is assigned after its measured position is committed.
+      await waitFor(`Boolean(document.querySelector('[role="menu"]')?.contains(document.activeElement))`, 'menu receives keyboard focus')
+      await input({ type: 'keyDown', keyCode: 'Escape' })
+      await input({ type: 'keyUp', keyCode: 'Escape' })
+      await waitFor(`document.querySelectorAll('[role="menu"]').length === 0`, 'Escape closes the menu')
+    }
     const messages = []
     for (const scheme of ['dark', 'light']) {
       for (const density of ['compact', 'comfortable']) {
@@ -76,10 +90,10 @@ void app.whenReady().then(async () => {
           await waitForTooltip(title)
           await input({ type: 'keyDown', keyCode: 'Escape' })
           await input({ type: 'keyUp', keyCode: 'Escape' })
-          await setTimeout(30)
-          assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('[role="tooltip"]').length`), 0, 'Escape dismisses the name')
+          await waitFor(`document.querySelectorAll('[role="tooltip"]').length === 0`, 'Escape dismisses the name')
         }
         // Clicking before the enter delay must not leave a delayed bubble over the menu.
+        currentCheck = `${scheme}/${density}: pending tooltip activation`
         await input({ type: 'mouseMove', x: -1, y: -1 })
         await setTimeout(900) // Let MUI's immediate-next-tooltip window expire.
         const menuPoint = await window.webContents.executeJavaScript(`window.prepareTooltip('menu')`)
@@ -89,18 +103,16 @@ void app.whenReady().then(async () => {
         await setTimeout(600)
         assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('[role="menu"]').length`), 1, 'menu opens')
         assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('[role="tooltip"]').length`), 0, 'activation cancels the pending tooltip')
-        await input({ type: 'keyDown', keyCode: 'Escape' })
-        await input({ type: 'keyUp', keyCode: 'Escape' })
+        await closeMenu()
+        currentCheck = `${scheme}/${density}: visible tooltip activation`
         await input({ type: 'mouseMove', x: -1, y: -1 })
         const visiblePoint = await window.webContents.executeJavaScript(`window.prepareTooltip('menu')`)
         await input({ type: 'mouseMove', ...visiblePoint })
         await waitForTooltip('More actions')
         await input({ type: 'mouseDown', button: 'left', clickCount: 1, ...visiblePoint })
         await input({ type: 'mouseUp', button: 'left', clickCount: 1, ...visiblePoint })
-        await setTimeout(30)
-        assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('[role="tooltip"]').length`), 0, 'activation also removes an already visible tooltip')
-        await input({ type: 'keyDown', keyCode: 'Escape' })
-        await input({ type: 'keyUp', keyCode: 'Escape' })
+        await waitFor(`document.querySelectorAll('[role="tooltip"]').length === 0`, 'activation also removes an already visible tooltip')
+        await closeMenu()
         messages.push(`${scheme}/${density}: icon names on hover/focus and activation dismissal passed`)
       }
     }

@@ -30,10 +30,10 @@ function sameGeometry(names: string[]): void {
   }
 }
 
-async function focus(name: string, selector?: string, expected?: Partial<CSSStyleDeclaration>): Promise<CSSStyleDeclaration> {
+async function focus(name: string, selector?: string, expected?: Partial<CSSStyleDeclaration>, styleSelector?: string): Promise<CSSStyleDeclaration> {
   const target = element(name, selector)
   await focusTarget(target, name)
-  const style = getComputedStyle(element(name))
+  const style = getComputedStyle(element(name, styleSelector))
   const deadline = performance.now() + 2000
   // Focus events can precede the renderer's resolved style update. Keep the
   // exact appearance assertions below, but allow that update to finish first.
@@ -83,7 +83,7 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
   equal(height, density === 'compact' ? 22 : 36, 'filter density')
   if (element('textarea').getBoundingClientRect().height <= element('text').getBoundingClientRect().height) throw new Error('Multiline field was collapsed to single-line height')
 
-  const search = await focus('search', 'input')
+  const search = await focus('search', 'input', { outlineWidth: '2px', outlineOffset: '1px' })
   const ring = { color: search.outlineColor, width: search.outlineWidth, offset: search.outlineOffset }
   equal(ring.width, '2px', 'search focus must be visible')
   equal(ring.offset, '1px', 'standalone focus is outside the frame')
@@ -96,19 +96,18 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
     }
   }
   for (const [name, selector] of [['icon', 'button'], ['tabs', '[role="tab"]']] as const) {
-    const target = element(name, selector)
-    await focus(name, selector)
-    equal(getComputedStyle(target).outlineColor, ring.color, `${name}: focus color`)
-    equal(getComputedStyle(target).outlineWidth, ring.width, `${name}: focus width`)
-    equal(getComputedStyle(target).outlineOffset, '-2px', `${name}: inset focus`)
+    const style = await focus(name, selector, { outlineColor: ring.color, outlineWidth: ring.width, outlineOffset: '-2px' }, selector)
+    equal(style.outlineColor, ring.color, `${name}: focus color`)
+    equal(style.outlineWidth, ring.width, `${name}: focus width`)
+    equal(style.outlineOffset, '-2px', `${name}: inset focus`)
   }
   for (const [name, vessel] of [['checkbox', '.MuiCheckbox-root'], ['switch', '.MuiSwitch-root'], ['segments', '.MuiFormControlLabel-root']] as const) {
-    await focus(name, 'input')
-    equal(getComputedStyle(element(name, vessel)).outlineColor, ring.color, `${name}: focus color`)
-    equal(getComputedStyle(element(name, vessel)).outlineWidth, ring.width, `${name}: focus width`)
+    const style = await focus(name, 'input', { outlineColor: ring.color, outlineWidth: ring.width }, vessel)
+    equal(style.outlineColor, ring.color, `${name}: focus color`)
+    equal(style.outlineWidth, ring.width, `${name}: focus width`)
   }
   const invalidBorder = getComputedStyle(element('error', 'fieldset')).borderColor
-  await focus('error', 'input')
+  await focus('error', 'input', { outlineColor: ring.color })
   equal(getComputedStyle(element('error', 'fieldset')).borderColor, invalidBorder, 'invalid border survives focus')
   equal(getComputedStyle(element('error')).outlineColor, ring.color, 'validation does not replace keyboard focus')
   for (const name of ['search-disabled', 'filter-disabled', 'text-disabled', 'select-disabled']) {
