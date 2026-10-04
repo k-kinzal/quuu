@@ -38,10 +38,11 @@ void app.whenReady().then(async () => {
     const messages = []
     for (const scheme of ['dark', 'light']) {
       for (const density of ['compact', 'comfortable']) {
+        currentCheck = `${scheme}/${density}: control appearance`
         messages.push(await window.webContents.executeJavaScript(`window.checkControls('${scheme}', '${density}')`))
         const hovered = []
         for (const name of ['search', 'filter', 'text', 'search-disabled', 'filter-disabled', 'text-disabled']) {
-          await input({ type: 'mouseMove', x: 1, y: 1 })
+          await input({ type: 'mouseMove', x: -1, y: -1 })
           const before = await window.webContents.executeJavaScript(`window.prepareHover('${name}')`)
           // Let focus/hover transitions finish before comparing the steady state.
           await setTimeout(150)
@@ -58,7 +59,7 @@ void app.whenReady().then(async () => {
         const cases = await window.webContents.executeJavaScript(`window.renderTooltips('${scheme}', '${density}')`)
         for (const [name, title] of cases) {
           currentCheck = `${scheme}/${density}: hover ${name}`
-          await input({ type: 'mouseMove', x: 1, y: 1 })
+          await input({ type: 'mouseMove', x: -1, y: -1 })
           const point = await window.webContents.executeJavaScript(`window.prepareTooltip('${name}')`)
           await input({ type: 'mouseMove', ...point })
           await waitForTooltip(title)
@@ -66,10 +67,12 @@ void app.whenReady().then(async () => {
         // Keyboard focus uses the same visible name, independent of hover or native titles.
         for (const [name, title] of cases.filter(([name]) => !name.includes('disabled'))) {
           currentCheck = `${scheme}/${density}: focus ${name}`
-          await input({ type: 'mouseMove', x: 1, y: 1 })
+          // Stay outside the viewport while scrolling, independent of the specimen's layout.
+          await input({ type: 'mouseMove', x: -1, y: -1 })
+          await window.webContents.executeJavaScript(`window.prepareTooltip('${name}')`)
           await input({ type: 'keyDown', keyCode: 'Tab' })
           await input({ type: 'keyUp', keyCode: 'Tab' })
-          await window.webContents.executeJavaScript(`window.prepareTooltip('${name}'); window.tooltipTarget('${name}').focus()`)
+          await window.webContents.executeJavaScript(`window.focusTooltip('${name}')`)
           await waitForTooltip(title)
           await input({ type: 'keyDown', keyCode: 'Escape' })
           await input({ type: 'keyUp', keyCode: 'Escape' })
@@ -77,7 +80,7 @@ void app.whenReady().then(async () => {
           assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('[role="tooltip"]').length`), 0, 'Escape dismisses the name')
         }
         // Clicking before the enter delay must not leave a delayed bubble over the menu.
-        await input({ type: 'mouseMove', x: 1, y: 1 })
+        await input({ type: 'mouseMove', x: -1, y: -1 })
         await setTimeout(900) // Let MUI's immediate-next-tooltip window expire.
         const menuPoint = await window.webContents.executeJavaScript(`window.prepareTooltip('menu')`)
         await input({ type: 'mouseMove', ...menuPoint })
@@ -88,7 +91,7 @@ void app.whenReady().then(async () => {
         assert.equal(await window.webContents.executeJavaScript(`document.querySelectorAll('[role="tooltip"]').length`), 0, 'activation cancels the pending tooltip')
         await input({ type: 'keyDown', keyCode: 'Escape' })
         await input({ type: 'keyUp', keyCode: 'Escape' })
-        await input({ type: 'mouseMove', x: 1, y: 1 })
+        await input({ type: 'mouseMove', x: -1, y: -1 })
         const visiblePoint = await window.webContents.executeJavaScript(`window.prepareTooltip('menu')`)
         await input({ type: 'mouseMove', ...visiblePoint })
         await waitForTooltip('More actions')
@@ -144,6 +147,10 @@ void app.whenReady().then(async () => {
     app.exit(0)
   } catch (error) {
     console.error(currentCheck, error)
+    console.error('Focus state', await window.webContents.executeJavaScript(`JSON.stringify({
+      documentFocused: document.hasFocus(), active: document.activeElement?.outerHTML,
+      focused: document.activeElement?.matches(':focus'), focusVisible: document.activeElement?.matches(':focus-visible')
+    })`).catch(() => 'Renderer unavailable'))
     app.exit(1)
   }
 })

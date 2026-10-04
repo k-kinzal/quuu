@@ -31,10 +31,28 @@ function sameGeometry(names: string[]): void {
 }
 
 async function focus(name: string, selector?: string): Promise<CSSStyleDeclaration> {
-  element(name, selector).focus()
-  await frame()
-  if (document.activeElement !== element(name, selector)) throw new Error(`Focus moved away from ${name} to ${document.activeElement?.outerHTML}`)
+  const target = element(name, selector)
+  await focusTarget(target, name)
   return getComputedStyle(element(name))
+}
+
+async function focusTarget(target: HTMLElement, name: string): Promise<void> {
+  target.focus()
+  // An inactive window can retain activeElement without matching native focus selectors.
+  // One animation frame does not establish that the hidden renderer has acquired focus.
+  const deadline = performance.now() + 2000
+  const focused = (): boolean => document.hasFocus() && document.activeElement === target && target.matches(':focus')
+  do { await frame() } while (!focused() && performance.now() < deadline)
+  if (!focused()) {
+    throw new Error(`${name}: native focus is missing: ${JSON.stringify(focusState(target))}`)
+  }
+}
+
+function focusState(target: HTMLElement, vessel = target): object {
+  const style = getComputedStyle(vessel)
+  return { documentFocused: document.hasFocus(), active: document.activeElement?.outerHTML,
+    focused: target.matches(':focus'), focusVisible: target.matches(':focus-visible'),
+    outline: style.outline, outlineOffset: style.outlineOffset, target: target.outerHTML }
 }
 
 async function check(scheme: ColorScheme, density: Density): Promise<string> {
@@ -57,20 +75,18 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
     const style = await focus(name, selector)
     for (const key of ['color', 'width', 'offset'] as const) {
       const prop = { color: 'outlineColor', width: 'outlineWidth', offset: 'outlineOffset' } as const
-      equal(style[prop[key]], ring[key], `${name}: focus ${key}`)
+      equal(style[prop[key]], ring[key], `${name}: focus ${key} (${JSON.stringify(focusState(element(name, selector), element(name)))})`)
     }
   }
   for (const [name, selector] of [['icon', 'button'], ['tabs', '[role="tab"]']] as const) {
     const target = element(name, selector)
-    target.focus()
-    await frame()
+    await focus(name, selector)
     equal(getComputedStyle(target).outlineColor, ring.color, `${name}: focus color`)
     equal(getComputedStyle(target).outlineWidth, ring.width, `${name}: focus width`)
     equal(getComputedStyle(target).outlineOffset, '-2px', `${name}: inset focus`)
   }
   for (const [name, vessel] of [['checkbox', '.MuiCheckbox-root'], ['switch', '.MuiSwitch-root'], ['segments', '.MuiFormControlLabel-root']] as const) {
-    element(name, 'input').focus()
-    await frame()
+    await focus(name, 'input')
     equal(getComputedStyle(element(name, vessel)).outlineColor, ring.color, `${name}: focus color`)
     equal(getComputedStyle(element(name, vessel)).outlineWidth, ring.width, `${name}: focus width`)
   }
@@ -134,10 +150,13 @@ async function renderTooltips(scheme: ColorScheme, density: Density): Promise<st
   return tooltipCases
 }
 
-function prepareTooltip(name: string): { x: number; y: number } {
+async function prepareTooltip(name: string): Promise<{ x: number; y: number }> {
   if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+  await frame()
   const target = tooltipTarget(name)
   target.scrollIntoView({ block: 'center' })
+  // Settle scrolling before hover/focus so a delayed pointer leave cannot dismiss the new name.
+  await frame()
   const bounds = target.getBoundingClientRect()
   if (!target.getAttribute('aria-label')) throw new Error(`${name}: missing accessible name`)
   if (target.hasAttribute('title')) throw new Error(`${name}: native tooltip would compete with the kit`)
@@ -154,7 +173,8 @@ function checkTooltip(text: string): void {
   if (tips[0].closest('nav')) throw new Error(`${text}: tooltip clipped by the navigation container`)
 }
 
-Object.assign(window, { renderTooltips, prepareTooltip, tooltipTarget, checkTooltip })
+Object.assign(window, { renderTooltips, prepareTooltip, tooltipTarget, checkTooltip,
+  focusTooltip: (name: string) => focusTarget(tooltipTarget(name), name) })
 
 async function renderExplorer(width: number, scheme: ColorScheme): Promise<void> {
   flushSync(() => root.render(<ThemeProvider colorScheme={scheme}><ExplorerResizeSpecimen width={width} /></ThemeProvider>))
