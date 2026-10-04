@@ -22,6 +22,13 @@ describe('application name', () => {
     expect(yml).toMatch(/^appId:\s*net\.kinzal\.quuu$/m)
   })
 
+  it('gives local Mac builds a separate notification identity from installed Releases', () => {
+    const local = readFileSync(join(ROOT, 'electron-builder.yml'), 'utf8')
+    const release = readFileSync(join(ROOT, 'electron-builder.release.yml'), 'utf8')
+    expect(local).toMatch(/^mac:\n(?: {2}#.*\n)* {2}appId: net\.kinzal\.quuu\.local$/m)
+    expect(release).toMatch(/^mac:\n {2}appId: net\.kinzal\.quuu$/m)
+  })
+
   it('data location and DB name keep the old name (never lose sight of what already exists)', () => {
     const saved = process.env.QUUU_USER_DATA
     delete process.env.QUUU_USER_DATA

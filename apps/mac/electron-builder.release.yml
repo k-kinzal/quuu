@@ -2,6 +2,7 @@ extends: ./electron-builder.yml
 extraMetadata:
   quuuDistribution: github-release
 mac:
+  appId: net.kinzal.quuu
   target:
     - target: zip
       arch: [arm64, x64]

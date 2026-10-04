@@ -733,6 +733,17 @@ Clicking a task notification opens that task. Input validation, save failures,
 and other immediate operation feedback stay in the bottom-right app popup.
 Settings → Notifications controls review/failure events and the system channel.
 On macOS, delivery follows the app's notification permission and Focus settings.
+Local Mac builds use `net.kinzal.quuu.local`, while GitHub Releases use
+`net.kinzal.quuu`. Keeping their notification identities separate prevents macOS
+from launching an installed Release when a notification belongs to the running
+local build. The data directory stays `taskd`; notification permission is separate
+for each build. Existing notifications sent under the old identity still belong
+to that identity.
+
+New task notifications retain their destination across app restarts. Clicking one
+restores the existing window (including a minimized window) and opens the task
+once the screen has loaded. Older notifications without a saved task identifier
+cannot recover their destination after a restart.
 
 The optional **Sakura Script Transfer Protocol (SSTP)** channel connects over TCP
 (default `127.0.0.1:9801`). Run an SSTP receiver first, then enable SSTP in

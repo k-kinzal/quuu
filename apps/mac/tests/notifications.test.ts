@@ -1,6 +1,7 @@
 import { EventEmitter, once } from 'node:events'
 import { createServer, type Server, type Socket } from 'node:net'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { NotificationConstructorOptions } from 'electron'
 import { openDatabase } from '../src/main/db/database.js'
 import * as repo from '../src/main/db/repo.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
@@ -12,17 +13,20 @@ import type { ToastPayload } from '../src/main/snapshot.js'
 import { contract } from '../src/api/contract.js'
 import { createRouterClient, implement } from '@orpc/server'
 
-const native = vi.hoisted(() => ({ supported: true, created: [] as EventEmitter[], options: [] as unknown[] }))
+const native = vi.hoisted(() => ({ supported: true, created: [] as EventEmitter[], options: [] as NotificationConstructorOptions[], history: vi.fn<() => Promise<EventEmitter[]>>() }))
 vi.mock('electron', () => ({ Notification: class extends EventEmitter {
   static isSupported() { return native.supported }
-  constructor(options: unknown) { super(); native.created.push(this); native.options.push(options) }
+  static getHistory = native.history
+  constructor(options: NotificationConstructorOptions) { super(); native.created.push(this); native.options.push(options) }
   show = vi.fn()
 } }))
-import { showNativeNotification } from '../src/main/desktop/notifications.js'
+import { nativeNotificationLaunch, restoreNativeNotifications, showNativeNotification } from '../src/main/desktop/notifications.js'
 
 const event: ToastPayload = { id: 'event', notificationKind: 'review', level: 'success', message: 'Ready', taskId: 'task', taskTitle: 'Build', projectId: 'project', projectName: 'Project' }
 const settings = () => ({ ...structuredClone(DEFAULT_SETTINGS), sstpEnabled: true, sstpScripts: Object.fromEntries(NOTIFICATION_KINDS.map(kind => [kind, ['\\0{{message}}\\e']])) as typeof DEFAULT_SETTINGS.sstpScripts })
-afterEach(() => { vi.restoreAllMocks(); native.created.length = 0; native.options.length = 0; native.supported = true })
+const originalPlatform = process.platform
+beforeEach(() => { Object.defineProperty(process, 'platform', { value: 'darwin' }); native.history.mockResolvedValue([]) })
+afterEach(() => { Object.defineProperty(process, 'platform', { value: originalPlatform }); vi.restoreAllMocks(); vi.unstubAllEnvs(); native.created.length = 0; native.options.length = 0; native.supported = true; native.history.mockReset() })
 
 it('sends every background kind to native and SSTP without an in-app toast', async () => {
   const ports = { native: vi.fn(), toast: vi.fn(), sstp: vi.fn().mockResolvedValue(undefined) }
@@ -67,13 +71,72 @@ it('contains delivery failures without producing another notification or interru
 it('shows the native notification without checking window focus and opens its task on click', () => {
   const open = vi.fn()
   showNativeNotification(event, 'Review', open)
-  expect(native.options).toEqual([{ title: 'Review', body: 'Ready', silent: false }])
+  expect(native.options).toMatchObject([{ title: 'Review', body: 'Ready', silent: false }])
+  expect(native.options[0].id).toMatch(/^quuu:1:[a-f0-9]+:task:event$/)
   expect(Reflect.get(native.created[0], 'show')).toHaveBeenCalledOnce()
   native.created[0].emit('click')
   expect(open).toHaveBeenCalledWith('task')
   native.supported = false
   showNativeNotification(event, 'Review', open)
   expect(native.created).toHaveLength(1)
+})
+
+it('restores a previous session notification without posting it again and opens its saved task', async () => {
+  showNativeNotification({ ...event, taskId: 'task:日本語/%' }, 'Review', vi.fn())
+  const previous = Object.assign(new EventEmitter(), { id: native.options[0].id, show: vi.fn() })
+  native.history.mockResolvedValue([previous])
+  const open = vi.fn()
+  await restoreNativeNotifications(open)
+  previous.emit('click')
+  expect(open).toHaveBeenCalledOnce()
+  expect(open).toHaveBeenCalledWith('task:日本語/%')
+  expect(previous.show).not.toHaveBeenCalled()
+})
+
+it('recovers a cold-start destination only for a default click from this data profile', async () => {
+  showNativeNotification(event, 'Review', vi.fn())
+  const info = { identifier: native.options[0].id, actionIdentifier: 'com.apple.UNNotificationDefaultActionIdentifier' }
+  expect(nativeNotificationLaunch(info)).toEqual({ taskId: 'task' })
+  expect(nativeNotificationLaunch({ ...info, actionIdentifier: 'com.apple.UNNotificationDismissActionIdentifier' })).toBeNull()
+  expect(nativeNotificationLaunch(undefined)).toBeNull()
+  expect(nativeNotificationLaunch({ ...info, identifier: 'old-random-uuid' })).toBeNull()
+  expect(nativeNotificationLaunch({ ...info, identifier: info.identifier?.replace(':task:', ':%ZZ:') })).toBeNull()
+  vi.stubEnv('QUUU_USER_DATA', '/tmp/quuu-other-notification-profile')
+  expect(nativeNotificationLaunch(info)).toBeNull()
+  const otherProfile = Object.assign(new EventEmitter(), { id: info.identifier })
+  native.history.mockResolvedValue([otherProfile])
+  const open = vi.fn()
+  await restoreNativeNotifications(open)
+  otherProfile.emit('click')
+  expect(open).not.toHaveBeenCalled()
+})
+
+it('restores notifications without a task as requests to show the app', async () => {
+  showNativeNotification({ ...event, taskId: undefined }, 'Report', vi.fn())
+  const identifier = native.options[0].id
+  expect(nativeNotificationLaunch({ identifier, actionIdentifier: 'com.apple.UNNotificationDefaultActionIdentifier' })).toEqual({})
+  const previous = Object.assign(new EventEmitter(), { id: identifier })
+  native.history.mockResolvedValue([previous])
+  const open = vi.fn()
+  await restoreNativeNotifications(open)
+  previous.emit('click')
+  expect(open).toHaveBeenCalledWith(undefined)
+})
+
+it('contains history failures and leaves the Windows notification click path intact', async () => {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  native.history.mockRejectedValue(new Error('unavailable'))
+  await expect(restoreNativeNotifications(vi.fn())).resolves.toBeUndefined()
+  expect(warn).toHaveBeenCalledOnce()
+  Object.defineProperty(process, 'platform', { value: 'win32' })
+  native.history.mockClear()
+  const open = vi.fn()
+  await restoreNativeNotifications(open)
+  expect(native.history).not.toHaveBeenCalled()
+  showNativeNotification(event, 'Review', open)
+  expect(native.options[0]).not.toHaveProperty('id')
+  native.created[0].emit('click')
+  expect(open).toHaveBeenCalledWith('task')
 })
 
 it('chooses exactly one non-empty script of the matching kind and fills in speech variables once', () => {

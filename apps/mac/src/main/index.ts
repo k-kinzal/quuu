@@ -1,5 +1,5 @@
 import { deliverNotification } from './notifications/delivery.js'
-import { showNativeNotification } from './desktop/notifications.js'
+import { nativeNotificationLaunch, restoreNativeNotifications, showNativeNotification } from './desktop/notifications.js'
 import { app, BrowserWindow, nativeImage, nativeTheme } from 'electron'
 import { dirname, join } from 'node:path'
 import { unlinkSync } from 'node:fs'
@@ -34,6 +34,8 @@ let updates: AppUpdates | null = null
 let quitting = false
 let shutdownComplete = false
 let broadcastTimer: NodeJS.Timeout | null = null
+let started = false
+let pendingNotification: { taskId?: string } | null = null
 
 const RESOURCES = app.isPackaged
   ? join(process.resourcesPath, 'build')
@@ -92,13 +94,17 @@ function applyAppearance(theme: AppSettings['theme']): void {
   nativeTheme.themeSource = theme
 }
 
+function openNotification(taskId?: string): void {
+  // History can be clicked while bootstrap is still restoring tasks and wiring IPC.
+  if (!started) { pendingNotification = { taskId }; return }
+  if (taskId) send('task.open', { taskId }, 'notification')
+  else showWindow()
+}
+
 function notify(instance: QuuuApp, event: ToastPayload): Promise<void> {
   return deliverNotification(event, instance.settings.getSettings(), {
     toast: payload => { if (!showingHost()) broadcast(EVENTS.toast, payload) },
-    native: (payload, title) => showNativeNotification(payload, title, taskId => {
-      showWindow()
-      if (taskId) send('task.open', { taskId }, 'notification')
-    })
+    native: (payload, title) => showNativeNotification(payload, title, openNotification)
   })
 }
 
@@ -129,7 +135,10 @@ if (process.platform === 'win32') app.setAppUserModelId('net.kinzal.quuu')
 if (!app.requestSingleInstanceLock()) {
   app.quit()
 } else {
-  app.on('second-instance', () => showWindow())
+  app.on('second-instance', () => { if (started) showWindow() })
+  app.on('ready', (_event, launchInfo: unknown) => {
+    pendingNotification = nativeNotificationLaunch(launchInfo)
+  })
 
   /*
    * A three-finger page swipe reaches the window as a gesture, never as scrolling the
@@ -152,6 +161,8 @@ if (!app.requestSingleInstanceLock()) {
     }
 
     quuu = new QuuuApp()
+    quuu.settings.load()
+    if (quuu.settings.getSettings().nativeNotifications) await restoreNativeNotifications(openNotification)
     quuu.settings.serverStatus.connectionFile = join(userDataDir(), 'connections.json')
     try { unlinkSync(quuu.settings.serverStatus.connectionFile) }
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('Cannot remove stale connection information:', error) }
@@ -185,7 +196,12 @@ if (!app.requestSingleInstanceLock()) {
 
     // Built after bootstrap so "Go › Projects" can be populated
     refreshMenuIfProjectsChanged(quuu?.snapshot().projects ?? [])
+    started = true
     showWindow()
+    if (pendingNotification) {
+      openNotification(pendingNotification.taskId)
+      pendingNotification = null
+    }
 
     if (isReleaseBuild(app.isPackaged, process.platform, app.getAppPath())) {
       void import('./desktop/appUpdates.js').then(({ AppUpdates }) => {

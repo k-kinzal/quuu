@@ -22,7 +22,12 @@ export function send(command: AppCommand, extra?: Omit<CommandPayload, 'command'
   reportCommand(command, menuTrigger ?? trigger)
   showWindow()
   const payload: CommandPayload = { command, ...extra }
-  if (mainWindow) sendEvent(mainWindow, EVENTS.command, payload)
+  const owner = mainWindow
+  if (!owner) return
+  const deliver = (): void => sendEvent(owner, EVENTS.command, payload)
+  // A recreated window has no preload listener until its document loads.
+  if (owner.webContents.isLoadingMainFrame()) owner.webContents.once('did-finish-load', deliver)
+  else deliver()
 }
 
 /** The project list as of the last menu build. null = never built yet */

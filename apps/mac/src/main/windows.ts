@@ -118,6 +118,8 @@ export function showWindow(): void {
     mainWindow = createWindow()
     return
   }
+  if (mainWindow.isMinimized()) mainWindow.restore()
   if (!mainWindow.isVisible()) mainWindow.show()
   mainWindow.focus()
+  if (process.platform === 'darwin') app.focus({ steal: true })
 }

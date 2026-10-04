@@ -13,13 +13,26 @@ function subscribe<K extends keyof EventPayloads>(channel: K, cb: (payload: Even
   ipcRenderer.on(channel, listener)
   return () => ipcRenderer.removeListener(channel, listener)
 }
+
+// Notification clicks can arrive before React has loaded the initial task snapshot.
+const pendingCommands: EventPayloads[typeof EVENTS.command][] = []
+const commandListeners = new Set<(payload: EventPayloads[typeof EVENTS.command]) => void>()
+ipcRenderer.on(EVENTS.command, (_event, payload: EventPayloads[typeof EVENTS.command]) => {
+  if (commandListeners.size === 0) pendingCommands.push(payload)
+  else for (const listener of commandListeners) listener(payload)
+})
+
 const events: QuuuEvents = {
   snapshot: cb => subscribe(EVENTS.snapshot, cb),
   settings: cb => subscribe(EVENTS.settings, cb),
   sessionAppended: cb => subscribe(EVENTS.sessionAppended, cb),
   schedulerStatus: cb => subscribe(EVENTS.schedulerStatus, cb),
   toast: cb => subscribe(EVENTS.toast, cb),
-  command: cb => subscribe(EVENTS.command, cb),
+  command: cb => {
+    commandListeners.add(cb)
+    for (const payload of pendingCommands.splice(0)) cb(payload)
+    return () => { commandListeners.delete(cb) }
+  },
   terminal: cb => subscribe(EVENTS.terminal, cb)
 }
 contextBridge.exposeInMainWorld('quuuEvents', events)

@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { createHash } from 'node:crypto'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const host = vi.hoisted(() => ({
@@ -11,7 +12,8 @@ const host = vi.hoisted(() => ({
   start: vi.fn(), stop: vi.fn(), install: vi.fn(),
   initialized: vi.fn(),
   close: vi.fn(),
-  settings: { serverStatus: {}, on: vi.fn(), getSettings: () => ({ theme: 'system', httpEnabled: false, mcpEnabled: false }) },
+  ready: vi.fn<() => Promise<void>>(), command: vi.fn(),
+  settings: { serverStatus: {}, on: vi.fn(), load: vi.fn(), getSettings: () => ({ theme: 'system', httpEnabled: false, mcpEnabled: false }) },
   network: { on: vi.fn(), setPairer: vi.fn(), hosting: () => null, status: () => ({ satellite: { enabled: false } }) }
 }))
 vi.mock('electron', () => ({
@@ -19,10 +21,10 @@ vi.mock('electron', () => ({
     isPackaged: true,
     getAppPath: () => '/Applications/Quuu.app/Contents/Resources/app.asar',
     getLocale: () => 'en',
-    setPath: vi.fn(), requestSingleInstanceLock: () => true, whenReady: () => Promise.resolve(),
+    setPath: vi.fn(), requestSingleInstanceLock: () => true, whenReady: host.ready,
     on: (name: string, callback: (...args: unknown[]) => void) => { host.events.set(name, callback) },
     quit: host.quit
-  }, nativeTheme: {}, nativeImage: {}, Notification: {}
+  }, nativeTheme: {}, nativeImage: {}, Notification: { isSupported: () => false }
 }))
 vi.mock('../src/main/bootstrap.js', () => ({
   QuuuApp: class {
@@ -41,7 +43,7 @@ vi.mock('../src/main/bootstrap.js', () => ({
 }))
 vi.mock('../src/main/appPaths.js', () => ({ userDataDir: () => host.directory }))
 vi.mock('../src/main/ipc/index.js', () => ({ broadcast: vi.fn(), registerIpc: vi.fn(), followHost: vi.fn(), showingHost: () => false }))
-vi.mock('../src/main/menus.js', () => ({ refreshMenuIfProjectsChanged: vi.fn(), send: vi.fn(), setUpdateMenuItem: host.menu }))
+vi.mock('../src/main/menus.js', () => ({ refreshMenuIfProjectsChanged: vi.fn(), send: host.command, setUpdateMenuItem: host.menu }))
 vi.mock('../src/main/windows.js', () => ({ beginQuit: vi.fn(), configureWindows: vi.fn(), mainWindow: null, showWindow: host.show }))
 vi.mock('../src/main/mobile-sync/folder.js', () => ({ mobileWebRoot: () => '' }))
 vi.mock('../src/main/desktop/operations.js', () => ({ desktopOperations: vi.fn(), attachAppUpdates: vi.fn(), appControls: {} }))
@@ -67,6 +69,7 @@ beforeEach(() => {
   host.events.clear()
   host.order.length = 0
   host.start.mockResolvedValue(undefined)
+  host.ready.mockResolvedValue(undefined)
   host.close.mockImplementation(() => host.order.push('close database'))
   host.stop.mockImplementation(() => host.order.push('stop updates'))
   host.install.mockImplementation(() => { host.order.push('install update'); return true })
@@ -98,6 +101,26 @@ it('never constructs an updater for a packaged local build', async () => {
   await vi.waitFor(() => expect(host.show).toHaveBeenCalledOnce())
   expect(host.initialized).not.toHaveBeenCalled()
   expect(host.menu).not.toHaveBeenCalled()
+})
+
+it('opens the notification destination after bootstrap when macOS launches the app from a click', async () => {
+  let finishReady = (): void => {}
+  host.ready.mockReturnValue(new Promise<void>(resolve => { finishReady = resolve }))
+  await import('../src/main/index.js')
+  const profile = createHash('sha256').update(host.directory).digest('hex')
+  host.events.get('ready')?.({}, {
+    identifier: `quuu:1:${profile}:notified-task:event`,
+    actionIdentifier: 'com.apple.UNNotificationDefaultActionIdentifier'
+  })
+  // A second launch during bootstrap must not create a window before IPC is wired.
+  host.events.get('second-instance')?.()
+  expect(host.show).not.toHaveBeenCalled()
+  expect(host.command).not.toHaveBeenCalled()
+  finishReady()
+  await vi.waitFor(() => expect(host.command).toHaveBeenCalledWith('task.open', { taskId: 'notified-task' }, 'notification'))
+  expect(host.command).toHaveBeenCalledOnce()
+  host.events.get('activate')?.()
+  expect(host.command).toHaveBeenCalledOnce()
 })
 
 it('stops checks and closes SQLite before handing shutdown to the native installer', async () => {

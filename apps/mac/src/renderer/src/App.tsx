@@ -122,6 +122,7 @@ function Shell(): JSX.Element {
    * only executes commands here.
    */
   useEffect(() => {
+    if (!ready) return
     const run = async (payload: CommandPayload): Promise<void> => {
       const { command, taskId, projectId, value } = payload
       const s = useStore.getState()
@@ -304,7 +305,7 @@ function Shell(): JSX.Element {
     }
 
     return window.quuuEvents.command((payload) => void run(payload))
-  }, [closeDetail, openProjectSettings, openTask, ordered, setLayout, setSection])
+  }, [closeDetail, openProjectSettings, openTask, ordered, ready, setLayout, setSection])
 
   /**
    * Only keys that make no sense on a menu are handled here.

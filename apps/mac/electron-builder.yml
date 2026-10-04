@@ -38,6 +38,9 @@ extraResources:
   - from: ../mobile/dist
     to: mobile-web
 mac:
+  # Notification Center resolves a bundle ID to one app, even when another copy is running.
+  # Local builds must not send clicks to an installed GitHub Release in /Applications.
+  appId: net.kinzal.quuu.local
   category: public.app-category.developer-tools
   icon: build/icon.icns
   extraResources:
