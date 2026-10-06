@@ -47,7 +47,7 @@ const COMPONENTS: Array<[string, string]> = [
   ['hero', 'what the page leads with. Either .was/.mid/.now side by side, one <svg>, or one .figures holding three short answers where a before/after would be wrong.'],
   ['was / now', 'the two sides of the hero. Each holds .cap, .fig, .unit.'],
   ['mid', 'the gap between them; put an arrow <svg> in it.'],
-  ['cap / fig / unit', 'a hero side: its label, a number, what the number counts.'],
+  ['cap / fig / unit', 'a hero side: its label, a number, what the number counts. Keep numeric precision; long values scroll within .fig on screen. Verify the full value remains readable in print.'],
   ['claim', 'the same slot as .fig, carrying a short phrase instead of a number.'],
   ['sec', 'one section. Holds .label and .field.'],
   ['label', 'the section name, in the left column.'],
@@ -211,7 +211,7 @@ The local CSS file is readable if you need to inspect additional static componen
 
 The page is a static document. It cannot reach the network and does not run script - a fetched
 font or a <script> renders as nothing. Use semantic HTML, CSS-only figures and inline SVG;
-omit controls that need document-design.js, such as tabs, filters, copy or theme buttons.`,
+omit controls that need document-design.js, such as tabs, filters, copy, theme or palette controls.`,
     `Components the stylesheet draws (document-design ${REPORT_STYLE_VERSION}):
 ${COMPONENTS.map(([name, what]) => `- .${name} — ${what}`).join('\n')}`,
     `Structure:

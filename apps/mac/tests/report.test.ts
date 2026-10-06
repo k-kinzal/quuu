@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -665,22 +665,34 @@ describe('whether reaching review again writes one', () => {
 })
 
 describe('the shared assets', () => {
-  it('restores the pinned CSS without overwriting an older report stylesheet', () => {
+  it('restores the pinned assets without renaming or changing historical stylesheets and notices', () => {
     writeReportAssets()
     const assets = join(data, 'reports', REPORT_ASSETS)
     const stylesheet = join(assets, REPORT_STYLE_FILE)
-    const bundled = readFileSync(new URL('../src/main/report/vendor/document-design/v1.1.0/document-design.css', import.meta.url))
+    const bundled = readFileSync(new URL('../src/main/report/vendor/document-design/v1.2.1/document-design.css', import.meta.url))
     expect(readFileSync(stylesheet).equals(bundled)).toBe(true)
-    expect(readFileSync(join(assets, REPORT_NOTICE_FILE), 'utf8')).toContain('MIT License')
-    // Reports written against v1.0.0 keep linking to its file, so it stays as they left it
-    const previous = readFileSync(new URL('../src/main/report/vendor/document-design/v1.0.0/document-design.css', import.meta.url))
-    writeFileSync(join(assets, 'document-design-v1.0.0.css'), previous)
-    writeFileSync(join(assets, 'report.css'), 'legacy report styles')
+    const notice = readFileSync(new URL('../src/main/report/vendor/document-design/v1.2.1/NOTICE.txt', import.meta.url))
+    expect(REPORT_STYLE_FILE).toBe('document-design-v1.2.1.css')
+    expect(REPORT_NOTICE_FILE).toBe('document-design-v1.2.1.NOTICE.txt')
+    expect(readFileSync(join(assets, REPORT_NOTICE_FILE)).equals(notice)).toBe(true)
+    // Older pages keep linking to these exact names and bytes across generations.
+    const historical = new Map([['report.css', Buffer.from('/* Original report styles */\r\nbody { color: #123; }\r\n')]])
+    for (const version of ['v1.0.0', 'v1.1.0']) {
+      for (const [source, suffix] of [['document-design.css', 'css'], ['NOTICE.txt', 'NOTICE.txt']]) {
+        historical.set(`document-design-${version}.${suffix}`, readFileSync(
+          new URL(`../src/main/report/vendor/document-design/${version}/${source}`, import.meta.url)
+        ))
+      }
+    }
+    for (const [name, bytes] of historical) writeFileSync(join(assets, name), bytes)
     writeFileSync(stylesheet, 'damaged')
+    writeFileSync(join(assets, REPORT_NOTICE_FILE), 'damaged')
     writeReportAssets()
     expect(readFileSync(stylesheet).equals(bundled)).toBe(true)
-    expect(readFileSync(join(assets, 'document-design-v1.0.0.css')).equals(previous)).toBe(true)
-    expect(readFileSync(join(assets, 'report.css'), 'utf8')).toBe('legacy report styles')
+    expect(readFileSync(join(assets, REPORT_NOTICE_FILE)).equals(notice)).toBe(true)
+    writeReportAssets()
+    for (const [name, bytes] of historical) expect(readFileSync(join(assets, name)).equals(bytes), name).toBe(true)
+    expect(readdirSync(assets).sort()).toEqual([...historical.keys(), REPORT_STYLE_FILE, REPORT_NOTICE_FILE].sort())
   })
 
   it('survive the sweep that clears reports of deleted tasks', async () => {
@@ -794,9 +806,9 @@ describe('what the generator is told', () => {
     expect(text).toContain(REPORT_STYLE_FILE)
     expect(text).toContain('Components the stylesheet draws')
     expect(text).toContain('Structure:')
-    expect(text).toContain('document-design (doc-ui) v1.1.0, bundled locally')
+    expect(text).toContain('document-design (doc-ui) v1.2.1, bundled locally')
     expect(text).toContain('<article class="sheet">')
-    expect(text).toContain('href="../assets/document-design-v1.1.0.css"')
+    expect(text).toContain('href="../assets/document-design-v1.2.1.css"')
   })
 
   it('says the page is static, so nothing is written against a CDN or a script', () => {

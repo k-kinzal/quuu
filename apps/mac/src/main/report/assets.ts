@@ -1,8 +1,8 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { reportRoot } from '../appPaths.js'
-import documentDesignCss from './vendor/document-design/v1.1.0/document-design.css?raw'
-import documentDesignNotice from './vendor/document-design/v1.1.0/NOTICE.txt?raw'
+import documentDesignCss from './vendor/document-design/v1.2.1/document-design.css?raw'
+import documentDesignNotice from './vendor/document-design/v1.2.1/NOTICE.txt?raw'
 
 /**
  * Bundle the pinned upstream CSS as text so packaged and development builds write the same
@@ -11,7 +11,7 @@ import documentDesignNotice from './vendor/document-design/v1.1.0/NOTICE.txt?raw
  */
 export const REPORT_ASSETS = 'assets'
 /** The release the imports above pin; it names the written files and the writer's guide. */
-export const REPORT_STYLE_VERSION = 'v1.1.0'
+export const REPORT_STYLE_VERSION = 'v1.2.1'
 export const REPORT_STYLE_FILE = `document-design-${REPORT_STYLE_VERSION}.css`
 export const REPORT_NOTICE_FILE = `document-design-${REPORT_STYLE_VERSION}.NOTICE.txt`
 

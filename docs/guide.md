@@ -613,12 +613,13 @@ generators survive app restarts just like task report generators.
 
 ## Report appearance
 
-New reports use [document-design](https://k-kinzal.github.io/document-design/)
-**v1.1.0**, bundled in the app and written locally to
-`reports/assets/document-design-v1.1.0.css` with its license notice. Generation
+New reports use [document-design v1.2.1](https://github.com/k-kinzal/document-design/releases/tag/v1.2.1),
+bundled in the app and written locally to
+`reports/assets/document-design-v1.2.1.css` with its license notice. Generation
 and viewing require no stylesheet download. Existing reports keep their original
-stylesheet: pages written with v1.0.0 still link to
-`reports/assets/document-design-v1.0.0.css`, which generation leaves unchanged.
+stylesheet: generation preserves the names and bytes of
+`document-design-v1.0.0.css`, `document-design-v1.1.0.css`, their notices, and the
+original `report.css` in `reports/assets/`.
 
 The report writer receives the library's `.sheet` layout, a static component
 guide, and an HTML skeleton. It uses figures with captions and sources, readable
@@ -631,7 +632,9 @@ list. Reports remain static: the library's optional JavaScript controls are not
 used. Use **Write again** to regenerate an existing report with this layout.
 
 The pinned file, upstream source, tag commit, checksum, and MIT license are recorded
-in [the vendored asset notes](../apps/mac/src/main/report/vendor/document-design/v1.1.0/README.md).
+in [the vendored asset notes](../apps/mac/src/main/report/vendor/document-design/v1.2.1/README.md).
+Acquisition uses the fixed `https://k-kinzal.github.io/document-design/v1.2.1/`
+distribution; runtime generation uses only the bundled copy.
 
 ## Task ordering
 
