@@ -589,18 +589,19 @@ existing task list and project settings remain available there. Dashboard appear
 only when report AI and the project's reports are enabled.
 
 While Quuu is running, the report AI checks projects once per Mac calendar day.
-It assesses the implementation against the purpose, vision and goals in AGENTS.md,
-README.md and the project documentation. **Settings → Report → Project dashboard**
-can replace that assessment prompt; an empty field uses the default. Task report
-instructions remain separate. Both use the same writer or group and bundled
-HTML document resources.
+It explains what the project is and how its design and implementation realize its
+purpose, using AGENTS.md, README.md, project documentation and current code.
+**Settings → Report → Project dashboard** can replace that focus; an empty field
+uses the default. Task report instructions remain separate. Both use the same
+writer or group and bundled HTML document resources.
 
 The project report opens by explaining what the project is: its name and concrete
 function, who uses it for what, and a use case showing input, system behavior and
-result. The hero uses plain descriptions and an overview figure. Progress against
-goals, remaining work and evidence follow in the assessment sections. Customizing
-the assessment focus preserves this introduction; task change reports keep their
-before/after opening.
+result. The hero uses plain descriptions and an overview figure. The following
+sections connect its design, key components and their relationships to that purpose.
+The default includes gaps only when supported by evidence and relevant to the
+purpose; it omits Git status, branch comparisons and commit bookkeeping. Customizing
+the focus preserves the introduction; task change reports keep their before/after opening.
 
 A saved fingerprint includes the local main commit (master when main is absent),
 HEAD, staged and unstaged binary diffs, non-ignored untracked file contents, and

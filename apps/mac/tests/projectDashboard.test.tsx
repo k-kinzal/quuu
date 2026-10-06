@@ -294,7 +294,7 @@ describe('project navigation and dashboard', () => {
 
   it('saves the project report purpose independently of task report instructions', async () => {
     render(<ThemeProvider><ReportSettings /></ThemeProvider>)
-    fireEvent.change(screen.getByPlaceholderText(/Assess progress toward/), { target: { value: 'Focus on usability' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Project report instructions' }), { target: { value: 'Focus on usability' } })
     await waitFor(() => expect(save).toHaveBeenCalledWith({ projectReportInstructions: 'Focus on usability' }))
     await waitFor(() => expect(useStore.getState().settings?.projectReportInstructions).toBe('Focus on usability'))
     expect(useStore.getState().settings?.reportInstructions).toBe('')

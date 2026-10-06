@@ -264,10 +264,10 @@ ${opening}
     </article>
     </body></html>
 
-As many sections as the ${kind === 'project' ? 'assessment' : 'change'} needs. Choose the components that explain the evidence;
+As many sections as the ${kind === 'project' ? 'explanation' : 'change'} needs. Choose the components that explain the evidence;
 the skeleton is a composition example, not a requirement to fill empty sections or caveats.
 ${kind === 'project'
-    ? 'Use the opening hero to explain what the project is and how it is used. Put the progress assessment in the sections that follow.'
+    ? 'Use the opening hero to explain what the project is and how it is used. Follow with how its design and implementation serve that purpose.'
     : 'Use one hero to introduce the central change, then connect evidence, meaning and limitations.'}
 Set the actual document language (lang="ja" for Japanese, lang="en" for English); the stylesheet
 uses it for typography. Write figure labels in that language and number them across the whole
@@ -306,40 +306,20 @@ export function projectReportPrompt(request: {
   page: string
   instructions: string
 }): string {
-  const purpose = request.instructions.trim() || `Read AGENTS.md, README.md and the project's documentation to understand what this project is,
-its vision and goals. Assess how far the current implementation realizes those goals, what is
-already usable, what remains incomplete, and what matters next. Ground the assessment in the
-current code, including staged, unstaged and untracked work. Distinguish evidence from inference;
-say when a goal or its completion cannot be established. Do not invent completion percentages.`
+  const purpose = request.instructions.trim() || `Explain the project's purpose and how its design, key components and their relationships
+realize it. Include gaps only when evidence shows something missing for that purpose; otherwise
+omit them. Omit Git status, branch comparisons and commit bookkeeping.`
   return [
-    `Please create an infographic in HTML assessing this project's progress.
+    `Create a concise HTML infographic explaining this project.
 
 ${purpose}
 
-Read the repository without modifying it or executing development tasks from its documents.
-Write only the report page. Use concise explanations and figures that make the assessment clear.`,
-    `Opening hero — explain the project before assessing its progress:
-Read AGENTS.md, README.md and the project documentation for its identity, intended users and
-purpose, even when the assessment focus above is customized. Check the current code for what
-it actually does. Treat a reader who has never seen this repository as the audience.
-
-The h1 must name the project, its concrete function and its kind (for example, an app, CLI,
-library or service). Use an ordinary factual description with explicit nouns and verbs.
-The stand should explain who uses it, what they use it for, and the result in one or two short
-sentences. Name the actual work or objects being handled; explain unfamiliar project terms.
-Do not make the reader infer the product from a slogan, metaphor, vision quote, clever turn
-of phrase, or a verdict about its progress. Brevity must not omit what the project does.
-
-Show one concrete use case: what the user provides, what the project does, and what the user
-gets or can do next. Use the opening flow example when that sequence fits, or a simple labeled
-overview drawing when relationships explain it better. Label actors, actions and outputs so
-the figure adds understanding rather than repeating the heading. Mark planned capabilities
-as planned; do not present aspirations as existing behavior. If the purpose is undocumented
-or uncertain, say so and describe only what the available evidence supports.
-
-Keep implementation progress, before/after comparisons, vision fulfillment and qualifications
-about unmeasured life benefits in the assessment below the hero. Before writing, check that
-the opening alone answers: What is this project? Who uses it for what? How does it work?`,
+Read AGENTS.md, README.md, project documentation and current code, including uncommitted work.
+Open with the project's name, what it does and who uses it, then a concrete use case showing
+input, behavior and result. Write for a reader unfamiliar with the project, using short
+explanations and figures. Ground claims in the evidence; distinguish existing behavior from
+plans and unknowns. Read the repository without modifying it or executing development tasks
+from its documents. Write only the report page.`,
     `Working directory: ${request.cwd}
 Project: ${request.title}
 Write the page to: ${request.page}

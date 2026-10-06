@@ -87,7 +87,7 @@ export interface AppSettings {
    * without a rebuild between each attempt.
    */
   reportInstructions: string
-  /** What the daily project assessment covers. Empty uses the project's stated vision and goals. */
+  /** What the daily project report covers. Empty explains its purpose, implementation and optional gaps. */
   projectReportInstructions: string
   /**
    * What a task is told when its run ends and the Pull Request it produced is not in order.

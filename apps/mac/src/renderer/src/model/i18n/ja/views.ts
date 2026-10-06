@@ -242,8 +242,8 @@ export const views: typeof en = {
     failed: 'プロジェクトレポートを表示・作成できませんでした'
   },
   reportSettings: {
-    projectHint: 'Quuuの起動中に1日1回確認し、変更がなければ前回のレポートを維持します。空欄では既定の評価内容を使います。',
-    projectPlaceholder: 'AGENTS.mdやREADME.mdに書かれたプロジェクトのビジョンやゴールに対して、現在の実装でどこまで実現できているかを評価します。',
+    projectHint: 'Quuuの起動中に1日1回確認し、変更がなければ前回のレポートを維持します。空欄では既定の指示を使います。',
+    projectPlaceholder: '何のプロジェクトか、その目的を設計・実装でどう実現しているかを説明します。不足点は根拠がある場合だけ添えます。',
     projectInstructions: 'プロジェクトレポートへの指示',
     projectSection: 'プロジェクトダッシュボード',
     title: 'レポート',

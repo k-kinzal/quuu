@@ -202,19 +202,24 @@ describe('daily project reports', () => {
     expect(launch.args.join(' ')).toContain('Evaluate accessibility goals')
     expect(launch.args.join(' ')).toContain('../assets/document-design-v1.2.1.css')
     expect(launch.env.QUUU_TASK_ID).toBeUndefined()
-    const prompt = projectReportPrompt({ cwd: work, title: 'Project', page: '/tmp/page.html', instructions: '' })
-    expect(prompt).toContain('AGENTS.md, README.md')
-    expect(prompt).toContain('vision and goals')
+    expect(launch.args.join(' ')).not.toContain('Include gaps only when evidence')
   })
 
-  it.each(['', 'Evaluate accessibility goals'])('introduces the project before assessing progress with instructions %j', (instructions) => {
+  it.each(['', '  ', 'Evaluate accessibility goals'])('introduces the project and explains its implementation with instructions %j', (instructions) => {
     const prompt = projectReportPrompt({ cwd: work, title: 'Project', page: '/tmp/page.html', instructions })
     expect(prompt).toContain('Read AGENTS.md, README.md')
-    expect(prompt).toContain('The h1 must name the project, its concrete function and its kind')
-    expect(prompt).toContain('what the user provides, what the project does, and what the user')
-    expect(prompt).toContain('Mark planned capabilities')
-    expect(prompt).toContain('Put the progress assessment in the sections that follow')
-    if (instructions) expect(prompt).toContain(instructions)
+    expect(prompt).toContain("Open with the project's name, what it does and who uses it")
+    expect(prompt).toContain('input, behavior and result')
+    expect(prompt).toContain('including uncommitted work')
+    expect(prompt).toContain('distinguish existing behavior from\nplans and unknowns')
+    expect(prompt).toContain('how its design and implementation serve that purpose')
+    expect(prompt).not.toContain('progress assessment')
+    if (instructions.trim()) expect(prompt).toContain(instructions)
+    else {
+      expect(prompt).toContain("Explain the project's purpose and how its design, key components and their relationships")
+      expect(prompt).toContain('Include gaps only when evidence shows something missing for that purpose; otherwise\nomit them')
+      expect(prompt).toContain('Omit Git status, branch comparisons and commit bookkeeping')
+    }
     const opening = prompt.slice(prompt.indexOf('<article class="sheet">'), prompt.indexOf('<section class="sec"'))
     expect(opening).toContain('<h1>')
     expect(opening).toContain('<p class="stand">')

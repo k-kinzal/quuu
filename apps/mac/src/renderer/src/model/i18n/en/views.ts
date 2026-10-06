@@ -245,8 +245,8 @@ export const views = {
     failed: 'Could not display or generate the project report'
   },
   reportSettings: {
-    projectHint: 'Checks once a day while Quuu is running. Unchanged projects keep their previous report. Leave empty to use the default assessment.',
-    projectPlaceholder: 'Assess progress toward the project’s vision and goals in AGENTS.md and README.md, using the current implementation as evidence.',
+    projectHint: 'Checks once a day while Quuu is running. Unchanged projects keep their previous report. Leave empty to use the default instructions.',
+    projectPlaceholder: 'Explain what the project is and how its design and implementation realize its purpose. Include gaps only when supported by evidence.',
     projectInstructions: 'Project report instructions',
     projectSection: 'Project dashboard',
     title: 'Report',
