@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, RefreshCw } from 'lucide-react'
 import { ThemeProvider } from '../theme/ThemeProvider.js'
 import { Button, IconButton } from './inputs/Button.js'
 import { FilterChip } from './inputs/FilterChip.js'
@@ -48,6 +48,7 @@ export function ControlSpecimen(): JSX.Element {
     <Row gap="md" wrap>
       <div data-control="button"><Button>Save</Button></div>
       <div data-control="icon"><IconButton title="Add" icon={<Plus />} /></div>
+      <div data-control="icon-loading"><IconButton title="Refreshing" loading loadingAnimation="rotate" icon={<RefreshCw />} /></div>
       <Button variant="outline">Preview</Button><Button variant="ghost">Cancel</Button><Button disabled>Unavailable</Button>
       <div data-control="checkbox"><Checkbox label="Include" checked={checked} onChange={setChecked} /></div>
       <div data-control="switch"><Switch label="Enabled" checked={checked} onChange={setChecked} /></div>

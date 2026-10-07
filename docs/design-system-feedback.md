@@ -1,5 +1,18 @@
 # Call-site feedback and decisions
 
+## 2026-10-07 Visible progress on a regeneration action
+
+- Finding: the project report's regeneration button only disabled its static
+  refresh glyph, making an active generation look unavailable.
+- Accepted: `IconButton` supports `loadingAnimation="rotate"` for action glyphs
+  that also communicate ongoing work. It uses the existing loading slot, readable
+  loading color, disabled interaction, and named progressbar. The kit owns the
+  rotation and stops it for reduced motion; other loading controls keep the dots.
+- The Mac passes the report's generation state, including the request and its
+  confirming read. Completion and failure restore the ordinary action.
+- Verification: the ControlQuality stories and Chromium animation checks, report
+  lifecycle regressions, and the isolated dashboard screen.
+
 ## 2026-10-03 Resizable explorer boundaries
 
 - Finding: the task's project, changes, commits and pull-request tabs, plus the

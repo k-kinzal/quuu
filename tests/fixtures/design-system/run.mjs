@@ -65,6 +65,30 @@ void app.whenReady().then(async () => {
       for (const density of ['compact', 'comfortable']) {
         currentCheck = `${scheme}/${density}: control appearance`
         messages.push(await window.webContents.executeJavaScript(`window.checkControls('${scheme}', '${density}')`))
+        currentCheck = `${scheme}/${density}: rotating loading icon`
+        const readProgress = () => window.webContents.executeJavaScript(`(() => {
+          const button = document.querySelector('[data-control="icon-loading"] button')
+          const progress = button.querySelector('[role="progressbar"]')
+          return { disabled: button.disabled, named: progress.getAttribute('aria-labelledby') === button.id,
+            opacity: getComputedStyle(button).opacity, transform: getComputedStyle(progress).transform,
+            running: progress.getAnimations().some(animation => animation.playState === 'running') }
+        })()`)
+        await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+          features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }]
+        })
+        const progress = await readProgress()
+        assert.equal(progress.disabled, true, 'loading prevents another press')
+        assert.equal(progress.named, true, 'progress has the action name')
+        assert.equal(progress.opacity, '1', 'progress is not dimmed as unavailable')
+        assert.equal(progress.running, true, 'loading icon animates')
+        await setTimeout(80)
+        assert.notEqual((await readProgress()).transform, progress.transform, 'loading icon actually rotates')
+        await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+          features: [{ name: 'prefers-reduced-motion', value: 'reduce' }]
+        })
+        assert.equal((await readProgress()).running, false, 'reduced motion stops rotation')
+        await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [] })
+        messages.push(`${scheme}/${density}: rotating loading icon passed`)
         const hovered = []
         for (const name of ['search', 'filter', 'text', 'search-disabled', 'filter-disabled', 'text-disabled']) {
           await input({ type: 'mouseMove', x: -1, y: -1 })

@@ -28,7 +28,7 @@ const project = ProjectSchema.parse({
   commitIdentity: { appSlug: '', botUserId: '' }, source: 'user', builtIn: false, sortOrder: 0, createdAt: '', updatedAt: ''
 })
 const get = vi.fn<() => Promise<ProjectReport | null>>()
-const generate = vi.fn(() => Promise.resolve({ ok: true }))
+const generate = vi.fn<() => Promise<{ ok: boolean; reason?: string }>>()
 const show = vi.fn(() => Promise.resolve({ ok: true }))
 const hide = vi.fn(() => Promise.resolve({ ok: true }))
 const save = vi.fn()
@@ -52,9 +52,10 @@ beforeEach(() => {
   vi.clearAllMocks()
   queryClient.clear()
   get.mockResolvedValue(null)
+  generate.mockReset().mockResolvedValue({ ok: true })
   projectPullRequests.mockResolvedValue([])
   useStore.setState({ ...INITIAL_PLACE, section: { kind: 'project', id: project.id }, trail: INITIAL_TRAIL,
-    settings: { ...DEFAULT_SETTINGS, reportEnabled: true }, selectedRunId: null, paletteOpen: false,
+    settings: { ...DEFAULT_SETTINGS, reportEnabled: true }, selectedRunId: null, paletteOpen: false, toasts: [],
     snapshot: { projects: [project], tasks: [], rules: [], runs: [], agents: [], groups: [],
       scheduler: { running: false, activeRuns: 0, totalSlots: 1, queued: 0, review: 0, failed: 0,
         agents: [], holds: [], warnings: [], lastTickAt: null } } })
@@ -287,9 +288,55 @@ describe('project navigation and dashboard', () => {
     const view = render(<ThemeProvider><ProjectDashboard project={project} /></ThemeProvider>)
     await waitFor(() => expect(show).toHaveBeenCalled())
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Generating report…' }).disabled).toBe(true)
+    expect(screen.getByRole('progressbar', { name: 'Generating report…' })).toBeTruthy()
     act(() => useStore.setState({ paletteOpen: true }))
     await waitFor(() => expect(hide).toHaveBeenCalled())
     view.unmount()
+  })
+
+  it.each(['ready', 'failed'] as const)('shows progress continuously from the press until generation is %s', async status => {
+    const previous: ProjectReport = { projectId: project.id, status: 'ready', path: '/tmp/previous.html',
+      revision: 'previous', logPath: '', error: '', startedAt: '', endedAt: null }
+    get.mockResolvedValue(previous)
+    let accept!: (result: { ok: boolean }) => void
+    let confirm!: (report: ProjectReport) => void
+    const request = new Promise<{ ok: boolean }>(resolve => { accept = resolve })
+    generate.mockReturnValue(request)
+    render(<ThemeProvider><ProjectDashboard project={project} /></ThemeProvider>)
+    await screen.findByLabelText('Project report')
+    const confirmation = new Promise<ProjectReport>(resolve => { confirm = resolve })
+    get.mockReturnValueOnce(confirmation)
+    const button = screen.getByRole<HTMLButtonElement>('button', { name: 'Regenerate report' })
+    fireEvent.click(button)
+    await screen.findByRole('progressbar', { name: 'Generating report…' })
+    expect(button.disabled).toBe(true)
+    fireEvent.click(button)
+    expect(generate).toHaveBeenCalledOnce()
+
+    await act(async () => { accept({ ok: true }); await request })
+    await waitFor(() => expect(get).toHaveBeenCalledTimes(2))
+    expect(screen.getByRole('progressbar', { name: 'Generating report…' })).toBeTruthy()
+    await act(async () => { confirm({ ...previous, status: 'generating' }); await confirmation })
+    expect(screen.getByRole('progressbar', { name: 'Generating report…' })).toBeTruthy()
+    expect(screen.getByLabelText('Project report')).toBeTruthy()
+
+    get.mockResolvedValue({ ...previous, status })
+    await act(async () => { await queryClient.invalidateQueries({ queryKey: ['projectReport', project.id] }) })
+    await waitFor(() => expect(screen.queryByRole('progressbar')).toBeNull())
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Regenerate report' }).disabled).toBe(false)
+    expect(screen.getByLabelText('Project report')).toBeTruthy()
+  })
+
+  it.each(['refused', 'rejected'] as const)('restores the action and explains a %s generation request', async outcome => {
+    const reason = 'No report writer is available'
+    if (outcome === 'refused') generate.mockResolvedValue({ ok: false, reason })
+    else generate.mockRejectedValue(new Error(reason))
+    render(<ThemeProvider><ProjectDashboard project={project} /></ThemeProvider>)
+    await waitFor(() => expect(get).toHaveBeenCalled())
+    fireEvent.click(screen.getByRole('button', { name: 'Regenerate report' }))
+    await waitFor(() => expect(useStore.getState().toasts.map(toast => toast.detail)).toContain(reason))
+    expect(screen.queryByRole('progressbar')).toBeNull()
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Regenerate report' }).disabled).toBe(false)
   })
 
   it('saves the project report purpose independently of task report instructions', async () => {

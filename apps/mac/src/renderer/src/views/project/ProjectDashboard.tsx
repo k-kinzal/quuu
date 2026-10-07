@@ -20,7 +20,7 @@ export function ProjectDashboard({ project }: { project: Project }): JSX.Element
         <PanelHeading>{project.name}</PanelHeading>
         <WindowDragArea />
         <IconButton title={generating ? t('projectDashboard.generating') : t('projectDashboard.regenerate')}
-          disabled={generating} icon={<RefreshCw size={ICON.md} {...iconProps} />}
+          loading={generating} loadingAnimation="rotate" icon={<RefreshCw size={ICON.md} {...iconProps} />}
           onClick={() => void generate().then((result) => { if (!result.ok) failed(result.reason ?? '') })} />
       </PanelHeader>
       {report?.path && <ReportPage projectId={project.id} path={report.path} onError={failed} />}

@@ -35,7 +35,8 @@ export function useProjectReport(projectId: string, enabled: boolean): {
   const generate = useMutation({
     mutationKey: ['projectReport', 'generate'],
     mutationFn: (id: string) => window.quuu.report.projectGenerate(id),
-    onSettled: (_result, _error, id) => { void queryClient.invalidateQueries({ queryKey: ['projectReport', id] }) }
+    // Keep the loading state until the first read confirms whether generation started.
+    onSettled: (_result, _error, id) => queryClient.invalidateQueries({ queryKey: ['projectReport', id] })
   }, queryClient)
 
   return {
