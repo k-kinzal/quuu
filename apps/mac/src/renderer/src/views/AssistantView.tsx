@@ -69,6 +69,7 @@ export function AssistantView(): JSX.Element {
 
 function AssistantEntry({ task, proposal, onOpen }: { task: Task; proposal?: AssistantProposal; onOpen(): void }): JSX.Element {
   const state = useStore(s => s.snapshot?.assistant)
+  const open = useStore(s => s.detailOpen && s.cursorTaskId === task.id)
   const thread = state?.threads.find(item => item.taskId === task.id)
   const ref = useRef<HTMLElement>(null)
   const read = useMutation({ mutationFn: (revision: string) => window.quuu.assistant.markRead({ taskId: task.id, revision }) }, queryClient)
@@ -77,13 +78,14 @@ function AssistantEntry({ task, proposal, onOpen }: { task: Task; proposal?: Ass
     const element = ref.current
     if (!element || !thread?.unread) return
     let visible = false
-    const mark = (): void => { if (visible && document.visibilityState === 'visible' && document.hasFocus()) markRead(thread.revision) }
+    const mark = (): void => { if ((visible || open) && document.visibilityState === 'visible' && document.hasFocus()) markRead(thread.revision) }
     const observer = new IntersectionObserver(entries => { visible = entries.some(entry => entry.isIntersecting); mark() }, { threshold: 0.5 })
     observer.observe(element)
+    mark()
     window.addEventListener('focus', mark)
     document.addEventListener('visibilitychange', mark)
     return () => { observer.disconnect(); window.removeEventListener('focus', mark); document.removeEventListener('visibilitychange', mark) }
-  }, [thread?.unread, thread?.revision, markRead])
+  }, [thread?.unread, thread?.revision, markRead, open])
   return <TranscriptTurn {...conversationBlock(task.id)}>
     <TranscriptTurnHead ref={ref}>
       <TranscriptTurnRole user={!proposal}>{proposal ? t('quuuAI.title') : t('quuuAI.you')}</TranscriptTurnRole>

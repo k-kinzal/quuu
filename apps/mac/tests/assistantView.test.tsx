@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { createRouterClient, implement } from '@orpc/server'
-import { fireEvent, render, screen, cleanup, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, cleanup, waitFor } from '@testing-library/react'
 import { ThemeProvider } from '@design-system/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { contract } from '../src/api/contract.js'
@@ -10,6 +10,9 @@ import { t } from '../src/renderer/src/model/i18n/index.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { queryClient } from '../src/renderer/src/state/queryClient.js'
 import { buildTheme } from '../src/renderer/src/ui/theme.js'
+
+vi.mock('../src/renderer/src/components/Chat.js', () => ({ Chat: () => null }))
+vi.mock('../src/renderer/src/components/Composer.js', () => ({ Composer: () => null }))
 
 const task = { id: 'thread', projectId: 'quuu', title: 'Remember my preference', prompt: 'Please keep replies concise.', status: 'review' as const,
   priority: 2 as const, seq: 1, scheduledAt: null, currentRunId: null, sessionId: null, agentOverrideId: null, pendingMessage: '', reservedMessage: '', reviewNote: '', dependsOn: [], source: 'user' as const, ruleId: null, externalKey: null, archived: false, createdAt: '2026-10-08T10:00:00Z', updatedAt: '', doneAt: null }
@@ -25,19 +28,21 @@ const snapshot: AppSnapshot = {
 const sent = vi.fn()
 const reacted = vi.fn()
 const opened = vi.fn()
+const read = vi.fn()
 beforeEach(() => {
   window.matchMedia = query => ({ matches: false, media: query, onchange: null, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false })
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} })
   vi.stubGlobal('IntersectionObserver', class { observe() {} disconnect() {} })
-  sent.mockReset(); reacted.mockReset(); opened.mockReset()
+  sent.mockReset(); reacted.mockReset(); opened.mockReset(); read.mockReset()
   useStore.setState({ snapshot, section: { kind: 'quuuAI' }, cursorTaskId: null, detailOpen: false, drafts: {}, openTask: opened })
   const os = implement(contract)
   window.quuu = createRouterClient({ assistant: {
     send: os.assistant.send.handler(({ input }) => { sent(input); return task }),
     react: os.assistant.react.handler(({ input }) => { reacted(input); return proposal }),
+    markRead: os.assistant.markRead.handler(({ input }) => { read(input) }),
   } }) as typeof window.quuu
 })
-afterEach(() => { cleanup(); queryClient.clear(); vi.unstubAllGlobals() })
+afterEach(() => { cleanup(); queryClient.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 function show(): void { render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><AssistantView /></ThemeProvider>) }
 
 it('shows a conversation with thread replies and proposal actions instead of a task table', async () => {
@@ -60,4 +65,21 @@ it('keeps Japanese IME commits as input and sends a new thread explicitly', asyn
   fireEvent.click(screen.getByRole('button', { name: t('quuuAI.send') }))
   await waitFor(() => expect(sent).toHaveBeenCalledWith('今日の予定を教えて'))
   await waitFor(() => expect((input as HTMLTextAreaElement).value).toBe(''))
+})
+
+it('marks an open thread read on focus even when its channel entry is outside the viewport', async () => {
+  const offscreen = { ...snapshot.assistant!.threads[0], taskId: 'suggestion', unread: true }
+  useStore.setState({ snapshot: { ...snapshot, assistant: { ...snapshot.assistant!, threads: [offscreen] } } })
+  const focused = vi.spyOn(document, 'hasFocus').mockReturnValue(false)
+  show()
+  expect(read).not.toHaveBeenCalled()
+  // The thread opens after the channel has rendered; the observer never reports visibility.
+  act(() => useStore.setState({ detailOpen: true, cursorTaskId: 'suggestion' }))
+  expect(read).not.toHaveBeenCalled()
+  focused.mockReturnValue(true)
+  fireEvent.focus(window)
+  await waitFor(() => expect(read).toHaveBeenCalledWith({ taskId: 'suggestion', revision: '1' }))
+  act(() => useStore.setState({ snapshot: { ...snapshot,
+    assistant: { ...snapshot.assistant!, threads: [{ ...offscreen, revision: '2' }] } } }))
+  await waitFor(() => expect(read).toHaveBeenCalledWith({ taskId: 'suggestion', revision: '2' }))
 })
