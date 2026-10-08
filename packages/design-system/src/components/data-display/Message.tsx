@@ -103,7 +103,8 @@ export const MessageExcerpt = styled('p', { shouldForwardProp: blockProps('prima
   WebkitBoxOrient: 'vertical',
   WebkitLineClamp: 3,
   overflow: 'hidden',
-  whiteSpace: 'pre-line',
+  // Paragraph breaks must not consume the last excerpt line and leave only an ellipsis.
+  whiteSpace: 'normal',
   color: primary ? theme.palette.text.primary : theme.palette.text.secondary
 }))
 
