@@ -1,5 +1,18 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
+  assistant: {
+    "research": "Looking for a useful next task",
+    "memoryTooLarge": "Keep shared memory within {{bytes}} UTF-8 bytes.",
+    "memoryConflict": "Shared memory changed in another thread. Reload it before saving.",
+    "invalidResult": "The last check did not return a valid proposal. QuuuAI will try again later.",
+    "checkFailed": "The last background check could not finish. QuuuAI will try again later.",
+    "discussProposal": "Discuss this proposed task: {{title}}\n\nWhy: {{reason}}\n\nSuggested work: {{prompt}}",
+    "proposalNotification": "QuuuAI suggests: {{title}}",
+    "proposalMissing": "This proposal is no longer available.",
+    "projectUnavailable": "Enable the target project before approving this proposal.",
+    "emptyMessage": "Write a message first.",
+    "notificationTitle": "QuuuAI — A suggestion"
+},
   runners: {
     listenerOff: "Enable Runner connections first.",
     busyRevoke: "Stop this Runner’s active jobs before revoking it.",

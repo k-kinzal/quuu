@@ -144,7 +144,8 @@ export function Rail(): JSX.Element {
         {quuuAI && <NavItem
           icon={<Bot size={ICON.md} {...iconProps} />}
           label={t('quuuAI.title')}
-          badge={counts.get(quuuAI.id)}
+          unread={snapshot?.assistant?.unread}
+          title={snapshot?.assistant?.unread ? t('quuuAI.unread') : t('quuuAI.title')}
           collapsed={collapsed}
           active={isActive({ kind: 'quuuAI' })}
           onClick={() => setSection({ kind: 'quuuAI' })}

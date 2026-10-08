@@ -1,6 +1,605 @@
 // Generated from the operation contract.
 import type { WireShape } from '../wire.js'
 export const wire: Record<string, { method: string; input: WireShape; output: WireShape }> = {
+  "assistant.state": {
+    "method": "assistantState",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "settings": {
+          "kind": "object",
+          "fields": {
+            "enabled": {
+              "kind": "boolean"
+            },
+            "intervalHours": {
+              "kind": "number"
+            },
+            "confidenceThreshold": {
+              "kind": "number"
+            }
+          },
+          "required": [
+            "enabled",
+            "intervalHours",
+            "confidenceThreshold"
+          ]
+        },
+        "activity": {
+          "kind": "string",
+          "choices": [
+            "off",
+            "waiting",
+            "checking",
+            "awaiting-response"
+          ]
+        },
+        "lastCheckAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "nextCheckAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "error": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "unread": {
+          "kind": "boolean"
+        },
+        "threads": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "taskId": {
+                "kind": "string"
+              },
+              "preview": {
+                "kind": "string"
+              },
+              "replies": {
+                "kind": "number"
+              },
+              "revision": {
+                "kind": "string"
+              },
+              "unread": {
+                "kind": "boolean"
+              }
+            },
+            "required": [
+              "taskId",
+              "preview",
+              "replies",
+              "revision",
+              "unread"
+            ]
+          }
+        },
+        "proposals": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "taskId": {
+                "kind": "string"
+              },
+              "projectId": {
+                "kind": "string"
+              },
+              "title": {
+                "kind": "string"
+              },
+              "prompt": {
+                "kind": "string"
+              },
+              "reason": {
+                "kind": "string"
+              },
+              "confidence": {
+                "kind": "number"
+              },
+              "status": {
+                "kind": "string",
+                "choices": [
+                  "pending",
+                  "accepted",
+                  "dismissed"
+                ]
+              },
+              "createdAt": {
+                "kind": "string"
+              },
+              "respondedAt": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
+              "executionTaskId": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string"
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "taskId",
+              "projectId",
+              "title",
+              "prompt",
+              "reason",
+              "confidence",
+              "status",
+              "createdAt",
+              "respondedAt",
+              "executionTaskId"
+            ]
+          }
+        }
+      },
+      "required": [
+        "settings",
+        "activity",
+        "lastCheckAt",
+        "nextCheckAt",
+        "error",
+        "unread",
+        "threads",
+        "proposals"
+      ]
+    }
+  },
+  "assistant.configure": {
+    "method": "assistantConfigure",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "intervalHours": {
+          "kind": "number"
+        },
+        "confidenceThreshold": {
+          "kind": "number"
+        }
+      },
+      "required": []
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "enabled": {
+          "kind": "boolean"
+        },
+        "intervalHours": {
+          "kind": "number"
+        },
+        "confidenceThreshold": {
+          "kind": "number"
+        }
+      },
+      "required": [
+        "enabled",
+        "intervalHours",
+        "confidenceThreshold"
+      ]
+    }
+  },
+  "assistant.memory": {
+    "method": "assistantMemory",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "content": {
+          "kind": "string"
+        },
+        "revision": {
+          "kind": "string"
+        },
+        "bytes": {
+          "kind": "number"
+        },
+        "maxBytes": {
+          "kind": "number"
+        }
+      },
+      "required": [
+        "content",
+        "revision",
+        "bytes",
+        "maxBytes"
+      ]
+    }
+  },
+  "assistant.setMemory": {
+    "method": "assistantSetMemory",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "content": {
+          "kind": "string"
+        },
+        "revision": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "content",
+        "revision"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "content": {
+          "kind": "string"
+        },
+        "revision": {
+          "kind": "string"
+        },
+        "bytes": {
+          "kind": "number"
+        },
+        "maxBytes": {
+          "kind": "number"
+        }
+      },
+      "required": [
+        "content",
+        "revision",
+        "bytes",
+        "maxBytes"
+      ]
+    }
+  },
+  "assistant.send": {
+    "method": "assistantSend",
+    "input": {
+      "kind": "string"
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "id": {
+          "kind": "string"
+        },
+        "projectId": {
+          "kind": "string"
+        },
+        "title": {
+          "kind": "string"
+        },
+        "prompt": {
+          "kind": "string"
+        },
+        "status": {
+          "kind": "string",
+          "choices": [
+            "draft",
+            "held",
+            "queued",
+            "running",
+            "review",
+            "failed",
+            "done"
+          ]
+        },
+        "priority": {
+          "kind": "number",
+          "choices": [
+            0,
+            1,
+            2,
+            3
+          ]
+        },
+        "seq": {
+          "kind": "number"
+        },
+        "scheduledAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "currentRunId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "sessionId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "agentOverrideId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "pendingMessage": {
+          "kind": "string"
+        },
+        "reservedMessage": {
+          "kind": "string"
+        },
+        "reviewNote": {
+          "kind": "string"
+        },
+        "dependsOn": {
+          "kind": "array",
+          "items": {
+            "kind": "object",
+            "fields": {
+              "taskId": {
+                "kind": "string"
+              },
+              "mode": {
+                "kind": "string",
+                "choices": [
+                  "done",
+                  "finished"
+                ]
+              }
+            },
+            "required": [
+              "taskId",
+              "mode"
+            ]
+          }
+        },
+        "source": {
+          "kind": "string",
+          "choices": [
+            "user",
+            "imported"
+          ]
+        },
+        "ruleId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "externalKey": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "archived": {
+          "kind": "boolean"
+        },
+        "createdAt": {
+          "kind": "string"
+        },
+        "updatedAt": {
+          "kind": "string"
+        },
+        "doneAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "projectId",
+        "title",
+        "prompt",
+        "status",
+        "priority",
+        "seq",
+        "scheduledAt",
+        "currentRunId",
+        "sessionId",
+        "agentOverrideId",
+        "pendingMessage",
+        "reservedMessage",
+        "reviewNote",
+        "dependsOn",
+        "source",
+        "ruleId",
+        "externalKey",
+        "archived",
+        "createdAt",
+        "updatedAt",
+        "doneAt"
+      ]
+    }
+  },
+  "assistant.react": {
+    "method": "assistantReact",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        },
+        "reaction": {
+          "kind": "string",
+          "choices": [
+            "approve",
+            "dismiss"
+          ]
+        }
+      },
+      "required": [
+        "taskId",
+        "reaction"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        },
+        "projectId": {
+          "kind": "string"
+        },
+        "title": {
+          "kind": "string"
+        },
+        "prompt": {
+          "kind": "string"
+        },
+        "reason": {
+          "kind": "string"
+        },
+        "confidence": {
+          "kind": "number"
+        },
+        "status": {
+          "kind": "string",
+          "choices": [
+            "pending",
+            "accepted",
+            "dismissed"
+          ]
+        },
+        "createdAt": {
+          "kind": "string"
+        },
+        "respondedAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "executionTaskId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "taskId",
+        "projectId",
+        "title",
+        "prompt",
+        "reason",
+        "confidence",
+        "status",
+        "createdAt",
+        "respondedAt",
+        "executionTaskId"
+      ]
+    }
+  },
+  "assistant.markRead": {
+    "method": "assistantMarkRead",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        },
+        "revision": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "taskId",
+        "revision"
+      ]
+    },
+    "output": {
+      "kind": "void"
+    }
+  },
   "snapshot": {
     "method": "snapshot",
     "input": {
@@ -9,6 +608,186 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "assistant": {
+          "kind": "object",
+          "fields": {
+            "settings": {
+              "kind": "object",
+              "fields": {
+                "enabled": {
+                  "kind": "boolean"
+                },
+                "intervalHours": {
+                  "kind": "number"
+                },
+                "confidenceThreshold": {
+                  "kind": "number"
+                }
+              },
+              "required": [
+                "enabled",
+                "intervalHours",
+                "confidenceThreshold"
+              ]
+            },
+            "activity": {
+              "kind": "string",
+              "choices": [
+                "off",
+                "waiting",
+                "checking",
+                "awaiting-response"
+              ]
+            },
+            "lastCheckAt": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "nextCheckAt": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "error": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
+            },
+            "unread": {
+              "kind": "boolean"
+            },
+            "threads": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "taskId": {
+                    "kind": "string"
+                  },
+                  "preview": {
+                    "kind": "string"
+                  },
+                  "replies": {
+                    "kind": "number"
+                  },
+                  "revision": {
+                    "kind": "string"
+                  },
+                  "unread": {
+                    "kind": "boolean"
+                  }
+                },
+                "required": [
+                  "taskId",
+                  "preview",
+                  "replies",
+                  "revision",
+                  "unread"
+                ]
+              }
+            },
+            "proposals": {
+              "kind": "array",
+              "items": {
+                "kind": "object",
+                "fields": {
+                  "taskId": {
+                    "kind": "string"
+                  },
+                  "projectId": {
+                    "kind": "string"
+                  },
+                  "title": {
+                    "kind": "string"
+                  },
+                  "prompt": {
+                    "kind": "string"
+                  },
+                  "reason": {
+                    "kind": "string"
+                  },
+                  "confidence": {
+                    "kind": "number"
+                  },
+                  "status": {
+                    "kind": "string",
+                    "choices": [
+                      "pending",
+                      "accepted",
+                      "dismissed"
+                    ]
+                  },
+                  "createdAt": {
+                    "kind": "string"
+                  },
+                  "respondedAt": {
+                    "kind": "union",
+                    "variants": [
+                      {
+                        "kind": "string"
+                      },
+                      {
+                        "kind": "null"
+                      }
+                    ]
+                  },
+                  "executionTaskId": {
+                    "kind": "union",
+                    "variants": [
+                      {
+                        "kind": "string"
+                      },
+                      {
+                        "kind": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "taskId",
+                  "projectId",
+                  "title",
+                  "prompt",
+                  "reason",
+                  "confidence",
+                  "status",
+                  "createdAt",
+                  "respondedAt",
+                  "executionTaskId"
+                ]
+              }
+            }
+          },
+          "required": [
+            "settings",
+            "activity",
+            "lastCheckAt",
+            "nextCheckAt",
+            "error",
+            "unread",
+            "threads",
+            "proposals"
+          ]
+        },
         "resumeCommands": {
           "kind": "value"
         },
@@ -12203,6 +12982,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "items": {
                 "kind": "string"
               }
+            },
+            "assistant": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
             }
           },
           "required": [
@@ -12211,7 +12996,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "followUp",
             "reportFailure",
             "pullRequest",
-            "syncConflict"
+            "syncConflict",
+            "assistant"
           ]
         },
         "tickIntervalMs": {
@@ -12497,6 +13283,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "items": {
                 "kind": "string"
               }
+            },
+            "assistant": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
             }
           },
           "required": [
@@ -12505,7 +13297,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "followUp",
             "reportFailure",
             "pullRequest",
-            "syncConflict"
+            "syncConflict",
+            "assistant"
           ]
         },
         "tickIntervalMs": {
@@ -12788,6 +13581,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "items": {
                 "kind": "string"
               }
+            },
+            "assistant": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
             }
           },
           "required": [
@@ -12796,7 +13595,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "followUp",
             "reportFailure",
             "pullRequest",
-            "syncConflict"
+            "syncConflict",
+            "assistant"
           ]
         },
         "tickIntervalMs": {
@@ -13039,6 +13839,12 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "items": {
                 "kind": "string"
               }
+            },
+            "assistant": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
             }
           },
           "required": [
@@ -13047,7 +13853,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "followUp",
             "reportFailure",
             "pullRequest",
-            "syncConflict"
+            "syncConflict",
+            "assistant"
           ]
         },
         "tickIntervalMs": {

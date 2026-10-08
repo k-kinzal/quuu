@@ -435,6 +435,15 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
   })
   const history = new SessionHistory(app.db, app.sessions)
   return os.router({
+    assistant: {
+      state: os.assistant.state.handler(() => app.assistant.state()),
+      configure: os.assistant.configure.handler(({ input }) => app.assistant.configure(input)),
+      memory: os.assistant.memory.handler(() => app.assistant.memory()),
+      setMemory: os.assistant.setMemory.handler(({ input }) => app.assistant.setMemory(input.content, input.revision)),
+      send: os.assistant.send.handler(({ input }) => app.assistant.send(input)),
+      react: os.assistant.react.handler(({ input }) => app.assistant.react(input.taskId, input.reaction)),
+      markRead: os.assistant.markRead.handler(({ input }) => app.assistant.markRead(input.taskId, input.revision))
+    },
     hooks: {
       resolve: os.hooks.resolve.handler(({ input }) => app.hooks.resolve(input.projectId)),
       list: os.hooks.list.handler(({ input }) => app.hooks.list(input)),

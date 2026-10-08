@@ -243,7 +243,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('38')
+    expect(version.value).toBe('39')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -311,7 +311,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('38')
+    expect(version.value).toBe('39')
     db.close()
   })
 
@@ -908,5 +908,22 @@ it('upgrades existing reports without losing them and keeps the writer identity 
   upgraded.close()
   const reopened = openDatabase(path)
   expect(repo.getTaskReport(reopened, taskId)?.conversation).toEqual({ adapter: 'codex', sessionId: 'writer-session', input: 'Write a report' })
+  reopened.close()
+})
+
+it('adds assistant persistence to an existing database without changing tasks', () => {
+  const old = openDatabase(path)
+  const projectId = makeProject(old, { name: 'existing', targetId: makeAgent(old, { name: 'Agent' }) })
+  const taskId = makeTask(old, projectId, 'existing task')
+  old.exec("DROP TABLE assistant_checks; DROP TABLE assistant_proposals; DROP TABLE assistant_reads; UPDATE meta SET value = '38' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.listAssistantChecks(upgraded)).toEqual([])
+  expect(repo.listAssistantProposals(upgraded)).toEqual([])
+  expect(repo.getTask(upgraded, taskId)?.title).toBe('existing task')
+  repo.readAssistantThread(upgraded, taskId, 'revision')
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.assistantReads(reopened).get(taskId)).toBe('revision')
   reopened.close()
 })

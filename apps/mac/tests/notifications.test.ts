@@ -209,3 +209,10 @@ describe('SSTP TCP transport', () => {
     await expect(sendSstp('127.0.0.1', port, 'test', 30)).rejects.toThrow('timed out')
   })
 })
+
+it('applies the review notification switch to assistant suggestions without changing unread state', async () => {
+  const ports = { native: vi.fn(), toast: vi.fn(), sstp: vi.fn() }
+  await deliverNotification({ ...event, notificationKind: 'assistant' }, { ...settings(), notifyOnReview: false }, ports)
+  expect(ports.native).not.toHaveBeenCalled()
+  expect(ports.sstp).not.toHaveBeenCalled()
+})

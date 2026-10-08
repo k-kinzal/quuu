@@ -275,3 +275,14 @@ one Runner outside the job journal, and forgets it after the Runner confirms. Th
 owns the credential from then on. Workers report whether each agent has a credential, and
 routing skips agents without one. `runners/agentAuth` is the one place that knows what each
 agent's sign-in produces and where a Runner keeps it.
+
+## QuuuAI assistant
+
+`main/assistant` owns bounded shared memory, proposals, reactions, read receipts and research
+context. The scheduler offers it spare capacity only after ordinary eligible tasks. Research
+is an internal task so the existing runner owns slots, logs, process recovery and cancellation;
+internal checks are excluded from user task lists, mobile export, lifecycle hooks and ordinary
+completion notifications. A durable check record identifies its JSON result and prevents replay
+on restart. Validated proposals create visible chat threads. Positive reactions and task creation
+commit atomically through normal task operations; negative reactions and discussion remain in
+the proposal history. No automatic operation marks work done.

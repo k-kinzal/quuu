@@ -153,13 +153,14 @@ describe('a run in QuuuAI', () => {
     expect(prompt).toContain(join(workdir, 'Resources', 'bin', 'quuu'))
   })
 
-  it('sends follow-ups and other projects’ prompts exactly as written', () => {
+  it('refreshes shared memory for follow-ups and leaves other projects’ prompts unchanged', () => {
     const app = makeApp()
     const project = app.projects.ensureBuiltIn(workspace)
     const agent = makeAgent(app.db, { name: 'plain' })
     const plain = makeProject(app.db, { name: 'plain', targetId: agent, path: workdir })
 
-    expect(prepare(app, project.id, 'followup')).toEqual(['Register ~/src/api as a project'])
+    expect(prepare(app, project.id, 'followup')[0]).toContain('Register ~/src/api as a project\n\n<quuu-assistant-context>')
+    expect(prepare(app, project.id, 'followup')[0]).toContain('Shared memory')
     expect(prepare(app, plain, 'initial')).toEqual(['Register ~/src/api as a project'])
   })
 

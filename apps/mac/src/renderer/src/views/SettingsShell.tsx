@@ -1,4 +1,5 @@
 import { HookSettings } from './settings/HookSettings.js'
+import { AssistantSettings } from './settings/AssistantSettings.js'
 import { ConnectionSettings } from './settings/ConnectionSettings.js'
 import { NetworkSettings } from './settings/NetworkSettings.js'
 import { MenuNav, MenuNavItem, MenuNavTitle, Panel, Row } from '@design-system/react'
@@ -22,6 +23,7 @@ const CATEGORIES: Array<{
   icon: JSX.Element
 }> = [
     { id: 'general', label: t('settingsShell.general'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
+    { id: 'assistant', label: t('quuuAI.title'), icon: <Bot size={ICON.md} {...iconProps} /> },
     { id: 'agents', label: t('settingsShell.agents'), icon: <Bot size={ICON.md} {...iconProps} /> },
     { id: 'hooks', label: t('hooks.title'), icon: <SlidersHorizontal size={ICON.md} {...iconProps} /> },
     { id: 'report', label: t('settingsShell.report'), icon: <ScrollText size={ICON.md} {...iconProps} /> },
@@ -73,6 +75,7 @@ export function SettingsShell(): JSX.Element {
         {category === 'connections' && <ConnectionSettings />}
         {category === 'network' && <NetworkSettings />}
         {category === 'general' && <GeneralSettings />}
+        {category === 'assistant' && <AssistantSettings />}
         {category === 'agents' && <AgentSettings />}
         {category === 'hooks' && <HookSettings />}
         {category === 'report' && <ReportSettings />}

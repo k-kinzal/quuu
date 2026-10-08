@@ -181,6 +181,8 @@ export interface NavItemProps {
   collapsed?: boolean
   /** The count. 0 and undefined are not drawn */
   badge?: number
+  /** Presence of unread content, independent of a numeric badge. */
+  unread?: boolean
   /** The color for a count that should draw attention */
   accent?: string
   title?: string
@@ -195,6 +197,7 @@ export function NavItem({
   active,
   collapsed,
   badge,
+  unread,
   accent,
   title,
   onClick,
@@ -217,7 +220,7 @@ export function NavItem({
         <ItemIcon data-icon>{icon}</ItemIcon>
         {!collapsed && <ItemLabel>{label}</ItemLabel>}
         {!collapsed && hasBadge && <ItemBadge accent={accent}>{badge}</ItemBadge>}
-        {collapsed && hasBadge && <ItemMark accent={accent} />}
+        {(unread || collapsed && hasBadge) && <ItemMark aria-hidden="true" data-unread={unread || undefined} accent={accent} />}
       </ItemRoot>
     </ControlTooltip>
   )

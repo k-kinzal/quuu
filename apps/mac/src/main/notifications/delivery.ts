@@ -5,6 +5,7 @@ import { selectSstpScript, sendSstp } from './sstp.js'
 
 export function notificationTitle(event: ToastPayload): string {
   switch (event.notificationKind) {
+    case 'assistant': return t('assistant.notificationTitle')
     case 'review': return t('notification.reviewTitle')
     case 'failure': return t('notification.failedTitle')
     case 'followUp': return t('notification.followUpTitle')
@@ -21,7 +22,7 @@ export async function deliverNotification(event: ToastPayload, settings: AppSett
   sstp?: typeof sendSstp
 }): Promise<void> {
   if (!event.notificationKind) { ports.toast(event); return }
-  if (event.notificationKind === 'review' && !settings.notifyOnReview) return
+  if ((event.notificationKind === 'review' || event.notificationKind === 'assistant') && !settings.notifyOnReview) return
   if ((event.notificationKind === 'failure' || event.notificationKind === 'reportFailure') && !settings.notifyOnFailure) return
   const title = notificationTitle(event)
   if (settings.nativeNotifications) {

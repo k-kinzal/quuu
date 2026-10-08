@@ -329,7 +329,8 @@
     "groups": 7,
     "runs": 8,
     "scheduler": 9,
-    "projectRecentRunCounts": 10
+    "projectRecentRunCounts": 10,
+    "assistant": 11
   },
   "SnapshotResponse": {
     "value": 1
@@ -5723,7 +5724,8 @@
     "followUp": 3,
     "reportFailure": 4,
     "pullRequest": 5,
-    "syncConflict": 6
+    "syncConflict": 6,
+    "assistant": 7
   },
   "SettingsGetResponseValueSstpScriptsReview": {
     "items": 1
@@ -5749,7 +5751,8 @@
     "followUp": 3,
     "reportFailure": 4,
     "pullRequest": 5,
-    "syncConflict": 6
+    "syncConflict": 6,
+    "assistant": 7
   },
   "SettingsSetRequestValueSstpScriptsReview": {
     "items": 1
@@ -5775,7 +5778,8 @@
     "followUp": 3,
     "reportFailure": 4,
     "pullRequest": 5,
-    "syncConflict": 6
+    "syncConflict": 6,
+    "assistant": 7
   },
   "SettingsSetResponseValueSstpScriptsReview": {
     "items": 1
@@ -5801,7 +5805,8 @@
     "followUp": 3,
     "reportFailure": 4,
     "pullRequest": 5,
-    "syncConflict": 6
+    "syncConflict": 6,
+    "assistant": 7
   },
   "RunnersStatusResponseValueCredentialsItem": {
     "agent": 1,
@@ -6425,5 +6430,286 @@
   },
   "ReviewPollResponse": {
     "value": 1
+  },
+  "AssistantStateRequest": {},
+  "AssistantStateResponseValueSettings": {
+    "enabled": 1,
+    "intervalHours": 2,
+    "confidenceThreshold": 3
+  },
+  "AssistantStateResponseValueLastCheckAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantStateResponseValueNextCheckAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantStateResponseValueError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantStateResponseValueThreadsItem": {
+    "taskId": 1,
+    "preview": 2,
+    "replies": 3,
+    "revision": 4,
+    "unread": 5
+  },
+  "AssistantStateResponseValueThreads": {
+    "items": 1
+  },
+  "AssistantStateResponseValueProposalsItemRespondedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantStateResponseValueProposalsItemExecutionTaskId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantStateResponseValueProposalsItem": {
+    "taskId": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "reason": 5,
+    "confidence": 6,
+    "status": 7,
+    "createdAt": 8,
+    "respondedAt": 9,
+    "executionTaskId": 10
+  },
+  "AssistantStateResponseValueProposals": {
+    "items": 1
+  },
+  "AssistantStateResponseValue": {
+    "settings": 1,
+    "activity": 2,
+    "lastCheckAt": 3,
+    "nextCheckAt": 4,
+    "error": 5,
+    "unread": 6,
+    "threads": 7,
+    "proposals": 8
+  },
+  "AssistantStateResponse": {
+    "value": 1
+  },
+  "AssistantConfigureRequestValue": {
+    "enabled": 1,
+    "intervalHours": 2,
+    "confidenceThreshold": 3
+  },
+  "AssistantConfigureRequest": {
+    "value": 1
+  },
+  "AssistantConfigureResponseValue": {
+    "enabled": 1,
+    "intervalHours": 2,
+    "confidenceThreshold": 3
+  },
+  "AssistantConfigureResponse": {
+    "value": 1
+  },
+  "AssistantMemoryRequest": {},
+  "AssistantMemoryResponseValue": {
+    "content": 1,
+    "revision": 2,
+    "bytes": 3,
+    "maxBytes": 4
+  },
+  "AssistantMemoryResponse": {
+    "value": 1
+  },
+  "AssistantSetMemoryRequestValue": {
+    "content": 1,
+    "revision": 2
+  },
+  "AssistantSetMemoryRequest": {
+    "value": 1
+  },
+  "AssistantSetMemoryResponseValue": {
+    "content": 1,
+    "revision": 2,
+    "bytes": 3,
+    "maxBytes": 4
+  },
+  "AssistantSetMemoryResponse": {
+    "value": 1
+  },
+  "AssistantSendRequest": {
+    "value": 1
+  },
+  "AssistantSendResponseValueScheduledAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValueCurrentRunId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValueSessionId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValueAgentOverrideId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValueDependsOnItem": {
+    "taskId": 1,
+    "mode": 2
+  },
+  "AssistantSendResponseValueDependsOn": {
+    "items": 1
+  },
+  "AssistantSendResponseValueRuleId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValueExternalKey": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValueDoneAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantSendResponseValue": {
+    "id": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "status": 5,
+    "priority": 6,
+    "seq": 7,
+    "scheduledAt": 8,
+    "currentRunId": 9,
+    "sessionId": 10,
+    "agentOverrideId": 11,
+    "pendingMessage": 12,
+    "reservedMessage": 13,
+    "reviewNote": 14,
+    "dependsOn": 15,
+    "source": 16,
+    "ruleId": 17,
+    "externalKey": 18,
+    "archived": 19,
+    "createdAt": 20,
+    "updatedAt": 21,
+    "doneAt": 22
+  },
+  "AssistantSendResponse": {
+    "value": 1
+  },
+  "AssistantReactRequestValue": {
+    "taskId": 1,
+    "reaction": 2
+  },
+  "AssistantReactRequest": {
+    "value": 1
+  },
+  "AssistantReactResponseValueRespondedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantReactResponseValueExecutionTaskId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantReactResponseValue": {
+    "taskId": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "reason": 5,
+    "confidence": 6,
+    "status": 7,
+    "createdAt": 8,
+    "respondedAt": 9,
+    "executionTaskId": 10
+  },
+  "AssistantReactResponse": {
+    "value": 1
+  },
+  "AssistantMarkReadRequestValue": {
+    "taskId": 1,
+    "revision": 2
+  },
+  "AssistantMarkReadRequest": {
+    "value": 1
+  },
+  "AssistantMarkReadResponse": {},
+  "SnapshotResponseValueAssistantSettings": {
+    "enabled": 1,
+    "intervalHours": 2,
+    "confidenceThreshold": 3
+  },
+  "SnapshotResponseValueAssistantLastCheckAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueAssistantNextCheckAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueAssistantError": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueAssistantThreadsItem": {
+    "taskId": 1,
+    "preview": 2,
+    "replies": 3,
+    "revision": 4,
+    "unread": 5
+  },
+  "SnapshotResponseValueAssistantThreads": {
+    "items": 1
+  },
+  "SnapshotResponseValueAssistantProposalsItemRespondedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueAssistantProposalsItemExecutionTaskId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "SnapshotResponseValueAssistantProposalsItem": {
+    "taskId": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "reason": 5,
+    "confidence": 6,
+    "status": 7,
+    "createdAt": 8,
+    "respondedAt": 9,
+    "executionTaskId": 10
+  },
+  "SnapshotResponseValueAssistantProposals": {
+    "items": 1
+  },
+  "SnapshotResponseValueAssistant": {
+    "settings": 1,
+    "activity": 2,
+    "lastCheckAt": 3,
+    "nextCheckAt": 4,
+    "error": 5,
+    "unread": 6,
+    "threads": 7,
+    "proposals": 8
+  },
+  "SettingsSetIdentityResponseValueSstpScriptsAssistant": {
+    "items": 1
+  },
+  "SettingsGetResponseValueSstpScriptsAssistant": {
+    "items": 1
+  },
+  "SettingsSetRequestValueSstpScriptsAssistant": {
+    "items": 1
+  },
+  "SettingsSetResponseValueSstpScriptsAssistant": {
+    "items": 1
   }
 }

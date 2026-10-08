@@ -1,5 +1,9 @@
 # Call-site feedback and decisions
 
+## 2026-10-08 Unread navigation indicators
+
+Accepted: `NavItem.unread` shows a small presence mark in expanded and collapsed navigation. Unread content is independent of a task count. The caller supplies its accessible description and owns read state; the kit owns the mark.
+
 ## 2026-10-07 Visible progress on a regeneration action
 
 - Finding: the project report's regeneration button only disabled its static

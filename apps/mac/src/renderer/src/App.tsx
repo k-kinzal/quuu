@@ -21,6 +21,7 @@ import { ProjectPullRequests } from './views/project/ProjectPullRequests.js'
 import { ProjectFiles } from './views/project/ProjectFiles.js'
 import { TaskComposer } from './components/TaskComposer.js'
 import { TaskOverview } from './components/TaskOverview.js'
+import { AssistantView } from './views/AssistantView.js'
 import { TaskWorkspace } from './components/TaskWorkspace.js'
 import { Toasts } from './components/Toasts.js'
 import { stepHistory, useSwipeBackForward } from './interaction/backForward.js'
@@ -395,13 +396,15 @@ function Shell(): JSX.Element {
           contextKey={`${section.kind}:${section.kind === 'project' ? section.id : ''}:${projectSettingsOpen}:${projectDashboardOpen}:${projectDocumentsOpen}:${projectPullRequestsOpen}:${projectFilesOpen}`}
         >
           <LeftMenu
-            showTasks={!isSettings && !(projectSettingsOpen && project) && detailOpen}
+            showTasks={section.kind !== 'quuuAI' && !isSettings && !(projectSettingsOpen && project) && detailOpen}
             project={project}
           />
           <AppShellMain windowHeader>
             <AppShellBody>
               {isSettings ? (
                 <SettingsShell />
+              ) : section.kind === 'quuuAI' ? (
+                <AssistantView />
               ) : projectSettingsOpen && project ? (
                 <ProjectDetail project={project} onBack={() => openProjectSettings(false)} />
               ) : projectDocumentsOpen && project ? (
@@ -425,7 +428,7 @@ function Shell(): JSX.Element {
               )}
             </AppShellBody>
             {/* The detail already has the conversation's composer below the chat; a second prompt there reads as one too many */}
-            {!isSettings && !(projectSettingsOpen && project) && !detailOpen && (section.kind !== 'quuuAI' || taskProject) && (
+            {section.kind !== 'quuuAI' && !isSettings && !(projectSettingsOpen && project) && !detailOpen && (
               <TaskComposer fixedProjectId={taskProject?.id} />
             )}
             <Footer />

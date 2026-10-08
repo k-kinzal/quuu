@@ -6,7 +6,7 @@ structural uniformity. There is no DDD or Clean Architecture layer template.
 
 | Concept | Responsibility and owner | Relationships |
 |---|---|---|
-| Project | Working directory, agent selection, concurrency, priority, identity and project settings. `main/projects` | Has tasks and automation rules. Chooses one agent or group. The built-in QuuuAI backing project (`projects/builtIn`) operates Quuu itself: it always exists, cannot be deleted, and runs in the app's bundled workspace. On the Mac, QuuuAI is a dedicated task section above All tasks, without project navigation or settings. |
+| Project | Working directory, agent selection, concurrency, priority, identity and project settings. `main/projects` | Has tasks and automation rules. Chooses one agent or group. The built-in QuuuAI backing project (`projects/builtIn`) operates Quuu itself: it always exists, cannot be deleted, and runs in the app's bundled workspace. On the Mac, QuuuAI is a single conversation channel above All tasks. Each task is a thread. Shared memory and idle-capacity research belong to `main/assistant`; proposals become project tasks only after a positive reaction. |
 | AI agent | Executable configuration, model arguments, environment, concurrency and fallback. `main/agents` | Used by runs; definitions may belong to groups. Editing a definition does not reinterpret recorded runs. |
 | Agent group | Selects among configured agents by priority, round robin or load. `main/agents` | Projects and report writers can select a group. |
 | CLI implementation | Actual command syntax and invocation defaults. `main/agent-clis` | Knows its provider CLI; knows no Quuu task or persistence. |

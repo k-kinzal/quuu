@@ -1,5 +1,12 @@
 // Generated from the operation contract.
 export const operationNames: string[] = [
+  "assistant.state",
+  "assistant.configure",
+  "assistant.memory",
+  "assistant.setMemory",
+  "assistant.send",
+  "assistant.react",
+  "assistant.markRead",
   "snapshot",
   "runners.status",
   "runners.configure",

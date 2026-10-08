@@ -287,9 +287,9 @@ export const views: typeof en = {
     variables: '変数: {{names}}',
     variableHint: '変数は発話本文に使用・タスク情報などがなければ空文字',
     save: 'SSTP 設定を保存',
-    kinds: { review: 'タスクのレビュー待ち', failure: 'タスクの失敗', followUp: '予約した追加指示の送信', reportFailure: 'レポート作成の失敗', pullRequest: 'PR の追加対応', syncConflict: 'iPhone 同期の競合' },
+    kinds: { assistant: 'QuuuAIの提案', review: 'タスクのレビュー待ち', failure: 'タスクの失敗', followUp: '予約した追加指示の送信', reportFailure: 'レポート作成の失敗', pullRequest: 'PR の追加対応', syncConflict: 'iPhone 同期の競合' },
     title: '通知',
-    notifyOnReview: 'レビュー待ちになったら通知する',
+    notifyOnReview: 'レビュー・QuuuAIの返信や提案を通知する',
     notifyOnFailure: '失敗したら通知する'
   },
   projectDetail: {

@@ -3,8 +3,377 @@ syntax = "proto3";
 package quuu.v1;
 import "google/protobuf/struct.proto";
 
+message AssistantStateRequest {
+
+}
+
+message AssistantStateResponseValueSettings {
+  optional bool enabled = 1;
+  optional double intervalHours = 2;
+  optional double confidenceThreshold = 3;
+}
+
+message AssistantStateResponseValueLastCheckAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantStateResponseValueNextCheckAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantStateResponseValueError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantStateResponseValueThreadsItem {
+  optional string taskId = 1;
+  optional string preview = 2;
+  optional double replies = 3;
+  optional string revision = 4;
+  optional bool unread = 5;
+}
+
+message AssistantStateResponseValueThreads {
+  repeated AssistantStateResponseValueThreadsItem items = 1;
+}
+
+message AssistantStateResponseValueProposalsItemRespondedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantStateResponseValueProposalsItemExecutionTaskId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantStateResponseValueProposalsItem {
+  optional string taskId = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string reason = 5;
+  optional double confidence = 6;
+  optional string status = 7;
+  optional string createdAt = 8;
+  optional AssistantStateResponseValueProposalsItemRespondedAt respondedAt = 9;
+  optional AssistantStateResponseValueProposalsItemExecutionTaskId executionTaskId = 10;
+}
+
+message AssistantStateResponseValueProposals {
+  repeated AssistantStateResponseValueProposalsItem items = 1;
+}
+
+message AssistantStateResponseValue {
+  optional AssistantStateResponseValueSettings settings = 1;
+  optional string activity = 2;
+  optional AssistantStateResponseValueLastCheckAt lastCheckAt = 3;
+  optional AssistantStateResponseValueNextCheckAt nextCheckAt = 4;
+  optional AssistantStateResponseValueError error = 5;
+  optional bool unread = 6;
+  optional AssistantStateResponseValueThreads threads = 7;
+  optional AssistantStateResponseValueProposals proposals = 8;
+}
+
+message AssistantStateResponse {
+  optional AssistantStateResponseValue value = 1;
+}
+
+message AssistantConfigureRequestValue {
+  optional bool enabled = 1;
+  optional double intervalHours = 2;
+  optional double confidenceThreshold = 3;
+}
+
+message AssistantConfigureRequest {
+  optional AssistantConfigureRequestValue value = 1;
+}
+
+message AssistantConfigureResponseValue {
+  optional bool enabled = 1;
+  optional double intervalHours = 2;
+  optional double confidenceThreshold = 3;
+}
+
+message AssistantConfigureResponse {
+  optional AssistantConfigureResponseValue value = 1;
+}
+
+message AssistantMemoryRequest {
+
+}
+
+message AssistantMemoryResponseValue {
+  optional string content = 1;
+  optional string revision = 2;
+  optional double bytes = 3;
+  optional double maxBytes = 4;
+}
+
+message AssistantMemoryResponse {
+  optional AssistantMemoryResponseValue value = 1;
+}
+
+message AssistantSetMemoryRequestValue {
+  optional string content = 1;
+  optional string revision = 2;
+}
+
+message AssistantSetMemoryRequest {
+  optional AssistantSetMemoryRequestValue value = 1;
+}
+
+message AssistantSetMemoryResponseValue {
+  optional string content = 1;
+  optional string revision = 2;
+  optional double bytes = 3;
+  optional double maxBytes = 4;
+}
+
+message AssistantSetMemoryResponse {
+  optional AssistantSetMemoryResponseValue value = 1;
+}
+
+message AssistantSendRequest {
+  optional string value = 1;
+}
+
+message AssistantSendResponseValueScheduledAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValueCurrentRunId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValueSessionId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValueAgentOverrideId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValueDependsOnItem {
+  optional string taskId = 1;
+  optional string mode = 2;
+}
+
+message AssistantSendResponseValueDependsOn {
+  repeated AssistantSendResponseValueDependsOnItem items = 1;
+}
+
+message AssistantSendResponseValueRuleId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValueExternalKey {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValueDoneAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantSendResponseValue {
+  optional string id = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string status = 5;
+  optional double priority = 6;
+  optional double seq = 7;
+  optional AssistantSendResponseValueScheduledAt scheduledAt = 8;
+  optional AssistantSendResponseValueCurrentRunId currentRunId = 9;
+  optional AssistantSendResponseValueSessionId sessionId = 10;
+  optional AssistantSendResponseValueAgentOverrideId agentOverrideId = 11;
+  optional string pendingMessage = 12;
+  optional string reservedMessage = 13;
+  optional string reviewNote = 14;
+  optional AssistantSendResponseValueDependsOn dependsOn = 15;
+  optional string source = 16;
+  optional AssistantSendResponseValueRuleId ruleId = 17;
+  optional AssistantSendResponseValueExternalKey externalKey = 18;
+  optional bool archived = 19;
+  optional string createdAt = 20;
+  optional string updatedAt = 21;
+  optional AssistantSendResponseValueDoneAt doneAt = 22;
+}
+
+message AssistantSendResponse {
+  optional AssistantSendResponseValue value = 1;
+}
+
+message AssistantReactRequestValue {
+  optional string taskId = 1;
+  optional string reaction = 2;
+}
+
+message AssistantReactRequest {
+  optional AssistantReactRequestValue value = 1;
+}
+
+message AssistantReactResponseValueRespondedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantReactResponseValueExecutionTaskId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantReactResponseValue {
+  optional string taskId = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string reason = 5;
+  optional double confidence = 6;
+  optional string status = 7;
+  optional string createdAt = 8;
+  optional AssistantReactResponseValueRespondedAt respondedAt = 9;
+  optional AssistantReactResponseValueExecutionTaskId executionTaskId = 10;
+}
+
+message AssistantReactResponse {
+  optional AssistantReactResponseValue value = 1;
+}
+
+message AssistantMarkReadRequestValue {
+  optional string taskId = 1;
+  optional string revision = 2;
+}
+
+message AssistantMarkReadRequest {
+  optional AssistantMarkReadRequestValue value = 1;
+}
+
+message AssistantMarkReadResponse {
+
+}
+
 message SnapshotRequest {
 
+}
+
+message SnapshotResponseValueAssistantSettings {
+  optional bool enabled = 1;
+  optional double intervalHours = 2;
+  optional double confidenceThreshold = 3;
+}
+
+message SnapshotResponseValueAssistantLastCheckAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueAssistantNextCheckAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueAssistantError {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueAssistantThreadsItem {
+  optional string taskId = 1;
+  optional string preview = 2;
+  optional double replies = 3;
+  optional string revision = 4;
+  optional bool unread = 5;
+}
+
+message SnapshotResponseValueAssistantThreads {
+  repeated SnapshotResponseValueAssistantThreadsItem items = 1;
+}
+
+message SnapshotResponseValueAssistantProposalsItemRespondedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueAssistantProposalsItemExecutionTaskId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message SnapshotResponseValueAssistantProposalsItem {
+  optional string taskId = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string reason = 5;
+  optional double confidence = 6;
+  optional string status = 7;
+  optional string createdAt = 8;
+  optional SnapshotResponseValueAssistantProposalsItemRespondedAt respondedAt = 9;
+  optional SnapshotResponseValueAssistantProposalsItemExecutionTaskId executionTaskId = 10;
+}
+
+message SnapshotResponseValueAssistantProposals {
+  repeated SnapshotResponseValueAssistantProposalsItem items = 1;
+}
+
+message SnapshotResponseValueAssistant {
+  optional SnapshotResponseValueAssistantSettings settings = 1;
+  optional string activity = 2;
+  optional SnapshotResponseValueAssistantLastCheckAt lastCheckAt = 3;
+  optional SnapshotResponseValueAssistantNextCheckAt nextCheckAt = 4;
+  optional SnapshotResponseValueAssistantError error = 5;
+  optional bool unread = 6;
+  optional SnapshotResponseValueAssistantThreads threads = 7;
+  optional SnapshotResponseValueAssistantProposals proposals = 8;
 }
 
 message SnapshotResponseValueProjectsItemRunnerLabels {
@@ -461,6 +830,7 @@ message SnapshotResponseValueScheduler {
 }
 
 message SnapshotResponseValue {
+  optional SnapshotResponseValueAssistant assistant = 11;
   optional google.protobuf.Value resumeCommands = 1;
   optional google.protobuf.Value externalAgentNames = 2;
   optional SnapshotResponseValueProjects projects = 3;
@@ -5588,6 +5958,10 @@ message SettingsSetIdentityResponseValueSstpScriptsSyncConflict {
   repeated string items = 1;
 }
 
+message SettingsSetIdentityResponseValueSstpScriptsAssistant {
+  repeated string items = 1;
+}
+
 message SettingsSetIdentityResponseValueSstpScripts {
   optional SettingsSetIdentityResponseValueSstpScriptsReview review = 1;
   optional SettingsSetIdentityResponseValueSstpScriptsFailure failure = 2;
@@ -5595,6 +5969,7 @@ message SettingsSetIdentityResponseValueSstpScripts {
   optional SettingsSetIdentityResponseValueSstpScriptsReportFailure reportFailure = 4;
   optional SettingsSetIdentityResponseValueSstpScriptsPullRequest pullRequest = 5;
   optional SettingsSetIdentityResponseValueSstpScriptsSyncConflict syncConflict = 6;
+  optional SettingsSetIdentityResponseValueSstpScriptsAssistant assistant = 7;
 }
 
 message SettingsSetIdentityResponseValueCommitIdentity {
@@ -5696,6 +6071,10 @@ message SettingsGetResponseValueSstpScriptsSyncConflict {
   repeated string items = 1;
 }
 
+message SettingsGetResponseValueSstpScriptsAssistant {
+  repeated string items = 1;
+}
+
 message SettingsGetResponseValueSstpScripts {
   optional SettingsGetResponseValueSstpScriptsReview review = 1;
   optional SettingsGetResponseValueSstpScriptsFailure failure = 2;
@@ -5703,6 +6082,7 @@ message SettingsGetResponseValueSstpScripts {
   optional SettingsGetResponseValueSstpScriptsReportFailure reportFailure = 4;
   optional SettingsGetResponseValueSstpScriptsPullRequest pullRequest = 5;
   optional SettingsGetResponseValueSstpScriptsSyncConflict syncConflict = 6;
+  optional SettingsGetResponseValueSstpScriptsAssistant assistant = 7;
 }
 
 message SettingsGetResponseValueCommitIdentity {
@@ -5800,6 +6180,10 @@ message SettingsSetRequestValueSstpScriptsSyncConflict {
   repeated string items = 1;
 }
 
+message SettingsSetRequestValueSstpScriptsAssistant {
+  repeated string items = 1;
+}
+
 message SettingsSetRequestValueSstpScripts {
   optional SettingsSetRequestValueSstpScriptsReview review = 1;
   optional SettingsSetRequestValueSstpScriptsFailure failure = 2;
@@ -5807,6 +6191,7 @@ message SettingsSetRequestValueSstpScripts {
   optional SettingsSetRequestValueSstpScriptsReportFailure reportFailure = 4;
   optional SettingsSetRequestValueSstpScriptsPullRequest pullRequest = 5;
   optional SettingsSetRequestValueSstpScriptsSyncConflict syncConflict = 6;
+  optional SettingsSetRequestValueSstpScriptsAssistant assistant = 7;
 }
 
 message SettingsSetRequestValueCommitIdentity {
@@ -5904,6 +6289,10 @@ message SettingsSetResponseValueSstpScriptsSyncConflict {
   repeated string items = 1;
 }
 
+message SettingsSetResponseValueSstpScriptsAssistant {
+  repeated string items = 1;
+}
+
 message SettingsSetResponseValueSstpScripts {
   optional SettingsSetResponseValueSstpScriptsReview review = 1;
   optional SettingsSetResponseValueSstpScriptsFailure failure = 2;
@@ -5911,6 +6300,7 @@ message SettingsSetResponseValueSstpScripts {
   optional SettingsSetResponseValueSstpScriptsReportFailure reportFailure = 4;
   optional SettingsSetResponseValueSstpScriptsPullRequest pullRequest = 5;
   optional SettingsSetResponseValueSstpScriptsSyncConflict syncConflict = 6;
+  optional SettingsSetResponseValueSstpScriptsAssistant assistant = 7;
 }
 
 message SettingsSetResponseValueCommitIdentity {
@@ -8429,6 +8819,13 @@ message PairRequest { string code = 1; string device_name = 2; }
 message PairResponse { string token = 1; string host_id = 2; string host_name = 3; }
 
 service Quuu {
+  rpc AssistantState(AssistantStateRequest) returns (AssistantStateResponse);
+  rpc AssistantConfigure(AssistantConfigureRequest) returns (AssistantConfigureResponse);
+  rpc AssistantMemory(AssistantMemoryRequest) returns (AssistantMemoryResponse);
+  rpc AssistantSetMemory(AssistantSetMemoryRequest) returns (AssistantSetMemoryResponse);
+  rpc AssistantSend(AssistantSendRequest) returns (AssistantSendResponse);
+  rpc AssistantReact(AssistantReactRequest) returns (AssistantReactResponse);
+  rpc AssistantMarkRead(AssistantMarkReadRequest) returns (AssistantMarkReadResponse);
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
   rpc RunnersStatus(RunnersStatusRequest) returns (RunnersStatusResponse);
   rpc RunnersConfigure(RunnersConfigureRequest) returns (RunnersConfigureResponse);

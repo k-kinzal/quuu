@@ -5,11 +5,13 @@ import { TaskRuleSchema } from './automation.js'
 import { RunSchema, SchedulerStatusSchema } from './execution.js'
 import { ProjectSchema } from './projects.js'
 import { TaskSchema } from './tasks.js'
+import { AssistantStateSchema } from './assistant.js'
 
 // ---------------------------------------------------------------------------
 // Snapshot (what the renderer mirrors)
 // ---------------------------------------------------------------------------
 export const AppSnapshotSchema = z.object({
+  assistant: AssistantStateSchema.optional(),
   /** main assembles resume commands; the screen only receives candidate names. */
   resumeCommands: z.record(z.string(), z.union([z.string(), z.null()])).optional(),
   externalAgentNames: z.record(z.string(), z.string()).optional(),

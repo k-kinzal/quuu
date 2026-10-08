@@ -146,3 +146,11 @@ describe('the notification itself', () => {
     expect(useStore.getState().toasts).toEqual([])
   })
 })
+
+it('opens QuuuAI notifications in their chat thread from another section', async () => {
+  open({ kind: 'settings' })
+  useStore.setState({ snapshot: { ...snapshot, projects: [...snapshot.projects, { ...project('quuu'), builtIn: true }],
+    tasks: [...snapshot.tasks, task('suggestion', 'quuu', 'draft')] } })
+  await useStore.getState().revealTask('suggestion')
+  expect(useStore.getState()).toMatchObject({ section: { kind: 'quuuAI' }, cursorTaskId: 'suggestion', detailOpen: true })
+})

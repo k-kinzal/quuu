@@ -553,7 +553,9 @@ export const useStore = create<State>((set, get) => ({
     const { section, snapshot } = get()
     const shows = (candidate: Section): boolean => snapshot !== null && sectionShows(snapshot, candidate, taskId)
     const review: Section = { kind: 'review' }
-    const destination: Section = shows(section) ? section : shows(review) ? review : { kind: 'all' }
+    const task = snapshot?.tasks.find(task => task.id === taskId)
+    const builtIn = snapshot?.projects.some(project => project.id === task?.projectId && project.builtIn)
+    const destination: Section = builtIn ? { kind: 'quuuAI' } : shows(section) ? section : shows(review) ? review : { kind: 'all' }
     /*
      * Moving section and opening the task are one step, not two. Back from a task a
      * notification opened returns to where the notification arrived — not to a list

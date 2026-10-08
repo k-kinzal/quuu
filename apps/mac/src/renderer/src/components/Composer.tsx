@@ -106,7 +106,9 @@ export function Composer({
   // To rewrite instead, the entry point is "Edit" on the pending turn at the end of the conversation
   const appendsToPrompt = isFirst && task.prompt.trim().length > 0
 
-  const action = isRunning
+  const action = project?.builtIn
+    ? { label: t(isRunning ? 'quuuAI.reserveReply' : 'quuuAI.send'), enabled: true }
+    : isRunning
     ? { label: t('composer.action.reserve'), enabled: true }
     : isFirst
       ? { label: appendsToPrompt && task.status === 'queued' ? t('composer.action.append') : t('composer.action.run'), enabled: true }
@@ -138,7 +140,7 @@ export function Composer({
       agent={<PromptAgentChip label={snapshot ? taskTargetLabel(snapshot, task, project) : t('composer.unassigned')} />}
       priority={task.priority}
       onPriorityChange={priority => void window.quuu.tasks.update({ id: task.id, patch: { priority } })}
-      subject={{ value: task.title, readOnly: true }}
+      subject={project?.builtIn ? undefined : { value: task.title, readOnly: true }}
       notice={reserved.length > 0 && (
         <ComposerNotice tone={willAutoSend ? 'info' : 'warning'}>
           <Clock size={ICON.sm} {...iconProps} />
@@ -166,7 +168,7 @@ export function Composer({
       inputRef={ref}
       input={{
         ...files.inputProps, value: text, disabled: sending,
-        placeholder: isRunning
+        placeholder: project?.builtIn ? t('quuuAI.replyPlaceholder') : isRunning
           ? t('composer.placeholder.running')
           : appendsToPrompt
             ? t('composer.placeholder.append')

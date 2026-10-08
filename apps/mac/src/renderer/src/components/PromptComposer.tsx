@@ -59,13 +59,13 @@ export function PromptComposer({
             } : undefined}
           >{project?.name ?? t('composer.unassigned')}</ContextChip>}
           {agent}
-          <SegmentedControl<Priority> label={t('taskComposer.priority')} value={priority}
+          {!project?.builtIn && <SegmentedControl<Priority> label={t('taskComposer.priority')} value={priority}
             onChange={onPriorityChange}
             options={([0, 1, 2, 3] as Priority[]).map(value => ({
               value, label: PRIORITY_LABEL[value],
               title: t('taskComposer.priorityTitle', { level: PRIORITY_LABEL[value] }),
               accent: value <= 1 ? theme.palette.quuu.priority[value] : undefined
-            }))} />
+            }))} />}
           {conditions}
         </ComposerOptions>
         <ComposerActions>{actions}</ComposerActions>

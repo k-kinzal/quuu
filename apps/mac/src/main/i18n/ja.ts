@@ -1,6 +1,19 @@
 import type { en } from './en.js'
 
 export const ja: typeof en = {
+  assistant: {
+    "research": "次に役立つタスクを調べています",
+    "memoryTooLarge": "共有メモリはUTF-8で{{bytes}}バイト以内にしてください。",
+    "memoryConflict": "別のスレッドで共有メモリが変更されました。読み直してから保存してください。",
+    "invalidResult": "前回の確認では提案を取得できませんでした。時間をおいて再確認します。",
+    "checkFailed": "前回のバックグラウンド確認を完了できませんでした。時間をおいて再確認します。",
+    "discussProposal": "次のタスクの提案について相談します：{{title}}\n\n理由：{{reason}}\n\n作業内容：{{prompt}}",
+    "proposalNotification": "QuuuAIからの提案：{{title}}",
+    "proposalMissing": "この提案は利用できなくなりました。",
+    "projectUnavailable": "提案を承認する前に対象プロジェクトを有効にしてください。",
+    "emptyMessage": "メッセージを入力してください。",
+    "notificationTitle": "QuuuAIからの提案"
+},
   runners: {
     listenerOff: "先にRunner接続を有効にしてください。",
     busyRevoke: "接続を解除する前に、このRunnerの処理を停止してください。",

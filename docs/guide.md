@@ -385,11 +385,37 @@ configuration and history analysis. The Unix socket API has been retired.
 ## Operating Quuu from Quuu (QuuuAI)
 
 **QuuuAI** has its own entry above **All tasks** in the rail, present from the first launch.
-It shows only its own tasks and fixes both task-creation inputs to QuuuAI. It has no project
-navigation or project settings. When the list is empty, it invites questions and requests.
-Its tasks are requests about Quuu itself — "register ~/src/api as a project", "enable Codex and
-use it for api", "review failed runs every morning" — and the agent carries them out through the
-`quuu` CLI, the same operations the screen uses.
+It is a conversation channel, with one task per thread. Send a message in the channel to
+start a thread; open its replies to continue the same agent session. Existing QuuuAI tasks
+remain visible as threads. Notification clicks open the corresponding thread.
+
+Settings → QuuuAI controls proactive suggestions (on by default), the check interval
+(default six hours, 1–168 hours), and minimum confidence (default 70%, adjustable to 100%).
+Checks use ordinary execution slots **only after eligible user work**; busy agents, cooldowns,
+reserved slots, disabled projects and a paused scheduler still prevent execution. Turning the
+feature off cancels active research. Checks time out after twenty minutes and failures wait
+until the next interval. The footer identifies background research on every screen.
+
+A check reads project state and recent conversations, then offers at most one evidence-backed
+suggestion. Confidence is an agent estimate, not a calibrated probability. 👍 creates and queues
+one task in the indicated project; 👎 withdraws the suggestion. Repeated reactions cannot create
+duplicates. Replies discuss the proposal and count as engagement, but do not approve it. Until
+the previous suggestion has a reply or reaction, no further checks run. Simply viewing it does
+not restart checks. Previously rejected suggestions are included in future research context.
+
+The rail shows a small unread dot for new replies and proposals; read receipts survive restarts.
+Suggestions use the review notification switch and the existing native/SSTP delivery channels
+(the SSTP event is `assistant`). Pending suggestions also survive app updates and restarts.
+
+Shared context lives in `assistant/MEMORY.md` beside `taskd.db`, outside the application bundle.
+The settings editor and `assistant.memory` / `assistant.setMemory` operations allow user and agent
+edits, with a 16 KiB UTF-8 limit and revision checks to prevent overwriting concurrent edits.
+Every QuuuAI turn receives current memory. Keep durable preferences here, not secrets.
+
+When a project's actual Git remote is `github.com/k-kinzal/quuu`, research can suggest improvements
+to Quuu based on session evidence and existing telemetry query access. It never enables telemetry
+or treats an OTLP export endpoint as a query service. If no telemetry query access is configured,
+it uses available session evidence and reports that limitation in the proposal.
 
 - It runs in `Quuu.app/Contents/Resources/quuu-ai`, which ships QuuuAI's own agent
   instructions ([AGENTS.md](../apps/mac/quuu-ai/AGENTS.md), with a `CLAUDE.md` that points at it)
@@ -397,7 +423,7 @@ use it for api", "review failed runs every morning" — and the agent carries th
   are for operating Quuu through its CLI and are separate from the repository's own AGENTS.md.
   Most CLIs read them from the working directory; a fresh conversation there also ends with an
   instruction naming both files by absolute path, so every CLI reads the copy that matches the
-  running app. Follow-ups go out as written.
+  running app. Follow-ups preserve the conversation and receive refreshed shared memory.
 - Its runs find the bundled `quuu` first on `PATH`. Without Node.js, the launcher runs the CLI on
   Quuu's own runtime.
 - It cannot be deleted, and its directory and worktree mode are fixed: the operations refuse
@@ -760,7 +786,7 @@ SSTP settings**. Exactly one non-empty script is chosen at random from that type
 for each event. An empty list sends nothing. Turning delivery off hides its
 configuration and preserves saved values; switching off and on within the screen
 also preserves unsaved drafts. Supported types are `review`, `failure`, `followUp`, `reportFailure`,
-`pullRequest`, and `syncConflict`.
+`pullRequest`, `syncConflict`, and `assistant`.
 
 ```text
 \0\s[0]{{projectName}} の「{{taskTitle}}」がレビュー待ちです。\e

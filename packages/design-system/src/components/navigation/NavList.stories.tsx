@@ -58,6 +58,7 @@ export const Side: StoryObj = {
           </SideNavTop>
 
           <NavSection>
+            <NavItem icon={<Bell size={iconSize.md} {...iconDefaults} />} label="Messages" title="Messages · Unread" unread collapsed={collapsed} />
             <NavItem
               icon={<Inbox size={iconSize.md} {...iconDefaults} />}
               label="All"

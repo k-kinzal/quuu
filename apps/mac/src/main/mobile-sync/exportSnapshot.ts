@@ -95,7 +95,7 @@ export class SyncExporter {
 
     const projects = repo.listProjects(this.db)
     const priority = new Map(projects.map((p) => [p.id, p.priority]))
-    const tasks = orderTasks(repo.listTasks(this.db), (id) => priority.get(id) ?? 9)
+    const tasks = orderTasks(repo.listTasks(this.db, false, false), (id) => priority.get(id) ?? 9)
     const agents = new Map(repo.listAgents(this.db).map((a: Agent) => [a.id, a]))
     const runCounts = repo.runCountsByTask(this.db)
 

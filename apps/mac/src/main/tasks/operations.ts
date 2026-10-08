@@ -31,7 +31,7 @@ export class TaskOperations {
 
   /** The external API reads the same source as the UI, including archived only when asked. */
   listTasks(includeArchived = false): Task[] {
-    return repo.listTasks(this.db, includeArchived)
+    return repo.listTasks(this.db, includeArchived, false)
   }
 
 

@@ -1,4 +1,5 @@
 import { RunnerOperations } from './runners/operations.js'
+import { AssistantOperations } from './assistant/operations.js'
 import { HookOperations } from './hooks/operations.js'
 import { EventEmitter } from 'node:events'
 import { dirname } from 'node:path'
@@ -82,6 +83,7 @@ export class QuuuApp extends EventEmitter {
   private importTimer: NodeJS.Timeout | null = null
   private livenessTimer: NodeJS.Timeout | null = null
   readonly tasks: TaskOperations
+  readonly assistant: AssistantOperations
   readonly projects: ProjectOperations
   readonly automation: AutomationOperations
   readonly agents: AgentOperations
@@ -109,6 +111,9 @@ export class QuuuApp extends EventEmitter {
     // Beside the database it describes, so a verification instance never hosts as production
     this.network = new NetworkOperations(dirname(dbPath ?? defaultDbPath()))
     this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast), { beforeComplete: task => this.hooks.beforeComplete(task), beforeDelete: id => this.hooks.beforeDelete(id) })
+    this.assistant = new AssistantOperations(this.db, dirname(dbPath && dbPath !== ':memory:' ? dbPath : defaultDbPath()), this.tasks, () => this.changed(), id => { this.tasks.cancelTask(id) }, payload => this.notify(payload))
+    this.scheduler.setIdleWork(() => this.assistant.prepareCheck())
+    this.runner.setPromptContext((project, task) => project.builtIn ? this.assistant.promptContext(task.id) : '')
     this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), id => this.tasks.deleteTask(id))
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
@@ -140,7 +145,11 @@ export class QuuuApp extends EventEmitter {
      * the terminal read what was derived; none of them opens a session log.
      */
     this.sessions = new SessionIndex(this.db, [reviewEvidenceDerivation, workplaceDerivation])
-    this.sessions.on('indexed', (_key: string, taskId: string) => this.reviews.requestRefresh(taskId))
+    this.sessions.on('indexed', (_key: string, taskId: string) => {
+      this.reviews.requestRefresh(taskId)
+      const task = repo.getTask(this.db, taskId)
+      if (task && repo.getProject(this.db, task.projectId)?.builtIn) this.changed()
+    })
     /*
      * A run that just ended is what the human looks at next, and what the next run is decided
      * from: whether the instruction it carried already sits in the conversation is read off the
@@ -190,7 +199,9 @@ export class QuuuApp extends EventEmitter {
       this.mobile.setSchedulerRunning(this.scheduler.status().running)
       this.emit('status', this.scheduler.status())
     })
-    this.scheduler.on('notify', (t: ToastPayload) => this.notify(t))
+    this.scheduler.on('notify', (t: ToastPayload) => {
+      if (!t.taskId || !repo.isAssistantCheck(this.db, t.taskId)) this.notify(t)
+    })
     this.projectReports.on('notify', (t: ToastPayload) => this.notify(t))
     this.reports.on('notify', (t: ToastPayload) => this.notify(t))
     this.pullRequestFollowUp.on('notify', (t: ToastPayload) => this.notify(t))
@@ -230,6 +241,7 @@ export class QuuuApp extends EventEmitter {
     this.hooks.start()
     void this.runners.start()
     this.scheduler.reconcile()
+    this.assistant.start()
     // GitHub App credentials whose supervisor was stopped by force while Quuu was away
     sweepGitHubAuth()
     // Right after startup, re-bind the logs of re-adopted Runs to their actual sessions
@@ -337,6 +349,7 @@ export class QuuuApp extends EventEmitter {
 
 
   shutdown(): void {
+    this.assistant.stop()
     this.pullRequestFollowUp.stop()
     if (this.projectionTimer) clearInterval(this.projectionTimer)
     if (this.retentionTimer) clearInterval(this.retentionTimer)
@@ -363,11 +376,12 @@ export class QuuuApp extends EventEmitter {
   // -------------------------------------------------------------------------
 
   snapshot(): AppSnapshot {
-    const tasks = repo.listTasks(this.db)
-    const runs = repo.listLatestRunPerTask(this.db)
+    const tasks = repo.listTasks(this.db, false, false)
+    const runs = repo.listLatestRunPerTask(this.db).filter(run => !repo.isAssistantCheck(this.db, run.taskId))
     const agents = repo.listAgents(this.db)
     return {
       ...sessionOptions(tasks, runs, agents),
+      assistant: this.assistant.state(),
       projects: repo.listProjects(this.db),
       projectRecentRunCounts: repo.recentRunCountsByProject(this.db),
       tasks,

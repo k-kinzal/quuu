@@ -400,7 +400,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 38
+  const target = 39
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -786,6 +786,13 @@ function migrate(db: Db): void {
        WHERE json_type(pr.value, '$.url') = 'text';
       UPDATE task_review_snapshots SET snapshot = json_set(snapshot, '$.pullRequests', json('[]'))`)
   }
+
+  // Background checks remain ordinary runs for recovery and capacity, but never become chat entries.
+  if (current < 39) db.exec(`
+    CREATE TABLE IF NOT EXISTS assistant_checks (task_id TEXT PRIMARY KEY, data TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS assistant_proposals (task_id TEXT PRIMARY KEY, data TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS assistant_reads (task_id TEXT PRIMARY KEY, revision TEXT NOT NULL);
+  `)
 
   setSchemaVersion(db, target)
 }

@@ -22,6 +22,7 @@ import type { ReportStatus, StoredReport, StoredProjectReport } from '../report/
 import type { ObservedCommit, ReviewEvidence, ReviewSnapshot, VerifiedPullRequest } from '../review/types.js'
 import { b2i, i2b, newId, nowIso, parseJson } from '../util.js'
 import type { Db } from './database.js'
+import type { AssistantCheck, AssistantProposal } from '../assistant/types.js'
 
 type Row = Record<string, unknown>
 
@@ -1103,16 +1104,16 @@ function replaceDependencies(db: Db, taskId: string, deps: TaskDependency[]): vo
   }
 }
 
-export function listTasks(db: Db, includeArchived = false): Task[] {
-  const sql = includeArchived
-    ? 'SELECT * FROM tasks ORDER BY seq'
-    : 'SELECT * FROM tasks WHERE archived = 0 ORDER BY seq'
+export function listTasks(db: Db, includeArchived = false, includeInternal = true): Task[] {
+  const where = [includeArchived ? '1' : 'archived = 0']
+  if (!includeInternal) where.push('id NOT IN (SELECT task_id FROM assistant_checks)')
+  const sql = `SELECT * FROM tasks WHERE ${where.join(' AND ')} ORDER BY seq`
   const deps = dependencyMap(db)
   return (db.prepare(sql).all() as Row[]).map((r) => toTask(r, deps.get(s(r.id)) ?? []))
 }
 
 export function listTaskPage(db: Db, query: { projectId?: string; status?: TaskStatus; archived?: 'include' | 'exclude' | 'only'; after?: number; limit?: number }) {
-  const where = ['seq > ?']
+  const where = ['seq > ?', 'id NOT IN (SELECT task_id FROM assistant_checks)']
   const values: Array<string | number> = [query.after ?? 0]
   if (query.projectId) { where.push('project_id = ?'); values.push(query.projectId) }
   if (query.status) { where.push('status = ?'); values.push(query.status) }
@@ -1327,7 +1328,7 @@ export function deleteTask(db: Db, id: string): void {
 
 export function countTasksByStatus(db: Db, status: TaskStatus): number {
   const r = db
-    .prepare('SELECT COUNT(*) AS c FROM tasks WHERE status = ? AND archived = 0')
+    .prepare('SELECT COUNT(*) AS c FROM tasks WHERE status = ? AND archived = 0 AND id NOT IN (SELECT task_id FROM assistant_checks)')
     .get(status) as Row
   return n(r.c)
 }
@@ -1356,7 +1357,7 @@ export const QUEUE_ORDER_BY = `ORDER BY
  */
 export function queuePositions(db: Db, now = nowIso()): Map<string, number> {
   const priorities = new Map(listProjects(db).map((p) => [p.id, p.priority]))
-  const queued = listTasks(db).filter(
+  const queued = listTasks(db, false, false).filter(
     (t) => t.status === 'queued' && (t.scheduledAt === null || t.scheduledAt <= now)
   )
   const map = new Map<string, number>()
@@ -2102,6 +2103,10 @@ export function observeLifecycle(db: Db, observer: LifecycleObserver): () => voi
   return () => { observers.delete(observer) }
 }
 function lifecycle(db: Db, task: Task, event: HookEvent, run?: Run): void {
+  // Internal research must not invoke project hooks or produce ordinary review notifications.
+  if (isAssistantCheck(db, task.id)) return
+  // Publishing an idea is not approval to run a global task-created hook.
+  if (event === 'created' && db.prepare('SELECT 1 FROM assistant_proposals WHERE task_id = ?').get(task.id)) return
   lifecycleRecorders.get(db)?.(task, event, run)
   for (const observer of lifecycleObservers.get(db) ?? []) afterCommit(db, () => observer(task, event, run))
 }
@@ -2175,4 +2180,39 @@ export function listRemoteJobs(db: Db, runnerId?: string): RemoteJob[] {
   const rows = runnerId ? db.prepare('SELECT data FROM runner_jobs WHERE runner_id = ? AND status <> ?').all(runnerId, 'finished')
     : db.prepare('SELECT data FROM runner_jobs WHERE status <> ?').all('finished')
   return (rows as Array<{ data: string }>).map(row => JSON.parse(row.data) as RemoteJob)
+}
+
+export function isAssistantCheck(db: Db, taskId: string): boolean {
+  return Boolean(db.prepare('SELECT 1 FROM assistant_checks WHERE task_id = ?').get(taskId))
+}
+export function listAssistantChecks(db: Db): AssistantCheck[] {
+  return (db.prepare('SELECT data FROM assistant_checks ORDER BY rowid DESC').all() as Row[]).map(row => JSON.parse(s(row.data)) as AssistantCheck)
+}
+export function saveAssistantCheck(db: Db, check: AssistantCheck): void {
+  db.prepare('INSERT INTO assistant_checks (task_id, data) VALUES (?, ?) ON CONFLICT(task_id) DO UPDATE SET data=excluded.data').run(check.taskId, JSON.stringify(check))
+}
+export function listAssistantProposals(db: Db): AssistantProposal[] {
+  return (db.prepare('SELECT data FROM assistant_proposals ORDER BY rowid DESC').all() as Row[]).map(row => JSON.parse(s(row.data)) as AssistantProposal)
+}
+export function saveAssistantProposal(db: Db, proposal: AssistantProposal): void {
+  db.prepare('INSERT INTO assistant_proposals (task_id, data) VALUES (?, ?) ON CONFLICT(task_id) DO UPDATE SET data=excluded.data').run(proposal.taskId, JSON.stringify(proposal))
+}
+export function assistantReads(db: Db): Map<string, string> {
+  return new Map((db.prepare('SELECT task_id, revision FROM assistant_reads').all() as Row[]).map(row => [s(row.task_id), s(row.revision)]))
+}
+export function readAssistantThread(db: Db, taskId: string, revision: string): void {
+  db.prepare('INSERT INTO assistant_reads (task_id, revision) VALUES (?, ?) ON CONFLICT(task_id) DO UPDATE SET revision=excluded.revision').run(taskId, revision)
+}
+
+/** Preview only prose, without moving tool payloads or images into global app snapshots. */
+export function assistantThreadSummary(db: Db, key: string, generation: string): { preview: string; replies: number } {
+  const filter = `log_key = ? AND generation = ? AND json_extract(message, '$.role') = 'assistant'
+    AND COALESCE(json_extract(message, '$.isSidechain'), 0) = 0
+    AND EXISTS (SELECT 1 FROM json_each(message, '$.blocks') block
+      WHERE json_extract(block.value, '$.kind') = 'text' AND LENGTH(TRIM(json_extract(block.value, '$.text'))) > 0)`
+  const count = db.prepare(`SELECT COUNT(*) AS total FROM session_messages WHERE ${filter}`).get(key, generation) as Row
+  const latest = db.prepare(`SELECT SUBSTR(GROUP_CONCAT(json_extract(block.value, '$.text'), char(10)), 1, 1200) AS preview
+    FROM (SELECT message FROM session_messages WHERE ${filter} ORDER BY ordinal DESC LIMIT 1) latest,
+      json_each(latest.message, '$.blocks') block WHERE json_extract(block.value, '$.kind') = 'text'`).get(key, generation) as Row
+  return { preview: sn(latest.preview) ?? '', replies: n(count.total) }
 }

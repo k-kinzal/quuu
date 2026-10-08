@@ -110,6 +110,9 @@ export class Scheduler extends EventEmitter {
    * back to life, and let the slot look free in between.
    */
   private reviewGate: ((taskId: string) => boolean) | null = null
+  private idleWork: (() => string | null) | null = null
+
+  setIdleWork(provider: (() => string | null) | null): void { this.idleWork = provider }
 
   constructor(
     private db: Db,
@@ -462,11 +465,13 @@ export class Scheduler extends EventEmitter {
    * The check and the transition happen together inside a BEGIN IMMEDIATE transaction, so the
    * same task can never be claimed twice.
    */
-  claimNext(): Claim | null {
+  claimNext(backgroundTaskId?: string): Claim | null {
     return inTransaction(this.db, () => {
       const now = nowIso()
       const reservations = [...repo.listSlotReservations(this.db), ...this.heldSlots()]
-      const rows = repo.readyTaskIds(this.db, now)
+      const rows = repo.readyTaskIds(this.db, now).filter(row => backgroundTaskId
+        ? row.task_id === backgroundTaskId
+        : !repo.isAssistantCheck(this.db, row.task_id))
 
       const reasons = new Map<string, string>()
       const stuck = new Map<string, string>()
@@ -550,8 +555,10 @@ export class Scheduler extends EventEmitter {
           stuck.set(task.id, `${truncate(task.title, 24)} — ${error instanceof Error ? error.message : String(error)}`)
           continue
         }
-        this.blockReasons = reasons
-        this.stuckReasons = stuck
+        if (!backgroundTaskId) {
+          this.blockReasons = reasons
+          this.stuckReasons = stuck
+        }
         return {
           task,
           project,
@@ -561,8 +568,14 @@ export class Scheduler extends EventEmitter {
         }
       }
 
-      this.blockReasons = reasons
-      this.stuckReasons = stuck
+      if (!backgroundTaskId) {
+        this.blockReasons = reasons
+        this.stuckReasons = stuck
+      }
+      if (!backgroundTaskId && this.enabled) {
+        const id = this.idleWork?.()
+        if (id) return this.claimNext(id)
+      }
       return null
     })
   }
@@ -649,12 +662,12 @@ export class Scheduler extends EventEmitter {
       this.limitProbes.delete(run.id)
 
       const project = repo.getProject(this.db, task.projectId)
-      const retry = classification.kind !== null && project !== null &&
+      const retry = !repo.isAssistantCheck(this.db, task.id) && classification.kind !== null && project !== null &&
         this.shouldAutoRetry(classification.kind, task, project, run)
       const disposition = runDisposition(task, classification.kind, retry)
       // Asked before the commit, so the claim this transition triggers cannot hand the slot to
       // another task while the gate's owner finds out whether this one goes straight back
-      const checking = disposition.kind === 'review' && (this.reviewGate?.(task.id) ?? false)
+      const checking = !repo.isAssistantCheck(this.db, task.id) && disposition.kind === 'review' && (this.reviewGate?.(task.id) ?? false)
       recordExecutionState(this.db, task.id, checking ? 'running' : disposition.status, {
         currentRunId: run.id,
         sessionId: run.sessionId,

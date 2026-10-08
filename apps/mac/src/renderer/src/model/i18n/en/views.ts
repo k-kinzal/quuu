@@ -290,9 +290,9 @@ export const views = {
     variables: 'Variables: {{names}}',
     variableHint: 'Text variables only; missing task/project values become empty',
     save: 'Save SSTP settings',
-    kinds: { review: 'Task ready for review', failure: 'Task failed', followUp: 'Reserved follow-up sent', reportFailure: 'Report failed', pullRequest: 'Pull request follow-up', syncConflict: 'iPhone sync conflict' },
+    kinds: { assistant: 'QuuuAI suggestion', review: 'Task ready for review', failure: 'Task failed', followUp: 'Reserved follow-up sent', reportFailure: 'Report failed', pullRequest: 'Pull request follow-up', syncConflict: 'iPhone sync conflict' },
     title: 'Notifications',
-    notifyOnReview: 'Notify when a task needs review',
+    notifyOnReview: 'Notify about reviews, QuuuAI replies and suggestions',
     notifyOnFailure: 'Notify when a task fails'
   },
   projectDetail: {

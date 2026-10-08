@@ -115,6 +115,9 @@ export class Runner extends EventEmitter {
   private stopped = false
   private live = new Map<string, Live>()
 
+  private promptContext: (project: Project, task: Task) => string = () => ''
+  setPromptContext(context: (project: Project, task: Task) => string): void { this.promptContext = context }
+
   constructor(private db: Db, private remote?: RunnerOperations) {
     super()
     remote?.on('job', (job: RemoteJob, sessionId: string) => this.remoteUpdate(job, sessionId))
@@ -153,7 +156,7 @@ export class Runner extends EventEmitter {
 
       const template = kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate
       const vars: TemplateVars = {
-        prompt: agentPrompt(project, kind, message),
+        prompt: agentPrompt(project, kind, message, this.promptContext(project, task)),
         title: task.title,
         sessionId,
         projectPath: workspace?.cwd ?? project.path,
@@ -221,7 +224,7 @@ export class Runner extends EventEmitter {
       if (repo.getRun(this.db, runId)?.status !== 'starting') return repo.getRun(this.db, runId) ?? run
       const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command,
         template: params.kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate,
-        vars: { prompt: agentPrompt(project, params.kind, params.messageOverride ?? (task.prompt.trim() || task.title)), title: task.title,
+        vars: { prompt: agentPrompt(project, params.kind, params.messageOverride ?? (task.prompt.trim() || task.title), this.promptContext(project, task)), title: task.title,
           sessionId, projectPath: cwd, projectName: project.name, taskId: task.id, runId } })
       args = invocation.args
       run.cwd = cwd
@@ -667,6 +670,8 @@ function quoteForDisplay(arg: string): string {
 
 
 /** What the agent is handed: the built-in project's fresh conversations also learn where the skill is. */
-function agentPrompt(project: Project, kind: RunKind, message: string): string {
-  return kind === 'followup' ? message : builtInPrompt(project, message)
+function agentPrompt(project: Project, kind: RunKind, message: string, context: string): string {
+  if (!project.builtIn) return message
+  const instructions = kind === 'followup' ? '' : builtInPrompt(project, '')
+  return `${message.trimEnd()}\n\n<quuu-assistant-context>${instructions}${context}\n</quuu-assistant-context>`
 }

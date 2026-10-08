@@ -9,7 +9,7 @@ import type { AppSettings } from '../../../../api/schemas/settings.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
 
-const kinds: NotificationKind[] = ['review', 'failure', 'followUp', 'reportFailure', 'pullRequest', 'syncConflict']
+const kinds: NotificationKind[] = ['review', 'failure', 'followUp', 'reportFailure', 'pullRequest', 'syncConflict', 'assistant']
 const variables = ['{{type}}, {{title}}, {{message}}', '{{detail}}, {{taskId}}, {{taskTitle}}', '{{projectId}}, {{projectName}}']
 
 export function NotificationSettings(): JSX.Element {

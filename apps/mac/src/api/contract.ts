@@ -7,6 +7,7 @@ import { oc } from '@orpc/contract'
 import { AppInfoSchema, TelemetryPatchSchema, TelemetryStatusSchema } from './schemas/app.js'
 import { ProjectDocumentsSchema, DocumentReadSchema, DocumentContentSchema, DocumentViewSchema } from './schemas/documents.js'
 import { z } from 'zod'
+import { AssistantSettingsSchema, AssistantStateSchema, AssistantProposalSchema, AssistantMemorySchema } from './schemas/assistant.js'
 import { AgentGroupInputSchema, AgentGroupSchema, AgentInputSchema, AgentSchema } from "./schemas/agents.js"
 import { TaskRuleInputSchema, TaskRuleSchema } from "./schemas/automation.js"
 import { BotUserResultSchema, ConfirmRequestSchema, CreateAppResultSchema, EditorAppSchema, GitHubWebStatusSchema, OpenResultSchema, OpenTargetSchema, PopupMenuRequestSchema, RunNowResultSchema } from "./schemas/desktop.js"
@@ -25,6 +26,15 @@ const procedure = oc.errors({ OPERATION_FAILED: { data: z.object({ reason: z.str
 
 /** The public contract implemented by both Electron ends and by test mocks. */
 export const contract = {
+  assistant: {
+    state: procedure.output(AssistantStateSchema),
+    configure: procedure.input(AssistantSettingsSchema.partial().strict()).output(AssistantSettingsSchema),
+    memory: procedure.output(AssistantMemorySchema),
+    setMemory: procedure.input(z.object({ content: z.string().max(16384), revision: z.string() }).strict()).output(AssistantMemorySchema),
+    send: procedure.input(z.string().trim().min(1).max(100000)).output(TaskSchema),
+    react: procedure.input(z.object({ taskId: z.string(), reaction: z.enum(['approve', 'dismiss']) }).strict()).output(AssistantProposalSchema),
+    markRead: procedure.input(z.object({ taskId: z.string(), revision: z.string() }).strict()).output(z.void())
+  },
   snapshot: procedure.output(AppSnapshotSchema),
   runners: {
     status: procedure.output(RunnerStatusSchema),

@@ -1,4 +1,5 @@
 import {
+  ActivityStatus,
   AppShellFooter,
   Counter,
   Gauge,
@@ -97,6 +98,9 @@ export function Footer(): JSX.Element {
       }}
     >
       <StatusBarOverflow>
+        {snapshot?.assistant?.activity === 'checking' && <StatusBarItem onClick={() => setSection({ kind: 'quuuAI' })}>
+          <ActivityStatus label={t('quuuAI.checking')} />
+        </StatusBarItem>}
         <StatusBarItem title={slotSummary(status.agents)}>
           <Text tone="tertiary">{t('footer.running')}</Text>
           <Counter>{status.activeRuns}</Counter>

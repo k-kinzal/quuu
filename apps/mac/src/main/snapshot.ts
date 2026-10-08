@@ -5,12 +5,14 @@ import type { SchedulerStatus } from './execution/status.js'
 import type { Run } from './execution/types.js'
 import type { Project } from './projects/types.js'
 import type { Task } from './tasks/types.js'
+import type { AssistantState } from './assistant/types.js'
 
 // ---------------------------------------------------------------------------
 // Snapshot (what the renderer mirrors)
 // ---------------------------------------------------------------------------
 
 export interface AppSnapshot {
+  assistant?: AssistantState
   /** Main assembles the resume commands; the UI only gets the candidate names. */
   resumeCommands?: Record<string, string | null>
   externalAgentNames?: Record<string, string>
