@@ -1,4 +1,4 @@
-import { Reveal, Text, TranscriptCode, claimContextMenu, conversationBlock, type MenuItemSpec } from '@design-system/react'
+import { Message, MessageGroup, Reveal, Text, TranscriptCode, claimContextMenu, conversationBlock, type MenuItemSpec } from '@design-system/react'
 import { useId, useState } from 'react'
 import type { ToolCall } from '../../../api/schemas/session.js'
 import { copyItem, copyText, pathItems, selectionItems } from '../interaction/contextMenu.js'
@@ -10,6 +10,7 @@ import type { Turn, TurnItem } from '../model/summarize.js'
 import { toolKind, turnText } from '../model/summarize.js'
 import type { ToolTone } from '../ui/session.js'
 import { ThinkingBody, ThinkingToggle, ToolCluster as ToolClusterRoot, ToolDetail, ToolEntry, ToolError, ToolImages, ToolLine, ToolVerb, TurnBody, TurnHead, TurnRole, Turn as TurnRoot, TurnRule, TurnText } from '../ui/session.js'
+import { Bot, ICON, User, iconProps } from '../ui/icons.js'
 import { MessageBody } from './MessageBody.js'
 import { SessionImages } from './SessionImages.js'
 
@@ -153,15 +154,18 @@ function Item({
   item,
   role,
   cwd,
-  complete
+  complete,
+  conversation = false
 }: {
   item: TurnItem
   role: Turn['role']
   cwd: string | null
   complete: boolean
+  conversation?: boolean
 }): JSX.Element {
   switch (item.kind) {
     case 'text':
+      if (conversation && role !== 'system') return <MessageBody text={item.text} />
       // A log (system) is output, not formatting. Show it as-is, uninterpreted
       return (
         <TurnText role={role}>
@@ -187,7 +191,8 @@ export function SessionTurn({
   cwd,
   headless,
   embedded = false,
-  roleLabel
+  roleLabel,
+  conversation = false
 }: {
   turn: Turn
   cwd: string | null
@@ -196,6 +201,7 @@ export function SessionTurn({
   /** Nested history must not become an anchor in the enclosing task conversation. */
   embedded?: boolean
   roleLabel?: string
+  conversation?: boolean
 }): JSX.Element {
   const prose = turnText(turn)
   const thinking = turn.items
@@ -203,9 +209,15 @@ export function SessionTurn({
     .map((item) => item.text)
     .join('\n\n')
 
+  const Root = conversation ? MessageGroup : TurnRoot
+  const body = <TurnBody>
+    {turn.items.map(item => <div key={item.id} data-chat-item={embedded ? undefined : item.id} {...conversationBlock(item.id)}>
+      <Item item={item} role={turn.role} cwd={cwd} complete={embedded} conversation={conversation} />
+    </div>)}
+  </TurnBody>
   return (
-    <TurnRoot
-      sidechain={turn.isSidechain}
+    <Root
+      {...(!conversation ? { sidechain: turn.isSidechain } : {})}
       /*
        * The conversation is a reading surface, so a menu of our own must never block the
        * OS's copy. With a selection, put it first; without one, make the whole utterance extractable
@@ -221,6 +233,9 @@ export function SessionTurn({
         ])
       }}
     >
+      {conversation ? <Message speaker={roleLabel ?? (turn.role === 'user' ? t('quuuAI.you') : turn.role === 'assistant' ? t('quuuAI.title') : ROLE_LABEL[turn.role])}
+        icon={turn.role === 'user' ? <User size={ICON.md} {...iconProps} /> : <Bot size={ICON.md} {...iconProps} />}
+        meta={turn.startedAt ? clockTime(turn.startedAt) : undefined}>{body}</Message> : <>
       {!headless && (
         <TurnHead>
           <TurnRole user={turn.role === 'user'}>{roleLabel ?? ROLE_LABEL[turn.role] ?? turn.role}</TurnRole>
@@ -234,11 +249,8 @@ export function SessionTurn({
           )}
         </TurnHead>
       )}
-      <TurnBody>
-        {turn.items.map((item) => (
-          <div key={item.id} data-chat-item={embedded ? undefined : item.id} {...conversationBlock(item.id)}><Item item={item} role={turn.role} cwd={cwd} complete={embedded} /></div>
-        ))}
-      </TurnBody>
-    </TurnRoot>
+      {body}
+      </>}
+    </Root>
   )
 }

@@ -60,6 +60,9 @@ export { shikiTheme } from './markdown/shikiTheme.js'
 export * from './components/index.js'
 
 export * from './components/data-display/Transcript.js'
+export * from './components/data-display/Message.js'
+export * from './components/inputs/ReactionButton.js'
+export * from './components/layout/ConversationWorkspace.js'
 
 export * from './components/layout/ConversationLayout.js'
 export * from './components/layout/ConversationFeed.js'

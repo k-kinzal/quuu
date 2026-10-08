@@ -13,6 +13,7 @@ import { TaskSidebar } from '../src/renderer/src/components/TaskSidebar.js'
 import { TaskOverview } from '../src/renderer/src/components/TaskOverview.js'
 import { Rail } from '../src/renderer/src/components/Rail.js'
 import { NO_FILTERS } from '../src/renderer/src/model/table.js'
+import { t } from '../src/renderer/src/model/i18n/index.js'
 import { useStore } from '../src/renderer/src/state/store.js'
 import { buildTheme } from '../src/renderer/src/ui/theme.js'
 
@@ -182,9 +183,9 @@ describe('QuuuAI as a dedicated task surface', () => {
       <TaskOverview />
       <TaskComposer fixedProjectId={quuu.id} />
     </ThemeProvider>)
-    expect(screen.getByText('What would you like QuuuAI to help with?')).toBeTruthy()
+    expect(screen.getByText(t('quuuAI.emptyTitle'))).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Ask QuuuAI' }))
-    expect(document.activeElement).toBe(screen.getByPlaceholderText('Ask QuuuAI a question or request a task...'))
+    expect(document.activeElement).toBe(screen.getByPlaceholderText(t('quuuAI.placeholder')))
   })
 
   it('creates only in QuuuAI despite a remembered destination in another project', async () => {
@@ -193,6 +194,12 @@ describe('QuuuAI as a dedicated task surface', () => {
     expect(screen.queryByRole('button', { name: PROJECT.name })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
     await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ projectId: quuu.id })))
+  })
+
+  it('keeps project selection available in ordinary task creation when QuuuAI is the selected destination', () => {
+    useStore.setState({ section: { kind: 'all' }, targetProjectId: quuu.id })
+    render(<ThemeProvider buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
+    expect(screen.getByRole('button', { name: 'QuuuAI' }).getAttribute('aria-haspopup')).toBe('listbox')
   })
 
   it('keeps quick add in QuuuAI while a task is open', async () => {

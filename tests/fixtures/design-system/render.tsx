@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import { flushSync } from 'react-dom'
 import { ControlSpecimen } from '../../../packages/design-system/src/components/ControlQuality.stories.js'
+import { MessageSpecimen } from '../../../packages/design-system/src/components/data-display/Message.stories.js'
 import { TooltipSpecimen } from '../../../packages/design-system/src/components/TooltipQuality.stories.js'
 import { ExplorerResizeSpecimen } from '../../../packages/design-system/src/components/layout/EditorWorkspace.stories.js'
 import { ThemeProvider } from '../../../packages/design-system/src/theme/ThemeProvider.js'
@@ -79,6 +80,25 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
   sameGeometry(['search', 'filter', 'selected', 'button-xs', 'search-disabled', 'filter-disabled'])
   sameGeometry(['text', 'number', 'select', 'button-md', 'error', 'text-disabled', 'select-disabled', 'readonly'])
   equal(getComputedStyle(element('search', 'input')).fontSize, getComputedStyle(element('filter')).fontSize, 'search text inherits the filter type scale')
+  for (const name of ['reaction-selected', 'reaction-disabled', 'reaction-loading']) {
+    const normal = element('reaction', 'button').getBoundingClientRect()
+    const other = element(name, 'button').getBoundingClientRect()
+    equal(other.height, normal.height, `${name}: reaction height is stable`)
+    equal(other.width, normal.width, `${name}: reaction width is stable`)
+  }
+  const selectedReaction = element('reaction-selected', 'button')
+  equal(selectedReaction.getAttribute('aria-pressed'), 'true', 'reaction exposes selection')
+  equal((element('reaction-disabled', 'button') as HTMLButtonElement).disabled, true, 'disabled reaction prevents activation')
+  if (element('reaction', 'button').getAttribute('aria-pressed') === 'true') {
+    element('reaction', 'button').click()
+    await frame()
+  }
+  element('reaction', 'button').click()
+  await frame()
+  equal(element('reaction', 'button').getAttribute('aria-pressed'), 'true', 'reaction changes on activation')
+  const reactionDeadline = performance.now() + 2000
+  while (getComputedStyle(element('reaction', 'button')).color !== getComputedStyle(selectedReaction).color && performance.now() < reactionDeadline) await frame()
+  equal(getComputedStyle(element('reaction', 'button')).color, getComputedStyle(selectedReaction).color, 'selected reactions use the same palette color')
   const height = element('search').getBoundingClientRect().height
   equal(height, density === 'compact' ? 22 : 36, 'filter density')
   if (element('textarea').getBoundingClientRect().height <= element('text').getBoundingClientRect().height) throw new Error('Multiline field was collapsed to single-line height')
@@ -95,7 +115,7 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
       equal(style[prop[key]], ring[key], () => `${name}: focus ${key} (${JSON.stringify(focusState(element(name, selector), element(name)))})`)
     }
   }
-  for (const [name, selector] of [['icon', 'button'], ['tabs', '[role="tab"]']] as const) {
+  for (const [name, selector] of [['icon', 'button'], ['reaction', 'button'], ['tabs', '[role="tab"]']] as const) {
     const style = await focus(name, selector, { outlineColor: ring.color, outlineWidth: ring.width, outlineOffset: '-2px' }, selector)
     equal(style.outlineColor, ring.color, `${name}: focus color`)
     equal(style.outlineWidth, ring.width, `${name}: focus width`)
@@ -142,6 +162,7 @@ Object.assign(window, { checkControls: check, prepareHover, readHover })
 const tooltipCases = [
   ['nav', 'Project files / プロジェクト構造'], ['activity', 'Files panel'], ['collapse', 'Restore panel'],
   ['nav-custom', 'Documents and notes', 'button:nth-of-type(2)', 'nav'],
+  ['reaction', 'Like message'], ['reaction-disabled', 'Unavailable reaction'],
   ['icon', 'Add item'], ['disabled', 'Unavailable action'], ['menu', 'More actions'],
   ['list', 'Add row'], ['list-disabled', 'Remove row'], ['send', 'Send message'],
   ['split', 'Choose action', 'button[aria-haspopup]'], ['close', 'Close First (Delete)', 'button[aria-label="Close First"]'],
@@ -214,3 +235,21 @@ function explorerGeometry() {
 }
 
 Object.assign(window, { renderExplorer, explorerGeometry })
+
+async function renderMessages(width: number, scheme: ColorScheme): Promise<void> {
+  flushSync(() => root.render(<ThemeProvider colorScheme={scheme}><MessageSpecimen width={width} threadInitiallyOpen /></ThemeProvider>))
+  await frame()
+  await frame()
+}
+
+function messageGeometry() {
+  const channel = document.querySelector<HTMLElement>('[data-conversation-channel]')!
+  const thread = document.querySelector<HTMLElement>('[data-conversation-thread]')
+  const workspace = document.querySelector<HTMLElement>('[data-message-workspace]')!
+  return { channel: channel.getBoundingClientRect().width, thread: thread?.getBoundingClientRect().width ?? 0,
+    overflow: workspace.scrollWidth > workspace.clientWidth,
+    channelVisible: channel.checkVisibility(),
+    unreadable: [...workspace.querySelectorAll('p')].filter(p => p.checkVisibility()).some(p => p.getBoundingClientRect().width < 180) }
+}
+
+Object.assign(window, { renderMessages, messageGeometry, clearSpecimen: () => flushSync(() => root.render(null)) })

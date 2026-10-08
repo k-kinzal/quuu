@@ -112,3 +112,17 @@ it('still offers the part of an instruction the agent never received', () => {
   expect(screen.getByText(t('pendingTurn.waiting'))).toBeTruthy()
   expect(screen.getByDisplayValue('そのあとテストも')).toBeTruthy()
 })
+
+it('keeps delivery evidence when proposal context is displayed as an attachment', () => {
+  const proposal = { taskId: TASK.id, projectId: PROJECT.id, title: 'Restore conversation', reason: 'Two interrupted sessions.', prompt: 'Keep the selected conversation.', confidence: 86, status: 'pending' as const, createdAt: '', respondedAt: null, executionTaskId: null }
+  const context = `Discuss this proposed task: ${proposal.title}\n\nWhy: ${proposal.reason}\n\nSuggested work: ${proposal.prompt}`
+  const prompt = context + '\n\nCan it keep my place too?'
+  const limited = { ...RUN, status: 'limited' as const, errorKind: 'limit' as const, promptPreview: prompt }
+  useStore.setState({ runs: [limited], selectedRunId: limited.id, session: conversation([said('user', prompt)]), sessionLoading: false })
+  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}>
+    <Chat task={{ ...TASK, prompt, status: 'queued' }} project={{ ...PROJECT, builtIn: true }} proposal={proposal} />
+  </ThemeProvider>)
+  expect(screen.getAllByText('Can it keep my place too?')).toHaveLength(1)
+  expect(screen.queryByText(t('quuuAI.queued'))).toBeNull()
+  expect(screen.queryByDisplayValue('Can it keep my place too?')).toBeNull()
+})

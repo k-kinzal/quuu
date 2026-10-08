@@ -23,7 +23,7 @@ export {
   // Actions
   Plus, RefreshCw, RotateCcw, Rows3, ScrollText, Search, Send, Settings,
   Settings2, ShieldAlert, ShieldCheck, SlidersHorizontal,
-  Smartphone, Square, SquarePen, Terminal, Timer, Trash2, TriangleAlert, Undo2, User, X, Zap
+  Smartphone, ThumbsDown, ThumbsUp, Square, SquarePen, Terminal, Timer, Trash2, TriangleAlert, Undo2, User, X, Zap
 } from 'lucide-react'
 
 /** The sizes (three steps) and stroke weight are tokens. Borrowed from the design system, never made here. */

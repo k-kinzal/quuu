@@ -1,6 +1,7 @@
 import { HookInterlude, hookEntries } from './HookHistory.js'
-import { Alert, Button, ContentInset, Text } from '@design-system/react'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { Alert, Button, ContentInset, Message, MessageColumn, MessageGroup, Text } from '@design-system/react'
+import { Fragment, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { AssistantProposal as Proposal } from '../../../api/schemas/assistant.js'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { Task } from '../../../api/schemas/tasks.js'
 
@@ -10,15 +11,17 @@ import { focusAny, pane } from '../interaction/focus.js'
 import { deliveredInstructions, failureReason, nextSend } from '../model/derive.js'
 import { clockOrDate } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
-import { assistantConversation } from '../model/assistantConversation.js'
+import { assistantConversation, proposalContextPrefix } from '../model/assistantConversation.js'
 import { buildSections, buildTurns } from '../model/summarize.js'
 import { placeByTime } from '../model/timeline.js'
 import { useStore } from '../state/store.js'
-import { ChevronDown, CircleAlert, ICON, iconProps } from '../ui/icons.js'
+import { Bot, ChevronDown, CircleAlert, ICON, iconProps } from '../ui/icons.js'
 import { ChatIntro, ChatMore, ChatRoot, ChatScroll, ChatViewport, JumpToLatest } from '../ui/panes.js'
 import { ExecutionActivity } from './ExecutionActivity.js'
 import { PendingTurn } from './PendingTurn.js'
 import { PromptSection } from './PromptSection.js'
+import { SessionTurn } from './SessionTurn.js'
+import { AssistantProposal } from './AssistantProposal.js'
 
 /** How many items at the top edge are remembered across a page load. Only the first can be renamed; the rest is margin. */
 const ANCHORS = 3
@@ -38,7 +41,7 @@ const KEY_HEADING: Record<string, Heading> = {
  * say what's next", so the conversation sits center and largest. There's no dedicated
  * prompt field; the prompt is written as the conversation's first message.
  */
-export function Chat({ task, project, active = true }: { task: Task; project: Project | undefined; active?: boolean }): JSX.Element {
+export function Chat({ task, project, active = true, proposal }: { task: Task; project: Project | undefined; active?: boolean; proposal?: Proposal }): JSX.Element {
   const session = useStore((s) => s.session)
   const loading = useStore((s) => s.sessionLoading)
   const runs = useStore((s) => s.runs)
@@ -71,7 +74,8 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
   const run = runs.find((r) => r.id === selectedRunId) ?? null
   const cwd = run?.cwd ?? project?.path ?? null
   // A fresh array every time would make the useMemos below run on every render
-  const messages = useMemo(() => project?.builtIn ? assistantConversation(session?.messages ?? []) : session?.messages ?? [], [session, project?.builtIn])
+  const conversation = useMemo(() => project?.builtIn ? assistantConversation(session?.messages ?? []) : session?.messages ?? [], [session, project?.builtIn])
+  const messages = useMemo(() => proposal ? assistantConversation(conversation, proposal) : conversation, [conversation, proposal])
   const turns = useMemo(() => buildTurns(messages), [messages])
   const sections = useMemo(() => buildSections(turns), [turns])
 
@@ -103,8 +107,9 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
    * the conversation can say it, so nothing is claimed while a newer page is still unread.
    */
   const delivered = useMemo(
-    () => (latest && !session?.hasNewer ? deliveredInstructions(messages, runs, task.sessionId) : []),
-    [latest, session?.hasNewer, messages, runs, task.sessionId]
+    // Delivery evidence keeps the full instruction even when its proposal has a separate attachment.
+    () => (latest && !session?.hasNewer ? deliveredInstructions(conversation, runs, task.sessionId) : []),
+    [latest, session?.hasNewer, conversation, runs, task.sessionId]
   )
   const next = latest ? nextSend(task, runs.length > 0, delivered) : null
 
@@ -201,6 +206,7 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
   // utterance (`next`). Guidance here is only for when nothing is written at all
   const hasPrompt = task.prompt.trim().length > 0
 
+  const Column = project?.builtIn ? MessageColumn : Fragment
   return (
     <ChatRoot>
       <ChatViewport>
@@ -223,6 +229,10 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
           {...(active ? pane('chat', { tab: true }) : {})}
           aria-label={t('chat.pane')}
         >
+          <Column>
+          {proposal && <MessageGroup><Message speaker={t('quuuAI.title')} icon={<Bot size={ICON.md} {...iconProps} />}>
+            <AssistantProposal proposal={proposal} />
+          </Message></MessageGroup>}
           {loading && (
             <Text size="sm" tone="tertiary">
               {t('chat.loading')}
@@ -292,7 +302,10 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
             instruction's one line) stays pinned while scrolling and gets pushed out
             and replaced when the next instruction arrives
           */}
-          {sections.map((section) => (
+          {project?.builtIn ? turns.map(turn => <Fragment key={turn.id}>
+            <SessionTurn turn={turn} cwd={cwd} conversation />
+            <HookInterlude entries={placed.after.get(turn.id) ?? []} />
+          </Fragment>) : sections.map((section) => (
             <PromptSection key={section.id} section={section} cwd={cwd} scrollRef={scrollRef}
               after={(turnId) => <HookInterlude entries={placed.after.get(turnId) ?? []} />} />
           ))}
@@ -312,7 +325,9 @@ export function Chat({ task, project, active = true }: { task: Task; project: Pr
 
           <HookInterlude key={task.id} entries={placed.end} error={latestConversation && !session?.hasNewer ? hooks.error : null} />
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
-          {!session?.hasNewer && next && <PendingTurn task={task} next={next} />}
+          {!session?.hasNewer && next && <PendingTurn task={task} next={next} conversation={project?.builtIn}
+            hiddenPrefix={proposal ? proposalContextPrefix(next.value, proposal) : undefined} />}
+          </Column>
         </ChatScroll>
 
         {/* Floats at the window's bottom edge. Stays within the conversation even as the composer grows */}

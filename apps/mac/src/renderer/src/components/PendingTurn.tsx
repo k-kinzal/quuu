@@ -1,11 +1,11 @@
-import { Badge, Button, ContentBlock, LinkButton, Row, Spacer } from '@design-system/react'
+import { Badge, Button, Message, MessageGroup, ContentBlock, LinkButton, Row, Spacer } from '@design-system/react'
 import { useRef, useState, type MouseEvent } from 'react'
 import type { Task, TaskPatch } from '../../../api/schemas/tasks.js'
 
 import type { NextSend } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
 import { ROLE_LABEL } from '../model/session.js'
-import { ICON, SquarePen, X, iconProps } from '../ui/icons.js'
+import { ICON, SquarePen, User, X, iconProps } from '../ui/icons.js'
 import { PendingBody, TurnHead, TurnRole, Turn as TurnRoot, TurnRule } from '../ui/session.js'
 import type { EditableBodyActions } from './EditableBody.js'
 import { EditableBody } from './EditableBody.js'
@@ -32,7 +32,7 @@ const keepFocus = (e: MouseEvent): void => e.preventDefault()
  * and one mark suffices. The same holds while writing: commit and discard are pressable
  * buttons, not key hints.
  */
-export function PendingTurn({ task, next }: { task: Task; next: NextSend }): JSX.Element {
+export function PendingTurn({ task, next, conversation = false, hiddenPrefix = '' }: { task: Task; next: NextSend; conversation?: boolean; hiddenPrefix?: string }): JSX.Element {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [editing, setEditing] = useState(false)
 
@@ -74,30 +74,26 @@ export function PendingTurn({ task, next }: { task: Task; next: NextSend }): JSX
     }
   }
 
+  const value = next.value.slice(hiddenPrefix.length)
+  if (hiddenPrefix && !value.trim()) return <></>
+  const body = <EditableBody
+    value={value} label={label} placeholder={task.title} inputRef={inputRef}
+    onEditingChange={setEditing} actionsRef={actions}
+    onCommit={text => patch(next.field === 'pendingMessage' ? { pendingMessage: hiddenPrefix + text } : { prompt: hiddenPrefix + text }, true)}
+  />
+  const Root = conversation ? MessageGroup : TurnRoot
   return (
-    <TurnRoot>
+    <Root>
+      {conversation ? <Message speaker={t('quuuAI.you')} icon={<User size={ICON.md} {...iconProps} />}
+        meta={waiting ? t('quuuAI.queued') : t('pendingTurn.unsent')}>{body}</Message> : <>
       <TurnHead>
         <TurnRole user>{ROLE_LABEL.user}</TurnRole>
         <Badge tone={waiting ? 'info' : 'warning'}>{waiting ? t('pendingTurn.waiting') : t('pendingTurn.unsent')}</Badge>
         <TurnRule />
       </TurnHead>
 
-      <PendingBody>
-        <EditableBody
-          value={next.value}
-          label={label}
-          /* What gets sent when empty is said by showing **the exact text** as the placeholder (rule Q) */
-          placeholder={task.title}
-          inputRef={inputRef}
-          onEditingChange={setEditing}
-          actionsRef={actions}
-          onCommit={(text) =>
-            patch(
-              next.field === 'pendingMessage' ? { pendingMessage: text } : { prompt: text }, true
-            )
-          }
-        />
-      </PendingBody>
+      <PendingBody>{body}</PendingBody>
+      </>}
 
       <ContentBlock placement="actions">
         <Row gap="md">
@@ -139,6 +135,6 @@ export function PendingTurn({ task, next }: { task: Task; next: NextSend }): JSX
           )}
         </Row>
       </ContentBlock>
-    </TurnRoot>
+    </Root>
   )
 }

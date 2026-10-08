@@ -1,5 +1,22 @@
 # Call-site feedback and decisions
 
+## 2026-10-08 Conversations, attachments and reactions
+
+- Finding: the assistant channel reused task transcript furniture and full proposal
+  forms. Emoji reactions bypassed the palette, repeated explanations displaced the
+  conversation, and splitting the screen squeezed prose into narrow columns.
+- Accepted: generic `Message`, `MessageGroup`, `MessageColumn`, `MessageExcerpt`
+  and `MessageActions` share a reading axis and neutral speaker treatment. A
+  `MessageAttachment` opens supporting detail in place; its summary retains the
+  subject and provenance. `ReactionButton` extends the existing named icon control,
+  with palette-owned pressed, disabled, focus and loading states.
+- `ComposerInputRow` keeps the send action beside the text. `ConversationWorkspace`
+  owns the two-column proportions and switches to the opened conversation below
+  two readable columns. Screen code supplies content and behavior, never geometry.
+- Verification: Messages stories, ControlQuality and TooltipQuality specimens,
+  Chromium focus/tooltip/reaction and narrow-layout checks, plus the isolated Mac
+  channel, thread, proposal states and settings in both themes.
+
 ## 2026-10-08 Unread navigation indicators
 
 Accepted: `NavItem.unread` shows a small presence mark in expanded and collapsed navigation. Unread content is independent of a task count. The caller supplies its accessible description and owns read state; the kit owns the mark.

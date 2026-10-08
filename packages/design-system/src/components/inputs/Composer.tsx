@@ -276,3 +276,13 @@ export const ComposerToolbar = styled('div')(({ theme }) => ({
   gap: theme.spacing(2),
   padding: `0 ${theme.spacing(2)} ${theme.spacing(1.5)}`
 }))
+
+/** Conversation inputs put the action beside the text, with no separate settings band. */
+export const ComposerInputRow = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'flex-end',
+  gap: theme.spacing(1),
+  padding: theme.spacing(1),
+  '& > textarea': { flex: '1 1 auto', minWidth: 0 },
+  '& > :last-child:not(textarea)': { flex: '0 0 auto', padding: theme.spacing(1), alignSelf: 'flex-end' }
+}))

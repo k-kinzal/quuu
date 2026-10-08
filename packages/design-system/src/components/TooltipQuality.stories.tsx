@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { Plus, Folder, MoreHorizontal, Send, ChevronDown } from 'lucide-react'
+import { Plus, ThumbsUp, Folder, MoreHorizontal, Send, ChevronDown } from 'lucide-react'
 import { ThemeProvider } from '../theme/ThemeProvider.js'
 import { Button, IconButton } from './inputs/Button.js'
+import { ReactionButton } from './inputs/ReactionButton.js'
 import { SplitButton } from './inputs/SplitButton.js'
 import { CompactComposer } from './inputs/CompactComposer.js'
 import { NavItem, NavSection, SideNav } from './navigation/NavList.js'
@@ -34,6 +35,10 @@ export function TooltipSpecimen(): JSX.Element {
       <div data-tooltip="icon"><IconButton title="Add item" icon={<Plus />} /></div>
       <div data-tooltip="disabled"><IconButton title="Unavailable action" icon={<Plus />} disabled /></div>
       <div data-tooltip="menu"><IconButton title="More actions" icon={<MoreHorizontal />} menu aria-expanded={anchor ? 'true' : 'false'} onClick={e => setAnchor(e.currentTarget)} /></div>
+    </Row>
+    <Row gap="md">
+      <div data-tooltip="reaction"><ReactionButton title="Like message" icon={<ThumbsUp />} /></div>
+      <div data-tooltip="reaction-disabled"><ReactionButton title="Unavailable reaction" icon={<ThumbsUp />} disabled /></div>
     </Row>
     <ListFrame bar={<>
       <div data-tooltip="list"><ListFrameButton title="Add row" icon={<Plus />} onClick={() => undefined} /></div>

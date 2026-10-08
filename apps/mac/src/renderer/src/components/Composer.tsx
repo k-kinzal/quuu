@@ -135,7 +135,8 @@ export function Composer({
   }
 
   return (
-    <PromptComposer label={t('composer.pane')} busy={sending || files.busy}
+    <PromptComposer label={t(project?.builtIn ? 'quuuAI.replyPlaceholder' : 'composer.pane')} busy={sending || files.busy}
+      conversation={project?.builtIn}
       project={project}
       agent={<PromptAgentChip label={snapshot ? taskTargetLabel(snapshot, task, project) : t('composer.unassigned')} />}
       priority={task.priority}
@@ -189,8 +190,15 @@ export function Composer({
       }}
       errors={<>
         {files.error && <Alert title={t('promptFiles.failed')}>{failureReason(files.error)}</Alert>}
+        {sendingMutation.error && <Alert>{failureReason(sendingMutation.error)}</Alert>}
       </>}
-      actions={<>
+      actions={project?.builtIn ? <>
+        {isRunning && <IconButton title={t('composer.cancel')} icon={<Square size={ICON.md} {...iconProps} />}
+          onClick={() => void window.quuu.tasks.cancel(task.id)} />}
+        <IconButton color="primary" title={`${action.label} (${shortcut('Cmd+Enter')})`} aria-label={action.label}
+          loading={sending} disabled={!action.enabled || !text.trim() || sending || files.busy}
+          onClick={submit} icon={isRunning ? <Clock size={ICON.md} {...iconProps} /> : <Send size={ICON.md} {...iconProps} />} />
+      </> : <>
         {/* Cancelling is an act on the task, not on the composer, but this is where you
             reach for it mid-run, so it stays. The lead action (send) is always right beside it */}
         {isRunning && (

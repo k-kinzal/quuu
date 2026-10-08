@@ -48,6 +48,8 @@ function show(): void { render(<ThemeProvider colorScheme="dark" buildTheme={bui
 it('shows a conversation with thread replies and proposal actions instead of a task table', async () => {
   show()
   expect(screen.queryByRole('table')).toBeNull()
+  expect(screen.getByText(proposal.title).closest('details')?.open).toBe(false)
+  expect(screen.getByRole('button', { name: t('quuuAI.approve') }).getAttribute('aria-pressed')).toBe('false')
   expect(screen.getByText(task.prompt)).toBeTruthy()
   expect(screen.getByText('I will keep them concise.')).toBeTruthy()
   fireEvent.click(screen.getByRole('button', { name: t('quuuAI.replies', { count: 1 }) }))
@@ -82,4 +84,15 @@ it('marks an open thread read on focus even when its channel entry is outside th
   act(() => useStore.setState({ snapshot: { ...snapshot,
     assistant: { ...snapshot.assistant!, threads: [{ ...offscreen, revision: '2' }] } } }))
   await waitFor(() => expect(read).toHaveBeenCalledWith({ taskId: 'suggestion', revision: '2' }))
+})
+
+it.each(['accepted', 'dismissed'] as const)('keeps the %s reaction selected without offering the same action again', status => {
+  useStore.setState({ snapshot: { ...snapshot, assistant: { ...snapshot.assistant!, proposals: [{ ...proposal, status }] } } })
+  show()
+  const chosen = screen.getByRole<HTMLButtonElement>('button', { name: t(status === 'accepted' ? 'quuuAI.approve' : 'quuuAI.dismiss') })
+  expect(chosen.getAttribute('aria-pressed')).toBe('true')
+  expect(chosen.disabled).toBe(true)
+  fireEvent.click(chosen)
+  expect(reacted).not.toHaveBeenCalled()
+  expect(screen.queryByRole('button', { name: t(status === 'accepted' ? 'quuuAI.dismiss' : 'quuuAI.approve') })).toBeNull()
 })

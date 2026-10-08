@@ -152,6 +152,33 @@ void app.whenReady().then(async () => {
       }
     }
     for (const scheme of ['dark', 'light']) {
+      currentCheck = `${scheme}: conversation layout`
+      await window.webContents.executeJavaScript(`window.renderMessages(1000, '${scheme}')`)
+      const wide = await window.webContents.executeJavaScript('window.messageGeometry()')
+      assert.equal(wide.channelVisible, true)
+      assert.ok(wide.thread > 360, 'a thread keeps a readable text column')
+      assert.equal(wide.overflow, false)
+      await window.webContents.executeJavaScript(`window.renderMessages(360, '${scheme}')`)
+      const narrow = await window.webContents.executeJavaScript('window.messageGeometry()')
+      assert.equal(narrow.channelVisible, false, 'narrow layouts focus the opened thread')
+      assert.equal(narrow.thread, 360)
+      assert.equal(narrow.overflow, false)
+      assert.equal(narrow.unreadable, false)
+      const summary = await window.webContents.executeJavaScript(`(() => {
+        const el = document.querySelector('[data-conversation-thread] summary')
+        const bounds = el.getBoundingClientRect()
+        return { x: Math.round(bounds.x + bounds.width / 2), y: Math.round(bounds.y + bounds.height / 2) }
+      })()`)
+      await input({ type: 'mouseDown', button: 'left', clickCount: 1, ...summary })
+      await input({ type: 'mouseUp', button: 'left', clickCount: 1, ...summary })
+      await waitFor(`document.querySelector('[data-conversation-thread] details').open`, 'attachment expands in place')
+      await window.webContents.executeJavaScript(`document.querySelector('button[aria-label="Close thread"]').click()`)
+      await waitFor(`window.messageGeometry().channelVisible && window.messageGeometry().thread === 0`, 'closing returns to the channel')
+      // Unmount so the next scheme opens a fresh thread.
+      await window.webContents.executeJavaScript('window.clearSpecimen()')
+      messages.push(`${scheme}: conversation layout and attachment passed`)
+    }
+    for (const scheme of ['dark', 'light']) {
       currentCheck = `${scheme}: explorer resizing`
       const waitForWidth = (width, message) => waitFor(`window.explorerGeometry().width === ${width}`, message)
       const render = async (width, explorerWidth) => {

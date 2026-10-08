@@ -1792,10 +1792,12 @@ if (process.env.QUUU_FIXTURE_ASSISTANT === '1') {
     { type: 'user', timestamp: iso(10), message: { role: 'user', content: task.prompt } },
     { type: 'assistant', timestamp: iso(9), message: { role: 'assistant', content: [{ type: 'text', text: '昨日の続きなら、まず通知の復元処理を確認するのがよさそうです。\n\n- レビュー待ちの変更を確認\n- 再起動後の通知を検証\n\nほかのプロジェクトの実行中タスクは、そのまま進めておけます。' }] } }
   ].map(row => JSON.stringify(row)).join('\n') + '\n')
-  const suggestion = repo.insertTask(db, { projectId: quuu.id, title: '再起動後の通知から会話に戻れるようにする', prompt: '再起動後の通知から会話に戻れるようにする提案について相談しましょう。', status: 'draft' })
+  const reason = '直近のセッションで、再起動後に通知を押しても元の会話に戻れないケースが2回ありました。作業の続きを探し直す手間を減らせそうです。'
+  const prompt = '通知のタスクIDを保持し、起動後に対象の会話へ戻る処理と回帰テストを追加します。'
+  const title = '再起動後の通知から会話に戻れるようにする'
+  const suggestion = repo.insertTask(db, { projectId: quuu.id, title, prompt: `次のタスクの提案について相談します：${title}\n\n理由：${reason}\n\n作業内容：${prompt}`, status: 'draft' })
   repo.saveAssistantProposal(db, { taskId: suggestion.id, projectId: projects[0].id, title: suggestion.title, confidence: 86,
-    reason: '直近のセッションで、再起動後に通知を押しても元の会話に戻れないケースが2回ありました。作業の続きを探し直す手間を減らせそうです。',
-    prompt: '通知のタスクIDを保持し、起動後に対象の会話へ戻る処理と回帰テストを追加します。', status: 'pending', createdAt: iso(2), respondedAt: null, executionTaskId: null })
+    reason, prompt, status: 'pending', createdAt: iso(2), respondedAt: null, executionTaskId: null })
   const { writeMemory, readMemory } = await import('../src/main/assistant/memory.js')
   writeMemory(dir, '# Preferences\n\n- 日本語で簡潔に答える。\n- タスクは小さく分け、今ある作業を優先する。\n', readMemory(dir).revision)
 }

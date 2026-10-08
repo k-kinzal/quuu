@@ -1,4 +1,4 @@
-import { Alert, Button, Column, NumberInput, Page, Row, SettingRow, SettingsBlock, SettingsGroup, SettingToggle, Text, TextArea } from '@design-system/react'
+import { Alert, Button, Column, NumberInput, Page, Row, SettingRow, SettingsBlock, SettingsGroup, SettingToggle, Spacer, Text, TextArea } from '@design-system/react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { AssistantSettings as Settings } from '../../../../api/schemas/assistant.js'
@@ -13,7 +13,7 @@ export function AssistantSettings(): JSX.Element {
   const settings = state?.settings ?? query.data?.settings
   const configure = useMutation({ mutationFn: (patch: Partial<Settings>) => window.quuu.assistant.configure(patch, { context: { feedback: 'inline' } }) }, queryClient)
   return <Page title={t('quuuAI.settings')}>
-    <SettingsGroup title={t('quuuAI.proactive')}>
+    <SettingsGroup>
       {settings && <SettingToggle label={t('quuuAI.proactive')} hint={t('quuuAI.proactiveHint')} checked={settings.enabled}
         onChange={value => configure.mutate({ enabled: value })}>
         <SettingRow label={t('quuuAI.interval')} width="xs"><NumberInput min={1} max={168} value={settings.intervalHours} unit={t('quuuAI.hours')}
@@ -36,15 +36,16 @@ function MemoryEditor(): JSX.Element {
   const content = draft?.content ?? memory.data?.content ?? ''
   const bytes = new TextEncoder().encode(content).length
   return <SettingsGroup title={t('quuuAI.memory')}>
-    <SettingRow label={t('quuuAI.memory')} hint={t('quuuAI.memoryHint')} width="full" layout="stacked">
+    <SettingRow label="MEMORY.md" hint={t('quuuAI.memoryHint')} width="full" layout="stacked">
       <TextArea rows={12} value={content} disabled={!memory.data || save.isPending} onChange={event => {
         if (memory.data) setDraft({ content: event.target.value, revision: draft?.revision ?? memory.data.revision })
       }} />
     </SettingRow>
     <SettingsBlock><Column gap="md"><Row wrap>
       <Text size="xs" tone={bytes > (memory.data?.maxBytes ?? 16384) ? 'danger' : 'tertiary'}>{t('quuuAI.memorySize', { bytes, max: memory.data?.maxBytes ?? 16384 })}</Text>
-      <Button disabled={!draft || save.isPending || bytes > (memory.data?.maxBytes ?? 16384)} onClick={() => { if (draft) save.mutate(draft) }}>{t('quuuAI.saveMemory')}</Button>
+      <Spacer />
       <Button variant="ghost" disabled={memory.isFetching || save.isPending} onClick={() => { setDraft(null); save.reset(); void memory.refetch() }}>{t('quuuAI.reloadMemory')}</Button>
+      <Button loading={save.isPending} disabled={!draft || save.isPending || bytes > (memory.data?.maxBytes ?? 16384)} onClick={() => { if (draft) save.mutate(draft) }}>{t('quuuAI.saveMemory')}</Button>
     </Row>
     {(save.error || memory.error) && <Alert>{failureReason(save.error ?? memory.error)}</Alert>}
     </Column></SettingsBlock>

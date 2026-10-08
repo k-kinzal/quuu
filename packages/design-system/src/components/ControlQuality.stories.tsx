@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { Search, Plus, RefreshCw } from 'lucide-react'
+import { Search, Plus, RefreshCw, ThumbsUp } from 'lucide-react'
 import { ThemeProvider } from '../theme/ThemeProvider.js'
 import { Button, IconButton } from './inputs/Button.js'
+import { ReactionButton } from './inputs/ReactionButton.js'
 import { FilterChip } from './inputs/FilterChip.js'
 import { SearchInput, InlineInput, AutoTextArea } from './inputs/InlineInput.js'
 import { NumberInput, Select, TextArea, TextInput } from './inputs/TextInput.js'
@@ -17,6 +18,7 @@ export default meta
 
 /** Render the real components together; the browser regression uses this same specimen. */
 export function ControlSpecimen(): JSX.Element {
+  const [reaction, setReaction] = useState(false)
   const [filter, setFilter] = useState(false)
   const [value, setValue] = useState('first')
   const [checked, setChecked] = useState(false)
@@ -29,6 +31,12 @@ export function ControlSpecimen(): JSX.Element {
       <div data-control="button-xs"><Button size="xs">Clear</Button></div>
       <div data-control="search-disabled"><SearchInput aria-label="Disabled search" placeholder="Disabled search" disabled /></div>
       <div data-control="filter-disabled"><FilterChip label="Disabled" disabled onClick={() => undefined} /></div>
+    </Row>
+    <Row gap="md" wrap>
+      <div data-control="reaction"><ReactionButton title="Like message" icon={<ThumbsUp />} selected={reaction} onClick={() => setReaction(!reaction)} /></div>
+      <div data-control="reaction-selected"><ReactionButton title="Liked message" icon={<ThumbsUp />} selected /></div>
+      <div data-control="reaction-disabled"><ReactionButton title="Unavailable reaction" icon={<ThumbsUp />} disabled /></div>
+      <div data-control="reaction-loading"><ReactionButton title="Saving reaction" icon={<ThumbsUp />} loading /></div>
     </Row>
     <Text>Fields — one frame for entry and selection</Text>
     <Row gap="md" wrap>

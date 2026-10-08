@@ -1,6 +1,6 @@
 import {
-  Composer, ComposerActions, ComposerBox, ComposerInput, ComposerOptions, ComposerSubject, ComposerToolbar,
-  ContextChip, Dot, PlainInput, SegmentedControl, Text, claimContextMenu, resizeInput, useTheme
+  Composer, ComposerActions, ComposerBox, ComposerInput, ComposerInputRow, ComposerOptions, ComposerSubject, ComposerToolbar,
+  ContextChip, Dot, MessageColumn, PlainInput, SegmentedControl, Text, claimContextMenu, resizeInput, useTheme
 } from '@design-system/react'
 import { useLayoutEffect, type ComponentPropsWithRef, type ComponentPropsWithoutRef, type ReactNode, type RefObject } from 'react'
 import type { Project } from '../../../api/schemas/projects.js'
@@ -15,7 +15,7 @@ import { Bot, ICON, iconProps } from '../ui/icons.js'
 /** Creation and follow-ups are the same input; their owners supply the values and allowed actions. */
 export function PromptComposer({
   label, busy, subject, inputRef, input, project, onPickProject, projectPickerOpen,
-  agent, priority, onPriorityChange, conditions, notice, errors, actions, children
+  agent, priority, onPriorityChange, conditions, notice, errors, actions, children, conversation = false
 }: {
   label: string
   busy: boolean
@@ -33,10 +33,22 @@ export function PromptComposer({
   errors?: ReactNode
   actions: ReactNode
   children?: ReactNode
+  conversation?: boolean
 }): JSX.Element {
   const theme = useTheme()
   // Restored drafts and live typing must grow identically on both surfaces.
   useLayoutEffect(() => resizeInput(inputRef.current, 'message'), [input.value, inputRef])
+  if (conversation) return <Composer {...pane('composer')} aria-label={label}>
+    <MessageColumn><ComposerBox busy={busy}>
+      {notice}
+      <ComposerInputRow>
+        <ComposerInput rows={1} spellCheck={false} aria-label={label} data-pane-focus="" {...input} ref={inputRef} />
+        <ComposerActions>{actions}</ComposerActions>
+      </ComposerInputRow>
+      {errors}
+      {children}
+    </ComposerBox></MessageColumn>
+  </Composer>
   return <Composer {...pane('composer')} aria-label={label}>
     <ComposerBox busy={busy}>
       {subject && <ComposerSubject>
