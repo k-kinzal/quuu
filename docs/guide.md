@@ -510,11 +510,11 @@ what is running now and what has been done" holds.
 | Behavior | Detail |
 |------|------|
 | Detection source | The locations in the table below (Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode) |
-| Project | Resolved from the session's working directory. Auto-created if absent |
+| Project | Resolved from the session's working directory. Auto-created if absent and assigned the default agent group when one is marked. Existing and restored projects keep their saved target |
 | Status | **Running** if there is a liveness marker; **Done** on an exit marker or sustained silence (CLIs without markers are judged by updates within the last 3 minutes) |
 | Sync | 1.2 s after launch + every 60 s thereafter. Running it any number of times never duplicates (matched via `external_key`) |
 | Consistency | Stopped sessions fall to Done on the next sync. **States a human has touched are never overwritten** |
-| Safety | Imported projects are assigned no execution target. The import agent is always disabled. Quuu never launches anything on its own |
+| Safety | Import records external sessions as Running or Done without queueing them. The import agent is always disabled |
 | Exclusions | Sessions Quuu itself launched, and subagents (launched by another agent), are not imported |
 
 Configured in **Settings › General › Session import** (enable, auto-create, days to

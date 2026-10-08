@@ -247,12 +247,18 @@ describe('importing external sessions', () => {
 
   it('brings the same project back when a session started after the deletion arrives', () => {
     const db = memoryDb()
+    const group = repo.insertGroup(db, {
+      name: 'Original default', description: '', strategy: 'priority', memberIds: [], sortOrder: 0, isDefault: true
+    })
     writeClaude('a2a2a2a2-2222-2222-2222-222222222222', '消す前の作業', 60 * 60 * 1000)
 
     const importer = new SessionImporter(db)
     importer.sync(settings)
     const before = repo.listProjects(db)[0]
     repo.deleteProject(db, before.id)
+    repo.insertGroup(db, {
+      name: 'New default', description: '', strategy: 'priority', memberIds: [], sortOrder: 1, isDefault: true
+    })
 
     writeClaude('a3a3a3a3-3333-3333-3333-333333333333', '消したあとに始めた作業', 1000, {
       startedAt: new Date(Date.now() + 1000).toISOString()
@@ -263,6 +269,7 @@ describe('importing external sessions', () => {
     expect(revived).toHaveLength(1)
     // No new row is made. The name, color, and settings from before the deletion come back
     expect(revived[0].id).toBe(before.id)
+    expect(revived[0]).toMatchObject({ targetKind: 'group', targetId: group.id })
     expect(result.createdTasks).toBe(1)
 
     // Only the project comes back. The deleted history does not
@@ -528,13 +535,41 @@ describe('importing external sessions', () => {
     expect(repo.listTasks(db)).toHaveLength(1)
   })
 
-  it('assigns no run target to an imported project (never runs it unasked)', () => {
+  it('assigns the default group to a new imported project without queueing its sessions', () => {
     const db = memoryDb()
+    const agent = makeAgent(db, { name: 'Claude' })
+    const group = repo.insertGroup(db, {
+      name: 'Everyday', description: '', strategy: 'priority', memberIds: [agent], sortOrder: 0, isDefault: true
+    })
+    writeClaude('88888888-1111-1111-1111-111111111111', 'Finished session', 60 * 60 * 1000)
+    writeCodex('88888888-2222-2222-2222-222222222222', 'Running session', 1000)
+    writeCodexLock('88888888-2222-2222-2222-222222222222')
+
+    const importer = new SessionImporter(db)
+    const result = importer.sync(settings)
+    importer.sync(settings)
+
+    expect(result.createdProjects).toBe(1)
+    expect(repo.listProjects(db)).toEqual([expect.objectContaining({
+      source: 'imported', targetKind: 'group', targetId: group.id
+    })])
+    expect(repo.listTasks(db).map((task) => task.status).sort()).toEqual(['done', 'running'])
+    const importedAgents = repo.listAgents(db).filter((a) => a.source === 'imported')
+    expect(importedAgents).toHaveLength(2)
+    expect(importedAgents.every((a) => !a.enabled)).toBe(true)
+  })
+
+  it('leaves a new imported project unassigned when no group is marked as default', () => {
+    const db = memoryDb()
+    repo.insertGroup(db, {
+      name: 'Not the default', description: '', strategy: 'priority', memberIds: [], sortOrder: 0
+    })
     writeClaude('88888888-8888-8888-8888-888888888888', '安全確認', 60 * 60 * 1000)
     new SessionImporter(db).sync(settings)
 
     const project = repo.listProjects(db)[0]
     expect(project.source).toBe('imported')
+    expect(project.targetKind).toBe('agent')
     expect(project.targetId).toBeNull()
 
     // The import agent is always disabled
@@ -543,9 +578,35 @@ describe('importing external sessions', () => {
     expect(repo.listAgents(db).every((a) => a.source === 'imported')).toBe(true)
   })
 
+  it.each(['agent', 'group', 'unassigned'] as const)('preserves an existing %s target when importing another session', (target) => {
+    const db = memoryDb()
+    const agent = makeAgent(db, { name: 'Chosen agent' })
+    const group = repo.insertGroup(db, {
+      name: 'Chosen group', description: '', strategy: 'priority', memberIds: [agent], sortOrder: 0
+    })
+    writeClaude('88888888-3333-3333-3333-333333333333', 'First session', 60 * 60 * 1000)
+    const importer = new SessionImporter(db)
+    importer.sync(settings)
+    const project = repo.listProjects(db)[0]
+    const chosen = {
+      targetKind: target === 'group' ? 'group' as const : 'agent' as const,
+      targetId: target === 'unassigned' ? null : target === 'agent' ? agent : group.id
+    }
+    repo.updateProject(db, project.id, chosen)
+    repo.insertGroup(db, {
+      name: 'New default', description: '', strategy: 'priority', memberIds: [agent], sortOrder: 1, isDefault: true
+    })
+    writeClaude('88888888-4444-4444-4444-444444444444', 'Another session', 60 * 60 * 1000)
+
+    expect(importer.sync(settings).createdTasks).toBe(1)
+
+    expect(repo.listProjects(db)).toHaveLength(1)
+    expect(repo.getProject(db, project.id)).toMatchObject(chosen)
+  })
+
   it('shows the CLI that ran it in the run-target column, not the assignment', () => {
     /*
-     * A project created by import has an empty run target (so the scheduler never launches it).
+     * Without a default group, a project created by import has an empty run target.
      * Showing that as-is listed both externally run Codex and Claude as "unassigned",
      * and what had actually run them became unreadable.
      */

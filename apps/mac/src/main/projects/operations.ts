@@ -63,8 +63,6 @@ export class ProjectOperations {
    * A caller that says anything about the target is taken at its word. Otherwise the group
    * marked as the default steps in, so a project added from the rail can run tasks without a
    * detour through its settings. With no group marked it starts unassigned, as before.
-   * Import does not come through here: a project it creates stays unassigned on purpose
-   * (`import/importer.ts`), so nothing starts running in a directory that was merely seen.
    */
   private runTargetFor(input: Partial<ProjectInput>): Pick<ProjectInput, 'targetKind' | 'targetId'> {
     if (input.targetKind !== undefined || input.targetId !== undefined) {

@@ -30,8 +30,8 @@ import { t } from '../i18n/index.js'
  *   - On each re-sync, whatever stopped drops to "done" (self-reconciling)
  *   - Tasks a human touched are never overwritten
  *
- * Imported projects get no execution target assigned,
- * so Quuu's scheduler never starts agents on external projects on its own.
+ * New projects inherit the default agent group. Import only records external runs;
+ * their tasks are never queued merely because a project has an execution target.
  */
 
 /**
@@ -260,15 +260,14 @@ export class SessionImporter {
     if (!existsSync(session.cwd)) return null
 
     const projects = repo.listProjects(this.db)
+    const group = repo.getDefaultGroup(this.db)
     const created = repo.insertProject(this.db, {
       name: basename(session.cwd) || session.cwd,
       path: session.cwd,
       color: PROJECT_COLORS[projects.length % PROJECT_COLORS.length],
       priority: 5,
-      // No execution target assigned. Keeps the scheduler from starting
-      // agents on its own in a project that was merely imported.
-      targetKind: 'agent',
-      targetId: null,
+      targetKind: group ? 'group' : 'agent',
+      targetId: group?.id ?? null,
       maxConcurrent: 1,
       enabled: true,
       source: 'imported',
