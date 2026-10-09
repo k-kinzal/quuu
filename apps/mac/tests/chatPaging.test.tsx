@@ -138,6 +138,24 @@ const folded = (i: number): SessionMessage =>
 const foldedPage = (first: number, last: number): SessionSnapshot =>
   ({ ...page(first, last), messages: Array.from({ length: last - first }, (_, i) => folded(first + i)) })
 
+it('can page back to QuuuAI messages through a window containing only hidden tool calls', async () => {
+  const older = { ...foldedPage(0, 240), messages: [message(0), ...foldedPage(1, 239).messages,
+    { ...message(318), id: 'reply', blocks: [{ kind: 'text' as const, text: 'The task was updated.' }] }] }
+  const loadMore = vi.fn(() => older)
+  const os = implement(contract)
+  Object.defineProperty(window, 'quuu', { configurable: true, writable: true,
+    value: createRouterClient({ session: { loadMore: os.session.loadMore.handler(loadMore) } }) })
+  useStore.setState({ runs: [], selectedRunId: 'r1', session: foldedPage(240, 320), sessionLoading: false })
+  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><Chat task={TASK} project={{ ...PROJECT, builtIn: true }} /></ThemeProvider>)
+  const viewport = screen.getByLabelText(t('chat.pane'))
+  expect(viewport.querySelectorAll('[data-chat-item]')).toHaveLength(0)
+  fireEvent.click(screen.getByRole('button', { name: t('chat.loadEarlier', { total: TOTAL }) }))
+  expect(await screen.findByText('The task was updated.')).toBeTruthy()
+  expect(viewport.querySelectorAll('[data-chat-item]')).toHaveLength(2)
+  expect(screen.queryByRole('button', { name: /npm test -- part/ })).toBeNull()
+  expect(useStore.getState().session?.messages).toEqual(older.messages)
+})
+
 it('asks for the newer page only when the reader heads there, not because an earlier page left the window\'s end within reach', async () => {
   const loadMore = vi.fn((input: { runId: string; direction: string }) => input.direction === 'older' ? foldedPage(80, 320) : foldedPage(160, TOTAL))
   const os = implement(contract)

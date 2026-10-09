@@ -389,6 +389,12 @@ It is a conversation channel, with one task per thread. Send a message in the ch
 start a thread; open its replies to continue the same agent session. Existing QuuuAI tasks
 remain visible as threads. Notification clicks open the corresponding thread.
 
+Threads show user messages, assistant replies and their images, with a brief activity
+indicator while waiting. Tool calls and outputs, thinking, subagent logs and auxiliary
+execution cards stay out of both live and reopened conversations. Execution and stored
+logs are unchanged. Assistant explanations of results or failures and native confirmation
+dialogs remain available; ordinary development tasks still show their execution details.
+
 The agent is called for every message and may decide that a closing acknowledgement needs
 no reply. Each conversation turn supplies `quuu call assistant.noReply '{"runId":"..."}'`
 to record that decision. A confirmed successful exit completes the turn without a message,

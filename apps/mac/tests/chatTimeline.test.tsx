@@ -136,3 +136,14 @@ it.each(['different-session', ''])('does not move cached hooks into a past run w
   expect(screen.getByText('Aligned them')).toBeTruthy()
   expect(screen.queryByRole('button', { name: /Auto commit/ })).toBeNull()
 })
+
+it('keeps cached auxiliary execution cards out of QuuuAI conversations', () => {
+  queryClient.setQueryData(['hooks.list', TASK.id, undefined], [hook('late', 'Auto commit', '2026-09-28T02:06:00Z')])
+  useStore.setState({ runs: [RUN], selectedRunId: RUN.id, sessionLoading: false, session: {
+    sessionId: 's1', logPath: '/tmp/s1.jsonl', exists: true, title: null, messages: MESSAGES, hasMore: false, hasNewer: false,
+    totalMessages: MESSAGES.length, first: 0, last: MESSAGES.length, generation: 'g1', indexing: false
+  } })
+  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><Chat task={TASK} project={{ ...PROJECT, builtIn: true }} /></ThemeProvider>)
+  expect(screen.getByText('Aligned them')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /Auto commit/ })).toBeNull()
+})

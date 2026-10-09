@@ -95,12 +95,13 @@ export function Chat({ task, project, active = true, proposal }: { task: Task; p
   const latest = runs.length === 0 || runs[0]?.id === selectedRunId
   // Resumed runs open the same complete conversation, including its auxiliary work.
   const latestConversation = latest || Boolean(run?.sessionId && run.sessionId === runs[0]?.sessionId)
-  const hooks = useHookHistory({ taskId: task.id, active: active && latestConversation })
+  const showExecutionDetails = !project?.builtIn
+  const hooks = useHookHistory({ taskId: task.id, active: active && latestConversation && showExecutionDetails })
   /*
    * Hooks and the report happen beside the conversation, so each sits where it happened in
    * time, not gathered at the end. Earlier runs of this conversation show the same entries.
    */
-  const placed = placeByTime(turns, latestConversation && !loading ? hookEntries(hooks, { active }) : [],
+  const placed = placeByTime(turns, showExecutionDetails && latestConversation && !loading ? hookEntries(hooks, { active }) : [],
     { older: session?.hasMore === true, newer: session?.hasNewer === true })
   /*
    * What the agent already holds out of the instruction that waits to be sent. Only the end of
@@ -265,7 +266,7 @@ export function Chat({ task, project, active = true, proposal }: { task: Task; p
                   {t('chat.noSessionLog')}
                 </Text>
               </ContentInset>
-              {run && (
+              {run && showExecutionDetails && (
                   <Button
                     size="xs"
                     onClick={() => void window.quuu.system.reveal(run.stdoutLogPath)}
@@ -314,16 +315,16 @@ export function Chat({ task, project, active = true, proposal }: { task: Task; p
 
           {failure && (
             <ContentInset space="section">
-              <Alert
+              {project?.builtIn ? <Text size="sm" tone="danger" role="status">{t('quuuAI.replyFailed')}</Text> : <Alert
                 title={t('chat.runFailed')}
                 icon={<CircleAlert size={ICON.md} {...iconProps} />}
               >
                 {failure}
-              </Alert>
+              </Alert>}
             </ContentInset>
           )}
 
-          <HookInterlude key={task.id} entries={placed.end} error={latestConversation && !session?.hasNewer ? hooks.error : null} />
+          <HookInterlude key={task.id} entries={placed.end} error={showExecutionDetails && latestConversation && !session?.hasNewer ? hooks.error : null} />
           {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
           {!session?.hasNewer && next && <PendingTurn task={task} next={next} conversation={project?.builtIn}
             hiddenPrefix={proposal ? proposalContextPrefix(next.value, proposal) : undefined} />}

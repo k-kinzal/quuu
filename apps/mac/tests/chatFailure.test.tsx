@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { ThemeProvider } from '@design-system/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { Run } from '../src/main/execution/types.js'
@@ -54,9 +54,9 @@ function conversation(messages: SessionMessage[]): SessionSnapshot {
   }
 }
 
-function show(task: Task, messages: SessionMessage[], run: Run = RUN): void {
+function show(task: Task, messages: SessionMessage[], run: Run = RUN, project = PROJECT): void {
   useStore.setState({ runs: [run], selectedRunId: run.id, session: conversation(messages), sessionLoading: false })
-  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><Chat task={task} project={PROJECT} /></ThemeProvider>)
+  render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><Chat task={task} project={project} /></ThemeProvider>)
 }
 
 beforeEach(() => {
@@ -125,4 +125,64 @@ it('keeps delivery evidence when proposal context is displayed as an attachment'
   expect(screen.getAllByText('Can it keep my place too?')).toHaveLength(1)
   expect(screen.queryByText(t('quuuAI.queued'))).toBeNull()
   expect(screen.queryByDisplayValue('Can it keep my place too?')).toBeNull()
+})
+
+const execution: SessionMessage = { ...said('assistant', ''), id: 'execution', blocks: [
+  { kind: 'thinking', text: 'Internal reasoning' },
+  { kind: 'tool', tool: { id: 'bash', name: 'Bash', input: { command: 'quuu tasks list' }, target: null,
+    result: 'Private command output', isError: true, images: [] } }
+] }
+const stdout: SessionMessage = { ...said('assistant', 'Raw process output'), id: 'stdout', role: 'system' }
+
+it('keeps live QuuuAI replies and confirmations readable without execution details, including after reopening', () => {
+  const running = { ...RUN, status: 'running' as const, errorKind: null, errorMessage: '' }
+  const project = { ...PROJECT, builtIn: true }
+  show({ ...TASK, status: 'running' }, [said('user', ASKED), execution, stdout], running, project)
+  expect(screen.getByText(ASKED)).toBeTruthy()
+  expect(screen.getByText(t('executionFeedback.running'))).toBeTruthy()
+  const assertNoDetails = (): void => {
+    expect(screen.queryByRole('button', { name: /quuu tasks list/ })).toBeNull()
+    expect(screen.queryByText('Private command output')).toBeNull()
+    expect(screen.queryByText('Raw process output')).toBeNull()
+    expect(screen.queryByText(t('thinking.show', { chars: 'Internal reasoning'.length }))).toBeNull()
+  }
+  assertNoDetails()
+  const response = 'The update failed. Would you like me to retry?'
+  const messages = [said('user', ASKED), execution, stdout, { ...said('assistant', response), id: 'response' }]
+  act(() => useStore.setState({ session: conversation(messages) }))
+  expect(screen.getByText(response)).toBeTruthy()
+  assertNoDetails()
+  expect(useStore.getState().session?.messages).toEqual(messages)
+
+  cleanup()
+  show(TASK, messages, RUN, project)
+  expect(screen.getByText(ASKED)).toBeTruthy()
+  expect(screen.getByText(response)).toBeTruthy()
+  expect(screen.getByRole('status').textContent).toBe(t('quuuAI.replyFailed'))
+  expect(screen.queryByText(LIMIT)).toBeNull()
+  expect(screen.queryByText(t('executionFeedback.running'))).toBeNull()
+  assertNoDetails()
+})
+
+it('keeps the assistant explanation of a QuuuAI failure alongside a brief failure notice', () => {
+  show(TASK, [said('user', ASKED), said('assistant', LIMIT)], RUN, { ...PROJECT, builtIn: true })
+  expect(screen.getAllByText(LIMIT)).toHaveLength(1)
+  expect(screen.getByRole('status').textContent).toBe(t('quuuAI.replyFailed'))
+  expect(screen.queryByText(t('runErrorKind.nonzero-exit'))).toBeNull()
+})
+
+it('keeps ordinary task tool details, thinking and raw logs inspectable', () => {
+  show(TASK, [said('user', ASKED), execution, stdout])
+  expect(screen.getByText('Raw process output')).toBeTruthy()
+  fireEvent.click(screen.getByRole('button', { name: /quuu tasks list/ }))
+  expect(screen.getByLabelText(t('toolCluster.input'))).toBeTruthy()
+  expect(screen.getByLabelText(t('toolCluster.result')).textContent).toContain('Private command output')
+  fireEvent.click(screen.getByRole('button', { name: t('thinking.show', { chars: 'Internal reasoning'.length }) }))
+  expect(screen.getByText('Internal reasoning')).toBeTruthy()
+})
+
+it.each([false, true])('offers raw run logs only for ordinary tasks (QuuuAI: %s)', builtIn => {
+  show(TASK, [], RUN, { ...PROJECT, builtIn })
+  act(() => useStore.setState({ session: { ...conversation([]), exists: false } }))
+  expect(Boolean(screen.queryByRole('button', { name: t('chat.openRunLog') }))).toBe(!builtIn)
 })

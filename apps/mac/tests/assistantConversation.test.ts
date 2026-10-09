@@ -10,7 +10,7 @@ it('does not render an empty assistant bubble after a silent turn and retains su
   expect(assistantConversation([message, empty, { ...empty, id: 'no-blocks', blocks: [] }, next, reply])).toEqual([message, next, reply])
 })
 
-it('hides the no-reply control call without hiding failed calls, real work or prose', () => {
+it('hides all execution calls including failures and no-reply controls while preserving prose', () => {
   const command = 'quuu call assistant.noReply \'{"runId":"run_123"}\''
   const message: SessionMessage = { id: 'control', role: 'assistant', timestamp: null, model: null, isSidechain: false,
     blocks: [{ kind: 'tool', tool: { id: 'tool', name: 'Bash', input: { command }, target: null, result: '', isError: false, images: [] } }] }
@@ -18,14 +18,33 @@ it('hides the no-reply control call without hiding failed calls, real work or pr
   const block = message.blocks[0]
   if (block.kind !== 'tool') throw new Error('Expected a tool')
   const failed = { ...message, blocks: [{ ...block, tool: { ...block.tool, isError: true, result: 'Operation failed' } }] }
-  expect(assistantConversation([failed])).toEqual([failed])
+  expect(assistantConversation([failed])).toEqual([])
   const mixed = { ...message, blocks: [{ ...block, tool: { ...block.tool, input: { command: command + '; quuu tasks list' } } }] }
-  expect(assistantConversation([mixed])).toEqual([mixed])
+  expect(assistantConversation([mixed])).toEqual([])
   const prose: SessionMessage = { ...message, blocks: [{ kind: 'text', text: command }] }
   expect(assistantConversation([prose])).toEqual([prose])
   const mcp = { ...message, blocks: [{ ...block, tool: { ...block.tool, name: 'mcp__quuu__assistant_noReply', input: { runId: 'run_123' } } }] }
   expect(assistantConversation([mcp])).toEqual([])
   expect(message.blocks).toHaveLength(1)
+})
+
+it('keeps only main conversation text and attachments without mutating mixed messages or tool output', () => {
+  const image = { id: 'attachment', mediaType: 'image/png', byteSize: 100, width: 10, height: 10 }
+  const user: SessionMessage = { id: 'request', role: 'user', timestamp: null, model: null, isSidechain: false,
+    blocks: [{ kind: 'text', text: 'Check my tasks.' }, { kind: 'image', image }] }
+  const reply: SessionMessage = { ...user, id: 'reply', role: 'assistant', blocks: [
+    { kind: 'thinking', text: 'Internal reasoning' },
+    { kind: 'text', text: 'I checked the tasks.' },
+    { kind: 'tool', tool: { id: 'shell', name: 'exec_command', input: { cmd: 'quuu tasks list' }, target: null,
+      result: 'Internal command output', isError: false, images: [image] } },
+    { kind: 'image', image },
+    { kind: 'text', text: 'The update failed. Would you like me to retry?' }
+  ] }
+  const messages = [user, reply, { ...reply, id: 'stdout', role: 'system' as const },
+    { ...user, id: 'delegated', isSidechain: true }, { ...reply, id: 'subagent', isSidechain: true }]
+  const original = structuredClone(messages)
+  expect(assistantConversation(messages)).toEqual([user, { ...reply, blocks: [reply.blocks[1], reply.blocks[3], reply.blocks[4]] }])
+  expect(messages).toEqual(original)
 })
 
 it('keeps supplied context out of displayed requests while preserving the stored conversation and assistant replies', () => {

@@ -1790,6 +1790,13 @@ if (process.env.QUUU_FIXTURE_ASSISTANT === '1') {
   repo.setTaskStatus(db, task.id, 'review', { currentRunId: runId })
   writeFileSync(join(dir, 'logs', `${runId}.jsonl`), [
     { type: 'user', timestamp: iso(10), message: { role: 'user', content: task.prompt } },
+    { type: 'assistant', timestamp: iso(9.8), message: { role: 'assistant', content: [
+      { type: 'thinking', thinking: 'Inspect the queue before recommending the next task.' },
+      { type: 'tool_use', id: 'assistant-list', name: 'Bash', input: { command: 'quuu tasks list --output json' } }
+    ] } },
+    { type: 'user', timestamp: iso(9.7), message: { role: 'user', content: [
+      { type: 'tool_result', tool_use_id: 'assistant-list', content: 'Fixture task list: review notifications, verify restart.' }
+    ] } },
     { type: 'assistant', timestamp: iso(9), message: { role: 'assistant', content: [{ type: 'text', text: '昨日の続きなら、まず通知の復元処理を確認するのがよさそうです。\n\n- レビュー待ちの変更を確認\n- 再起動後の通知を検証\n\nほかのプロジェクトの実行中タスクは、そのまま進めておけます。' }] } }
   ].map(row => JSON.stringify(row)).join('\n') + '\n')
   const reason = '直近のセッションで、再起動後に通知を押しても元の会話に戻れないケースが2回ありました。作業の続きを探し直す手間を減らせそうです。'
