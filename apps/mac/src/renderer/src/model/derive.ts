@@ -84,13 +84,23 @@ export interface ScopeFilter {
   showDone: boolean
 }
 
+/** Conversation records stay in the snapshot for QuuuAI history, outside every work list. */
+export function workTasks(snapshot: Pick<AppSnapshot, 'tasks' | 'projects'>): Task[] {
+  const conversations = new Set(snapshot.projects.filter(project => project.builtIn).map(project => project.id))
+  return snapshot.tasks.filter(task => !conversations.has(task.projectId))
+}
+
 /**
  * The scope a section refers to. The set **before search and filtering**, and
  * the denominator for counts. Without "12 filtered, of 240" you end up hunting
  * for the rows that disappeared.
  */
 export function scopeTasks(snapshot: AppSnapshot, filter: ScopeFilter): Task[] {
-  const tasks = snapshot.tasks.filter((t) => !t.archived)
+  if (filter.kind === 'quuuAI') {
+    const projectId = snapshot.projects.find(project => project.builtIn)?.id
+    return snapshot.tasks.filter(task => !task.archived && task.projectId === projectId)
+  }
+  const tasks = workTasks(snapshot).filter((t) => !t.archived)
 
   if (filter.kind === 'review') {
     return tasks.filter((t) => t.status === 'review' || t.status === 'failed')
@@ -98,10 +108,8 @@ export function scopeTasks(snapshot: AppSnapshot, filter: ScopeFilter): Task[] {
   if (filter.kind === 'done') {
     return tasks.filter((t) => t.status === 'done')
   }
-  const quuuProjectId = filter.kind === 'quuuAI' ? snapshot.projects.find(p => p.builtIn)?.id : undefined
   return tasks.filter(
     (t) =>
-      (filter.kind !== 'quuuAI' || t.projectId === quuuProjectId) &&
       (filter.kind !== 'project' || t.projectId === filter.projectId) &&
       (filter.showDone || t.status !== 'done')
   )

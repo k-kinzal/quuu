@@ -30,6 +30,7 @@ export function taskMenuItems(
   const state = useStore.getState()
   const task = state.snapshot?.tasks.find((t) => t.id === taskId)
   if (!task) return []
+  if (state.snapshot?.projects.some(project => project.id === task.projectId && project.builtIn)) return []
 
   /**
    * Make sure something removed from the list doesn't stay open.

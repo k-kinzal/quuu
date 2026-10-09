@@ -22,7 +22,7 @@ import { PRIORITY_LABEL, TASK_STATUS_LABEL } from '../model/labels.js'
 import type { PaneId } from '../interaction/focus.js'
 import { currentPane, focusAny, focusPane } from '../interaction/focus.js'
 import { isImeComposing } from '../model/composer.js'
-import { projectMap } from '../model/derive.js'
+import { projectMap, workTasks } from '../model/derive.js'
 import { fuzzyMatch, splitByRanges } from '../model/fuzzy.js'
 import type { SettingsCategory } from '../state/store.js'
 import { useSettings, useStore } from '../state/store.js'
@@ -149,7 +149,7 @@ export function CommandPalette(): JSX.Element | null {
         }
 
     // --- Tasks ---
-    for (const task of snapshot.tasks) {
+    for (const task of workTasks(snapshot)) {
       if (task.archived) continue
       const project = projects.get(task.projectId)
       out.push({
@@ -290,7 +290,7 @@ export function CommandPalette(): JSX.Element | null {
       }, 'keep')
     })
 
-    if (cursorTask) {
+    if (cursorTask && !projects.get(cursorTask.projectId)?.builtIn) {
       if (cursorTask.status !== 'running' && cursorTask.status !== 'done') {
         out.push({
           id: 'act:run',

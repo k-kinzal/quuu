@@ -1,7 +1,7 @@
 import { assertWorktreeIdle } from '../tasks/worktrees.js'
 import { EventEmitter } from 'node:events'
 import { isManagedAgent } from '../agents/types.js'
-import type { Project } from '../projects/types.js'
+import { isBuiltInProject, type Project } from '../projects/types.js'
 import type { ToastPayload } from '../snapshot.js'
 import { consumeReservation, recordExecutionState } from '../tasks/execution.js'
 import { holdsSlot } from '../tasks/status.js'
@@ -151,7 +151,7 @@ export class Scheduler extends EventEmitter {
     for (const task of repo.listTasks(this.db)) {
       if (this.slotHolds.has(task.id) || !this.isChecking(task)) continue
       const run = repo.getRun(this.db, task.currentRunId!)!
-      if (this.reviewGate?.(task.id)) this.beginCheck(task, run)
+      if (!isBuiltInProject(task.projectId) && this.reviewGate?.(task.id)) this.beginCheck(task, run)
       else this.concludeCheck(task.id)
     }
   }
@@ -288,7 +288,7 @@ export class Scheduler extends EventEmitter {
         }
       } else {
         recordExecutionState(this.db, task.id, 'review')
-        this.announceReview(task)
+        this.announceResponse(task)
       }
       afterCommit(this.db, () => this.emit('changed'))
       return body.length > 0
@@ -303,8 +303,14 @@ export class Scheduler extends EventEmitter {
     afterCommit(this.db, () => this.emit('check', task.id))
   }
 
-  /** The task is done running for now and waits for a person to read what it did. */
-  private announceReview(task: Task): void {
+  /** A work result requests review; a conversation reply only announces its arrival. */
+  private announceResponse(task: Task): void {
+    if (isBuiltInProject(task.projectId)) {
+      const runId = repo.getTask(this.db, task.id)?.currentRunId
+      if (runId && repo.getAssistantTurn(this.db, runId)?.outcome === 'no-reply') return
+      this.notify('assistant', 'success', t('assistant.replyNotification', { title: truncate(task.title, 60) }), task.id)
+      return
+    }
     this.notify('review', 'success', t('scheduler.reviewToast', { title: truncate(task.title, 60) }), task.id)
   }
 
@@ -687,7 +693,10 @@ export class Scheduler extends EventEmitter {
            * business - it only keeps the task running and says when, and the listener decides.
            */
           if (checking) this.beginCheck(task, run)
-          else this.announceReview(task)
+          else this.announceResponse(task)
+          break
+        case 'answered':
+          this.announceResponse(task)
           break
         case 'failed':
           this.notify('failure', 'error', t('scheduler.failedToast', { title: truncate(task.title, 50) }), task.id, classification.message || undefined)

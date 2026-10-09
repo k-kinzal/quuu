@@ -13,24 +13,24 @@ describe('run outcomes and human authority', () => {
     for (const error of [null, ...errors]) {
       for (const reservedMessage of ['', '続けてください']) {
         for (const retry of [false, true]) {
-          expect(runDisposition({ reservedMessage }, error, retry).status).not.toBe('done')
+          expect(runDisposition({ projectId: 'work', reservedMessage }, error, retry).status).not.toBe('done')
         }
       }
     }
   })
   it('only success moves the reserved message to pending send; whitespace-only goes to review', () => {
-    expect(runDisposition({ reservedMessage: ' 続けて ' }, null, false)).toEqual({
+    expect(runDisposition({ projectId: 'work', reservedMessage: ' 続けて ' }, null, false)).toEqual({
       kind: 'send-reserved', status: 'queued', pendingMessage: '続けて'
     })
-    expect(runDisposition({ reservedMessage: '  ' }, null, false)).toEqual({
+    expect(runDisposition({ projectId: 'work', reservedMessage: '  ' }, null, false)).toEqual({
       kind: 'review', status: 'review', pendingMessage: ''
     })
     for (const error of errors) {
-      expect(runDisposition({ reservedMessage: '消さない' }, error, false)).not.toHaveProperty('pendingMessage')
+      expect(runDisposition({ projectId: 'work', reservedMessage: '消さない' }, error, false)).not.toHaveProperty('pendingMessage')
     }
   })
   it('cancellation goes back to human review even with a retry candidate', () => {
-    expect(runDisposition({ reservedMessage: '' }, 'canceled', true)).toEqual({ kind: 'interrupted', status: 'review' })
+    expect(runDisposition({ projectId: 'work', reservedMessage: '' }, 'canceled', true)).toEqual({ kind: 'interrupted', status: 'review' })
   })
   it('only P0 keeps a run slot; every lower priority competes for one', () => {
     for (const priority of PRIORITIES) expect(holdsSlot(priority)).toBe(priority === 0)

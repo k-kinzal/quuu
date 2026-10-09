@@ -10,11 +10,12 @@ import type { Task, TaskInput } from '../src/main/tasks/types.js'
 import { contract } from '../src/api/contract.js'
 import { TaskComposer } from '../src/renderer/src/components/TaskComposer.js'
 import { TaskSidebar } from '../src/renderer/src/components/TaskSidebar.js'
-import { TaskOverview } from '../src/renderer/src/components/TaskOverview.js'
+import { AssistantView } from '../src/renderer/src/views/AssistantView.js'
 import { Rail } from '../src/renderer/src/components/Rail.js'
 import { NO_FILTERS } from '../src/renderer/src/model/table.js'
 import { t } from '../src/renderer/src/model/i18n/index.js'
 import { useStore } from '../src/renderer/src/state/store.js'
+import { queryClient } from '../src/renderer/src/state/queryClient.js'
 import { buildTheme } from '../src/renderer/src/ui/theme.js'
 
 /**
@@ -25,7 +26,7 @@ import { buildTheme } from '../src/renderer/src/ui/theme.js'
  * What is checked here is that the choice **matches what pressing actually does**.
  */
 
-afterEach(cleanup)
+afterEach(() => { cleanup(); queryClient.clear() })
 
 beforeAll(() => {
   window.matchMedia = (query: string) => ({
@@ -112,6 +113,7 @@ const SNAPSHOT: AppSnapshot = {
 const create = vi.fn<(input: TaskInput) => Promise<Task>>()
 const runNow = vi.fn<(id: string) => Promise<{ ok: boolean; reason?: string }>>()
 const enqueue = vi.fn<(id: string) => Promise<Task>>()
+const send = vi.fn<(message: string) => Promise<Task>>()
 
 beforeEach(() => {
   create.mockReset().mockImplementation((input: Partial<Task>) =>
@@ -119,6 +121,7 @@ beforeEach(() => {
   )
   runNow.mockReset().mockResolvedValue({ ok: true })
   enqueue.mockReset().mockResolvedValue(CREATED)
+  send.mockReset().mockResolvedValue({ ...CREATED, projectId: 'prj_quuu' })
 
   useStore.setState({
     snapshot: SNAPSHOT,
@@ -134,6 +137,7 @@ beforeEach(() => {
   })
   const os = implement(contract)
   const client = createRouterClient({
+    assistant: { send: os.assistant.send.handler(({ input }) => send(input)) },
     tasks: {
       create: os.tasks.create.handler(({ input }) => create(input)),
       runNow: os.tasks.runNow.handler(({ input }) => runNow(input)),
@@ -143,8 +147,8 @@ beforeEach(() => {
   Object.defineProperty(window, 'quuu', { configurable: true, writable: true, value: client })
 })
 
-describe('QuuuAI as a dedicated task surface', () => {
-  const quuu = { ...PROJECT, id: 'quuu', name: 'QuuuAI', builtIn: true }
+describe('QuuuAI as a separate conversation surface', () => {
+  const quuu = { ...PROJECT, id: 'prj_quuu', name: 'QuuuAI', builtIn: true }
 
   beforeEach(() => {
     useStore.setState({
@@ -178,39 +182,41 @@ describe('QuuuAI as a dedicated task surface', () => {
     expect(buttons).toContain(screen.getByRole('button', { name: 'QuuuAI' }))
   })
 
-  it('invites questions and requests when empty and focuses the QuuuAI composer', () => {
+  it('invites conversation without the task creation controls', () => {
     render(<ThemeProvider buildTheme={buildTheme}>
-      <TaskOverview />
-      <TaskComposer fixedProjectId={quuu.id} />
+      <AssistantView />
     </ThemeProvider>)
     expect(screen.getByText(t('quuuAI.emptyTitle'))).toBeTruthy()
-    fireEvent.click(screen.getByRole('button', { name: 'Ask QuuuAI' }))
-    expect(document.activeElement).toBe(screen.getByPlaceholderText(t('quuuAI.placeholder')))
-  })
-
-  it('creates only in QuuuAI despite a remembered destination in another project', async () => {
-    useStore.setState({ drafts: { 'new:quuu': 'Organize my queue' } })
-    render(<ThemeProvider buildTheme={buildTheme}><TaskComposer fixedProjectId={quuu.id} /></ThemeProvider>)
+    expect(screen.getByPlaceholderText(t('quuuAI.placeholder'))).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'How to add' })).toBeNull()
     expect(screen.queryByRole('button', { name: PROJECT.name })).toBeNull()
-    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ projectId: quuu.id })))
   })
 
-  it('keeps project selection available in ordinary task creation when QuuuAI is the selected destination', () => {
+  it('sends a conversation despite a remembered task destination in another project', async () => {
+    useStore.setState({ drafts: { 'assistant-channel': 'Organize my queue' } })
+    render(<ThemeProvider buildTheme={buildTheme}><AssistantView /></ThemeProvider>)
+    expect(screen.queryByRole('button', { name: PROJECT.name })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: t('quuuAI.send') }))
+    await waitFor(() => expect(send).toHaveBeenCalledWith('Organize my queue'))
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('falls back to a work project when the remembered task destination is QuuuAI', () => {
     useStore.setState({ section: { kind: 'all' }, targetProjectId: quuu.id })
     render(<ThemeProvider buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
-    expect(screen.getByRole('button', { name: 'QuuuAI' }).getAttribute('aria-haspopup')).toBe('listbox')
+    expect(screen.getByRole('button', { name: PROJECT.name }).getAttribute('aria-haspopup')).toBe('listbox')
+    fireEvent.click(screen.getByRole('button', { name: PROJECT.name }))
+    expect(screen.queryByRole('option', { name: /QuuuAI/ })).toBeNull()
   })
 
-  it('keeps quick add in QuuuAI while a task is open', async () => {
-    useStore.setState({ detailOpen: true })
+  it('keeps ordinary quick add in a work project with a stale QuuuAI destination', async () => {
+    useStore.setState({ section: { kind: 'all' }, detailOpen: true, targetProjectId: quuu.id })
     render(<ThemeProvider buildTheme={buildTheme}><TaskSidebar /></ThemeProvider>)
     fireEvent.click(screen.getByRole('button', { name: /Add Task/ }))
     const input = await screen.findByPlaceholderText('Task title...')
     fireEvent.change(input, { target: { value: 'Explain the queue' } })
     fireEvent.keyDown(input, { key: 'Enter', metaKey: true })
-    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ projectId: quuu.id })))
-    expect(screen.queryByRole('button', { name: /Add to:/ })).toBeNull()
+    await waitFor(() => expect(create).toHaveBeenCalledWith(expect.objectContaining({ projectId: PROJECT.id })))
   })
 })
 

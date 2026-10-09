@@ -1,6 +1,7 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
   assistant: {
+    replyNotification: 'QuuuAI replied: {{title}}',
     noReplyUnavailable: 'No reply can only be selected for the current running QuuuAI conversation turn.',
     missingReply: 'The agent ended without a reply or an explicit no-reply decision.',
     unconfirmedExit: 'The agent’s successful exit could not be confirmed; this cannot be treated as no reply.',
@@ -14,7 +15,7 @@ export const en = {
     "proposalMissing": "This proposal is no longer available.",
     "projectUnavailable": "Enable the target project before creating this task.",
     "emptyMessage": "Write a message first.",
-    "notificationTitle": "QuuuAI — A suggestion"
+    "notificationTitle": "QuuuAI"
 },
   runners: {
     listenerOff: "Enable Runner connections first.",

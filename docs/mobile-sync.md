@@ -30,6 +30,8 @@ Status is draft / held / queued / running / review / failed / done; priority is 
 `runSeq` is the run count and matches approval targets independently of title updates.
 Details hold the prompt, unsent instructions, reservations, review records,
 conversation text, and run history.
+QuuuAI's backing project and its conversation records are excluded from these work lists and
+details. Development tasks created from QuuuAI remain ordinary exported tasks.
 The exact fields and the fixed per-version examples live in
 `apps/mac/src/main/mobile-sync/protocol.ts` and `tests/fixtures/mobile-sync/`.
 

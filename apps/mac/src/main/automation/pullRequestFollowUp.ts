@@ -108,7 +108,7 @@ export class PullRequestFollowUp extends EventEmitter {
         if (!task || task.status !== 'review' || task.archived) continue
         const run = task.currentRunId ? repo.getRun(this.db, task.currentRunId) : null
         const project = repo.getProject(this.db, task.projectId)
-        if (run?.status !== 'succeeded' || !project?.enabled) continue
+        if (run?.status !== 'succeeded' || !project?.enabled || project.builtIn) continue
         if (!resolvePullRequestPrompts(this.getSettings(), project).conflict) continue
         try { await this.ports.refresh(taskId) }
         catch (error) { console.warn('Pull Request state could not be read while awaiting review', taskId, error) }
@@ -128,7 +128,7 @@ export class PullRequestFollowUp extends EventEmitter {
   shouldHold(taskId: string): boolean {
     const task = repo.getTask(this.db, taskId)
     const project = task ? repo.getProject(this.db, task.projectId) : null
-    return project !== null && hasPullRequestPrompt(resolvePullRequestPrompts(this.getSettings(), project))
+    return project !== null && !project.builtIn && hasPullRequestPrompt(resolvePullRequestPrompts(this.getSettings(), project))
   }
 
   /**
@@ -162,7 +162,7 @@ export class PullRequestFollowUp extends EventEmitter {
     // The retained copy after a fetch that failed says nothing about now.
     if (snapshot.pullRequestNotice || snapshot.error || snapshot.preparing) return 'left'
     const project = repo.getProject(this.db, task.projectId)
-    if (!project) return 'left'
+    if (!project || project.builtIn) return 'left'
     const trouble = pullRequestTrouble(snapshot.pullRequests)
     if (!trouble) {
       // GitHub may still be computing mergeability; that is not proof a repeated conflict ended.

@@ -296,3 +296,12 @@ A unique turn marker in the injected prompt prevents previous replies from satis
 turn, even in timestamp-free logs. Missing or unverifiable results fail separately from
 intentional silence. Assistant read revisions follow reply content rather than run or index
 status, so silent turns neither re-notify nor consume earlier unread replies.
+
+QuuuAI's backing project identifies conversation records independently of titles and proposal
+receipts. Successful execution has an `answered` disposition, retaining the existing resumable
+`review` storage state without work approval. Work-list queries, renderer scopes/counts and
+mobile export exclude the backing project; the full desktop snapshot retains threads for the
+channel. Explicit project-scoped history queries remain available. Conversation lifecycle
+observers still receive facts for proposal discussion, while work hooks, PR follow-ups and P0
+reservations exclude threads. Existing records need no rewrite, and proposal-created tasks in
+development projects follow the normal approval workflow.

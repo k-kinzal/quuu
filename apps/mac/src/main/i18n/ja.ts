@@ -2,6 +2,7 @@ import type { en } from './en.js'
 
 export const ja: typeof en = {
   assistant: {
+    replyNotification: 'QuuuAIからの返信：{{title}}',
     noReplyUnavailable: '返信なしは、実行中のQuuuAI会話でのみ選択できます。',
     missingReply: 'Agentは返信も明示的な「返信なし」の選択もせずに終了しました。',
     unconfirmedExit: 'Agentの正常終了を確認できないため、返信なしとして扱えません。',
@@ -15,7 +16,7 @@ export const ja: typeof en = {
     "proposalMissing": "この提案は利用できなくなりました。",
     "projectUnavailable": "タスクを作成する前に対象プロジェクトを有効にしてください。",
     "emptyMessage": "メッセージを入力してください。",
-    "notificationTitle": "QuuuAIからの提案"
+    "notificationTitle": "QuuuAI"
 },
   runners: {
     listenerOff: "先にRunner接続を有効にしてください。",

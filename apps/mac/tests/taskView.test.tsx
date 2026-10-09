@@ -164,7 +164,7 @@ beforeEach(() => {
 const view = (): ReturnType<typeof useTaskView> => renderHook(() => useTaskView()).result.current
 
 describe('what the list shows', () => {
-  it('keeps QuuuAI tasks, counts and completion filters separate from other projects', () => {
+  it('keeps all QuuuAI history in its channel independently of completion filters', () => {
     const quuu = { ...project('quuu', 'QuuuAI'), builtIn: true }
     useStore.setState({
       section: { kind: 'quuuAI' },
@@ -177,8 +177,8 @@ describe('what the list shows', () => {
           task({ id: 'archived', projectId: quuu.id, archived: true })]
       }
     })
-    expect(view().ordered.map(task => task.id)).toEqual(['ask'])
-    expect(view()).toMatchObject({ total: 1, doneHidden: 1 })
+    expect(view().ordered.map(task => task.id)).toEqual(['ask', 'answered'])
+    expect(view()).toMatchObject({ total: 2, doneHidden: 0 })
     act(() => useStore.getState().toggleShowDone())
     expect(view().ordered.map(task => task.id)).toEqual(['ask', 'answered'])
     expect(view().doneHidden).toBe(0)

@@ -819,6 +819,9 @@ export const useStore = create<State>((set, get) => ({
   },
 
   async markDoneAndAdvance(taskId, ordered) {
+    const snapshot = get().snapshot
+    const task = snapshot?.tasks.find(task => task.id === taskId)
+    if (snapshot?.projects.some(project => project.id === task?.projectId && project.builtIn)) return
     const index = ordered.indexOf(taskId)
     const next = ordered[index + 1] ?? ordered[index - 1] ?? null
     await window.quuu.tasks.markDone(taskId)

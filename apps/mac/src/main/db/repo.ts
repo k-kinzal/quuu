@@ -6,7 +6,7 @@ import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Agent, AgentCooldown, AgentGroup, AgentGroupInput, AgentInput, GroupStrategy, RunTargetKind } from '../agents/types.js'
 import type { TaskRule, TaskRuleInput } from '../automation/conditions.js'
 import type { Run, RunErrorKind, RunKind, RunOutcome } from '../execution/types.js'
-import { isBuiltInProject, type Project, type ProjectInput } from '../projects/types.js'
+import { isBuiltInProject, QUUU_PROJECT_ID, type Project, type ProjectInput } from '../projects/types.js'
 import type { CommitIdentityMode } from '../settings/identity.js'
 import type { PullRequestPromptMode } from '../settings/pullRequestPrompts.js'
 import type { AppSettings } from '../settings/types.js'
@@ -1131,10 +1131,16 @@ export function listTasks(db: Db, includeArchived = false, includeInternal = tru
   return (db.prepare(sql).all() as Row[]).map((r) => toTask(r, deps.get(s(r.id)) ?? []))
 }
 
+/** Work lists exclude the assistant's backing records; history and execution still read listTasks. */
+export function listWorkTasks(db: Db, includeArchived = false): Task[] {
+  return listTasks(db, includeArchived, false).filter(task => !isBuiltInProject(task.projectId))
+}
+
 export function listTaskPage(db: Db, query: { projectId?: string; status?: TaskStatus; archived?: 'include' | 'exclude' | 'only'; after?: number; limit?: number }) {
   const where = ['seq > ?', 'id NOT IN (SELECT task_id FROM assistant_checks)']
   const values: Array<string | number> = [query.after ?? 0]
   if (query.projectId) { where.push('project_id = ?'); values.push(query.projectId) }
+  else { where.push('project_id <> ?'); values.push(QUUU_PROJECT_ID) }
   if (query.status) { where.push('status = ?'); values.push(query.status) }
   if (query.archived !== 'include') { where.push('archived = ?'); values.push(query.archived === 'only' ? 1 : 0) }
   const limit = Math.min(200, Math.max(1, query.limit ?? 100))
@@ -1351,8 +1357,8 @@ export function deleteTask(db: Db, id: string, emitLifecycle = true): void {
 
 export function countTasksByStatus(db: Db, status: TaskStatus): number {
   const r = db
-    .prepare('SELECT COUNT(*) AS c FROM tasks WHERE status = ? AND archived = 0 AND id NOT IN (SELECT task_id FROM assistant_checks)')
-    .get(status) as Row
+    .prepare('SELECT COUNT(*) AS c FROM tasks WHERE status = ? AND archived = 0 AND project_id <> ? AND id NOT IN (SELECT task_id FROM assistant_checks)')
+    .get(status, QUUU_PROJECT_ID) as Row
   return n(r.c)
 }
 
@@ -1421,10 +1427,11 @@ export function listSlotReservations(db: Db): SlotReservation[] {
                  ORDER BY r.started_at DESC LIMIT 1)) AS agent_id
        FROM tasks t
        WHERE t.priority = ? AND t.archived = 0
+         AND t.project_id <> ?
          AND t.status NOT IN ('running', 'done')
        ORDER BY t.seq`
     )
-    .all(HOLDING_PRIORITY) as Row[]
+    .all(HOLDING_PRIORITY, QUUU_PROJECT_ID) as Row[]
   return rows.map((r) => ({
     taskId: s(r.id),
     title: s(r.title),
@@ -2127,11 +2134,11 @@ export function observeLifecycle(db: Db, observer: LifecycleObserver): () => voi
   return () => { observers.delete(observer) }
 }
 function lifecycle(db: Db, task: Task, event: HookEvent, run?: Run): void {
-  // Internal research must not invoke project hooks or produce ordinary review notifications.
   if (isAssistantCheck(db, task.id)) return
   // Publishing an idea is not approval to run a global task-created hook.
   if (event === 'created' && db.prepare('SELECT 1 FROM assistant_proposals WHERE task_id = ?').get(task.id)) return
-  lifecycleRecorders.get(db)?.(task, event, run)
+  // Conversations still publish facts (proposal discussion uses them), but never launch work hooks.
+  if (!isBuiltInProject(task.projectId)) lifecycleRecorders.get(db)?.(task, event, run)
   for (const observer of lifecycleObservers.get(db) ?? []) afterCommit(db, () => observer(task, event, run))
 }
 

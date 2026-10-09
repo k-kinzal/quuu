@@ -48,7 +48,11 @@ flowchart LR
   Review --> Report
 ```
 
-Normal execution ends in review, failed or waiting for a limit. Only an explicit
-human decision approves work as done. Continuing a session preserves its CLI.
+Normal work execution ends in review, failed or waiting for a limit. Only an explicit
+human decision approves work as done. QuuuAI threads reuse task/run storage for history and
+continuation, but their successful turns finish without work approval. The stored `review`
+state is a resumable conversation boundary, not an outstanding human review. Threads never
+enter ordinary work lists or counts, even when an older version marked one done.
+Continuing a session preserves its CLI.
 An explicit per-task agent selection remains binding while capacity is occupied.
 All communication paths use these same conditions and side effects.

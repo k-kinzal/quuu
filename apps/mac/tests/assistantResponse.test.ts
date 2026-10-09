@@ -58,6 +58,51 @@ async function finish(run: Run, classification: Classification = { kind: null, m
   await vi.waitFor(() => expect(['starting', 'running']).not.toContain(repo.getRun(app.db, run.id)?.status))
 }
 
+it('finishes a conversation without approval, hooks or retained slots and continues it after reopening', async () => {
+  const hooks = vi.fn()
+  const gate = vi.fn(() => true)
+  repo.setLifecycleRecorder(app.db, hooks)
+  app.scheduler.setReviewGate(gate)
+  const first = prepare('Which project should I choose?')
+  repo.patchTask(app.db, first.taskId, { priority: 0 })
+  reply(first, 'Which directory should the project use?')
+  await finish(first)
+  expect(repo.getTask(app.db, first.taskId)).toMatchObject({ status: 'review', doneAt: null, sessionId: first.sessionId })
+  expect(hooks).not.toHaveBeenCalled()
+  expect(gate).not.toHaveBeenCalled()
+  expect(app.scheduler.status()).toMatchObject({ review: 0, activeRuns: 0, holds: [] })
+  expect(app.tasks.listTasks()).toEqual([])
+  expect(notify).not.toHaveBeenCalledWith(expect.objectContaining({ notificationKind: 'review' }))
+  const history = repo.listRunsByTask(app.db, first.taskId)
+  app.shutdown()
+  await app.sessions.settled()
+  app.db.close()
+  app = new QuuuApp(join(dir, 'taskd.db'))
+  app.scheduler.pause()
+  expect(repo.listRunsByTask(app.db, first.taskId)).toEqual(history)
+  expect(app.assistant.state().threads[0].preview).toBe('Which directory should the project use?')
+  const next = prepare('/tmp/example', first)
+  expect(next.sessionId).toBe(first.sessionId)
+  reply(next, 'The directory is selected.')
+  await finish(next)
+  expect(app.assistant.state().threads[0]).toMatchObject({ replies: 2, preview: 'The directory is selected.' })
+  expect(repo.getTask(app.db, first.taskId)?.doneAt).toBeNull()
+})
+
+it('delivers reserved conversation input after success and retains it after an invalid result', async () => {
+  const first = prepare('Help me choose')
+  expect(app.tasks.send(first.taskId, 'Also check the directory')).toEqual({ ok: true, reserved: true })
+  reply(first, 'Here are the options.')
+  await finish(first)
+  expect(repo.getTask(app.db, first.taskId)).toMatchObject({ status: 'queued', pendingMessage: 'Also check the directory', reservedMessage: '' })
+  const next = prepare('And check permissions', first)
+  expect(app.tasks.send(next.taskId, 'Keep this question')).toEqual({ ok: true, reserved: true })
+  await finish(next)
+  expect(repo.getTask(app.db, next.taskId)).toMatchObject({ status: 'failed', reservedMessage: 'Keep this question', doneAt: null })
+  expect(app.assistant.state().threads[0].unread).toBe(true)
+  expect(notify).toHaveBeenCalledWith(expect.objectContaining({ notificationKind: 'failure', taskId: first.taskId }))
+})
+
 it('calls the agent for thanks and completes an explicit no-reply turn without a reply, unread mark or notification', async () => {
   const run = prepare('ありがとう')
   expect(run.args.join(' ')).toContain(`quuu call assistant.noReply '{"runId":"${run.id}"}'`)
@@ -74,13 +119,13 @@ it('calls the agent for thanks and completes an explicit no-reply turn without a
   expect(repo.countActiveRuns(app.db)).toBe(0)
 })
 
-it.each(['ありがとう。次は何をすればいい？', 'ありがとう。対象プロジェクトを追加してください。', '今の状態を教えて'])('keeps the reply to %s and its normal notification', async message => {
+it.each(['ありがとう。次は何をすればいい？', 'ありがとう。対象プロジェクトを追加してください。', '今の状態を教えて'])('keeps the reply to %s and a reply notification without work review', async message => {
   const run = prepare(message)
   reply(run, '必要な回答と操作結果です。')
   await finish(run)
   expect(repo.getAssistantTurn(app.db, run.id)?.outcome).toBe('reply')
   expect(app.assistant.state().threads[0]).toMatchObject({ preview: '必要な回答と操作結果です。', replies: 1, unread: true })
-  expect(notify).toHaveBeenCalledWith(expect.objectContaining({ notificationKind: 'review', taskId: run.taskId }))
+  expect(notify).toHaveBeenCalledWith(expect.objectContaining({ notificationKind: 'assistant', taskId: run.taskId }))
 })
 
 it('keeps read replies read across silent follow-ups and resumes the same session for another question', async () => {

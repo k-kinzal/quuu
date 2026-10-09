@@ -16,7 +16,7 @@ import { moveWithinList, pane } from '../interaction/focus.js'
 import { contextMenu } from '../interaction/menu.js'
 import { projectMenuItems } from '../interaction/projectActions.js'
 import { useWindowLayout } from '../interaction/useWindowLayout.js'
-import { openCountByProject, reviewCount } from '../model/derive.js'
+import { openCountByProject, reviewCount, workTasks } from '../model/derive.js'
 import { t } from '../model/i18n/index.js'
 import { lastSegment } from '../model/paths.js'
 import { projectsByName } from '../model/projectOptions.js'
@@ -49,8 +49,9 @@ export function Rail(): JSX.Element {
   const theme = useTheme()
 
   const collapsed = layout.railCollapsed
-  const counts = useMemo(() => openCountByProject(snapshot?.tasks ?? []), [snapshot?.tasks])
-  const reviews = useMemo(() => reviewCount(snapshot?.tasks ?? []), [snapshot?.tasks])
+  const tasks = useMemo(() => snapshot ? workTasks(snapshot) : [], [snapshot])
+  const counts = useMemo(() => openCountByProject(tasks), [tasks])
+  const reviews = useMemo(() => reviewCount(tasks), [tasks])
   /* Removed projects don't enter the snapshot (main filters them out) */
   const projects = useMemo(() => projectsByName((snapshot?.projects ?? []).filter(p => !p.builtIn)), [snapshot?.projects])
   const quuuAI = snapshot?.projects.find(p => p.builtIn)

@@ -92,6 +92,20 @@ beforeEach(() => {
 })
 
 describe('the single left menu and the footer of the main surface', () => {
+  it('creates visible work in a development project when QuuuAI is the first project', async () => {
+    const assistant = app.projects.ensureBuiltIn(fixtureDirectory)
+    act(() => {
+      const snapshot = app.snapshot()
+      useStore.getState().applySnapshot({ ...snapshot, projects: [assistant, ...snapshot.projects.filter(project => !project.builtIn)] })
+      useStore.setState({ targetProjectId: assistant.id })
+    })
+    render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
+    fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: 'Visible development work' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(app.tasks.listTasks().find(task => task.title === 'Visible development work')?.projectId).toBe(projectId))
+    expect(app.assistant.state().threads).toEqual([])
+  })
+
   it('creates a project task while its default-branch document stays open', async () => {
     const git = (...args: string[]): void => { execFileSync('/usr/bin/git', ['-c', 'commit.gpgsign=false', ...args], { cwd: fixtureDirectory }) }
     git('init', '-q', '-b', 'main')
@@ -529,9 +543,9 @@ describe('file transfer in a prompt -> contract-based IPC -> disk and task persi
     expect(input.value).toBe(initial)
     expect(useStore.getState()).toMatchObject({ detailOpen: false, cursorTaskId: null })
     fireEvent.click(screen.getByRole('button', { name: t('quuuAI.send') }))
-    await waitFor(() => expect(app.tasks.listTasks().find(task => task.projectId === project.id)?.prompt).toBe(initial))
+    await waitFor(() => expect(app.tasks.listPage({ projectId: project.id }).tasks[0]?.prompt).toBe(initial))
     await waitFor(() => expect(input.value).toBe(''))
-    const task = app.tasks.listTasks().find(task => task.projectId === project.id)!
+    const task = app.tasks.listPage({ projectId: project.id }).tasks[0]
     const first = app.runner.prepare({ task, project, agent, groupId: null, kind: 'initial', fallbackFromRunId: null })
     expect(first.args.join(' ')).toContain(initial)
     expect(readFileSync(path, 'utf8')).toBe('The fixture reference is readable.')
@@ -543,6 +557,11 @@ describe('file transfer in a prompt -> contract-based IPC -> disk and task persi
       useStore.getState().setDraft('assistant-channel', 'Keep this separate draft')
     })
     const reply = screen.getByRole<HTMLTextAreaElement>('textbox', { name: t('quuuAI.replyPlaceholder') })
+    expect(screen.queryByRole('button', { name: t('workspace.markDone') })).toBeNull()
+    await useStore.getState().markDoneAndAdvance(task.id, [task.id])
+    expect(repo.getTask(app.db, task.id)?.status).toBe('review')
+    expect(app.tasks.listTasks().some(item => item.id === task.id)).toBe(false)
+    expect(app.scheduler.status().review).toBe(0)
     fireEvent.change(reply, { target: { value: 'Check again.' } })
     reply.setSelectionRange(reply.value.length, reply.value.length)
     expect(fireEvent.drop(reply, { dataTransfer })).toBe(false)

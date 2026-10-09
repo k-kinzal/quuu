@@ -7,7 +7,8 @@ introduction and installation.
 
 **Done is a human privilege.**
 Neither the scheduler, nor the agents, nor the error handlers write `done`.
-An agent's normal exit reaches no further than `Review`.
+An agent's normal exit reaches no further than `Review`. This is the approval workflow for
+work tasks. QuuuAI conversation turns finish without requiring approval (see below).
 
 ```
 [Draft] ──queue──> [Queued] ──acquire──> [Running] ──ends normally──> [Review]
@@ -389,6 +390,20 @@ It is a conversation channel, with one task per thread. Send a message in the ch
 start a thread; open its replies to continue the same agent session. Existing QuuuAI tasks
 remain visible as threads. Notification clicks open the corresponding thread.
 
+Conversation threads are excluded from All tasks, Needs review, Done, their counts, task
+search and the iPhone's work lists. A successful response finishes in the conversation and
+requires no review approval or Done action. Reply notifications say that QuuuAI replied;
+they do not request review. Failure and waiting states remain visible in the channel.
+Questions from the assistant remain in the conversation for the next reply.
+
+Existing threads keep their messages, runs, session IDs and read receipts; no bulk completion,
+deletion or history migration is needed. Internally, `review` remains the resumable resting
+state of a thread, with no work hooks, reports, PR follow-ups or P0 slot reservation. The
+channel includes older threads already marked `done`, and they can continue too. The default
+`tasks.list` work query omits threads; an explicit `projectId: "prj_quuu"` query or task ID
+still retrieves their history. Tasks explicitly created in development projects, including
+through a proposal's **Create task**, retain the ordinary review and human Done workflow.
+
 Threads show user messages, assistant replies and their images, with a brief activity
 indicator while waiting. Tool calls and outputs, thinking, subagent logs and auxiliary
 execution cards stay out of both live and reopened conversations. Execution and stored
@@ -430,7 +445,7 @@ values for positive / negative feedback, and accepts `clear` to remove it. Only
 `assistant.createTask {taskId}` creates work from a proposal and saves its receipt atomically.
 
 The rail shows a small unread dot for new replies and proposals; read receipts survive restarts.
-Suggestions use the review notification switch and the existing native/SSTP delivery channels
+Replies and suggestions use the review notification switch and the existing native/SSTP delivery channels
 (the SSTP event is `assistant`). Pending suggestions also survive app updates and restarts.
 
 Shared context lives in `assistant/MEMORY.md` beside `taskd.db`, outside the application bundle.

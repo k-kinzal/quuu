@@ -206,9 +206,6 @@ export class QuuuApp extends EventEmitter {
     })
     this.scheduler.on('notify', (t: ToastPayload) => {
       if (t.taskId && repo.isAssistantCheck(this.db, t.taskId)) return
-      const runId = t.taskId ? repo.getTask(this.db, t.taskId)?.currentRunId : null
-      if (t.notificationKind === 'review' && runId && repo.getRun(this.db, runId)?.status === 'succeeded' &&
-        repo.getAssistantTurn(this.db, runId)?.outcome === 'no-reply') return
       this.notify(t)
     })
     this.projectReports.on('notify', (t: ToastPayload) => this.notify(t))

@@ -23,7 +23,7 @@ export function NewTaskDependencySelect({ projectId, compact = false, onPicking 
 
   const options = useMemo(() => {
     const projects = projectMap(snapshot?.projects ?? [])
-    const tasks = sortTasks((snapshot?.tasks ?? []).filter(task => !task.archived && task.status !== 'done'), projects)
+    const tasks = sortTasks((snapshot?.tasks ?? []).filter(task => !task.archived && task.status !== 'done' && !projects.get(task.projectId)?.builtIn), projects)
     // Keep the list's ordering within each group, with the destination's tasks first.
     return [...tasks.filter(task => task.projectId === projectId), ...tasks.filter(task => task.projectId !== projectId)]
       .map(task => ({

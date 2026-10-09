@@ -30,9 +30,9 @@ export class TaskOperations {
   // Tasks
   // -------------------------------------------------------------------------
 
-  /** The external API reads the same source as the UI, including archived only when asked. */
+  /** Ordinary work only. Assistant history remains available by project or task ID. */
   listTasks(includeArchived = false): Task[] {
-    return repo.listTasks(this.db, includeArchived, false)
+    return repo.listWorkTasks(this.db, includeArchived)
   }
 
 

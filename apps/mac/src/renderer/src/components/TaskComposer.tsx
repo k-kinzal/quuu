@@ -84,7 +84,7 @@ export function TaskComposer({ fixedProjectId }: { fixedProjectId?: string }): J
   const linked = useNewTaskLink()
 
   // Deleted projects are filtered out on the main side
-  const projects = snapshot?.projects ?? []
+  const projects = snapshot?.projects.filter(project => !project.builtIn) ?? []
   const projectId = defaultTargetProjectId(fixedProjectId ?? null, targetProjectId, null, projects)
   const [priority, setPriority] = useState<Priority>(2)
   const ref = useRef<HTMLTextAreaElement>(null)

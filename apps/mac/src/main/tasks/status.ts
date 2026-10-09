@@ -3,6 +3,8 @@
  *
  * Invariant: the transition to `done` is only ever an explicit human action. Neither the scheduler
  * nor an agent writes `done`. An agent finishing normally can only reach `review`.
+ * QuuuAI threads reuse `review` as a resumable resting state without work approval;
+ * work lists, counts and hooks exclude their backing project.
  *
  * `held` means "the instructions are ready, but I do not want it running yet".
  * Where ordering (blockers) means "after something", this is a conditionless "later, for now".

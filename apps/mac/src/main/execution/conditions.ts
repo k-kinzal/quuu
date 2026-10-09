@@ -1,6 +1,6 @@
 import { drawsOn, type LimitScope } from '../agent-adapters/limitScope.js'
 import { isManagedAgent, type Agent } from '../agents/types.js'
-import type { Project } from '../projects/types.js'
+import { isBuiltInProject, type Project } from '../projects/types.js'
 import type { Task } from '../tasks/types.js'
 import type { Run, RunErrorKind } from './types.js'
 
@@ -8,12 +8,13 @@ import type { Run, RunErrorKind } from './types.js'
 export type RunDisposition =
   | { kind: 'send-reserved'; status: 'queued'; pendingMessage: string }
   | { kind: 'review'; status: 'review'; pendingMessage: '' }
+  | { kind: 'answered'; status: 'review'; pendingMessage: '' }
   | { kind: 'interrupted'; status: 'review' }
   | { kind: 'retry'; status: 'queued' }
   | { kind: 'failed'; status: 'failed' }
 
 export function runDisposition(
-  task: Pick<Task, 'reservedMessage'>,
+  task: Pick<Task, 'reservedMessage' | 'projectId'>,
   error: RunErrorKind | null,
   retry: boolean
 ): RunDisposition {
@@ -22,7 +23,8 @@ export function runDisposition(
     // Only an instruction a human reserved mid-run may be sent on after a normal finish.
     return message
       ? { kind: 'send-reserved', status: 'queued', pendingMessage: message }
-      : { kind: 'review', status: 'review', pendingMessage: '' }
+      // A thread rests at the resumable boundary without a human work-approval decision.
+      : { kind: isBuiltInProject(task.projectId) ? 'answered' : 'review', status: 'review', pendingMessage: '' }
   }
   if (error === 'canceled') return { kind: 'interrupted', status: 'review' }
   return retry ? { kind: 'retry', status: 'queued' } : { kind: 'failed', status: 'failed' }

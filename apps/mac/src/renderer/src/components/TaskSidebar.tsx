@@ -149,7 +149,7 @@ export function TaskSidebar({ besideNavigation = false }: {
    */
   const showProject = section.kind !== 'project' && section.kind !== 'quuuAI'
 
-  const openProjects = (snapshot?.projects ?? []).filter(p => section.kind !== 'quuuAI' || p.builtIn)
+  const openProjects = (snapshot?.projects ?? []).filter(p => !p.builtIn)
   const targetId = defaultTargetProjectId(
     section.kind === 'project' ? section.id : null,
     targetProjectId,

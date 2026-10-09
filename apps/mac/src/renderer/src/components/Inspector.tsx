@@ -157,7 +157,7 @@ export function Inspector({
     const groups = new Map<string, Task[]>()
     for (const t of sortTasks(
       (snapshot?.tasks ?? []).filter(
-        (t) => t.id !== task.id && !t.archived && t.status !== 'done' && !taken.has(t.id)
+        (t) => t.id !== task.id && !t.archived && t.status !== 'done' && !taken.has(t.id) && !projects.get(t.projectId)?.builtIn
       ),
       projects
     )) {

@@ -20,6 +20,9 @@ enforce them live in [architecture.md](architecture.md) and
   slot was taken is how a Claude lineage got stamped on Codex work, and it happened.
 - **Done (`done`) is a human's call.** Neither the scheduler, nor agents, nor error handlers
   ever write `done`. A normal agent exit can reach `review` at most.
+  QuuuAI conversation records reuse that resumable storage state without requesting work
+  approval. They are excluded from work lists, work counts, hooks and P0 reservations;
+  a successful turn needs no Done action. Tasks created in development projects still require review.
 - **Never ask a human in the normal path.** Limits fall back automatically. Hand things to a
   human only when hands are genuinely needed.
 - Comments are written in English and explain **why**. What the code does is readable from
