@@ -6478,7 +6478,8 @@
     "status": 7,
     "createdAt": 8,
     "respondedAt": 9,
-    "executionTaskId": 10
+    "executionTaskId": 10,
+    "reaction": 11
   },
   "AssistantStateResponseValueProposals": {
     "items": 1
@@ -6628,7 +6629,8 @@
     "status": 7,
     "createdAt": 8,
     "respondedAt": 9,
-    "executionTaskId": 10
+    "executionTaskId": 10,
+    "reaction": 11
   },
   "AssistantReactResponse": {
     "value": 1
@@ -6686,7 +6688,8 @@
     "status": 7,
     "createdAt": 8,
     "respondedAt": 9,
-    "executionTaskId": 10
+    "executionTaskId": 10,
+    "reaction": 11
   },
   "SnapshotResponseValueAssistantProposals": {
     "items": 1
@@ -6728,6 +6731,52 @@
   },
   "AssistantNoReplyResponse": {},
   "ReportProjectGetResponseValueVariant1RetryAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantStateResponseValueProposalsItemReaction": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantReactResponseValueReaction": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCreateTaskRequestValue": {
+    "taskId": 1
+  },
+  "AssistantCreateTaskRequest": {
+    "value": 1
+  },
+  "AssistantCreateTaskResponseValueReaction": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCreateTaskResponseValueRespondedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCreateTaskResponseValueExecutionTaskId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCreateTaskResponseValue": {
+    "taskId": 1,
+    "projectId": 2,
+    "title": 3,
+    "prompt": 4,
+    "reason": 5,
+    "confidence": 6,
+    "reaction": 7,
+    "status": 8,
+    "createdAt": 9,
+    "respondedAt": 10,
+    "executionTaskId": 11
+  },
+  "AssistantCreateTaskResponse": {
+    "value": 1
+  },
+  "SnapshotResponseValueAssistantProposalsItemReaction": {
     "variant1": 1,
     "variant2": 2
   }

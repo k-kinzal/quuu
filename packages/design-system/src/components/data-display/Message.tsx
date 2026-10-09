@@ -108,7 +108,7 @@ export const MessageExcerpt = styled('p', { shouldForwardProp: blockProps('prima
   color: primary ? theme.palette.text.primary : theme.palette.text.secondary
 }))
 
-const AttachmentRoot = styled('details')(({ theme }) => ({
+const AttachmentRoot = styled('div')(({ theme }) => ({
   minWidth: 0,
   border: `1px solid ${theme.palette.border.subtle}`,
   borderRadius: theme.radius.sm,
@@ -153,18 +153,32 @@ const AttachmentBody = styled('div')(({ theme }) => ({
   minWidth: 0
 }))
 
+const AttachmentActions = styled('div')(({ theme }) => ({
+  borderTop: `1px solid ${theme.palette.border.subtle}`,
+  padding: theme.spacing(2, 3),
+  display: 'flex',
+  flexWrap: 'wrap',
+  alignItems: 'center',
+  gap: theme.spacing(2),
+  minWidth: 0
+}))
+
 /** The summary remains the compact attachment; its supporting detail opens in place. */
-export function MessageAttachment({ title, meta, caret, children }: {
+export function MessageAttachment({ title, meta, caret, actions, children }: {
   title: string
   meta?: ReactNode
   caret: ReactNode
+  actions?: ReactNode
   children: ReactNode
 }): JSX.Element {
   return <AttachmentRoot>
-    <AttachmentSummary>
-      <AttachmentLabel>{meta && <Meta>{meta}</Meta>}{title}</AttachmentLabel>
-      <AttachmentCaret aria-hidden="true">{caret}</AttachmentCaret>
-    </AttachmentSummary>
-    <AttachmentBody>{children}</AttachmentBody>
+    <details>
+      <AttachmentSummary>
+        <AttachmentLabel>{meta && <Meta>{meta}</Meta>}{title}</AttachmentLabel>
+        <AttachmentCaret aria-hidden="true">{caret}</AttachmentCaret>
+      </AttachmentSummary>
+      <AttachmentBody>{children}</AttachmentBody>
+    </details>
+    {actions && <AttachmentActions>{actions}</AttachmentActions>}
   </AttachmentRoot>
 }

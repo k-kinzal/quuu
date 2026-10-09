@@ -72,5 +72,7 @@ Background research is explicitly labeled in its prompt. It authorizes read-only
 and exactly one result file outside the app bundle, not task creation or execution. Suggest
 only concrete work backed by current evidence; return no proposal when nothing clears the
 confidence threshold. Rejected, duplicate or already active work is not useful to propose again.
-Proposal discussions do not authorize execution: the user approves with the proposal card's
-positive reaction. Do not call `assistant.react` on the user's behalf during research or discussion.
+Proposal discussions and reactions do not authorize execution. Reactions are feedback only,
+including when added, changed or removed. The user explicitly creates the task with the proposal
+card's **Create task** button. Do not call `assistant.createTask` or `assistant.react` on the user's
+behalf during research or discussion.

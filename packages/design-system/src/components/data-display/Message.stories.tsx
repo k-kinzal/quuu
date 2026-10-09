@@ -17,6 +17,7 @@ export default { title: 'Data display/Messages' } satisfies Meta
 export function MessageSpecimen({ width, threadInitiallyOpen = false }: { width?: number; threadInitiallyOpen?: boolean }): JSX.Element {
   const [thread, setThread] = useState(threadInitiallyOpen)
   const [reaction, setReaction] = useState<'positive' | 'negative' | null>(null)
+  const [added, setAdded] = useState(false)
   const [message, setMessage] = useState('')
   const icon = { size: iconSize.md, ...iconDefaults }
   const reason = '前の会話で挙がった変更をまとめました。まず通知から続きを開けるようにすると、作業を探し直す手間が減りそうです。'
@@ -24,7 +25,7 @@ export function MessageSpecimen({ width, threadInitiallyOpen = false }: { width?
     <ComposerInput rows={1} aria-label={reply ? 'Reply' : 'Message'} placeholder={reply ? 'スレッドに返信…' : 'メッセージ…'} value={message} onChange={e => setMessage(e.target.value)} />
     <ComposerActions><IconButton title="Send message" icon={<Send {...icon} />} disabled={!message.trim()} /></ComposerActions>
   </ComposerInputRow></ComposerBox></MessageColumn></Composer>
-  const attachment = <MessageAttachment title="通知から会話の続きに戻れるようにする" meta="Desktop app" caret={<ChevronDown {...icon} />}>
+  const attachment = <MessageAttachment title="通知から会話の続きに戻れるようにする" meta="Desktop app" caret={<ChevronDown {...icon} />} actions={<Button size="sm" variant="solid" color="primary" disabled={added} onClick={() => setAdded(true)}>{added ? 'Added to list' : 'Add to list'}</Button>}>
     <Markdown>{'起動時に通知の参照先を復元し、会話の続きを開きます。\n\n- 再起動後の遷移を確認\n- すでに開いている会話の位置を保持'}</Markdown>
   </MessageAttachment>
   return <div data-message-workspace style={{ width: width ?? '100%', height: 620, display: 'flex' }}>
@@ -40,8 +41,8 @@ export function MessageSpecimen({ width, threadInitiallyOpen = false }: { width?
               <Markdown>{reason}</Markdown>
               {attachment}
               <MessageActions>
-                <ReactionButton title="Accept suggestion" icon={<ThumbsUp {...icon} />} selected={reaction === 'positive'} onClick={() => setReaction('positive')} />
-                <ReactionButton title="Dismiss suggestion" icon={<ThumbsDown {...icon} />} selected={reaction === 'negative'} onClick={() => setReaction('negative')} />
+                <ReactionButton title="Like" icon={<ThumbsUp {...icon} />} selected={reaction === 'positive'} onClick={() => setReaction(reaction === 'positive' ? null : 'positive')} />
+                <ReactionButton title="Dislike" icon={<ThumbsDown {...icon} />} selected={reaction === 'negative'} onClick={() => setReaction(reaction === 'negative' ? null : 'negative')} />
                 <Button variant="ghost" size="xs" startIcon={<MessageSquareText {...icon} />} onClick={() => setThread(true)}>2件の返信</Button>
               </MessageActions>
             </Message></MessageGroup>

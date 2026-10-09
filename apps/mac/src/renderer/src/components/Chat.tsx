@@ -231,7 +231,7 @@ export function Chat({ task, project, active = true, proposal }: { task: Task; p
         >
           <Column>
           {proposal && <MessageGroup><Message speaker={t('quuuAI.title')} icon={<Bot size={ICON.md} {...iconProps} />}>
-            <AssistantProposal proposal={proposal} />
+            <AssistantProposal key={proposal.taskId} proposal={proposal} />
           </Message></MessageGroup>}
           {loading && (
             <Text size="sm" tone="tertiary">

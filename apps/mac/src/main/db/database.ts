@@ -402,7 +402,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 42
+  const target = 43
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -807,6 +807,13 @@ function migrate(db: Db): void {
     addColumnIfMissing(db, 'project_reports', 'retry_at', 'TEXT')
     addColumnIfMissing(db, 'project_reports', 'retry_key', "TEXT NOT NULL DEFAULT ''")
   }
+
+  // Preserve historical task receipts; old negative votes become feedback, not rejection.
+  // This is data-only: opening or upgrading the database must never enqueue work.
+  if (current < 43) db.exec(`UPDATE assistant_proposals SET data = json_set(data,
+    '$.reaction', CASE json_extract(data, '$.status') WHEN 'accepted' THEN 'approve' WHEN 'dismissed' THEN 'dismiss' ELSE NULL END,
+    '$.status', CASE json_extract(data, '$.status') WHEN 'dismissed' THEN 'pending' ELSE json_extract(data, '$.status') END)
+    WHERE json_type(data, '$.reaction') IS NULL`)
 
   setSchemaVersion(db, target)
 }

@@ -164,6 +164,12 @@ void app.whenReady().then(async () => {
       assert.equal(narrow.thread, 360)
       assert.equal(narrow.overflow, false)
       assert.equal(narrow.unreadable, false)
+      const action = await window.webContents.executeJavaScript(`(() => {
+        const el = [...document.querySelectorAll('[data-conversation-thread] button')].find(el => el.textContent === 'Add to list')
+        return { visible: el.checkVisibility(), inDisclosure: Boolean(el.closest('details')) }
+      })()`)
+      assert.equal(action.visible, true, 'attachment actions remain visible while details are collapsed')
+      assert.equal(action.inDisclosure, false, 'an action cannot toggle the disclosure')
       const summary = await window.webContents.executeJavaScript(`(() => {
         const el = document.querySelector('[data-conversation-thread] summary')
         const bounds = el.getBoundingClientRect()

@@ -444,6 +444,7 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       send: os.assistant.send.handler(({ input }) => app.assistant.send(input)),
       noReply: os.assistant.noReply.handler(({ input }) => app.assistant.noReply(input.runId)),
       react: os.assistant.react.handler(({ input }) => app.assistant.react(input.taskId, input.reaction)),
+      createTask: os.assistant.createTask.handler(({ input }) => app.assistant.createTask(input.taskId)),
       markRead: os.assistant.markRead.handler(({ input }) => app.assistant.markRead(input.taskId, input.revision))
     },
     hooks: {

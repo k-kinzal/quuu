@@ -80,3 +80,9 @@ directory is inside the app and holds this skill. It cannot be deleted, moved, o
 worktrees; everything else (agent, priority, concurrency, enabled) is configurable. When you run
 there, do not write files in the working directory, and turn a request that needs code changes
 into a task for the project that holds that code.
+
+Proposed work has two independent operations. `assistant.react` records feedback only
+(`approve` = like, `dismiss` = dislike, `clear` = remove); none approves or creates work.
+The user creates a proposal's task through its **Create task** button, backed by
+`assistant.createTask {taskId}`. During proposal research or discussion, never call either
+operation on the user's behalf or turn a reaction into a `tasks.create` call.

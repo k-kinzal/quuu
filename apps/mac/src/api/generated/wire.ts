@@ -126,6 +126,21 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "confidence": {
                 "kind": "number"
               },
+              "reaction": {
+                "kind": "union",
+                "variants": [
+                  {
+                    "kind": "string",
+                    "choices": [
+                      "approve",
+                      "dismiss"
+                    ]
+                  },
+                  {
+                    "kind": "null"
+                  }
+                ]
+              },
               "status": {
                 "kind": "string",
                 "choices": [
@@ -530,7 +545,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "kind": "string",
           "choices": [
             "approve",
-            "dismiss"
+            "dismiss",
+            "clear"
           ]
         }
       },
@@ -559,6 +575,118 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
         },
         "confidence": {
           "kind": "number"
+        },
+        "reaction": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string",
+              "choices": [
+                "approve",
+                "dismiss"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "status": {
+          "kind": "string",
+          "choices": [
+            "pending",
+            "accepted",
+            "dismissed"
+          ]
+        },
+        "createdAt": {
+          "kind": "string"
+        },
+        "respondedAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "executionTaskId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "taskId",
+        "projectId",
+        "title",
+        "prompt",
+        "reason",
+        "confidence",
+        "status",
+        "createdAt",
+        "respondedAt",
+        "executionTaskId"
+      ]
+    }
+  },
+  "assistant.createTask": {
+    "method": "assistantCreateTask",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "taskId"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        },
+        "projectId": {
+          "kind": "string"
+        },
+        "title": {
+          "kind": "string"
+        },
+        "prompt": {
+          "kind": "string"
+        },
+        "reason": {
+          "kind": "string"
+        },
+        "confidence": {
+          "kind": "number"
+        },
+        "reaction": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string",
+              "choices": [
+                "approve",
+                "dismiss"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
         },
         "status": {
           "kind": "string",
@@ -756,6 +884,21 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   },
                   "confidence": {
                     "kind": "number"
+                  },
+                  "reaction": {
+                    "kind": "union",
+                    "variants": [
+                      {
+                        "kind": "string",
+                        "choices": [
+                          "approve",
+                          "dismiss"
+                        ]
+                      },
+                      {
+                        "kind": "null"
+                      }
+                    ]
                   },
                   "status": {
                     "kind": "string",

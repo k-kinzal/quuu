@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
+import { afterCommit, inTransaction } from '../src/main/db/database.js'
 import * as repo from '../src/main/db/repo.js'
 import { MEMORY_MAX_BYTES, memoryPath } from '../src/main/assistant/memory.js'
 import { QUUU_PROJECT_ID } from '../src/main/projects/types.js'
@@ -69,7 +70,7 @@ describe('assistant reset', () => {
   it('clears all assistant history and memory while retaining settings and approved project work', () => {
     const check = completedProposal()
     const proposal = app.assistant.state().proposals[0]
-    const approved = app.assistant.react(proposal.taskId, 'approve')
+    const approved = app.assistant.createTask(proposal.taskId)
     const thread = app.assistant.state().threads[0]
     app.assistant.markRead(thread.taskId, thread.revision)
     const archived = app.assistant.send('Debug conversation')
@@ -193,21 +194,100 @@ describe('proactive suggestions', () => {
     expect(notifications).toHaveBeenCalledTimes(1)
   })
 
-  it('executes an approved suggestion exactly once in its target project and remembers negative reactions', () => {
+  it('adds, changes and clears feedback without accepting, dismissing or creating work', () => {
     completedProposal()
     const proposal = app.assistant.state().proposals[0]
-    const approved = app.assistant.react(proposal.taskId, 'approve')
-    const again = app.assistant.react(proposal.taskId, 'approve')
-    expect(again).toEqual(approved)
-    expect(repo.getTask(app.db, approved.executionTaskId!)!).toMatchObject({ projectId: project, status: 'queued', prompt: proposal.prompt })
+    const tasks = repo.listTasks(app.db, true, true)
+    const lifecycle = vi.fn()
+    repo.setLifecycleRecorder(app.db, lifecycle)
+    // Feedback remains available even when creation is unavailable.
+    repo.updateProject(app.db, project, { enabled: false })
+    for (const reaction of ['approve', 'approve', 'dismiss', 'clear', 'approve'] as const) {
+      expect(app.assistant.react(proposal.taskId, reaction)).toMatchObject({
+        status: 'pending', reaction: reaction === 'clear' ? null : reaction, executionTaskId: null
+      })
+    }
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    expect(lifecycle).not.toHaveBeenCalled()
+    app.shutdown(); app.db.close()
+    app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+    app.assistant.reconcile()
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    expect(app.assistant.state().proposals[0]).toMatchObject({ status: 'pending', reaction: 'approve', executionTaskId: null })
+  })
+
+  it('creates exactly once independently of feedback and retains the receipt after reopening and task deletion', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    app.assistant.react(proposal.taskId, 'dismiss')
+    const created = app.assistant.createTask(proposal.taskId)
+    expect(created).toMatchObject({ status: 'accepted', reaction: 'dismiss' })
+    expect(repo.getTask(app.db, created.executionTaskId!)).toMatchObject({ projectId: project, title: proposal.title, status: 'queued', prompt: proposal.prompt })
+    expect(app.assistant.createTask(proposal.taskId)).toEqual(created)
+    const execution = repo.getTask(app.db, created.executionTaskId!)
+    for (const reaction of ['approve', 'dismiss', 'clear'] as const) {
+      expect(app.assistant.react(proposal.taskId, reaction)).toMatchObject({ status: 'accepted', executionTaskId: created.executionTaskId })
+    }
     expect(app.tasks.listTasks().filter(t => t.projectId === project)).toHaveLength(1)
+    expect(repo.getTask(app.db, created.executionTaskId!)).toEqual(execution)
+    app.shutdown(); app.db.close()
+    app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+    expect(app.assistant.createTask(proposal.taskId).executionTaskId).toBe(created.executionTaskId)
+    app.tasks.deleteIdleTasks([created.executionTaskId!])
+    expect(app.assistant.createTask(proposal.taskId).executionTaskId).toBe(created.executionTaskId)
+    expect(app.tasks.listTasks().filter(t => t.projectId === project)).toHaveLength(0)
+  })
+
+  it('rolls back the task and lifecycle effects if receipt storage fails, then allows a safe retry', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    const before = repo.listTasks(app.db, true, true)
+    const lifecycle = vi.fn()
+    const unobserve = repo.observeLifecycle(app.db, lifecycle)
+    vi.spyOn(repo, 'saveAssistantProposal').mockImplementationOnce(() => { throw new Error('Disk full') })
+    expect(() => app.assistant.createTask(proposal.taskId)).toThrow('Disk full')
+    expect(repo.listTasks(app.db, true, true)).toEqual(before)
+    expect(app.assistant.state().proposals[0]).toEqual(proposal)
+    expect(lifecycle).not.toHaveBeenCalled()
+    expect(app.assistant.createTask(proposal.taskId).executionTaskId).toBeTruthy()
+    expect(app.tasks.listTasks().filter(t => t.projectId === project)).toHaveLength(1)
+    unobserve()
+  })
+
+  it('reuses committed work when the creation response fails after commit', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    expect(() => inTransaction(app.db, () => {
+      app.assistant.createTask(proposal.taskId)
+      afterCommit(app.db, () => { throw new Error('Notification unavailable') })
+    })).toThrow(/post-commit/)
+    const receipt = app.assistant.state().proposals[0]
+    expect(app.assistant.createTask(proposal.taskId)).toEqual(receipt)
+    expect(app.tasks.listTasks().filter(t => t.projectId === project)).toHaveLength(1)
+  })
+
+  it('rejects unavailable targets and archived threads without recording acceptance, then retries after recovery', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    repo.updateProject(app.db, project, { enabled: false })
+    expect(() => app.assistant.createTask(proposal.taskId)).toThrow()
+    expect(app.assistant.state().proposals[0]).toEqual(proposal)
+    repo.updateProject(app.db, project, { enabled: true })
+    repo.setTaskArchived(app.db, proposal.taskId, true)
+    expect(() => app.assistant.createTask(proposal.taskId)).toThrow()
+    repo.setTaskArchived(app.db, proposal.taskId, false)
+    expect(app.assistant.createTask(proposal.taskId).executionTaskId).toBeTruthy()
+  })
+
+  it('includes feedback separately in research and never repeats an existing proposal', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    app.assistant.react(proposal.taskId, 'dismiss')
     makeDue()
-    completedProposal(92, 'Explain repeated startup failures')
-    const second = app.assistant.state().proposals[0]
-    expect(app.assistant.react(second.taskId, 'dismiss')).toMatchObject({ status: 'dismissed', executionTaskId: null })
-    makeDue()
-    completedProposal(99, second.title)
-    expect(app.assistant.state().proposals).toHaveLength(2)
+    const id = completedProposal(99, proposal.title)
+    expect(repo.getTask(app.db, id)?.prompt).toContain('"status":"pending","reaction":"dismiss"')
+    expect(app.assistant.state().proposals).toHaveLength(1)
+    expect(app.assistant.promptContext(proposal.taskId, 'run')).toContain('Reactions are feedback only, never approval')
   })
 
   it('allows a reply to restart future checks without treating discussion as approval', () => {

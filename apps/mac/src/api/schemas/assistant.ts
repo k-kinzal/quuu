@@ -5,6 +5,8 @@ export const AssistantSettingsSchema = z.object({
 })
 export const AssistantProposalSchema = z.object({
   taskId: z.string(), projectId: z.string(), title: z.string(), prompt: z.string(), reason: z.string(), confidence: z.number(),
+  // Older hosts omit feedback; never infer it from task acceptance in the renderer.
+  reaction: z.enum(['approve', 'dismiss']).nullable().optional(),
   status: z.enum(['pending', 'accepted', 'dismissed']), createdAt: z.string(), respondedAt: z.string().nullable(), executionTaskId: z.string().nullable()
 })
 export const AssistantThreadSchema = z.object({

@@ -283,9 +283,10 @@ context. The scheduler offers it spare capacity only after ordinary eligible tas
 is an internal task so the existing runner owns slots, logs, process recovery and cancellation;
 internal checks are excluded from user task lists, mobile export, lifecycle hooks and ordinary
 completion notifications. A durable check record identifies its JSON result and prevents replay
-on restart. Validated proposals create visible chat threads. Positive reactions and task creation
-commit atomically through normal task operations; negative reactions and discussion remain in
-the proposal history. No automatic operation marks work done.
+on restart. Validated proposals create visible chat threads. Reactions record mutable feedback without changing proposal acceptance or task state. Explicit
+`assistant.createTask` saves a creation receipt atomically with normal task creation; retries
+return that receipt, including after restart. Legacy reactions migrate as data only, preserving
+existing task links. Discussion and feedback remain in the proposal history. No automatic operation marks work done.
 
 Conversation turns register their run identity in `assistant_turns`; `assistant.noReply`
 records an explicit per-attempt decision. The runner validates opted-in successful results

@@ -1,5 +1,15 @@
 # Call-site feedback and decisions
 
+## 2026-10-09 Attachment actions independent of message reactions
+
+- Finding: proposal creation was hidden behind a reaction. A named action must stay
+  visible with the attachment's subject and provenance while its detail is collapsed.
+- Accepted: `MessageAttachment.actions` places caller-supplied controls in a persistent
+  footer outside the disclosure. Reactions stay in the separate `MessageActions` row.
+  The kit owns placement and wrapping; creation, progress, errors and copy belong to the app.
+- Verification: Messages stories in both themes and at narrow width, the isolated Mac
+  proposal states, and reaction / creation / migration regression tests.
+
 ## 2026-10-08 Conversations, attachments and reactions
 
 - Finding: the assistant channel reused task transcript furniture and full proposal

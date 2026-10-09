@@ -13,7 +13,7 @@ export const ja: typeof en = {
     "discussProposal": "次のタスクの提案について相談します：{{title}}\n\n理由：{{reason}}\n\n作業内容：{{prompt}}",
     "proposalNotification": "QuuuAIからの提案：{{title}}",
     "proposalMissing": "この提案は利用できなくなりました。",
-    "projectUnavailable": "提案を承認する前に対象プロジェクトを有効にしてください。",
+    "projectUnavailable": "タスクを作成する前に対象プロジェクトを有効にしてください。",
     "emptyMessage": "メッセージを入力してください。",
     "notificationTitle": "QuuuAIからの提案"
 },

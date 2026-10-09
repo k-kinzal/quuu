@@ -50,6 +50,25 @@ describe('the generated gRPC API', () => {
     expect(statSync(servers.connectionFile).mode & 0o777).toBe(0o600)
     expect(statSync(join(dir, 'server-token')).mode & 0o777).toBe(0o600)
   })
+  it('keeps reactions feedback-only over gRPC and makes explicit concurrent creation idempotent', async () => {
+    const project = await http.api.projects.create({ name: 'Destination', path: dir })
+    app.projects.ensureBuiltIn(dir)
+    const thread = app.assistant.send('Discuss this suggestion')
+    repo.saveAssistantProposal(app.db, { taskId: thread.id, projectId: project.id, title: 'Suggested work', prompt: 'Self-contained work',
+      reason: 'Evidence', confidence: 85, status: 'pending', reaction: null, createdAt: thread.createdAt, respondedAt: null, executionTaskId: null })
+    for (const reaction of ['approve', 'dismiss', 'clear'] as const) {
+      expect(await http.api.assistant.react({ taskId: thread.id, reaction })).toMatchObject({
+        status: 'pending', reaction: reaction === 'clear' ? null : reaction, executionTaskId: null
+      })
+    }
+    expect(app.tasks.listTasks().filter(task => task.projectId === project.id)).toHaveLength(0)
+    const results = await Promise.all(Array.from({ length: 5 }, () => http.api.assistant.createTask({ taskId: thread.id })))
+    expect(new Set(results.map(p => p.executionTaskId)).size).toBe(1)
+    expect(app.tasks.listTasks().filter(task => task.projectId === project.id)).toHaveLength(1)
+    expect(await http.api.assistant.react({ taskId: thread.id, reaction: 'dismiss' })).toMatchObject({
+      status: 'accepted', reaction: 'dismiss', executionTaskId: results[0].executionTaskId
+    })
+  })
   it('creates and operates tasks with real HTTP/2 and preserves partial updates, null, false and empty arrays', async () => {
     const project = await http.api.projects.create({ name: 'API', path: dir })
     const task = await http.api.tasks.create({ projectId: project.id, title: 'hello', status: 'queued', priority: 0 })

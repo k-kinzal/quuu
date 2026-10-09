@@ -46,6 +46,13 @@ message AssistantStateResponseValueThreads {
   repeated AssistantStateResponseValueThreadsItem items = 1;
 }
 
+message AssistantStateResponseValueProposalsItemReaction {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
 message AssistantStateResponseValueProposalsItemRespondedAt {
   oneof kind {
   string variant1 = 1;
@@ -67,6 +74,7 @@ message AssistantStateResponseValueProposalsItem {
   optional string prompt = 4;
   optional string reason = 5;
   optional double confidence = 6;
+  optional AssistantStateResponseValueProposalsItemReaction reaction = 11;
   optional string status = 7;
   optional string createdAt = 8;
   optional AssistantStateResponseValueProposalsItemRespondedAt respondedAt = 9;
@@ -271,6 +279,13 @@ message AssistantReactRequest {
   optional AssistantReactRequestValue value = 1;
 }
 
+message AssistantReactResponseValueReaction {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
 message AssistantReactResponseValueRespondedAt {
   oneof kind {
   string variant1 = 1;
@@ -292,6 +307,7 @@ message AssistantReactResponseValue {
   optional string prompt = 4;
   optional string reason = 5;
   optional double confidence = 6;
+  optional AssistantReactResponseValueReaction reaction = 11;
   optional string status = 7;
   optional string createdAt = 8;
   optional AssistantReactResponseValueRespondedAt respondedAt = 9;
@@ -300,6 +316,53 @@ message AssistantReactResponseValue {
 
 message AssistantReactResponse {
   optional AssistantReactResponseValue value = 1;
+}
+
+message AssistantCreateTaskRequestValue {
+  optional string taskId = 1;
+}
+
+message AssistantCreateTaskRequest {
+  optional AssistantCreateTaskRequestValue value = 1;
+}
+
+message AssistantCreateTaskResponseValueReaction {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantCreateTaskResponseValueRespondedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantCreateTaskResponseValueExecutionTaskId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantCreateTaskResponseValue {
+  optional string taskId = 1;
+  optional string projectId = 2;
+  optional string title = 3;
+  optional string prompt = 4;
+  optional string reason = 5;
+  optional double confidence = 6;
+  optional AssistantCreateTaskResponseValueReaction reaction = 7;
+  optional string status = 8;
+  optional string createdAt = 9;
+  optional AssistantCreateTaskResponseValueRespondedAt respondedAt = 10;
+  optional AssistantCreateTaskResponseValueExecutionTaskId executionTaskId = 11;
+}
+
+message AssistantCreateTaskResponse {
+  optional AssistantCreateTaskResponseValue value = 1;
 }
 
 message AssistantMarkReadRequestValue {
@@ -358,6 +421,13 @@ message SnapshotResponseValueAssistantThreads {
   repeated SnapshotResponseValueAssistantThreadsItem items = 1;
 }
 
+message SnapshotResponseValueAssistantProposalsItemReaction {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
 message SnapshotResponseValueAssistantProposalsItemRespondedAt {
   oneof kind {
   string variant1 = 1;
@@ -379,6 +449,7 @@ message SnapshotResponseValueAssistantProposalsItem {
   optional string prompt = 4;
   optional string reason = 5;
   optional double confidence = 6;
+  optional SnapshotResponseValueAssistantProposalsItemReaction reaction = 11;
   optional string status = 7;
   optional string createdAt = 8;
   optional SnapshotResponseValueAssistantProposalsItemRespondedAt respondedAt = 9;
@@ -8859,6 +8930,7 @@ service Quuu {
   rpc AssistantSend(AssistantSendRequest) returns (AssistantSendResponse);
   rpc AssistantNoReply(AssistantNoReplyRequest) returns (AssistantNoReplyResponse);
   rpc AssistantReact(AssistantReactRequest) returns (AssistantReactResponse);
+  rpc AssistantCreateTask(AssistantCreateTaskRequest) returns (AssistantCreateTaskResponse);
   rpc AssistantMarkRead(AssistantMarkReadRequest) returns (AssistantMarkReadResponse);
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
   rpc RunnersStatus(RunnersStatusRequest) returns (RunnersStatusResponse);

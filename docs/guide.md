@@ -407,11 +407,21 @@ feature off cancels active research. Checks time out after twenty minutes and fa
 until the next interval. The footer identifies background research on every screen.
 
 A check reads project state and recent conversations, then offers at most one evidence-backed
-suggestion. Confidence is an agent estimate, not a calibrated probability. 👍 creates and queues
-one task in the indicated project; 👎 withdraws the suggestion. Repeated reactions cannot create
-duplicates. Replies discuss the proposal and count as engagement, but do not approve it. Until
-the previous suggestion has a reply or reaction, no further checks run. Simply viewing it does
-not restart checks. Previously rejected suggestions are included in future research context.
+suggestion. Confidence is an agent estimate, not a calibrated probability. **Create task** on
+its card creates and queues one task in the indicated project. The card shows progress, offers
+retry on failure, and shows **Task created** with **View task** after success. Repeated clicks,
+retries and restarts reuse the same task receipt.
+
+👍 and 👎 record feedback only; either can be changed or removed, even after creation. Reactions
+never approve, reject, create, cancel or run tasks. Replies also discuss the proposal without
+approving it. Until the previous suggestion has a reply, reaction or explicit creation, no further
+checks run. Simply viewing it does not restart checks. Feedback is included separately from the
+creation status in future research context. Existing reactions migrate without creating work;
+previously created tasks and their proposal links remain intact.
+
+The API follows the same separation: `assistant.react` retains the legacy `approve` / `dismiss`
+values for positive / negative feedback, and accepts `clear` to remove it. Only
+`assistant.createTask {taskId}` creates work from a proposal and saves its receipt atomically.
 
 The rail shows a small unread dot for new replies and proposals; read receipts survive restarts.
 Suggestions use the review notification switch and the existing native/SSTP delivery channels

@@ -5,33 +5,47 @@ import { t } from '../model/i18n/index.js'
 import { failureReason } from '../model/operationFailure.js'
 import { queryClient } from '../state/queryClient.js'
 import { useStore } from '../state/store.js'
-import { ChevronDown, ICON, ThumbsDown, ThumbsUp, iconProps } from '../ui/icons.js'
+import { ChevronDown, ICON, Plus, ThumbsDown, ThumbsUp, iconProps } from '../ui/icons.js'
 import { MessageBody } from './MessageBody.js'
 
 /** A suggestion is an utterance with an attached task, with reactions on that same utterance. */
 export function AssistantProposal({ proposal, replies }: { proposal: Proposal; replies?: React.ReactNode }): JSX.Element {
   const project = useStore(s => s.snapshot?.projects.find(p => p.id === proposal.projectId))
   const openTask = useStore(s => s.revealTask)
-  const mutationKey = ['assistant', 'react', proposal.taskId]
-  const pending = useIsMutating({ mutationKey }, queryClient) > 0
-  const react = useMutation({ mutationKey, mutationFn: (reaction: 'approve' | 'dismiss') => window.quuu.assistant.react({ taskId: proposal.taskId, reaction }, { context: { feedback: 'inline' } }) }, queryClient)
-  const settled = proposal.status !== 'pending'
+  const reactionKey = ['assistant', 'react', proposal.taskId]
+  const reactionPending = useIsMutating({ mutationKey: reactionKey }, queryClient) > 0
+  const react = useMutation({ mutationKey: reactionKey, meta: { feedback: 'inline' }, mutationFn: (reaction: 'approve' | 'dismiss' | 'clear') => window.quuu.assistant.react({ taskId: proposal.taskId, reaction }, { context: { feedback: 'inline' } }) }, queryClient)
+  const creationKey = ['assistant', 'createTask', proposal.taskId]
+  const creating = useIsMutating({ mutationKey: creationKey }, queryClient) > 0
+  const create = useMutation({ mutationKey: creationKey, meta: { feedback: 'inline' }, mutationFn: () => window.quuu.assistant.createTask({ taskId: proposal.taskId }, { context: { feedback: 'inline' } }) }, queryClient)
+  // A successful response can arrive before the snapshot that carries its durable receipt.
+  const receipt = create.data?.taskId === proposal.taskId ? create.data : undefined
+  const executionTaskId = proposal.executionTaskId ?? receipt?.executionTaskId
+  const created = Boolean(executionTaskId) || proposal.status === 'accepted' || receipt?.status === 'accepted'
   return <>
-    {proposal.status !== 'dismissed' && <MessageBody text={proposal.reason} />}
+    <MessageBody text={proposal.reason} />
     <MessageAttachment title={proposal.title} meta={project?.name ?? proposal.projectId}
-      caret={<ChevronDown size={ICON.sm} {...iconProps} />}>
+      caret={<ChevronDown size={ICON.sm} {...iconProps} />}
+      actions={created ? <>
+        <Text size="xs" tone="secondary">{t('quuuAI.created')}</Text>
+        {executionTaskId && <Button variant="ghost" size="sm" onClick={() => { void openTask(executionTaskId) }}>{t('quuuAI.viewTask')}</Button>}
+      </> : <Button variant="solid" color="primary" size="sm" disabled={creating} loading={creating} loadingPosition="start"
+        startIcon={<Plus size={ICON.sm} {...iconProps} />} onClick={() => create.mutate()}>
+        {t(creating ? 'quuuAI.creating' : create.isError ? 'quuuAI.retryCreate' : 'quuuAI.createTask')}
+      </Button>}>
       <Markdown>{proposal.prompt}</Markdown>
       <Text size="xs" tone="tertiary">{t('quuuAI.confidence', { value: proposal.confidence })}</Text>
     </MessageAttachment>
+    {create.error && !created && <Alert>{t('quuuAI.createFailed', { reason: failureReason(create.error) })}</Alert>}
     <MessageActions>
-      {(!settled || proposal.status === 'accepted') && <ReactionButton title={t('quuuAI.approve')}
-        icon={<ThumbsUp size={ICON.sm} {...iconProps} />} selected={proposal.status === 'accepted'}
-        disabled={settled || pending} loading={react.isPending && react.variables === 'approve'} onClick={() => react.mutate('approve')} />}
-      {(!settled || proposal.status === 'dismissed') && <ReactionButton title={t('quuuAI.dismiss')}
-        icon={<ThumbsDown size={ICON.sm} {...iconProps} />} selected={proposal.status === 'dismissed'}
-        disabled={settled || pending} loading={react.isPending && react.variables === 'dismiss'} onClick={() => react.mutate('dismiss')} />}
-      {proposal.executionTaskId ? <Button variant="ghost" size="xs" onClick={() => { void openTask(proposal.executionTaskId!) }}>{t('quuuAI.viewTask')}</Button>
-        : settled && <Text size="xs" tone="tertiary">{t(proposal.status === 'accepted' ? 'quuuAI.accepted' : 'quuuAI.dismissed')}</Text>}
+      <ReactionButton title={t('quuuAI.like')}
+        icon={<ThumbsUp size={ICON.sm} {...iconProps} />} selected={proposal.reaction === 'approve'}
+        disabled={reactionPending} loading={react.isPending && (react.variables === 'approve' || (react.variables === 'clear' && proposal.reaction === 'approve'))}
+        onClick={() => react.mutate(proposal.reaction === 'approve' ? 'clear' : 'approve')} />
+      <ReactionButton title={t('quuuAI.dislike')}
+        icon={<ThumbsDown size={ICON.sm} {...iconProps} />} selected={proposal.reaction === 'dismiss'}
+        disabled={reactionPending} loading={react.isPending && (react.variables === 'dismiss' || (react.variables === 'clear' && proposal.reaction === 'dismiss'))}
+        onClick={() => react.mutate(proposal.reaction === 'dismiss' ? 'clear' : 'dismiss')} />
       {replies}
     </MessageActions>
     {react.error && <Alert>{failureReason(react.error)}</Alert>}

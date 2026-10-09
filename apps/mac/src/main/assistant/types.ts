@@ -16,6 +16,7 @@ export interface AssistantProposal {
   reason: string
   confidence: number
   status: 'pending' | 'accepted' | 'dismissed'
+  reaction: 'approve' | 'dismiss' | null
   createdAt: string
   respondedAt: string | null
   executionTaskId: string | null

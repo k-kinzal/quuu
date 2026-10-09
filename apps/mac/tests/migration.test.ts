@@ -281,7 +281,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('42')
+    expect(version.value).toBe('43')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -349,7 +349,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('42')
+    expect(version.value).toBe('43')
     db.close()
   })
 
@@ -981,5 +981,35 @@ it('adds per-run assistant decisions without changing old tasks and removes them
   expect(repo.getAssistantTurn(reopened, 'run')).toMatchObject({ taskId, noReply: true, outcome: 'no-reply' })
   repo.deleteTask(reopened, taskId)
   expect(repo.getAssistantTurn(reopened, 'run')).toBeNull()
+  reopened.close()
+})
+
+
+it('separates legacy proposal reactions without creating tasks or losing historical receipts', () => {
+  const old = openDatabase(path)
+  const projectId = makeProject(old, { name: 'existing', targetId: makeAgent(old, { name: 'Agent' }) })
+  const executionTaskId = makeTask(old, projectId, 'Previously created task')
+  const before = repo.listTasks(old, true, true)
+  for (const status of ['pending', 'accepted', 'dismissed']) {
+    const proposal = { taskId: status, projectId, title: status, prompt: 'Work', reason: 'Evidence', confidence: 85,
+      status, createdAt: '2026-10-08T10:00:00Z', respondedAt: status === 'pending' ? null : '2026-10-08T11:00:00Z',
+      executionTaskId: status === 'accepted' ? executionTaskId : null }
+    old.prepare('INSERT INTO assistant_proposals (task_id, data) VALUES (?, ?)').run(status, JSON.stringify(proposal))
+  }
+  old.exec("UPDATE meta SET value = '42' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.listTasks(upgraded, true, true)).toEqual(before)
+  expect(repo.listAssistantProposals(upgraded)).toEqual(expect.arrayContaining([
+    expect.objectContaining({ taskId: 'pending', status: 'pending', reaction: null, executionTaskId: null }),
+    expect.objectContaining({ taskId: 'dismissed', status: 'pending', reaction: 'dismiss', executionTaskId: null, respondedAt: '2026-10-08T11:00:00Z' }),
+    expect.objectContaining({ taskId: 'accepted', status: 'accepted', reaction: 'approve', executionTaskId })
+  ]))
+  const accepted = repo.listAssistantProposals(upgraded).find(p => p.taskId === 'accepted')!
+  repo.saveAssistantProposal(upgraded, { ...accepted, reaction: null })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.listTasks(reopened, true, true)).toEqual(before)
+  expect(repo.listAssistantProposals(reopened).find(p => p.taskId === 'accepted')).toMatchObject({ reaction: null, executionTaskId })
   reopened.close()
 })

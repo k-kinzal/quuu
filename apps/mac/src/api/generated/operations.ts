@@ -8,6 +8,7 @@ export const operationNames: string[] = [
   "assistant.send",
   "assistant.noReply",
   "assistant.react",
+  "assistant.createTask",
   "assistant.markRead",
   "snapshot",
   "runners.status",
