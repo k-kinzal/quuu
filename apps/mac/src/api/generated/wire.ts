@@ -501,6 +501,23 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "assistant.noReply": {
+    "method": "assistantNoReply",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "runId": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "runId"
+      ]
+    },
+    "output": {
+      "kind": "void"
+    }
+  },
   "assistant.react": {
     "method": "assistantReact",
     "input": {
@@ -1646,7 +1663,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                       "nonzero-exit",
                       "orphaned",
                       "canceled",
-                      "no-agent"
+                      "no-agent",
+                      "invalid-result"
                     ]
                   },
                   {
@@ -9836,7 +9854,8 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "nonzero-exit",
                   "orphaned",
                   "canceled",
-                  "no-agent"
+                  "no-agent",
+                  "invalid-result"
                 ]
               },
               {

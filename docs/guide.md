@@ -389,6 +389,16 @@ It is a conversation channel, with one task per thread. Send a message in the ch
 start a thread; open its replies to continue the same agent session. Existing QuuuAI tasks
 remain visible as threads. Notification clicks open the corresponding thread.
 
+The agent is called for every message and may decide that a closing acknowledgement needs
+no reply. Each conversation turn supplies `quuu call assistant.noReply '{"runId":"..."}'`
+to record that decision. A confirmed successful exit completes the turn without a message,
+new unread mark or completion notification; the same thread can continue normally. Questions,
+additional requests and necessary operation results still receive replies, including when
+accompanied by thanks. Real reply text takes precedence over a silence decision. A missing
+reply without that explicit decision, an unconfirmed exit or an unreadable result is an error,
+and ordinary execution failures retain their existing treatment. Development-task reporting
+and background suggestion checks use their existing behavior.
+
 Settings → QuuuAI controls proactive suggestions (on by default), the check interval
 (default six hours, 1–168 hours), and minimum confidence (default 70%, adjustable to 100%).
 Checks use ordinary execution slots **only after eligible user work**; busy agents, cooldowns,

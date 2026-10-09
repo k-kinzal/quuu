@@ -14,6 +14,7 @@ export type RunErrorKind =
   | 'orphaned'
   | 'canceled'
   | 'no-agent'
+  | 'invalid-result'
 
 /** What this run was launched for. */
 export type RunKind = 'initial' | 'followup'

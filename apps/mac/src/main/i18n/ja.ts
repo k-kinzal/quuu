@@ -2,6 +2,9 @@ import type { en } from './en.js'
 
 export const ja: typeof en = {
   assistant: {
+    noReplyUnavailable: '返信なしは、実行中のQuuuAI会話でのみ選択できます。',
+    missingReply: 'Agentは返信も明示的な「返信なし」の選択もせずに終了しました。',
+    unconfirmedExit: 'Agentの正常終了を確認できないため、返信なしとして扱えません。',
     "research": "次に役立つタスクを調べています",
     "memoryTooLarge": "共有メモリはUTF-8で{{bytes}}バイト以内にしてください。",
     "memoryConflict": "別のスレッドで共有メモリが変更されました。読み直してから保存してください。",
@@ -132,6 +135,7 @@ export const ja: typeof en = {
     'nonzero-exit': '異常終了',
     orphaned: 'プロセス消失',
     canceled: '中断',
+    'invalid-result': 'エージェントの結果を確認できません',
     'no-agent': 'エージェント未解決'
   },
   commitIdentityMode: {
@@ -333,6 +337,7 @@ export const ja: typeof en = {
   },
 
   run: {
+    invalidResult: 'Agentの結果を確認できませんでした。ログを確認してください。',
     canceled: '中断されました',
     timedOut: 'タイムアウトしました',
     limitReached: 'Limit に達しました',

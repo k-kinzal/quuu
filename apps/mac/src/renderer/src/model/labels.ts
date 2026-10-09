@@ -66,6 +66,7 @@ export const RUN_ERROR_KIND_LABEL: Record<RunErrorKind, string> = {
   'nonzero-exit': t('runErrorKind.nonzero-exit'),
   orphaned: t('runErrorKind.orphaned'),
   canceled: t('runErrorKind.canceled'),
+  'invalid-result': t('runErrorKind.invalid-result'),
   'no-agent': t('runErrorKind.no-agent')
 }
 

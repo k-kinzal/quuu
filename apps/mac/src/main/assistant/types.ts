@@ -28,6 +28,14 @@ export interface AssistantCheck {
   error: string | null
 }
 
+/** A decision belongs to one attempt, never to its resumed session or entire thread. */
+export interface AssistantTurn {
+  runId: string
+  taskId: string
+  noReply: boolean
+  outcome: 'reply' | 'no-reply' | null
+}
+
 export interface AssistantThread {
   taskId: string
   preview: string

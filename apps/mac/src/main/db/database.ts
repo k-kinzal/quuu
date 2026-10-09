@@ -400,7 +400,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 40
+  const target = 41
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -796,6 +796,10 @@ function migrate(db: Db): void {
 
   // Provider logs outlive a reset; remember only their IDs so import cannot restore them.
   if (current < 40) db.exec('CREATE TABLE IF NOT EXISTS assistant_forgotten_sessions (session_id TEXT PRIMARY KEY)')
+
+  if (current < 41) db.exec(`CREATE TABLE IF NOT EXISTS assistant_turns (
+    run_id TEXT PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE, data TEXT NOT NULL
+  )`)
 
   setSchemaVersion(db, target)
 }

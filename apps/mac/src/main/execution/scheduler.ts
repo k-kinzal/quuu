@@ -119,7 +119,7 @@ export class Scheduler extends EventEmitter {
     private runner: Runner
   ) {
     super()
-    this.recovery = new ExecutionRecovery(db, runner, () => this.emit('changed'), (event) => this.onFinished(event))
+    this.recovery = new ExecutionRecovery(db, runner, () => this.emit('changed'))
     this.runner.on('finished', (e: FinishedEvent) => this.onFinished(e))
     this.runner.on('changed', () => this.emit('changed'))
   }

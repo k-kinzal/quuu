@@ -13,6 +13,7 @@ import type { TaskOperations } from '../tasks/operations.js'
 import type { Task } from '../tasks/types.js'
 import { newId, nowIso } from '../util.js'
 import { clearMemory, memoryPath, memoryPrompt, readMemory, writeMemory } from './memory.js'
+import { chooseNoReply, responsePrompt } from './response.js'
 import { DEFAULT_ASSISTANT_SETTINGS, type AssistantProposal, type AssistantSettings, type AssistantState, type AssistantThread } from './types.js'
 
 const Settings = z.object({ enabled: z.boolean(), intervalHours: z.number().int().min(1).max(168), confidenceThreshold: z.number().int().min(70).max(100) }).strict()
@@ -26,7 +27,7 @@ const MAX_CHECK_MS = 20 * 60 * 1000
 
 /** Owns research, proposals and read receipts; all execution still goes through the scheduler. */
 export class AssistantOperations {
-  private summaries = new Map<string, { version: string; preview: string; replies: number }>()
+  private summaries = new Map<string, { version: string; preview: string; replies: number; revision: string }>()
   private timer: NodeJS.Timeout | null = null
   private unobserve: (() => void) | null = null
   constructor(private db: Db, readonly dataDir: string, private tasks: TaskOperations, private changed: () => void,
@@ -79,9 +80,11 @@ export class AssistantOperations {
       return ids
     })
   }
-  promptContext(taskId: string): string {
+  noReply(runId: string): void { chooseNoReply(this.db, runId) }
+
+  promptContext(taskId: string, runId: string): string {
     const proposal = repo.listAssistantProposals(this.db).find(p => p.taskId === taskId)
-    return memoryPrompt(this.dataDir) + (proposal
+    return responsePrompt(this.db, taskId, runId) + memoryPrompt(this.dataDir) + (proposal
       ? `\n\nThis is a discussion of a proposal. Its current state is ${proposal.status}. Do not execute the proposed work or create a task from this conversation. Only the user's positive reaction on the proposal card creates the task. Discuss evidence, scope and alternatives. Proposal data: ${JSON.stringify(proposal)}` : '')
   }
   resultPath(taskId: string): string { return join(this.dataDir, 'assistant', 'checks', `${taskId}.json`) }
@@ -221,13 +224,21 @@ export class AssistantOperations {
     const version = [key, index?.generation, index?.total, index?.stamp].join(':')
     let summary = this.summaries.get(task.id)
     if (!summary || summary.version !== version) {
-      summary = { version, ...(index && key ? repo.assistantThreadSummary(this.db, key, index.generation) : { preview: '', replies: 0 }) }
+      summary = { version, ...(index && key ? repo.assistantThreadSummary(this.db, key, index.generation) : { preview: '', replies: 0, revision: '' }) }
       if (this.summaries.size >= 512) this.summaries.delete(this.summaries.keys().next().value!)
       this.summaries.set(task.id, summary)
     }
-    const revision = [version, run?.id, run?.status, proposal?.status].join(':')
+    // User messages, tools, reindexing and silent successful turns do not create unread replies.
+    const failed = run && ['failed', 'timeout', 'limited'].includes(run.status)
+    const revision = [summary.revision, failed ? run.id : '', proposal?.status].join(':')
+    // Carry an exact old receipt forward without marking any intervening output read.
+    const legacyRevision = [version, run?.id, run?.status, proposal?.status].join(':')
+    if (reads.get(task.id) === legacyRevision) {
+      repo.readAssistantThread(this.db, task.id, revision)
+      reads.set(task.id, revision)
+    }
     return { taskId: task.id, preview: summary.preview, replies: summary.replies, revision,
-      unread: (summary.replies > 0 || proposal !== undefined || run?.status === 'failed') && reads.get(task.id) !== revision }
+      unread: (summary.replies > 0 || proposal !== undefined || Boolean(failed)) && reads.get(task.id) !== revision }
   }
 
   state(): AssistantState {

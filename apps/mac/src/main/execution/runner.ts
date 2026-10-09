@@ -115,8 +115,11 @@ export class Runner extends EventEmitter {
   private stopped = false
   private live = new Map<string, Live>()
 
-  private promptContext: (project: Project, task: Task) => string = () => ''
-  setPromptContext(context: (project: Project, task: Task) => string): void { this.promptContext = context }
+  private promptContext: (project: Project, task: Task, runId: string) => string = () => ''
+  setPromptContext(context: (project: Project, task: Task, runId: string) => string): void { this.promptContext = context }
+  private validateResult: (run: Run) => Promise<Classification> | null = () => null
+  private settling = new Set<string>()
+  setResultValidator(validate: (run: Run) => Promise<Classification> | null): void { this.validateResult = validate }
 
   constructor(private db: Db, private remote?: RunnerOperations) {
     super()
@@ -156,7 +159,7 @@ export class Runner extends EventEmitter {
 
       const template = kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate
       const vars: TemplateVars = {
-        prompt: agentPrompt(project, kind, message, this.promptContext(project, task)),
+        prompt: agentPrompt(project, kind, message, this.promptContext(project, task, runId)),
         title: task.title,
         sessionId,
         projectPath: workspace?.cwd ?? project.path,
@@ -224,7 +227,7 @@ export class Runner extends EventEmitter {
       if (repo.getRun(this.db, runId)?.status !== 'starting') return repo.getRun(this.db, runId) ?? run
       const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command,
         template: params.kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate,
-        vars: { prompt: agentPrompt(project, params.kind, params.messageOverride ?? (task.prompt.trim() || task.title), this.promptContext(project, task)), title: task.title,
+        vars: { prompt: agentPrompt(project, params.kind, params.messageOverride ?? (task.prompt.trim() || task.title), this.promptContext(project, task, runId)), title: task.title,
           sessionId, projectPath: cwd, projectName: project.name, taskId: task.id, runId } })
       args = invocation.args
       run.cwd = cwd
@@ -582,7 +585,6 @@ export class Runner extends EventEmitter {
 
     const exitFile = runExitPath(runId)
     const recorded = readExitCode(exitFile)
-    clearExitFile(exitFile)
 
     const tail = readLogTail(run.stdoutLogPath)
     const classification = adapterFor(run.logAdapter ?? 'stdout').classify({
@@ -594,23 +596,40 @@ export class Runner extends EventEmitter {
       canceled: live.canceled
     })
 
-    repo.updateRun(this.db, runId, {
-      status: runStatusForKind(classification.kind),
-      exitCode: recorded ?? code,
-      errorKind: classification.kind,
-      errorMessage: classification.message,
-      endedAt: nowIso()
+    this.complete(run, classification, recorded ?? code, tail)
+  }
+
+  /** Local, remote and recovered exits validate before releasing capacity or announcing success. */
+  complete(run: Run, classification: Classification, exitCode: number | null, tail: string): void {
+    if (this.stopped || this.settling.has(run.id)) return
+    const bound = attachSessionLog(this.db, run)
+    const finished = { ...bound, exitCode, endedAt: nowIso(), status: runStatusForKind(classification.kind) }
+    const settle = (result: Classification): void => {
+      this.settling.delete(run.id)
+      if (this.stopped) return
+      // A cancel or deletion during indexing wins over a late validation result.
+      const current = repo.getRun(this.db, run.id)
+      if (!current || !['starting', 'running'].includes(current.status)) return
+      inTransaction(this.db, () => {
+        const saved = repo.updateRun(this.db, run.id, { status: runStatusForKind(result.kind), exitCode,
+          endedAt: finished.endedAt, errorKind: result.kind, errorMessage: result.message })
+        this.emit('finished', { run: saved, classification: result, tail } satisfies FinishedEvent)
+        // Keep the exit receipt until both run and task settlement are durable, including across restarts.
+        afterCommit(this.db, () => clearExitFile(runExitPath(run.id)))
+      })
+    }
+    const invalid = (error: unknown): Classification => {
+      if (!this.stopped) console.warn('Cannot validate agent result', error)
+      return { kind: 'invalid-result', message: t('run.invalidResult') }
+    }
+    let validation: Promise<Classification> | null
+    try { validation = classification.kind === null ? this.validateResult(finished) : null }
+    catch (error) { settle(invalid(error)); return }
+    if (!validation) { settle(classification); return }
+    this.settling.add(run.id)
+    void validation.then(settle, error => settle(invalid(error))).catch(error => {
+      if (!this.stopped) console.error('Cannot settle validated agent result', error)
     })
-
-    // Re-bind to the session log that was actually written before handing it over. Scheduler copies
-    // this run's session ID onto the task, so a mismatch here breaks both resume and conversation.
-    const finished = attachSessionLog(this.db, repo.getRun(this.db, runId)!)
-
-    this.emit('finished', {
-      run: finished,
-      classification,
-      tail
-    } satisfies FinishedEvent)
   }
 
   /** Remote receipts use the same classification and scheduler policy as local exits. */
@@ -630,9 +649,7 @@ export class Runner extends EventEmitter {
       ? { kind: job.result.started === false ? 'spawn' as const : 'nonzero-exit' as const, message: job.result.error }
       : adapterFor(run.logAdapter ?? 'stdout').classify({ exitCode: job.result.exitCode, signal: null,
           output: tail, limitPatterns: run.limitPatterns ?? [], canceled: job.result.canceled, timedOut: job.result.timedOut })
-    const finished = repo.updateRun(this.db, updated.id, { status: runStatusForKind(classification.kind),
-      exitCode: job.result.exitCode, errorKind: classification.kind, errorMessage: classification.message, endedAt: nowIso() })
-    this.emit('finished', { run: finished, classification, tail } satisfies FinishedEvent)
+    this.complete(updated, classification, job.result.exitCode, tail)
   }
 
   recoverRemote(run: Run): void {

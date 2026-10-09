@@ -2,21 +2,18 @@ import { runExitPath } from '../appPaths.js'
 import type { Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
-import { clearExitFile, isProcessAlive, readExitCode, readLogTail } from '../platform/runProcess.js'
-import { attachSessionLog } from '../session/sessionAttach.js'
+import { isProcessAlive, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { recordExecutionState } from '../tasks/execution.js'
 import { ACTIVE_RUN_STATUSES } from '../tasks/status.js'
 import { nowIso } from '../util.js'
-import { runStatusForKind } from './errorClassifier.js'
 import { adapterFor } from '../agent-adapters/registry.js'
-import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
 import type { Run } from './types.js'
 const ADOPT_POLL_MS = 2000
 
 export class ExecutionRecovery {
   private polls = new Set<NodeJS.Timeout>()
-  constructor(private db: Db, private runner: Runner, private changed: () => void, private finished: (event: FinishedEvent) => void) { }
+  constructor(private db: Db, private runner: Runner, private changed: () => void) { }
 
 
   // -------------------------------------------------------------------------
@@ -107,21 +104,7 @@ export class ExecutionRecovery {
           timedOut: false,
           canceled: false
         })
-    clearExitFile(runExitPath(run.id))
-
-    repo.updateRun(this.db, run.id, {
-      status: runStatusForKind(classification.kind),
-      exitCode: code,
-      errorKind: classification.kind,
-      errorMessage: classification.message,
-      endedAt: nowIso()
-    })
-
-    this.finished({
-      run: attachSessionLog(this.db, repo.getRun(this.db, run.id)!),
-      classification,
-      tail
-    })
+    this.runner.complete(run, classification, code, tail)
   }
   stop(): void { for (const poll of this.polls) clearInterval(poll); this.polls.clear() }
 }

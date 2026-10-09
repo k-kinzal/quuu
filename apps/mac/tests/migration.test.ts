@@ -256,7 +256,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('40')
+    expect(version.value).toBe('41')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -324,7 +324,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('40')
+    expect(version.value).toBe('41')
     db.close()
   })
 
@@ -938,5 +938,23 @@ it('adds assistant persistence to an existing database without changing tasks', 
   upgraded.close()
   const reopened = openDatabase(path)
   expect(repo.assistantReads(reopened).get(taskId)).toBe('revision')
+  reopened.close()
+})
+
+it('adds per-run assistant decisions without changing old tasks and removes them with their thread', () => {
+  const old = openDatabase(path)
+  const project = makeProject(old, { name: 'existing', targetId: makeAgent(old, { name: 'Agent' }) })
+  const taskId = makeTask(old, project, 'existing task')
+  old.exec("DROP TABLE assistant_turns; UPDATE meta SET value = '40' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getAssistantTurn(upgraded, 'run')).toBeNull()
+  expect(repo.getTask(upgraded, taskId)?.title).toBe('existing task')
+  repo.saveAssistantTurn(upgraded, { taskId, runId: 'run', noReply: true, outcome: 'no-reply' })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.getAssistantTurn(reopened, 'run')).toMatchObject({ taskId, noReply: true, outcome: 'no-reply' })
+  repo.deleteTask(reopened, taskId)
+  expect(repo.getAssistantTurn(reopened, 'run')).toBeNull()
   reopened.close()
 })

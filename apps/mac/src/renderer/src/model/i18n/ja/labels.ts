@@ -46,6 +46,7 @@ export const labels: typeof enLabels = {
     'nonzero-exit': '異常終了',
     orphaned: 'プロセス消失',
     canceled: '中断',
+    'invalid-result': 'エージェントの結果を確認できません',
     'no-agent': 'エージェント未解決'
   },
   commitIdentityMode: {

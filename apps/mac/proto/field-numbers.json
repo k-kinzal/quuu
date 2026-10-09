@@ -6718,5 +6718,12 @@
   },
   "AssistantResetResponse": {
     "value": 1
-  }
+  },
+  "AssistantNoReplyRequestValue": {
+    "runId": 1
+  },
+  "AssistantNoReplyRequest": {
+    "value": 1
+  },
+  "AssistantNoReplyResponse": {}
 }

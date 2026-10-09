@@ -6,6 +6,7 @@ export const operationNames: string[] = [
   "assistant.setMemory",
   "assistant.reset",
   "assistant.send",
+  "assistant.noReply",
   "assistant.react",
   "assistant.markRead",
   "snapshot",

@@ -4,7 +4,7 @@ import { RecordSourceSchema, RunStatusSchema } from './tasks.js'
 // ---------------------------------------------------------------------------
 // Runs
 // ---------------------------------------------------------------------------
-export const RunErrorKindSchema = z.union([z.literal('limit'), z.literal('auth'), z.literal('timeout'), z.literal('spawn'), z.literal('nonzero-exit'), z.literal('orphaned'), z.literal('canceled'), z.literal('no-agent')])
+export const RunErrorKindSchema = z.union([z.literal('limit'), z.literal('auth'), z.literal('timeout'), z.literal('spawn'), z.literal('nonzero-exit'), z.literal('orphaned'), z.literal('canceled'), z.literal('no-agent'), z.literal('invalid-result')])
 export type RunErrorKind = z.infer<typeof RunErrorKindSchema>
 
 /** What this Run was launched for. */

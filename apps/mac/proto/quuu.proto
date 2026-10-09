@@ -250,6 +250,18 @@ message AssistantSendResponse {
   optional AssistantSendResponseValue value = 1;
 }
 
+message AssistantNoReplyRequestValue {
+  optional string runId = 1;
+}
+
+message AssistantNoReplyRequest {
+  optional AssistantNoReplyRequestValue value = 1;
+}
+
+message AssistantNoReplyResponse {
+
+}
+
 message AssistantReactRequestValue {
   optional string taskId = 1;
   optional string reaction = 2;
@@ -8837,6 +8849,7 @@ service Quuu {
   rpc AssistantSetMemory(AssistantSetMemoryRequest) returns (AssistantSetMemoryResponse);
   rpc AssistantReset(AssistantResetRequest) returns (AssistantResetResponse);
   rpc AssistantSend(AssistantSendRequest) returns (AssistantSendResponse);
+  rpc AssistantNoReply(AssistantNoReplyRequest) returns (AssistantNoReplyResponse);
   rpc AssistantReact(AssistantReactRequest) returns (AssistantReactResponse);
   rpc AssistantMarkRead(AssistantMarkReadRequest) returns (AssistantMarkReadResponse);
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);

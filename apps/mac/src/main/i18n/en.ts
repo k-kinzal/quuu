@@ -1,6 +1,9 @@
 /** Filled in by the main-process copy extraction; grouped by feature (menu, contextMenu, notification, reasons per feature). */
 export const en = {
   assistant: {
+    noReplyUnavailable: 'No reply can only be selected for the current running QuuuAI conversation turn.',
+    missingReply: 'The agent ended without a reply or an explicit no-reply decision.',
+    unconfirmedExit: 'The agent’s successful exit could not be confirmed; this cannot be treated as no reply.',
     "research": "Looking for a useful next task",
     "memoryTooLarge": "Keep shared memory within {{bytes}} UTF-8 bytes.",
     "memoryConflict": "Shared memory changed in another thread. Reload it before saving.",
@@ -131,6 +134,7 @@ export const en = {
     'nonzero-exit': 'Exited with an error',
     orphaned: 'Process disappeared',
     canceled: 'Canceled',
+    'invalid-result': 'Invalid agent result',
     'no-agent': 'No agent resolved'
   },
   commitIdentityMode: {
@@ -332,6 +336,7 @@ export const en = {
   },
 
   run: {
+    invalidResult: 'The agent result could not be verified. Check its log for details.',
     canceled: 'Canceled',
     timedOut: 'Timed out',
     limitReached: 'Limit reached',

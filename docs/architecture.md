@@ -286,3 +286,12 @@ completion notifications. A durable check record identifies its JSON result and 
 on restart. Validated proposals create visible chat threads. Positive reactions and task creation
 commit atomically through normal task operations; negative reactions and discussion remain in
 the proposal history. No automatic operation marks work done.
+
+Conversation turns register their run identity in `assistant_turns`; `assistant.noReply`
+records an explicit per-attempt decision. The runner validates opted-in successful results
+against the durable session index before committing completion or releasing capacity. Local,
+remote and recovered exits use the same path, and the exit receipt survives until settlement.
+A unique turn marker in the injected prompt prevents previous replies from satisfying a new
+turn, even in timestamp-free logs. Missing or unverifiable results fail separately from
+intentional silence. Assistant read revisions follow reply content rather than run or index
+status, so silent turns neither re-notify nor consume earlier unread replies.

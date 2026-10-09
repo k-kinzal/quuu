@@ -1,5 +1,6 @@
 import { RunnerOperations } from './runners/operations.js'
 import { AssistantOperations } from './assistant/operations.js'
+import { validateResponse } from './assistant/response.js'
 import { HookOperations } from './hooks/operations.js'
 import { EventEmitter } from 'node:events'
 import { dirname } from 'node:path'
@@ -115,7 +116,7 @@ export class QuuuApp extends EventEmitter {
     this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast), { beforeComplete: task => this.hooks.beforeComplete(task), beforeDelete: id => this.hooks.beforeDelete(id) })
     this.assistant = new AssistantOperations(this.db, dirname(dbPath && dbPath !== ':memory:' ? dbPath : defaultDbPath()), this.tasks, () => this.changed(), id => { this.tasks.cancelTask(id) }, payload => this.notify(payload))
     this.scheduler.setIdleWork(() => this.assistant.prepareCheck())
-    this.runner.setPromptContext((project, task) => project.builtIn ? this.assistant.promptContext(task.id) : '')
+    this.runner.setPromptContext((project, task, runId) => project.builtIn ? this.assistant.promptContext(task.id, runId) : '')
     this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), id => this.tasks.deleteTask(id))
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
@@ -147,6 +148,7 @@ export class QuuuApp extends EventEmitter {
      * the terminal read what was derived; none of them opens a session log.
      */
     this.sessions = new SessionIndex(this.db, [reviewEvidenceDerivation, workplaceDerivation])
+    this.runner.setResultValidator(run => validateResponse(this.db, this.sessions, run))
     this.projections = new SessionProjections(this.db, this.sessions)
     this.sessions.on('indexed', (_key: string, taskId: string) => {
       this.reviews.requestRefresh(taskId)
@@ -203,7 +205,11 @@ export class QuuuApp extends EventEmitter {
       this.emit('status', this.scheduler.status())
     })
     this.scheduler.on('notify', (t: ToastPayload) => {
-      if (!t.taskId || !repo.isAssistantCheck(this.db, t.taskId)) this.notify(t)
+      if (t.taskId && repo.isAssistantCheck(this.db, t.taskId)) return
+      const runId = t.taskId ? repo.getTask(this.db, t.taskId)?.currentRunId : null
+      if (t.notificationKind === 'review' && runId && repo.getRun(this.db, runId)?.status === 'succeeded' &&
+        repo.getAssistantTurn(this.db, runId)?.outcome === 'no-reply') return
+      this.notify(t)
     })
     this.projectReports.on('notify', (t: ToastPayload) => this.notify(t))
     this.reports.on('notify', (t: ToastPayload) => this.notify(t))

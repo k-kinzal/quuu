@@ -22,9 +22,13 @@ import type { ReportStatus, StoredReport, StoredProjectReport } from '../report/
 import type { ObservedCommit, ReviewEvidence, ReviewSnapshot, VerifiedPullRequest } from '../review/types.js'
 import { b2i, i2b, newId, nowIso, parseJson } from '../util.js'
 import type { Db } from './database.js'
-import type { AssistantCheck, AssistantProposal } from '../assistant/types.js'
+import type { AssistantCheck, AssistantProposal, AssistantTurn } from '../assistant/types.js'
+import { createHash } from 'node:crypto'
 
 type Row = Record<string, unknown>
+
+// Match String.trim(), so whitespace-only assistant output cannot become a reply or unread mark.
+const ASSISTANT_TEXT = "TRIM(json_extract(block.value, '$.text'), char(9,10,11,12,13,32,160,5760,8192,8193,8194,8195,8196,8197,8198,8199,8200,8201,8202,8232,8233,8239,8287,12288,65279))"
 
 export interface SessionIndexRecord {
   stamp: string
@@ -2205,6 +2209,30 @@ export function listRemoteJobs(db: Db, runnerId?: string): RemoteJob[] {
 export function isAssistantCheck(db: Db, taskId: string): boolean {
   return Boolean(db.prepare('SELECT 1 FROM assistant_checks WHERE task_id = ?').get(taskId))
 }
+export function getAssistantTurn(db: Db, runId: string): AssistantTurn | null {
+  const row = db.prepare('SELECT data FROM assistant_turns WHERE run_id = ?').get(runId) as Row | undefined
+  return row ? JSON.parse(s(row.data)) as AssistantTurn : null
+}
+export function saveAssistantTurn(db: Db, turn: AssistantTurn): void {
+  db.prepare('INSERT INTO assistant_turns (run_id, task_id, data) VALUES (?, ?, ?) ON CONFLICT(run_id) DO UPDATE SET data=excluded.data')
+    .run(turn.runId, turn.taskId, JSON.stringify(turn))
+}
+
+/** A unique prompt marker separates repeated acknowledgements even in logs without timestamps. */
+export function assistantTurnHasReply(db: Db, key: string, generation: string, marker: string): boolean {
+  const anchor = db.prepare(`SELECT MAX(ordinal) AS ordinal FROM session_messages
+    WHERE log_key = ? AND generation = ? AND json_extract(message, '$.role') = 'user'
+      AND COALESCE(json_extract(message, '$.isSidechain'), 0) = 0
+      AND EXISTS (SELECT 1 FROM json_each(message, '$.blocks') block
+        WHERE json_extract(block.value, '$.kind') = 'text' AND INSTR(json_extract(block.value, '$.text'), ?) > 0)`)
+    .get(key, generation, marker) as Row
+  if (anchor.ordinal === null) return false
+  return Boolean(db.prepare(`SELECT 1 FROM session_messages WHERE log_key = ? AND generation = ? AND ordinal > ?
+    AND json_extract(message, '$.role') = 'assistant' AND COALESCE(json_extract(message, '$.isSidechain'), 0) = 0
+    AND EXISTS (SELECT 1 FROM json_each(message, '$.blocks') block WHERE
+      (json_extract(block.value, '$.kind') = 'text' AND LENGTH(${ASSISTANT_TEXT}) > 0)
+      OR json_extract(block.value, '$.kind') = 'image') LIMIT 1`).get(key, generation, n(anchor.ordinal)))
+}
 export function listAssistantChecks(db: Db): AssistantCheck[] {
   return (db.prepare('SELECT data FROM assistant_checks ORDER BY rowid DESC').all() as Row[]).map(row => JSON.parse(s(row.data)) as AssistantCheck)
 }
@@ -2235,14 +2263,16 @@ export function forgetAssistantSessions(db: Db, taskIds: string[]): void {
 }
 
 /** Preview only prose, without moving tool payloads or images into global app snapshots. */
-export function assistantThreadSummary(db: Db, key: string, generation: string): { preview: string; replies: number } {
+export function assistantThreadSummary(db: Db, key: string, generation: string): { preview: string; replies: number; revision: string } {
   const filter = `log_key = ? AND generation = ? AND json_extract(message, '$.role') = 'assistant'
     AND COALESCE(json_extract(message, '$.isSidechain'), 0) = 0
     AND EXISTS (SELECT 1 FROM json_each(message, '$.blocks') block
-      WHERE json_extract(block.value, '$.kind') = 'text' AND LENGTH(TRIM(json_extract(block.value, '$.text'))) > 0)`
+      WHERE json_extract(block.value, '$.kind') = 'text' AND LENGTH(${ASSISTANT_TEXT}) > 0)`
   const count = db.prepare(`SELECT COUNT(*) AS total FROM session_messages WHERE ${filter}`).get(key, generation) as Row
-  const latest = db.prepare(`SELECT SUBSTR(GROUP_CONCAT(json_extract(block.value, '$.text'), char(10)), 1, 1200) AS preview
+  const latest = db.prepare(`SELECT json_extract(latest.message, '$.id') AS id, GROUP_CONCAT(json_extract(block.value, '$.text'), char(10)) AS preview
     FROM (SELECT message FROM session_messages WHERE ${filter} ORDER BY ordinal DESC LIMIT 1) latest,
       json_each(latest.message, '$.blocks') block WHERE json_extract(block.value, '$.kind') = 'text'`).get(key, generation) as Row
-  return { preview: sn(latest.preview) ?? '', replies: n(count.total) }
+  const preview = sn(latest.preview) ?? ''
+  const revision = n(count.total) ? createHash('sha256').update(JSON.stringify([key, count.total, latest.id, preview])).digest('hex') : ''
+  return { preview: preview.slice(0, 1200), replies: n(count.total), revision }
 }

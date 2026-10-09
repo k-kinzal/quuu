@@ -45,6 +45,7 @@ export const labels = {
     'nonzero-exit': 'Exited with an error',
     orphaned: 'Process disappeared',
     canceled: 'Canceled',
+    'invalid-result': 'Invalid agent result',
     'no-agent': 'No agent resolved'
   },
   commitIdentityMode: {
