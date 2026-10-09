@@ -194,6 +194,11 @@ Check dark, light, narrow widths, many tabs, and touch density in
 
 ## Markdown and diagrams
 
+Within conversations, use `MessageAction` for named text-and-icon operations and
+`MessageStatus` for neighboring state text. They share a supporting type scale and
+leave emphasis with the message. `MessageAttachment.actions` keeps these available
+while its supporting detail is collapsed; reactions remain in `MessageActions`.
+
 Conversation content (Markdown, code, diagrams) is **left to the upstream
 implementations**. The corners of the notation (nested lists, reference links,
 footnotes, code inside tables, per-language grammar) are finely specified, and a

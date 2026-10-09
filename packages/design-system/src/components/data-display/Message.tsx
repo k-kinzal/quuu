@@ -3,6 +3,7 @@ import { styled } from '@mui/material/styles'
 import { blockProps, canHover } from '../../theme/styled.js'
 import { focusRing } from '../../theme/controls.js'
 import { lineHeight } from '../../theme/tokens.js'
+import { Button } from '../inputs/Button.js'
 
 /** A shared text column keeps messages and their input on the same reading axis. */
 export const MessageColumn = styled('div')(({ theme }) => ({
@@ -96,6 +97,47 @@ export const MessageActions = styled('div')(({ theme }) => ({
   minWidth: 0
 }))
 
+const Action = styled(Button)(({ theme }) => ({
+  // Conversation actions sit on the reading axis, without a form button's inset or fill.
+  paddingInline: 0,
+  height: 'auto',
+  minHeight: theme.density.control.sm,
+  whiteSpace: 'normal',
+  textAlign: 'start',
+  justifyContent: 'flex-start',
+  flexShrink: 1,
+  color: theme.palette.text.primary,
+  background: 'transparent',
+  borderColor: 'transparent',
+  [canHover]: { '&:hover': { background: 'transparent', color: theme.palette.text.primary, textDecoration: 'underline' } },
+  '&:active': { background: 'transparent', color: theme.palette.text.primary },
+  '&.Mui-focusVisible': focusRing(theme, 'inside'),
+  '& .MuiButton-loadingIndicator': { left: 0 },
+  '&.Mui-disabled': { background: 'transparent', borderColor: 'transparent' }
+}))
+
+/** A named conversation action; the host owns its operation and loading copy. */
+export function MessageAction({ children, icon, loading = false, disabled, onClick }: {
+  children: string
+  icon?: ReactNode
+  loading?: boolean
+  disabled?: boolean
+  onClick?: () => void
+}): JSX.Element {
+  return <Action variant="ghost" color="neutral" size="sm" startIcon={icon} loading={loading}
+    loadingPosition="start" disabled={disabled} onClick={onClick}>{children}</Action>
+}
+
+/** Status and its neighboring action share the conversation's supporting type scale. */
+export const MessageStatus = styled('span')(({ theme }) => ({
+  ...theme.typography.body2,
+  color: theme.palette.text.secondary,
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: theme.spacing(1),
+  '& > svg': { flexShrink: 0 }
+}))
+
 /** A channel excerpt leaves full Markdown, tables and code to its opened conversation. */
 export const MessageExcerpt = styled('p', { shouldForwardProp: blockProps('primary') })<{ primary?: boolean }>(({ theme, primary }) => ({
   margin: 0,
@@ -133,7 +175,7 @@ const AttachmentLabel = styled('span')(({ theme }) => ({
   gap: theme.spacing(0.5),
   minWidth: 0,
   flex: 1,
-  ...theme.typography.body2,
+  ...theme.typography.body1,
   lineHeight: lineHeight.read,
   fontWeight: theme.typography.fontWeightMedium,
   overflowWrap: 'anywhere'
@@ -154,12 +196,11 @@ const AttachmentBody = styled('div')(({ theme }) => ({
 }))
 
 const AttachmentActions = styled('div')(({ theme }) => ({
-  borderTop: `1px solid ${theme.palette.border.subtle}`,
-  padding: theme.spacing(2, 3),
+  padding: theme.spacing(0, 3, 2),
   display: 'flex',
   flexWrap: 'wrap',
   alignItems: 'center',
-  gap: theme.spacing(2),
+  gap: theme.spacing(3),
   minWidth: 0
 }))
 

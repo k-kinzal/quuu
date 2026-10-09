@@ -1,5 +1,19 @@
 # Call-site feedback and decisions
 
+## 2026-10-09 Keep attachment actions in the conversation's visual language
+
+- Finding: a filled primary form button overpowered the conversation, and mixing
+  caption-sized completion text with a larger navigation button made the footer uneven.
+- Accepted: `MessageAction` provides a neutral text-and-icon action using the existing
+  button's keyboard, disabled and named loading behavior. `MessageStatus` shares its
+  supporting type scale. Hover underlines the action; keyboard focus remains visible.
+- Attachments use the message body size for their title. Their persistent actions sit
+  on the same reading axis without a separate bordered toolbar. Labels, icons, creation
+  state and navigation remain with the caller; no app-side display overrides.
+- Verification: Messages pending/loading/created/retry stories and ControlQuality in
+  both themes/densities, Chromium typography/focus/keyboard contracts, and the isolated
+  app's proposal, retry and navigation flow.
+
 ## 2026-10-09 Attachment actions independent of message reactions
 
 - Finding: proposal creation was hidden behind a reaction. A named action must stay

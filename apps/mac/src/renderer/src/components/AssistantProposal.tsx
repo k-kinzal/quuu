@@ -1,11 +1,11 @@
-import { Alert, Button, Markdown, MessageActions, MessageAttachment, ReactionButton, Text } from '@design-system/react'
+import { Alert, Markdown, MessageAction, MessageActions, MessageAttachment, MessageStatus, ReactionButton, Text } from '@design-system/react'
 import { useIsMutating, useMutation } from '@tanstack/react-query'
 import type { AssistantProposal as Proposal } from '../../../api/schemas/assistant.js'
 import { t } from '../model/i18n/index.js'
 import { failureReason } from '../model/operationFailure.js'
 import { queryClient } from '../state/queryClient.js'
 import { useStore } from '../state/store.js'
-import { ChevronDown, ICON, Plus, ThumbsDown, ThumbsUp, iconProps } from '../ui/icons.js'
+import { Check, ChevronDown, ChevronRight, ICON, Plus, ThumbsDown, ThumbsUp, iconProps } from '../ui/icons.js'
 import { MessageBody } from './MessageBody.js'
 
 /** A suggestion is an utterance with an attached task, with reactions on that same utterance. */
@@ -27,12 +27,12 @@ export function AssistantProposal({ proposal, replies }: { proposal: Proposal; r
     <MessageAttachment title={proposal.title} meta={project?.name ?? proposal.projectId}
       caret={<ChevronDown size={ICON.sm} {...iconProps} />}
       actions={created ? <>
-        <Text size="xs" tone="secondary">{t('quuuAI.created')}</Text>
-        {executionTaskId && <Button variant="ghost" size="sm" onClick={() => { void openTask(executionTaskId) }}>{t('quuuAI.viewTask')}</Button>}
-      </> : <Button variant="solid" color="primary" size="sm" disabled={creating} loading={creating} loadingPosition="start"
-        startIcon={<Plus size={ICON.sm} {...iconProps} />} onClick={() => create.mutate()}>
+        <MessageStatus><Check size={ICON.sm} {...iconProps} aria-hidden="true" />{t('quuuAI.created')}</MessageStatus>
+        {executionTaskId && <MessageAction icon={<ChevronRight size={ICON.sm} {...iconProps} aria-hidden="true" />} onClick={() => { void openTask(executionTaskId) }}>{t('quuuAI.viewTask')}</MessageAction>}
+      </> : <MessageAction loading={creating}
+        icon={<Plus size={ICON.sm} {...iconProps} aria-hidden="true" />} onClick={() => create.mutate()}>
         {t(creating ? 'quuuAI.creating' : create.isError ? 'quuuAI.retryCreate' : 'quuuAI.createTask')}
-      </Button>}>
+      </MessageAction>}>
       <Markdown>{proposal.prompt}</Markdown>
       <Text size="xs" tone="tertiary">{t('quuuAI.confidence', { value: proposal.confidence })}</Text>
     </MessageAttachment>

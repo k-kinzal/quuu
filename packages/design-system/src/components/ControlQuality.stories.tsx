@@ -11,6 +11,7 @@ import { Checkbox, Switch, SegmentedControl } from './inputs/Toggle.js'
 import { ComposerBox, ComposerInput } from './inputs/Composer.js'
 import { ContentTabs } from './navigation/ContentTabs.js'
 import { Row, Column } from './layout/Stack.js'
+import { MessageAction, MessageStatus } from './data-display/Message.js'
 import { Text } from './data-display/Text.js'
 
 const meta: Meta = { title: 'Patterns/ControlQuality' }
@@ -37,6 +38,14 @@ export function ControlSpecimen(): JSX.Element {
       <div data-control="reaction-selected"><ReactionButton title="Liked message" icon={<ThumbsUp />} selected /></div>
       <div data-control="reaction-disabled"><ReactionButton title="Unavailable reaction" icon={<ThumbsUp />} disabled /></div>
       <div data-control="reaction-loading"><ReactionButton title="Saving reaction" icon={<ThumbsUp />} loading /></div>
+    </Row>
+    <Text>Conversation actions — quiet, readable, and aligned with status</Text>
+    <Row gap="md" wrap>
+      <div data-control="message-action"><MessageAction icon={<Plus />}>Add to list</MessageAction></div>
+      <div data-control="message-disabled"><MessageAction icon={<Plus />} disabled>Add to list</MessageAction></div>
+      <div data-control="message-loading"><MessageAction icon={<Plus />} loading>Adding to list…</MessageAction></div>
+      <div data-control="message-status"><MessageStatus>Added to list</MessageStatus></div>
+      <div data-control="message-open"><MessageAction>Open list</MessageAction></div>
     </Row>
     <Text>Fields — one frame for entry and selection</Text>
     <Row gap="md" wrap>

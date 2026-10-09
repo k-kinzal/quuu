@@ -27,7 +27,8 @@ void app.whenReady().then(async () => {
       if (event.type.startsWith('key')) {
         await window.webContents.debugger.sendCommand('Input.dispatchKeyEvent', {
           type: event.type, key: event.keyCode, code: event.keyCode,
-          windowsVirtualKeyCode: { Tab: 9, Escape: 27, Home: 36 }[event.keyCode]
+          ...(event.keyCode === 'Enter' && event.type === 'keyDown' ? { text: '\r' } : {}),
+          windowsVirtualKeyCode: { Tab: 9, Escape: 27, Home: 36, Enter: 13 }[event.keyCode]
         })
       } else {
         await window.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
@@ -170,6 +171,22 @@ void app.whenReady().then(async () => {
       })()`)
       assert.equal(action.visible, true, 'attachment actions remain visible while details are collapsed')
       assert.equal(action.inDisclosure, false, 'an action cannot toggle the disclosure')
+      // The attachment action is also usable without opening its supporting detail.
+      await window.webContents.executeJavaScript(`(() => {
+        const el = [...document.querySelectorAll('[data-conversation-thread] button')].find(el => el.textContent === 'Add to list')
+        el.focus()
+      })()`)
+      await input({ type: 'keyDown', keyCode: 'Enter' })
+      await input({ type: 'keyUp', keyCode: 'Enter' })
+      await waitFor(`Boolean([...document.querySelectorAll('[data-conversation-thread] button')].find(el => el.textContent === 'Open list'))`, 'keyboard activation exposes the completion action')
+      const completed = await window.webContents.executeJavaScript(`(() => {
+        const action = [...document.querySelectorAll('[data-conversation-thread] button')].find(el => el.textContent === 'Open list')
+        const status = action.previousElementSibling
+        return { actionSize: getComputedStyle(action).fontSize, statusSize: getComputedStyle(status).fontSize,
+          open: document.querySelector('[data-conversation-thread] details').open }
+      })()`)
+      assert.equal(completed.actionSize, completed.statusSize, 'completed status and navigation share a type scale')
+      assert.equal(completed.open, false, 'activation leaves the disclosure collapsed')
       const summary = await window.webContents.executeJavaScript(`(() => {
         const el = document.querySelector('[data-conversation-thread] summary')
         const bounds = el.getBoundingClientRect()

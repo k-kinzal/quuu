@@ -99,6 +99,15 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
   const reactionDeadline = performance.now() + 2000
   while (getComputedStyle(element('reaction', 'button')).color !== getComputedStyle(selectedReaction).color && performance.now() < reactionDeadline) await frame()
   equal(getComputedStyle(element('reaction', 'button')).color, getComputedStyle(selectedReaction).color, 'selected reactions use the same palette color')
+  sameGeometry(['message-action', 'message-disabled', 'message-loading', 'message-open', 'button'])
+  for (const name of ['message-action', 'message-disabled', 'message-loading', 'message-open']) {
+    equal(getComputedStyle(element(name)).backgroundColor, 'rgba(0, 0, 0, 0)', `${name}: conversation actions have no fill`)
+    equal(getComputedStyle(element(name)).fontSize, getComputedStyle(element('message-status')).fontSize, `${name}: action and status type sizes agree`)
+  }
+  equal((element('message-loading') as HTMLButtonElement).disabled, true, 'pending conversation actions cannot repeat')
+  const messageProgress = element('message-loading', '[role="progressbar"]')
+  equal(messageProgress.getAttribute('aria-labelledby'), element('message-loading').id, 'conversation progress is named')
+  equal(messageProgress.getBoundingClientRect().x, element('message-loading', '.MuiButton-startIcon').getBoundingClientRect().x, 'progress replaces the icon on the same reading axis')
   const height = element('search').getBoundingClientRect().height
   equal(height, density === 'compact' ? 22 : 36, 'filter density')
   if (element('textarea').getBoundingClientRect().height <= element('text').getBoundingClientRect().height) throw new Error('Multiline field was collapsed to single-line height')
@@ -115,7 +124,7 @@ async function check(scheme: ColorScheme, density: Density): Promise<string> {
       equal(style[prop[key]], ring[key], () => `${name}: focus ${key} (${JSON.stringify(focusState(element(name, selector), element(name)))})`)
     }
   }
-  for (const [name, selector] of [['icon', 'button'], ['reaction', 'button'], ['tabs', '[role="tab"]']] as const) {
+  for (const [name, selector] of [['icon', 'button'], ['reaction', 'button'], ['tabs', '[role="tab"]'], ['message-action'], ['message-open']] as const) {
     const style = await focus(name, selector, { outlineColor: ring.color, outlineWidth: ring.width, outlineOffset: '-2px' }, selector)
     equal(style.outlineColor, ring.color, `${name}: focus color`)
     equal(style.outlineWidth, ring.width, `${name}: focus width`)

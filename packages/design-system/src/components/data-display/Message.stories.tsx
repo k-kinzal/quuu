@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
-import { ArrowLeft, Bot, ChevronDown, MessageSquareText, Send, ThumbsDown, ThumbsUp, User } from 'lucide-react'
+import { ArrowLeft, Bot, Check, ChevronDown, ChevronRight, MessageSquareText, Plus, Send, ThumbsDown, ThumbsUp, User } from 'lucide-react'
 import { ThemeProvider } from '../../theme/ThemeProvider.js'
 import { iconDefaults, iconSize } from '../../theme/tokens.js'
 import { ConversationWorkspace } from '../layout/ConversationWorkspace.js'
@@ -9,15 +9,15 @@ import { Panel, PanelHeader, PanelHeading } from '../layout/Panel.js'
 import { Composer, ComposerActions, ComposerBox, ComposerInput, ComposerInputRow } from '../inputs/Composer.js'
 import { Button, IconButton } from '../inputs/Button.js'
 import { ReactionButton } from '../inputs/ReactionButton.js'
-import { Message, MessageActions, MessageAttachment, MessageColumn, MessageExcerpt, MessageGroup } from './Message.js'
+import { Message, MessageAction, MessageActions, MessageAttachment, MessageColumn, MessageExcerpt, MessageGroup, MessageStatus } from './Message.js'
 import { Markdown } from './Markdown.js'
 
 export default { title: 'Data display/Messages' } satisfies Meta
 
-export function MessageSpecimen({ width, threadInitiallyOpen = false }: { width?: number; threadInitiallyOpen?: boolean }): JSX.Element {
+export function MessageSpecimen({ width, threadInitiallyOpen = false, state = 'pending' }: { width?: number; threadInitiallyOpen?: boolean; state?: 'pending' | 'creating' | 'created' | 'failed' }): JSX.Element {
   const [thread, setThread] = useState(threadInitiallyOpen)
   const [reaction, setReaction] = useState<'positive' | 'negative' | null>(null)
-  const [added, setAdded] = useState(false)
+  const [added, setAdded] = useState(state === 'created')
   const [message, setMessage] = useState('')
   const icon = { size: iconSize.md, ...iconDefaults }
   const reason = '前の会話で挙がった変更をまとめました。まず通知から続きを開けるようにすると、作業を探し直す手間が減りそうです。'
@@ -25,7 +25,10 @@ export function MessageSpecimen({ width, threadInitiallyOpen = false }: { width?
     <ComposerInput rows={1} aria-label={reply ? 'Reply' : 'Message'} placeholder={reply ? 'スレッドに返信…' : 'メッセージ…'} value={message} onChange={e => setMessage(e.target.value)} />
     <ComposerActions><IconButton title="Send message" icon={<Send {...icon} />} disabled={!message.trim()} /></ComposerActions>
   </ComposerInputRow></ComposerBox></MessageColumn></Composer>
-  const attachment = <MessageAttachment title="通知から会話の続きに戻れるようにする" meta="Desktop app" caret={<ChevronDown {...icon} />} actions={<Button size="sm" variant="solid" color="primary" disabled={added} onClick={() => setAdded(true)}>{added ? 'Added to list' : 'Add to list'}</Button>}>
+  const attachment = <MessageAttachment title="通知から会話の続きに戻れるようにする" meta="Desktop app" caret={<ChevronDown {...icon} />} actions={added ? <>
+    <MessageStatus><Check {...icon} aria-hidden="true" />Added to list</MessageStatus>
+    <MessageAction icon={<ChevronRight {...icon} aria-hidden="true" />} onClick={() => setThread(true)}>Open list</MessageAction>
+  </> : <MessageAction icon={<Plus {...icon} aria-hidden="true" />} loading={state === 'creating'} onClick={() => setAdded(true)}>{state === 'creating' ? 'Adding to list…' : state === 'failed' ? 'Retry adding to list' : 'Add to list'}</MessageAction>}>
     <Markdown>{'起動時に通知の参照先を復元し、会話の続きを開きます。\n\n- 再起動後の遷移を確認\n- すでに開いている会話の位置を保持'}</Markdown>
   </MessageAttachment>
   return <div data-message-workspace style={{ width: width ?? '100%', height: 620, display: 'flex' }}>
@@ -73,3 +76,7 @@ export const Light: StoryObj = { render: () => <ThemeProvider colorScheme="light
 export const Thread: StoryObj = { render: () => <MessageSpecimen threadInitiallyOpen /> }
 export const Narrow: StoryObj = { render: () => <MessageSpecimen width={360} threadInitiallyOpen /> }
 export const Comfortable: StoryObj = { render: () => <ThemeProvider density="comfortable"><MessageSpecimen /></ThemeProvider> }
+
+export const Creating: StoryObj = { render: () => <MessageSpecimen state="creating" /> }
+export const Created: StoryObj = { render: () => <MessageSpecimen state="created" /> }
+export const Retry: StoryObj = { render: () => <MessageSpecimen state="failed" /> }
