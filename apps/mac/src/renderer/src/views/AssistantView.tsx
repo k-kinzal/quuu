@@ -12,6 +12,7 @@ import { AssistantProposal } from '../components/AssistantProposal.js'
 import { Chat } from '../components/Chat.js'
 import { Composer } from '../components/Composer.js'
 import { focusAny, pane } from '../interaction/focus.js'
+import { usePromptFiles } from '../interaction/promptFiles.js'
 import { shortcut } from '../interaction/shortcut.js'
 import { isSubmitKey } from '../model/composer.js'
 import { conversationExcerpt } from '../model/conversationExcerpt.js'
@@ -134,18 +135,21 @@ function NewMessage({ secondary }: { secondary: boolean }): JSX.Element {
     onSuccess: (_task, message) => {
       if (useStore.getState().drafts['assistant-channel'] === message) setDraft('assistant-channel', '')
     } }, queryClient)
+  const files = usePromptFiles({ value: text, onChange: value => setDraft('assistant-channel', value),
+    inputRef: ref, scope: 'assistant-channel', disabled: send.isPending })
   useLayoutEffect(() => resizeInput(ref.current, 'message'), [text, secondary])
-  const submit = (): void => { if (text.trim() && !send.isPending) send.mutate(text) }
+  const submit = (): void => { if (text.trim() && !send.isPending && !files.isBusy()) send.mutate(text) }
   return <InputShell {...(!secondary ? pane('composer') : {})} aria-label={t('quuuAI.newMessage')}>
-    <MessageColumn><ComposerBox busy={send.isPending}>
+    <MessageColumn><ComposerBox busy={send.isPending || files.busy}>
       <ComposerInputRow>
-        <ComposerInput ref={ref} rows={1} value={text} data-pane-focus={!secondary ? '' : undefined} aria-label={t('quuuAI.newMessage')} placeholder={t('quuuAI.placeholder')}
+        <ComposerInput {...files.inputProps} ref={ref} rows={1} value={text} disabled={send.isPending} data-pane-focus={!secondary ? '' : undefined} aria-label={t('quuuAI.newMessage')} placeholder={t('quuuAI.placeholder')}
           onChange={event => setDraft('assistant-channel', event.target.value)}
           onKeyDown={event => { if (isSubmitKey(event)) { event.preventDefault(); submit() } }} />
         <ComposerActions><IconButton title={`${t('quuuAI.send')} (${shortcut('Cmd+Enter')})`} aria-label={t('quuuAI.send')}
-          color={secondary ? 'default' : 'primary'} disabled={!text.trim() || send.isPending} loading={send.isPending}
+          color={secondary ? 'default' : 'primary'} disabled={!text.trim() || send.isPending || files.busy} loading={send.isPending}
           onClick={submit} icon={<Send size={ICON.md} {...iconProps} />} /></ComposerActions>
       </ComposerInputRow>
+      {files.error && <Alert title={t('promptFiles.failed')}>{failureReason(files.error)}</Alert>}
       {send.error && <Alert>{failureReason(send.error)}</Alert>}
     </ComposerBox></MessageColumn>
   </InputShell>

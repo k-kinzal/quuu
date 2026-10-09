@@ -32,12 +32,15 @@ const created = vi.fn<() => Promise<AssistantProposal>>()
 const revealed = vi.fn()
 const opened = vi.fn()
 const read = vi.fn()
+const saveFiles = vi.fn<(files: { name: string; data: string }[]) => Promise<string[]>>()
 beforeEach(() => {
   window.matchMedia = query => ({ matches: false, media: query, onchange: null, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent: () => false })
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} unobserve() {} })
   vi.stubGlobal('IntersectionObserver', class { observe() {} disconnect() {} })
   sent.mockReset(); reacted.mockReset(); opened.mockReset(); read.mockReset(); created.mockReset(); revealed.mockReset()
   created.mockResolvedValue({ ...proposal, status: 'accepted', executionTaskId: 'execution' })
+  saveFiles.mockReset().mockResolvedValue(['/tmp/staged/image.png'])
+  window.quuuFiles = { getPathForFile: () => '' }
   useStore.setState({ snapshot, section: { kind: 'quuuAI' }, cursorTaskId: null, detailOpen: false, drafts: {}, openTask: opened, revealTask: revealed })
   const os = implement(contract)
   window.quuu = createRouterClient({ assistant: {
@@ -55,7 +58,7 @@ beforeEach(() => {
       return result
     }),
     markRead: os.assistant.markRead.handler(({ input }) => { read(input) }),
-  } }) as typeof window.quuu
+  }, system: { savePromptFiles: os.system.savePromptFiles.handler(({ input }) => saveFiles(input)) } }) as typeof window.quuu
 })
 afterEach(() => { cleanup(); queryClient.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals() })
 function updateProposal(next: AssistantProposal): void {
@@ -104,6 +107,50 @@ it('marks an open thread read on focus even when its channel entry is outside th
   act(() => useStore.setState({ snapshot: { ...snapshot,
     assistant: { ...snapshot.assistant!, threads: [{ ...offscreen, revision: '2' }] } } }))
   await waitFor(() => expect(read).toHaveBeenCalledWith({ taskId: 'suggestion', revision: '2' }))
+})
+
+it.each(['drop', 'paste'] as const)('waits for QuuuAI file %s to finish before sending and attaches it only once', async transfer => {
+  let finish!: (paths: string[]) => void
+  saveFiles.mockReturnValueOnce(new Promise(resolve => { finish = resolve }))
+  show()
+  const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: t('quuuAI.newMessage') })
+  fireEvent.change(input, { target: { value: 'Inspect this image' } })
+  input.setSelectionRange(input.value.length, input.value.length)
+  const files = [new File(['image bytes'], 'image.png', { type: 'image/png' })]
+  const attach = (): boolean => transfer === 'drop'
+    ? fireEvent.drop(input, { dataTransfer: { files, types: ['Files'] } })
+    : fireEvent.paste(input, { clipboardData: { files } })
+  expect(attach()).toBe(false)
+  fireEvent.keyDown(input, { key: 'Enter', metaKey: true })
+  expect(sent).not.toHaveBeenCalled()
+  await waitFor(() => expect(saveFiles).toHaveBeenCalledTimes(1))
+  expect(input.readOnly).toBe(true)
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.send') }).disabled).toBe(true)
+  attach()
+  expect(saveFiles).toHaveBeenCalledTimes(1)
+  act(() => { finish(['/tmp/staged/image.png']) })
+  await waitFor(() => expect(input.value).toBe('Inspect this image /tmp/staged/image.png '))
+  await waitFor(() => expect(input.readOnly).toBe(false))
+  fireEvent.keyDown(input, { key: 'Enter', metaKey: true })
+  await waitFor(() => expect(sent).toHaveBeenCalledWith('Inspect this image /tmp/staged/image.png'))
+  expect(sent).toHaveBeenCalledTimes(1)
+})
+
+it('keeps the QuuuAI draft on attachment failure and leaves text-only transfers to the browser', async () => {
+  vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  saveFiles.mockRejectedValueOnce(new Error('Cannot read attachment'))
+  show()
+  const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: t('quuuAI.newMessage') })
+  fireEvent.change(input, { target: { value: 'Keep the request' } })
+  expect(fireEvent.paste(input, { clipboardData: { files: [] } })).toBe(true)
+  expect(fireEvent.dragOver(input, { dataTransfer: { types: ['text/plain'] } })).toBe(true)
+  expect(fireEvent.drop(input, { dataTransfer: { files: [] } })).toBe(true)
+  fireEvent.drop(input, { dataTransfer: { files: [new File(['x'], 'unknown.extension')] } })
+  expect(await screen.findByText(t('promptFiles.failed'))).toBeTruthy()
+  expect(input.value).toBe('Keep the request')
+  expect(input.readOnly).toBe(false)
+  fireEvent.click(screen.getByRole('button', { name: t('quuuAI.send') }))
+  await waitFor(() => expect(sent).toHaveBeenCalledWith('Keep the request'))
 })
 
 it.each(['pending', 'accepted'] as const)('changes and removes feedback while %s without creating a task', async status => {

@@ -12,6 +12,8 @@ import { tmpdir } from 'node:os'
 import { makeAgent, occupy } from './helpers.js'
 import * as repo from '../src/main/db/repo.js'
 import { Composer } from '../src/renderer/src/components/Composer.js'
+import { AssistantView } from '../src/renderer/src/views/AssistantView.js'
+import { t } from '../src/renderer/src/model/i18n/index.js'
 import { MessageChannel } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
@@ -502,6 +504,60 @@ describe('one prompt interface from creation to follow-up', () => {
 })
 
 describe('file transfer in a prompt -> contract-based IPC -> disk and task persistence', () => {
+  it('keeps QuuuAI drop references through snapshots and delivers initial and follow-up instructions to the agent', async () => {
+    vi.stubGlobal('IntersectionObserver', class { observe(): void { } disconnect(): void { } })
+    const project = app.projects.ensureBuiltIn(fixtureDirectory)
+    const agentId = makeAgent(app.db, { name: 'Attachment fixture', logAdapter: 'stdout', resumeArgsTemplate: ['{{sessionId}}', '{{prompt}}'] })
+    const agent = repo.getAgent(app.db, agentId)!
+    const path = join(fixtureDirectory, '日本語 reference.txt')
+    writeFileSync(path, 'The fixture reference is readable.')
+    const resolvePath = vi.fn(() => path)
+    window.quuuFiles = { getPathForFile: resolvePath }
+    act(() => useStore.getState().applySnapshot(app.snapshot()))
+    render(<ThemeProvider buildTheme={buildTheme}><AssistantView /></ThemeProvider>)
+    const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: t('quuuAI.newMessage') })
+    fireEvent.change(input, { target: { value: 'Read this file and explain it.' } })
+    input.setSelectionRange(14, 14)
+    const dataTransfer = { types: ['Files', 'text/uri-list'], files: [new File(['fixture'], '日本語 reference.txt')], dropEffect: 'none' }
+    expect(fireEvent.dragOver(input, { dataTransfer })).toBe(false)
+    expect(dataTransfer.dropEffect).toBe('copy')
+    expect(fireEvent.drop(input, { dataTransfer })).toBe(false)
+    const initial = `Read this file ${JSON.stringify(path)} and explain it.`
+    await waitFor(() => expect(input.value).toBe(initial))
+    expect(resolvePath).toHaveBeenCalledTimes(1)
+    act(() => useStore.getState().applySnapshot(app.snapshot()))
+    expect(input.value).toBe(initial)
+    expect(useStore.getState()).toMatchObject({ detailOpen: false, cursorTaskId: null })
+    fireEvent.click(screen.getByRole('button', { name: t('quuuAI.send') }))
+    await waitFor(() => expect(app.tasks.listTasks().find(task => task.projectId === project.id)?.prompt).toBe(initial))
+    await waitFor(() => expect(input.value).toBe(''))
+    const task = app.tasks.listTasks().find(task => task.projectId === project.id)!
+    const first = app.runner.prepare({ task, project, agent, groupId: null, kind: 'initial', fallbackFromRunId: null })
+    expect(first.args.join(' ')).toContain(initial)
+    expect(readFileSync(path, 'utf8')).toBe('The fixture reference is readable.')
+    repo.updateRun(app.db, first.id, { status: 'succeeded', endedAt: new Date().toISOString() })
+    repo.setTaskStatus(app.db, task.id, 'review', { sessionId: first.sessionId })
+    act(() => {
+      useStore.getState().applySnapshot(app.snapshot())
+      useStore.setState({ detailOpen: true, cursorTaskId: task.id })
+      useStore.getState().setDraft('assistant-channel', 'Keep this separate draft')
+    })
+    const reply = screen.getByRole<HTMLTextAreaElement>('textbox', { name: t('quuuAI.replyPlaceholder') })
+    fireEvent.change(reply, { target: { value: 'Check again.' } })
+    reply.setSelectionRange(reply.value.length, reply.value.length)
+    expect(fireEvent.drop(reply, { dataTransfer })).toBe(false)
+    const followup = `Check again. ${JSON.stringify(path)} `
+    await waitFor(() => expect(reply.value).toBe(followup))
+    expect(resolvePath).toHaveBeenCalledTimes(2)
+    expect(input.value).toBe('Keep this separate draft')
+    fireEvent.keyDown(reply, { key: 'Enter', metaKey: true })
+    await waitFor(() => expect(repo.getTask(app.db, task.id)?.pendingMessage).toBe(followup.trim()))
+    const updated = repo.getTask(app.db, task.id)!
+    const next = app.runner.prepare({ task: updated, project, agent, groupId: null, kind: 'followup', sessionId: first.sessionId, messageOverride: updated.pendingMessage, fallbackFromRunId: null })
+    expect(next.args.join(' ')).toContain(followup.trim())
+    expect(input.value).toBe('Keep this separate draft')
+  })
+
   it('inserts multiple original drop paths at the selection, retaining surrounding text and the separate title', async () => {
     render(<ThemeProvider colorScheme="dark" buildTheme={buildTheme}><TaskComposer /></ThemeProvider>)
     fireEvent.change(screen.getByPlaceholderText('Task title...'), { target: { value: '一覧から追加する\nBefore replace after' } })

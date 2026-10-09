@@ -95,6 +95,7 @@ describe('pruning drafts', () => {
     [newTaskDraftKey('prj_live')]: 'プロジェクトの画面で書いたもの',
     [newTaskDraftKey('prj_gone')]: '消えたプロジェクトで書いたもの',
     [newTaskDraftKey()]: '全体の一覧で書いたもの',
+    'assistant-channel': 'このファイルを確認 /tmp/reference.txt',
     'unknown:1': '古い版が書いたもの'
   }
   const pruned = pruneDrafts(drafts, { taskIds: ['tsk_live'], projectIds: ['prj_live'] })
@@ -108,6 +109,10 @@ describe('pruning drafts', () => {
     expect(pruned[newTaskDraftKey()]).toBe('全体の一覧で書いたもの')
   })
 
+  it('keeps the QuuuAI channel draft and its file references when the app starts again', () => {
+    expect(pruned['assistant-channel']).toBe(drafts['assistant-channel'])
+  })
+
   it('drops drafts whose destination is gone, and keys in an unknown shape', () => {
     expect(taskDraftKey('tsk_gone') in pruned).toBe(false)
     expect(newTaskDraftKey('prj_gone') in pruned).toBe(false)
@@ -115,6 +120,6 @@ describe('pruning drafts', () => {
   })
 
   it('does not mutate the original drafts', () => {
-    expect(Object.keys(drafts)).toHaveLength(6)
+    expect(Object.keys(drafts)).toHaveLength(7)
   })
 })

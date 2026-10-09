@@ -66,6 +66,10 @@ export function pruneDrafts(
   const projects = new Set(live.projectIds)
   const next: Drafts = {}
   for (const [key, text] of Object.entries(drafts)) {
+    if (key === 'assistant-channel') {
+      next[key] = text
+      continue
+    }
     if (key.startsWith('task:')) {
       if (tasks.has(key.slice('task:'.length))) next[key] = text
       continue
