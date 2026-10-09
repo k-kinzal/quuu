@@ -19,6 +19,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { QuuuApp } from '../src/main/bootstrap.js'
 import { createAppRouter } from '../src/main/ipc/index.js'
 import type { QuuuEvents } from '../src/api/types.js'
+import type { CommandPayload } from '../src/api/schemas/desktop.js'
 import { App } from '../src/renderer/src/App.js'
 import { TaskComposer } from '../src/renderer/src/components/TaskComposer.js'
 import { Rail } from '../src/renderer/src/components/Rail.js'
@@ -56,6 +57,7 @@ let wire: RPCLink<Record<never, never>>
 let app: QuuuApp
 let projectId: string
 let readingTaskId: string
+let command: (payload: CommandPayload) => void
 beforeEach(() => {
   fixtureDirectory = mkdtempSync(join(tmpdir(), 'quuu-input-ipc-'))
   vi.stubEnv('QUUU_USER_DATA', fixtureDirectory)
@@ -74,7 +76,7 @@ beforeEach(() => {
   const events: QuuuEvents = {
     settings: callback => { app.on('settings', callback); return () => { app.off('settings', callback) } },
     snapshot: () => () => { }, sessionAppended: () => () => { }, schedulerStatus: () => () => { },
-    toast: () => () => { }, command: () => () => { }, terminal: () => () => { }
+    toast: () => () => { }, command: listener => { command = listener; return () => { } }, terminal: () => () => { }
   }
   window.quuuEvents = events
   channel.port1.start()
@@ -89,6 +91,65 @@ beforeEach(() => {
   })
   useStore.setState({ layout: { ...useStore.getState().layout, rail: paneProfiles.navigation.initial, list: paneProfiles.collection.initial, railCollapsed: false, listMode: 'compact' } })
   app.on('changed', () => useStore.getState().applySnapshot(app.snapshot()))
+})
+
+describe('going directly to QuuuAI', () => {
+  beforeEach(() => {
+    app.projects.ensureBuiltIn(fixtureDirectory)
+    useStore.setState({ ready: true, settingsCategory: 'appearance', paletteOpen: false })
+  })
+
+  it.each(['task', 'project', 'settings', 'project settings'] as const)(
+    'opens and focuses the channel from %s and retraces the same screen without losing drafts', async origin => {
+      const state = useStore.getState()
+      state.setSection(origin === 'settings' ? { kind: 'settings' } : { kind: 'project', id: projectId })
+      if (origin === 'task') await state.openTask(readingTaskId)
+      if (origin === 'project settings') state.openProjectSettings(true)
+      state.setDraft('new:all', 'An unfinished task')
+      state.setDraft('assistant-channel', 'An unfinished conversation')
+      render(<App />)
+      if (origin === 'task') {
+        fireEvent.change(screen.getByRole('textbox', { name: 'Write instructions' }), { target: { value: 'Keep these instructions' } })
+      }
+      const drafts = useStore.getState().drafts
+      const count = app.tasks.listTasks().length
+      act(() => command({ command: 'view.quuuAI' }))
+      const input = screen.getByRole<HTMLTextAreaElement>('textbox', { name: t('quuuAI.newMessage') })
+      await waitFor(() => expect(document.activeElement).toBe(input))
+      expect(input.value).toBe('An unfinished conversation')
+      expect(useStore.getState()).toMatchObject({ section: { kind: 'quuuAI' }, detailOpen: false, projectSettingsOpen: false })
+      act(() => command({ command: 'view.back' }))
+      await waitFor(() => expect(useStore.getState().section.kind).toBe(origin === 'settings' ? 'settings' : 'project'))
+      expect(useStore.getState().detailOpen).toBe(origin === 'task')
+      expect(useStore.getState().projectSettingsOpen).toBe(origin === 'project settings')
+      if (origin === 'task') expect(screen.getByRole<HTMLTextAreaElement>('textbox', { name: 'Write instructions' }).value).toBe('Keep these instructions')
+      act(() => command({ command: 'view.forward' }))
+      await waitFor(() => expect(useStore.getState().section.kind).toBe('quuuAI'))
+      expect(useStore.getState().drafts).toEqual(drafts)
+      expect(app.tasks.listTasks()).toHaveLength(count)
+    }, 30000
+  )
+
+  it('still opens QuuuAI from the palette and focuses its message input', async () => {
+    render(<App />)
+    act(() => command({ command: 'view.palette' }))
+    const search = screen.getByPlaceholderText(t('palette.placeholder'))
+    fireEvent.change(search, { target: { value: 'QuuuAI' } })
+    fireEvent.keyDown(search, { key: 'Enter' })
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: t('quuuAI.newMessage') })))
+    expect(useStore.getState()).toMatchObject({ section: { kind: 'quuuAI' }, paletteOpen: false })
+  })
+
+  it('dismisses an open palette and can refocus the current channel without adding history', async () => {
+    useStore.getState().setSection({ kind: 'quuuAI' })
+    render(<App />)
+    const trail = useStore.getState().trail
+    act(() => command({ command: 'view.palette' }))
+    act(() => command({ command: 'view.quuuAI' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('textbox', { name: t('quuuAI.newMessage') })))
+    expect(useStore.getState().paletteOpen).toBe(false)
+    expect(useStore.getState().trail).toEqual(trail)
+  })
 })
 
 describe('the single left menu and the footer of the main surface', () => {

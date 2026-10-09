@@ -210,6 +210,7 @@ export const en = {
     back: 'Back',
     forward: 'Forward',
     goAnywhere: 'Go Anywhere…',
+    quuuAI: 'QuuuAI',
     allTasks: 'All Tasks',
     needsReview: 'Needs Review',
     done: 'Done',

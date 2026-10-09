@@ -971,6 +971,7 @@ are shown.
 | `⌘⌫` | Archive | Task |
 | `⌘[` `⌘]` | Back / forward through the screens already seen | Go |
 | `⌘T` | Go anywhere (command palette) | Go |
+| `⌘⇧A` | Open QuuuAI and focus its message input (`Ctrl+Shift+A` on Windows) | Go › QuuuAI |
 | `⌘1` `⌘2` | All tasks / Needs review | Go |
 | `⌘3`–`⌘9` | Go to project (up to 7; beyond that, `⌘T`) | Go › Projects |
 | `⌘⌥1` | Toggle the menu | View › Panels |
@@ -980,6 +981,11 @@ are shown.
 | `⌘F` | Go to search | Edit |
 | `⌘⌥↵` | Context menu (for the row, column, or pane the hand is on) | Edit |
 | `⌘⌥←` `⌘⌥→` | Move the hand to the previous / next pane | View › Focus |
+
+**Go › QuuuAI** (`移動 › QuuuAI` in Japanese) opens the conversation channel from tasks,
+projects, or settings. Unsent task and QuuuAI messages stay in their respective drafts;
+`⌘[` / `⌘]` retrace the navigation. QuuuAI is also available by searching in `⌘T`.
+The existing `⌘1` / `⌘2` / `⌘3`–`⌘9` destinations are unchanged.
 
 `⌘[` / `⌘]`, not `⌘←` / `⌘→`: a menu shortcut is taken before the screen sees it, and
 those two are move-to-start / end-of-line inside every input in the app.

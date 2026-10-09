@@ -62,6 +62,7 @@ export type AppCommand =
   | 'task.openTerminal'
   | 'task.resumeTerminal'
   | 'task.openEditor'
+  | 'view.quuuAI'
   | 'view.all'
   | 'view.review'
   | 'view.done'

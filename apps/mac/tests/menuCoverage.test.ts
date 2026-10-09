@@ -44,6 +44,7 @@ describe('every action is reachable from the menu', () => {
     const needsKey = [
       'view.palette',
       'view.search',
+      'view.quuuAI',
       'focus.next',
       'focus.prev',
       'menu.context',

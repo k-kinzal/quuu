@@ -168,9 +168,10 @@ export function CommandPalette(): JSX.Element | null {
       id: 'go:quuuAI',
       group: 'go',
       title: t('quuuAI.title'),
+      hint: shortcut('Cmd+Shift+A'),
       icon: <Bot size={ICON.md} {...iconProps} />,
-      keywords: t('quuuAI.emptyDescription'),
-      run: close(() => setSection({ kind: 'quuuAI' }))
+      keywords: `${t('quuuAI.title')} ${t('quuuAI.emptyDescription')}`,
+      run: close(() => setSection({ kind: 'quuuAI' }), 'composer')
     })
     out.push(
       {

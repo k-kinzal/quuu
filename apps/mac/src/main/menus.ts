@@ -232,6 +232,7 @@ function buildMenu(): void {
           click: () => send('view.palette')
         },
         { type: 'separator' },
+        { label: t('menu.quuuAI'), accelerator: 'Cmd+Shift+A', click: () => send('view.quuuAI') },
         { label: t('menu.allTasks'), accelerator: 'Cmd+1', click: () => send('view.all') },
         { label: t('menu.needsReview'), accelerator: 'Cmd+2', click: () => send('view.review') },
         // No accelerator: ⌘3 onward already open projects, and moving those would retrain every hand

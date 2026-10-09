@@ -142,6 +142,10 @@ function Shell(): JSX.Element {
          * Then ↑↓ and ⏎ at the destination belong to that input, and
          * **the list can't be driven by keyboard alone** (that's how it actually was)
          */
+        case 'view.quuuAI':
+          setSection({ kind: 'quuuAI' })
+          focusPaneSoon('composer')
+          return
         case 'view.all':
           setSection({ kind: 'all' })
           focusList()
