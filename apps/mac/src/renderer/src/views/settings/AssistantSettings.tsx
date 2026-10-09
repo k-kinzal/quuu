@@ -2,6 +2,8 @@ import { Alert, Button, Column, NumberInput, Page, Row, SettingRow, SettingsBloc
 import { useIsMutating, useMutation, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { AssistantSettings as Settings } from '../../../../api/schemas/assistant.js'
+import type { Project } from '../../../../api/schemas/projects.js'
+import { ProjectTargetSelect } from '../../components/ProjectTargetSelect.js'
 import { confirmDestructive } from '../../interaction/contextMenu.js'
 import { t } from '../../model/i18n/index.js'
 import { failureReason } from '../../model/operationFailure.js'
@@ -13,6 +15,11 @@ export function AssistantSettings(): JSX.Element {
   const [memoryVersion, setMemoryVersion] = useState(0)
   const savingMemory = useIsMutating({ mutationKey: ['assistant', 'setMemory'] }, queryClient) > 0
   const state = useStore(s => s.snapshot?.assistant)
+  const project = useStore(s => s.snapshot?.projects.find(project => project.builtIn))
+  const target = useMutation({
+    mutationFn: (input: { id: string; patch: Pick<Project, 'targetKind' | 'targetId'> }) =>
+      window.quuu.projects.update(input, { context: { feedback: 'inline' } })
+  }, queryClient)
   const query = useQuery({ queryKey: ['assistant.settings'], queryFn: () => window.quuu.assistant.state(), enabled: !state }, queryClient)
   const settings = state?.settings ?? query.data?.settings
   const configure = useMutation({ mutationFn: (patch: Partial<Settings>) => window.quuu.assistant.configure(patch, { context: { feedback: 'inline' } }) }, queryClient)
@@ -36,6 +43,13 @@ export function AssistantSettings(): JSX.Element {
     }
   }, queryClient)
   return <Page title={t('quuuAI.settings')}>
+    {project && <SettingsGroup>
+      <SettingRow label={t('projectDetail.target')} hint={t('quuuAI.targetHint')} width="md" layout="stacked">
+        <ProjectTargetSelect project={project} disabled={target.isPending}
+          onChange={patch => target.mutate({ id: project.id, patch })} />
+      </SettingRow>
+      {target.error && <SettingsBlock><Alert>{failureReason(target.error)}</Alert></SettingsBlock>}
+    </SettingsGroup>}
     <SettingsGroup>
       {settings && <SettingToggle label={t('quuuAI.proactive')} hint={t('quuuAI.proactiveHint')} checked={settings.enabled}
         onChange={value => configure.mutate({ enabled: value })}>

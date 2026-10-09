@@ -420,7 +420,15 @@ reply without that explicit decision, an unconfirmed exit or an unreadable resul
 and ordinary execution failures retain their existing treatment. Development-task reporting
 and background suggestion checks use their existing behavior.
 
-Settings → QuuuAI controls proactive suggestions (on by default), the check interval
+**Settings → QuuuAI → Agent / group** selects the execution target for new threads,
+threads that have not started yet, and background suggestion checks. Selection saves
+immediately to the built-in project's existing assignment and survives restarts. Started
+threads retain their CLI and conversation; if the new target cannot continue one, it waits
+until a compatible target is selected. A failed save leaves the saved selection in place
+and shows an error. Imported agent definitions are excluded, following project settings;
+disabled agents and empty groups can be configured, but cannot run without an eligible agent.
+
+Settings → QuuuAI also controls proactive suggestions (on by default), the check interval
 (default six hours, 1–168 hours), and minimum confidence (default 70%, adjustable to 100%).
 Checks use ordinary execution slots **only after eligible user work**; busy agents, cooldowns,
 reserved slots, disabled projects and a paused scheduler still prevent execution. Turning the
@@ -476,7 +484,7 @@ it uses available session evidence and reports that limitation in the proposal.
   Quuu's own runtime.
 - It cannot be deleted, and its directory and worktree mode are fixed: the operations refuse
   them through the CLI and MCP alike. Its backing project starts at priority 0 on the default
-  group; the task composer lets you choose an agent for a request.
+  group; its execution target can be changed in Settings → QuuuAI.
 - Each launch points it at the running app's workspace, so moving or updating the app, or a
   dev launch sharing the database, keeps it working. It starts with change reports, commit
   identity and Pull Request prompts off: nothing it does is committed.

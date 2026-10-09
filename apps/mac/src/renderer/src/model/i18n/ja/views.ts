@@ -313,6 +313,7 @@ export const views: typeof en = {
     color: '色',
     runSection: '実行',
     target: '使うエージェント / グループ',
+    targetUnavailable: '利用不可（{{id}}）',
     unassigned: '未割り当て',
     groupsGroup: 'グループ',
     agentsGroup: 'エージェント',

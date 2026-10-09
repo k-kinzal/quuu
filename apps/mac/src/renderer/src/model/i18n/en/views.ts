@@ -316,6 +316,7 @@ export const views = {
     color: 'Color',
     runSection: 'Execution',
     target: 'Agent / group',
+    targetUnavailable: 'Unavailable ({{id}})',
     unassigned: 'Unassigned',
     groupsGroup: 'Groups',
     agentsGroup: 'Agents',

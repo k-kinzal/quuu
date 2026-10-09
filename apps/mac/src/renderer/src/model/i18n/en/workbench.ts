@@ -12,6 +12,7 @@ export const workbench = {
     reserveReply: 'Send after reply',
     channel: "Conversation",
     settings: "QuuuAI settings",
+    targetHint: 'Used for new threads, threads that have not started yet, and background suggestion checks. Started threads keep their CLI and conversation; they wait if this selection cannot continue them.',
     checking: 'Checking projects',
     thread: "Thread",
     closeThread: "Close thread",

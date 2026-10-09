@@ -13,6 +13,7 @@ export const workbench: typeof en = {
     reserveReply: '返信後に送信',
     channel: "会話",
     settings: "QuuuAIの設定",
+    targetHint: '新しいスレッド・実行前のスレッドと、バックグラウンドの提案調査に使います。開始済みのスレッドは元のCLIと会話を維持し、この選択で継続できない場合は待機します。',
     checking: 'プロジェクトを確認中',
     thread: "スレッド",
     closeThread: "スレッドを閉じる",

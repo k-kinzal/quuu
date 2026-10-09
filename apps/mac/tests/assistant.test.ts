@@ -9,7 +9,7 @@ import { MEMORY_MAX_BYTES, memoryPath } from '../src/main/assistant/memory.js'
 import { QUUU_PROJECT_ID } from '../src/main/projects/types.js'
 import { sessionKey } from '../src/main/session/index.js'
 import { sessionReadTarget } from '../src/main/session/sessionAttach.js'
-import { makeAgent, makeProject, makeTask, occupy } from './helpers.js'
+import { makeAgent, makeProject, makeTask, occupy, sessioned } from './helpers.js'
 import type { FinishedEvent } from '../src/main/execution/runner.js'
 
 let dir: string
@@ -47,6 +47,50 @@ function makeDue(): void {
   const check = repo.listAssistantChecks(app.db)[0]
   repo.saveAssistantCheck(app.db, { ...check, settledAt: '2000-01-01T00:00:00.000Z' })
 }
+
+describe('assistant execution target', () => {
+  it.each(['agent', 'group'] as const)('keeps the saved %s after restart and uses it for unstarted threads and suggestion research', kind => {
+    const next = makeAgent(app.db, { name: 'Selected agent', command: 'true', logAdapter: 'codex' })
+    const group = app.agents.createGroup({ name: 'Selected group', description: '', strategy: 'priority', memberIds: [next], sortOrder: 0 })
+    const queued = app.assistant.send('Waiting for an agent')
+    const target = { targetKind: kind, targetId: kind === 'group' ? group.id : next }
+    app.projects.updateProject(QUUU_PROJECT_ID, target)
+    app.shutdown(); app.db.close()
+    app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+    expect(app.projects.ensureBuiltIn(join(dir, 'updated-workspace'))).toMatchObject(target)
+    const fresh = app.assistant.send('New conversation')
+    // Claims prepare runs without launching any CLI or letting the timer consume them.
+    vi.spyOn(app.scheduler, 'tick').mockResolvedValue(undefined)
+    app.scheduler.resume()
+    for (const id of [queued.id, fresh.id]) {
+      const claim = app.scheduler.claimNext()!
+      expect(claim).toMatchObject({ task: { id, agentOverrideId: null }, agentId: next, run: { kind: 'initial', resolvedFromGroupId: kind === 'group' ? group.id : null } })
+      repo.updateRun(app.db, claim.run.id, { status: 'succeeded', endedAt: new Date().toISOString() })
+      repo.setTaskStatus(app.db, id, 'review')
+    }
+    const check = app.scheduler.claimNext()!
+    expect(repo.isAssistantCheck(app.db, check.task.id)).toBe(true)
+    expect(check.agentId).toBe(next)
+  })
+
+  it('waits on an incompatible selection and resumes the original conversation once its agent is eligible again', () => {
+    app.assistant.configure({ enabled: false })
+    const thread = app.assistant.send('Keep this conversation')
+    const opened = sessioned(app.db, thread.id, agent, 'review')
+    const sessionId = repo.getRun(app.db, opened)!.sessionId
+    const other = makeAgent(app.db, { name: 'Other CLI', command: 'true', logAdapter: 'codex' })
+    app.projects.updateProject(QUUU_PROJECT_ID, { targetKind: 'agent', targetId: other })
+    app.tasks.sendBack(thread.id, 'Continue our conversation')
+    vi.spyOn(app.scheduler, 'tick').mockResolvedValue(undefined)
+    app.scheduler.resume()
+    expect(app.scheduler.claimNext()).toBeNull()
+    expect(repo.getTask(app.db, thread.id)).toMatchObject({ status: 'queued', sessionId })
+    expect(repo.listRunsByTask(app.db, thread.id)).toHaveLength(1)
+    const group = app.agents.createGroup({ name: 'Compatible group', description: '', strategy: 'priority', memberIds: [other, agent], sortOrder: 0 })
+    app.projects.updateProject(QUUU_PROJECT_ID, { targetKind: 'group', targetId: group.id })
+    expect(app.scheduler.claimNext()).toMatchObject({ task: { id: thread.id }, agentId: agent, run: { kind: 'followup', sessionId } })
+  })
+})
 
 describe('shared memory', () => {
   it('keeps bounded UTF-8 memory outside the bundle, detects competing edits and carries it into each run', () => {

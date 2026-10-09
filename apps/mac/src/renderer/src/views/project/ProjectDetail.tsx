@@ -1,7 +1,7 @@
 import { ProjectRunnerSettings } from './ProjectRunnerSettings.js'
 import { HookEditor } from '../../components/HookEditor.js'
 import type { Project } from '../../../../api/schemas/projects.js'
-import { userAgents } from '../../model/agents.js'
+import { ProjectTargetSelect } from '../../components/ProjectTargetSelect.js'
 import { COMMIT_IDENTITY_MODES } from '../../model/identityOptions.js'
 
 import { COMMIT_IDENTITY_MODE_LABEL, PULL_REQUEST_PROMPT_MODE_LABEL } from '../../model/labels.js'
@@ -51,8 +51,6 @@ export function ProjectDetail({
   const identityPreview = usePreview(JSON.stringify([settings, project]), () => window.quuu.settings.previewIdentity({ identity: settings.commitIdentity, projectId: project.id })).value
   const editors = useStore((s) => s.editors)
   // projectActions owns the cleanup after a delete (where to move the visible surface), so no setSection here
-  const agents = userAgents(snapshot?.agents ?? [])
-  const groups = snapshot?.groups ?? []
   const editingRuleId = useStore((s) => s.editingRuleId)
   const editRule = useStore((s) => s.editRule)
   const editingRule = (snapshot?.rules ?? []).find((r) => r.id === editingRuleId && r.projectId === project.id) ?? null
@@ -60,8 +58,6 @@ export function ProjectDetail({
   const update = (patch: Partial<Project>): void => {
     void window.quuu.projects.update({ id: project.id, patch: patch })
   }
-
-  const targetValue = project.targetId ? `${project.targetKind}:${project.targetId}` : ''
 
   if (editingRule) {
     return <TaskRuleEditor key={editingRule.id} rule={editingRule} onBack={() => editRule(null)} />
@@ -185,27 +181,7 @@ export function ProjectDetail({
 
         <SettingsGroup title={t('projectDetail.runSection')}>
           <SettingRow label={t('projectDetail.target')} width="md">
-            <Select
-              aria-label={t('projectDetail.target')}
-              value={targetValue}
-              onChange={(e) => {
-                const [kind, id] = e.target.value.split(':')
-                update({ targetKind: kind === 'group' ? 'group' : 'agent', targetId: id || null })
-              }}
-              options={[
-                { value: '', label: t('projectDetail.unassigned') },
-                ...groups.map((g) => ({
-                  value: `group:${g.id}`,
-                  label: g.name,
-                  group: t('projectDetail.groupsGroup')
-                })),
-                ...agents.map((a) => ({
-                  value: `agent:${a.id}`,
-                  label: a.name,
-                  group: t('projectDetail.agentsGroup')
-                }))
-              ]}
-            />
+            <ProjectTargetSelect project={project} onChange={update} />
           </SettingRow>
 
           <>
