@@ -2,13 +2,13 @@ import { execFile } from 'node:child_process'
 import {
   existsSync,
   mkdirSync,
-  readFileSync,
   readdirSync,
   renameSync,
   rmSync,
   statSync,
   writeFileSync
 } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { LAYOUT, nameFromPlaceholder, placeholderName } from './layout.js'
@@ -76,10 +76,12 @@ export class SyncFolder {
    * Read. When the contents have not come down yet, request them and return null
    * (the next round re-reads). **Missing and not-yet-arrived are told apart.**
    */
-  read(relative: string): string | null {
+  async read(relative: string): Promise<string | null> {
     const full = this.path(relative)
     try {
-      return readFileSync(full, 'utf8')
+      // A normal-looking iCloud file can still need downloading. A synchronous read
+      // waits inside the file provider and freezes Electron, including its Dock menu.
+      return await readFile(full, 'utf8')
     } catch {
       const slash = relative.lastIndexOf('/')
       const dir = slash < 0 ? this.root : join(this.root, relative.slice(0, slash))

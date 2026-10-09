@@ -421,7 +421,7 @@ export class QuuuApp extends EventEmitter {
   /** Sync now (button on the settings pane). Runs one round trip of export and import. */
   async syncMobileNow(): Promise<MobileSyncStatus> {
     await this.mobile.importNow()
-    this.mobile.exportNow()
+    await this.mobile.exportNow()
     return this.mobile.status()
   }
 

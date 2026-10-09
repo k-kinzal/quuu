@@ -1,4 +1,5 @@
 import { statSync } from 'node:fs'
+import { setImmediate as yieldToApp } from 'node:timers/promises'
 import type { Agent } from '../agents/types.js'
 import type { Run } from '../execution/types.js'
 import type { Project } from '../projects/types.js'
@@ -88,7 +89,9 @@ export class SyncExporter {
    * everything written, and the device gets a notification. Rewriting on every 3-second tick
    * would keep sync running all day on a day nothing happened.
    */
-  export(folder: SyncFolder, schedulerRunning: boolean): ExportResult {
+  async export(folder: SyncFolder, schedulerRunning: boolean, active: () => boolean = () => this.db.isOpen): Promise<ExportResult> {
+    await yieldToApp()
+    if (!active()) throw new Error('Mobile export stopped')
     folder.ensure()
     // Whoever opens this folder in Files is the same person whose OS language the app follows
     if (!folder.exists(LAYOUT.readme)) folder.write(LAYOUT.readme, t('mobileSync.readme'))
@@ -122,14 +125,17 @@ export class SyncExporter {
 
       const detail = this.buildDetail(task, agents)
       detailHash.set(task.id, detail.hash)
-      this.detailKeys.set(task.id, { key, hash: detail.hash })
 
       const relative = detailPath(task.id)
       // Leave it alone if a file with the same fingerprint is already there
-      const before = folder.read(relative)
-      if (before?.includes(`"hash":"${detail.hash}"`)) continue
-      folder.write(relative, JSON.stringify(detail))
-      written += 1
+      const before = await folder.read(relative)
+      if (!active()) throw new Error('Mobile export stopped')
+      if (!before?.includes(`"hash":"${detail.hash}"`)) {
+        folder.write(relative, JSON.stringify(detail))
+        written += 1
+      }
+      // Failed writes must remain eligible for the next pass.
+      this.detailKeys.set(task.id, { key, hash: detail.hash })
     }
 
     const keep = new Set(targets.map((t) => t.id))
@@ -150,9 +156,9 @@ export class SyncExporter {
       return { wrote: false, rev: this.currentRev(), details: 0, removed: 0 }
     }
 
-    this.lastSnapshotHash = hash
-    repo.setSetting(this.db, REV_KEY, String(snapshot.rev))
     folder.write(LAYOUT.snapshot, JSON.stringify(snapshot))
+    repo.setSetting(this.db, REV_KEY, String(snapshot.rev))
+    this.lastSnapshotHash = hash
     return { wrote: true, rev: snapshot.rev, details: written, removed }
   }
 

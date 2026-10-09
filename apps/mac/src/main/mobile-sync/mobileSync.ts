@@ -55,6 +55,9 @@ export class MobileSync {
   private lastImportAt = ''
   private error = ''
   private importing = false
+  private exporting: Promise<void> | null = null
+  private publishing: Promise<void> | null = null
+  private exportAgain = false
   private schedulerRunning = false
 
   constructor(
@@ -81,20 +84,20 @@ export class MobileSync {
     const root = syncRoot()
     const changed = next !== this.enabled || root !== this.folder?.root
 
+    if (!changed) return
     this.enabled = next
     this.folder = next ? new SyncFolder(root) : null
-    if (!changed) return
 
     this.stopTimers()
     if (!next) return
 
     this.error = ''
-    this.publishNow()
-    this.exportNow()
+    void this.publishNow()
+    void this.exportNow()
     this.heartbeat = setInterval(() => {
       // Check the UI side too. With identical contents it ends after reading one manifest
-      this.publishNow()
-      this.exportNow()
+      void this.publishNow()
+      void this.exportNow()
     }, EXPORT_HEARTBEAT_MS)
     this.heartbeat.unref?.()
     this.poll = setInterval(() => { void this.importNow() }, IMPORT_POLL_MS)
@@ -116,25 +119,33 @@ export class MobileSync {
   notifyChanged(): void {
     if (!this.enabled) return
     if (this.debounce) clearTimeout(this.debounce)
-    this.debounce = setTimeout(() => this.exportNow(), EXPORT_DEBOUNCE_MS)
+    this.debounce = setTimeout(() => { void this.exportNow() }, EXPORT_DEBOUNCE_MS)
     this.debounce.unref?.()
   }
 
   /** Export now (called from "sync now" in settings). */
-  exportNow(): void {
-    if (!this.enabled || !this.folder) return
+  exportNow(): Promise<void> {
+    if (!this.enabled || !this.folder) return Promise.resolve()
     if (this.debounce) {
       clearTimeout(this.debounce)
       this.debounce = null
     }
-    try {
-      const result = this.exporter.export(this.folder, this.schedulerRunning)
+    if (this.exporting) { this.exportAgain = true; return this.exporting }
+    const folder = this.folder
+    const active = (): boolean => this.enabled && this.folder === folder && this.db.isOpen
+    this.exportAgain = false
+    this.exporting = this.exporter.export(folder, this.schedulerRunning, active).then(result => {
+      if (!active()) return
       if (result.wrote) this.lastExportAt = nowIso()
       this.error = ''
-    } catch (e) {
-      // Do not stop the app just because a write failed (iCloud may be mid-sync and unreadable)
-      this.error = e instanceof Error ? e.message : String(e)
-    }
+    }).catch((error: unknown) => {
+      if (active()) this.error = error instanceof Error ? error.message : String(error)
+    }).finally(() => {
+      this.exporting = null
+      // Changes during an iCloud wait must get their own pass; never overlap file writers.
+      if (this.exportAgain && this.enabled) void this.exportNow()
+    })
+    return this.exporting
   }
 
   /**
@@ -143,33 +154,35 @@ export class MobileSync {
    * Called on every heartbeat, but with no rebuild it ends after reading one manifest
    * (`AppPublisher` checks mtime and size).
    */
-  publishNow(): void {
-    if (!this.enabled || !this.folder || !this.webRoot) return
-    try {
-      const result = this.publisher.publish(this.folder, this.webRoot)
-      void result
-    } catch (e) {
-      // Do not stop the app just because delivery failed (it keeps running on the baked-in UI)
-      this.error = e instanceof Error ? e.message : String(e)
-    }
+  publishNow(): Promise<void> {
+    if (!this.enabled || !this.folder || !this.webRoot) return Promise.resolve()
+    if (this.publishing) return this.publishing
+    const folder = this.folder
+    const active = (): boolean => this.enabled && this.folder === folder
+    this.publishing = this.publisher.publish(folder, this.webRoot, active).then(() => {}).catch((error: unknown) => {
+      if (active()) this.error = error instanceof Error ? error.message : String(error)
+    }).finally(() => { this.publishing = null })
+    return this.publishing
   }
 
   /** Import now. */
   async importNow(): Promise<void> {
     if (!this.enabled || !this.folder || this.importing) return
+    const folder = this.folder
+    const active = (): boolean => this.enabled && this.folder === folder && this.db.isOpen
     this.importing = true
     try {
-      const result = await this.importer.sync(this.folder, this.target)
-      if (!this.enabled) return
+      const result = await this.importer.sync(folder, this.target, active)
+      if (!active()) return
       this.lastImportAt = nowIso()
       this.error = ''
       if (result.applied > 0 || result.deferred > 0 || result.conflicts.length > 0) {
         this.onApplied({ applied: result.applied, conflicts: result.conflicts })
         // Send what was imported straight back to the iPhone (the result of the tap comes back)
-        this.exportNow()
+        void this.exportNow()
       }
     } catch (e) {
-      this.error = e instanceof Error ? e.message : String(e)
+      if (active()) this.error = e instanceof Error ? e.message : String(e)
     } finally { this.importing = false }
   }
 

@@ -176,9 +176,9 @@ afterEach(() => {
 })
 
 describe('export', () => {
-  it('writes what the list needs, plus per-task detail for opening and reading', () => {
+  it('writes what the list needs, plus per-task detail for opening and reading', async () => {
     const taskId = makeTask(db, projectId, 'やること')
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
 
     const snapshot = parseSnapshot(readFileSync(join(dir, LAYOUT.snapshot), 'utf8'))
     expect(snapshot.ok).toBe(true)
@@ -189,7 +189,7 @@ describe('export', () => {
     expect(readFileSync(join(dir, detailPath(taskId)), 'utf8')).toContain('やること')
   })
 
-  it('carries Codex conversations to the iPhone with roles, from the structured log', () => {
+  it('carries Codex conversations to the iPhone with roles, from the structured log', async () => {
     const codex = makeAgent(db, { name: 'Codex', command: 'codex', logAdapter: 'codex' })
     const taskId = makeTask(db, projectId, 'Codex の結果')
     const logPath = join(dir, 'codex.jsonl')
@@ -213,7 +213,7 @@ describe('export', () => {
     addRun(db, taskId, codex, 'codex')
     repo.updateRun(db, 'codex', { sessionLogPath: logPath })
 
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
 
     const detail = JSON.parse(readFileSync(join(dir, detailPath(taskId)), 'utf8')) as {
       messages: Array<{ role: string; text: string }>
@@ -224,43 +224,43 @@ describe('export', () => {
     ])
   })
 
-  it('leaves an explanation for someone who opens the folder in the Files app', () => {
-    new SyncExporter(db).export(folder, true)
+  it('leaves an explanation for someone who opens the folder in the Files app', async () => {
+    await new SyncExporter(db).export(folder, true)
     expect(readFileSync(join(dir, LAYOUT.readme), 'utf8')).toContain('written by the Mac')
   })
 
-  it('does not rewrite when content is unchanged — no sync traffic on a day when nothing happened', () => {
+  it('does not rewrite when content is unchanged — no sync traffic on a day when nothing happened', async () => {
     makeTask(db, projectId, 'やること')
     const exporter = new SyncExporter(db)
-    expect(exporter.export(folder, true).wrote).toBe(true)
-    expect(exporter.export(folder, true).wrote).toBe(false)
+    expect((await exporter.export(folder, true)).wrote).toBe(true)
+    expect((await exporter.export(folder, true)).wrote).toBe(false)
   })
 
-  it('a change bumps the revision by one', () => {
+  it('a change bumps the revision by one', async () => {
     const exporter = new SyncExporter(db)
     makeTask(db, projectId, '1 件目')
-    const first = exporter.export(folder, true).rev
+    const first = (await exporter.export(folder, true)).rev
     makeTask(db, projectId, '2 件目')
-    expect(exporter.export(folder, true).rev).toBe(first + 1)
+    expect((await exporter.export(folder, true)).rev).toBe(first + 1)
   })
 
-  it('the Mac decides list order (the iPhone gets no sorting rules)', () => {
+  it('the Mac decides list order (the iPhone gets no sorting rules)', async () => {
     const high = makeTask(db, projectId, '急ぎ', 0)
     const low = makeTask(db, projectId, '後で', 3)
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
     const snapshot = parseSnapshot(readFileSync(join(dir, LAYOUT.snapshot), 'utf8'))
     if (!snapshot.ok) throw new Error('unreadable')
     expect(snapshot.value.tasks.map((t) => t.id)).toEqual([high, low])
     expect(snapshot.value.tasks.map((t) => t.order)).toEqual([0, 1])
   })
 
-  it('exports only recent done tasks and notes how many were cut (no drawing hundreds of rows on a phone)', () => {
+  it('exports only recent done tasks and notes how many were cut (no drawing hundreds of rows on a phone)', async () => {
     // 1 unfinished task + 60 done
     makeTask(db, projectId, '未完了のもの')
     for (let i = 0; i < 60; i++) {
       repo.setTaskStatus(db, makeTask(db, projectId, `完了 ${i}`), 'done')
     }
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
     const snapshot = parseSnapshot(readFileSync(join(dir, LAYOUT.snapshot), 'utf8'))
     if (!snapshot.ok) throw new Error('unreadable')
 
@@ -271,7 +271,7 @@ describe('export', () => {
     expect(snapshot.value.tasks.filter((t) => t.status !== 'done')).toHaveLength(1)
   })
 
-  it('exports done tasks most recently done first, and the cut drops the oldest done', () => {
+  it('exports done tasks most recently done first, and the cut drops the oldest done', async () => {
     const ids: string[] = []
     for (let i = 0; i < 60; i++) {
       const id = makeTask(db, projectId, `完了 ${i}`)
@@ -280,7 +280,7 @@ describe('export', () => {
       repo.setTaskStatus(db, id, 'done', { doneAt })
       ids.push(id)
     }
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
     const snapshot = parseSnapshot(readFileSync(join(dir, LAYOUT.snapshot), 'utf8'))
     if (!snapshot.ok) throw new Error('unreadable')
 
@@ -288,29 +288,29 @@ describe('export', () => {
     expect(snapshot.value.tasks.map((t) => t.id)).toEqual(ids.slice(0, 50))
   })
 
-  it('archived tasks are not included', () => {
+  it('archived tasks are not included', async () => {
     const taskId = makeTask(db, projectId, 'やること')
     repo.setTaskArchived(db, taskId, true)
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
     const snapshot = parseSnapshot(readFileSync(join(dir, LAYOUT.snapshot), 'utf8'))
     if (!snapshot.ok) throw new Error('unreadable')
     expect(snapshot.value.tasks).toEqual([])
   })
 
-  it('cleans up detail files that fell out of scope (no leftover conversations for deleted tasks)', () => {
+  it('cleans up detail files that fell out of scope (no leftover conversations for deleted tasks)', async () => {
     const taskId = makeTask(db, projectId, 'やること')
     const exporter = new SyncExporter(db)
-    exporter.export(folder, true)
+    await exporter.export(folder, true)
     expect(folder.exists(detailPath(taskId))).toBe(true)
 
     repo.deleteTask(db, taskId)
-    exporter.export(folder, true)
+    await exporter.export(folder, true)
     expect(folder.exists(detailPath(taskId))).toBe(false)
   })
 
-  it('never shows the other side a half-written file (write to a temp file, then replace)', () => {
+  it('never shows the other side a half-written file (write to a temp file, then replace)', async () => {
     makeTask(db, projectId, 'やること')
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
     // no .tmp left behind = the replace step completed
     expect(folder.list(LAYOUT.mac).some((n) => n.endsWith('.tmp'))).toBe(false)
   })
@@ -555,12 +555,12 @@ describe('settings', () => {
 })
 
 describe('the folder', () => {
-  it('reports a file that has not come down yet as unreadable, not as missing', () => {
+  it('reports a file that has not come down yet as unreadable, not as missing', async () => {
     folder.ensure()
     // The stand-in for when iCloud has evicted the contents
     writeFileSync(join(dir, LAYOUT.intents, '.000000000001-x.json.icloud'), '', 'utf8')
     expect(folder.list(LAYOUT.intents)).toEqual(['000000000001-x.json'])
-    expect(folder.read(`${LAYOUT.intents}/000000000001-x.json`)).toBeNull()
+    expect(await folder.read(`${LAYOUT.intents}/000000000001-x.json`)).toBeNull()
   })
 
   it('keeps half-written temp files out of the listing', () => {
@@ -617,11 +617,11 @@ describe('the cost of writing', () => {
     return logPath
   }
 
-  it('reads only the tail of the log (never parses the whole thing)', () => {
+  it('reads only the tail of the log (never parses the whole thing)', async () => {
     const taskId = makeTask(db, projectId, 'ながい会話')
     // Make it too big to fit inside the 2MB window
     withLog(taskId, 400, 8_000)
-    new SyncExporter(db).export(folder, true)
+    await new SyncExporter(db).export(folder, true)
 
     const detail = JSON.parse(readFileSync(join(dir, detailPath(taskId)), 'utf8')) as {
       messages: { text: string }[]
@@ -634,26 +634,26 @@ describe('the cost of writing', () => {
     expect(detail.truncated).toBe(true)
   })
 
-  it('does not re-read the log when nothing has moved', () => {
+  it('does not re-read the log when nothing has moved', async () => {
     const taskId = makeTask(db, projectId, 'やること')
     withLog(taskId, 5)
 
     const exporter = new SyncExporter(db)
     probe.reads = 0
-    exporter.export(folder, true)
+    await exporter.export(folder, true)
     expect(probe.reads, 'the first pass reads').toBe(1)
 
     // Second pass. Nothing moved, so `stat` alone is enough
-    exporter.export(folder, true)
+    await exporter.export(folder, true)
     expect(probe.reads, 'the second pass does not read').toBe(1)
   })
 
-  it('re-reads once the log grows (never leaves a stale conversation showing)', () => {
+  it('re-reads once the log grows (never leaves a stale conversation showing)', async () => {
     const taskId = makeTask(db, projectId, 'やること')
     const logPath = withLog(taskId, 2)
 
     const exporter = new SyncExporter(db)
-    exporter.export(folder, true)
+    await exporter.export(folder, true)
     probe.reads = 0
     const before = readFileSync(join(dir, detailPath(taskId)), 'utf8')
 
@@ -667,7 +667,7 @@ describe('the cost of writing', () => {
       })}`,
       'utf8'
     )
-    expect(exporter.export(folder, true).wrote).toBe(true)
+    expect((await exporter.export(folder, true)).wrote).toBe(true)
     expect(probe.reads, 'it goes and reads what was added').toBe(1)
 
     const after = readFileSync(join(dir, detailPath(taskId)), 'utf8')
@@ -700,8 +700,8 @@ describe('shipping the screens', () => {
     return parsed.value
   }
 
-  it('writes the manifest and the contents', () => {
-    const result = new AppPublisher().publish(folder, web)
+  it('writes the manifest and the contents', async () => {
+    const result = await new AppPublisher().publish(folder, web)
     expect(result.published).toBe(true)
 
     const manifest = manifestOf()
@@ -723,31 +723,31 @@ describe('shipping the screens', () => {
     expect(cut.get('assets/app.js')).toBe('console.log(1)')
   })
 
-  it('does not re-ship when the contents are identical (never runs iCloud for nothing)', () => {
+  it('does not re-ship when the contents are identical (never runs iCloud for nothing)', async () => {
     const publisher = new AppPublisher()
-    expect(publisher.publish(folder, web).published).toBe(true)
+    expect((await publisher.publish(folder, web)).published).toBe(true)
     // A different instance, i.e. nothing remembered, still notices by reading the manifest
-    expect(new AppPublisher().publish(folder, web).published).toBe(false)
+    expect((await new AppPublisher().publish(folder, web)).published).toBe(false)
   })
 
-  it('re-ships when the manifest is there but the body is not (it still arrives after the way it travels changes)', () => {
+  it('re-ships when the manifest is there but the body is not (it still arrives after the way it travels changes)', async () => {
     const publisher = new AppPublisher()
-    publisher.publish(folder, web)
+    await publisher.publish(folder, web)
     const build = manifestOf().build
 
     // Delete only the contents (the old shape still looks "already shipped")
     rmSync(join(dir, appBundlePath(build)))
-    expect(new AppPublisher().publish(folder, web).published).toBe(true)
+    expect((await new AppPublisher().publish(folder, web)).published).toBe(true)
     expect(existsSync(join(dir, appBundlePath(build)))).toBe(true)
   })
 
-  it('ships a rebuild and leaves no old version behind', () => {
+  it('ships a rebuild and leaves no old version behind', async () => {
     const publisher = new AppPublisher()
-    publisher.publish(folder, web)
+    await publisher.publish(folder, web)
     const first = manifestOf().build
 
     writeFileSync(join(web, 'index.html'), '<html>に</html>', 'utf8')
-    expect(publisher.publish(folder, web).published).toBe(true)
+    expect((await publisher.publish(folder, web)).published).toBe(true)
 
     const second = manifestOf().build
     expect(second).not.toBe(first)
@@ -755,14 +755,14 @@ describe('shipping the screens', () => {
     expect(existsSync(join(dir, LAYOUT.app, second))).toBe(true)
   })
 
-  it('does not mix in source maps (they mean nothing to anyone without the sources)', () => {
+  it('does not mix in source maps (they mean nothing to anyone without the sources)', async () => {
     writeFileSync(join(web, 'assets', 'app.js.map'), '{}', 'utf8')
-    new AppPublisher().publish(folder, web)
+    await new AppPublisher().publish(folder, web)
     expect(manifestOf().files.map((f) => f.path)).not.toContain('assets/app.js.map')
   })
 
-  it('does not stop when there are no screens to ship (it keeps running on the baked-in screens)', () => {
-    const result = new AppPublisher().publish(folder, join(web, 'missing'))
+  it('does not stop when there are no screens to ship (it keeps running on the baked-in screens)', async () => {
+    const result = await new AppPublisher().publish(folder, join(web, 'missing'))
     expect(result.published).toBe(false)
     expect(existsSync(join(dir, LAYOUT.appManifest))).toBe(false)
   })

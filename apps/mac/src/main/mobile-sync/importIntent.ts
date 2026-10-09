@@ -70,7 +70,8 @@ export class SyncImporter {
     this.db = db
   }
 
-  async sync(folder: SyncFolder, target: IntentTarget): Promise<ImportResult> {
+  async sync(folder: SyncFolder, target: IntentTarget, active: () => boolean = () => this.db.isOpen): Promise<ImportResult> {
+    if (!active()) return EMPTY
     const names = folder.list(LAYOUT.intents).filter((n) => n.endsWith('.json'))
     if (names.length === 0) return EMPTY
 
@@ -79,7 +80,8 @@ export class SyncImporter {
     let unreadable = 0
 
     for (const name of names) {
-      const text = folder.read(`${LAYOUT.intents}/${name}`)
+      const text = await folder.read(`${LAYOUT.intents}/${name}`)
+      if (!active()) return EMPTY
       if (text === null) {
         // The contents have not come down yet. folder has already asked for them
         unreadable += 1
@@ -103,6 +105,7 @@ export class SyncImporter {
 
     const result: ImportResult = { applied: 0, skipped: 0, deferred: 0, conflicts: [], unreadable }
     for (const intent of orderIntents(intents)) {
+      if (!active()) return EMPTY
       let receipt: SyncReceipt
       let committed: SyncReceipt | null = null
       try {
@@ -140,7 +143,7 @@ export class SyncImporter {
       }
     }
 
-    this.writeReceipts(folder)
+    if (active()) this.writeReceipts(folder)
     return result
   }
 

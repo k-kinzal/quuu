@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { join, relative as relativePath } from 'node:path'
 import { deflateRawSync } from 'node:zlib'
+import { setImmediate as yieldToApp } from 'node:timers/promises'
 import { t } from '../i18n/index.js'
 import { nowIso } from '../util.js'
 import type { SyncAppFile, SyncAppManifest } from './appDistribution.js'
@@ -47,7 +48,9 @@ export class AppPublisher {
    * lets the iPhone decide from the manifest alone (arrival order is still not guaranteed, so it
    * verifies on its side too).
    */
-  publish(folder: SyncFolder, source: string | null): PublishResult {
+  async publish(folder: SyncFolder, source: string | null, active: () => boolean = () => true): Promise<PublishResult> {
+    await yieldToApp()
+    if (!active()) throw new Error('Mobile publication stopped')
     const none = { published: false, build: '', files: 0 }
     if (!source || !existsSync(join(source, APP_ENTRY))) {
       return { ...none, reason: t('mobileSync.screensNotFound') }
@@ -63,7 +66,8 @@ export class AppPublisher {
      * bundle) does not change the version. Looking only at the manifest calls the **old shape
      * "already delivered" and it is never replaced** (that actually happened).
      */
-    const current = folder.read(LAYOUT.appManifest)
+    const current = await folder.read(LAYOUT.appManifest)
+    if (!active()) throw new Error('Mobile publication stopped')
     const parsed = current ? parseAppManifest(current) : null
     const done = parsed?.ok && parsed.value.build === manifest.build
     if (done && folder.exists(appBundlePath(manifest.build))) {
