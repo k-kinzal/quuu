@@ -269,6 +269,7 @@ export const ja: typeof en = {
   },
 
   tasks: {
+    deleteBusy: 'QuuuAIの会話やバックグラウンド処理が終了してから、もう一度リセットしてください。',
     notFound: 'タスクが見つかりません',
     projectNotFound: 'プロジェクトが見つかりません',
     emptyMessage: 'メッセージが空です',

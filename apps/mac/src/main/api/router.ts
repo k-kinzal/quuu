@@ -440,6 +440,7 @@ export function createOperationsRouter<Owner>(app: QuuuApp, host: OperationHost<
       configure: os.assistant.configure.handler(({ input }) => app.assistant.configure(input)),
       memory: os.assistant.memory.handler(() => app.assistant.memory()),
       setMemory: os.assistant.setMemory.handler(({ input }) => app.assistant.setMemory(input.content, input.revision)),
+      reset: os.assistant.reset.handler(() => app.assistant.reset()),
       send: os.assistant.send.handler(({ input }) => app.assistant.send(input)),
       react: os.assistant.react.handler(({ input }) => app.assistant.react(input.taskId, input.reaction)),
       markRead: os.assistant.markRead.handler(({ input }) => app.assistant.markRead(input.taskId, input.revision))

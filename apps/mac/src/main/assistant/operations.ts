@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
 import type { Db } from '../db/database.js'
@@ -12,7 +12,7 @@ import type { ToastPayload } from '../snapshot.js'
 import type { TaskOperations } from '../tasks/operations.js'
 import type { Task } from '../tasks/types.js'
 import { newId, nowIso } from '../util.js'
-import { memoryPath, memoryPrompt, readMemory, writeMemory } from './memory.js'
+import { clearMemory, memoryPath, memoryPrompt, readMemory, writeMemory } from './memory.js'
 import { DEFAULT_ASSISTANT_SETTINGS, type AssistantProposal, type AssistantSettings, type AssistantState, type AssistantThread } from './types.js'
 
 const Settings = z.object({ enabled: z.boolean(), intervalHours: z.number().int().min(1).max(168), confidenceThreshold: z.number().int().min(70).max(100) }).strict()
@@ -54,6 +54,31 @@ export class AssistantOperations {
 
   memory() { return readMemory(this.dataDir) }
   setMemory(content: string, revision: string) { return writeMemory(this.dataDir, content, revision) }
+
+  reset(): string[] {
+    // Include archived threads and hidden research. A synchronous transaction keeps queue
+    // claims, result publication and memory writes from interleaving with the reset.
+    return inTransaction(this.db, () => {
+      if (repo.hasPendingHooks(this.db, QUUU_PROJECT_ID) || repo.listGeneratingProjectReports(this.db).some(report => report.projectId === QUUU_PROJECT_ID)) {
+        throw new Error(t('tasks.deleteBusy'))
+      }
+      const ids = repo.listTasks(this.db, true, true).filter(task => task.projectId === QUUU_PROJECT_ID).map(task => task.id)
+      const checks = repo.listAssistantChecks(this.db).map(check => check.taskId)
+      repo.forgetAssistantSessions(this.db, ids)
+      this.tasks.deleteIdleTasks(ids)
+      repo.clearAssistantHistory(this.db)
+      // Write last: an unreadable/oversized memory can be cleared, and a failed write rolls
+      // back the database before any snapshots or scheduler work become visible.
+      clearMemory(this.dataDir)
+      afterCommit(this.db, () => {
+        this.summaries.clear()
+        try { for (const id of checks) rmSync(this.resultPath(id), { force: true }) }
+        catch (error) { console.warn('Cannot remove retired assistant results', error) }
+        this.changed()
+      })
+      return ids
+    })
+  }
   promptContext(taskId: string): string {
     const proposal = repo.listAssistantProposals(this.db).find(p => p.taskId === taskId)
     return memoryPrompt(this.dataDir) + (proposal

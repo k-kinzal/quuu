@@ -1313,10 +1313,14 @@ export function setTaskArchived(db: Db, id: string, archived: boolean): Task {
   })
 }
 
-export function deleteTask(db: Db, id: string): void {
+export function deleteTask(db: Db, id: string, emitLifecycle = true): void {
   return inTransaction(db, () => {
     const task = getTask(db, id)
-    if (task) lifecycle(db, task, 'deleted')
+    if (task && emitLifecycle) lifecycle(db, task, 'deleted')
+    if (!emitLifecycle) {
+      db.prepare('DELETE FROM hook_runs WHERE task_id = ?').run(id)
+      removeHookReport(db, id)
+    }
 
     db.prepare('DELETE FROM runs WHERE task_id = ?').run(id)
     db.prepare('DELETE FROM task_review_bases WHERE task_id = ?').run(id)
@@ -2046,7 +2050,7 @@ export function findImportedRun(db: Db, key: string): { runId: string; taskId: s
 }
 
 export function managedSessionIds(db: Db): Set<string> {
-  const rows = db.prepare("SELECT session_id FROM runs WHERE source = 'user' UNION SELECT json_extract(data, '$.sessionId') AS session_id FROM hook_runs WHERE json_extract(data, '$.kind') = 'agent'").all() as { session_id: string }[]
+  const rows = db.prepare("SELECT session_id FROM runs WHERE source = 'user' UNION SELECT json_extract(data, '$.sessionId') AS session_id FROM hook_runs WHERE json_extract(data, '$.kind') = 'agent' UNION SELECT session_id FROM assistant_forgotten_sessions").all() as { session_id: string }[]
   return new Set(rows.map(row => row.session_id))
 }
 
@@ -2202,6 +2206,16 @@ export function assistantReads(db: Db): Map<string, string> {
 }
 export function readAssistantThread(db: Db, taskId: string, revision: string): void {
   db.prepare('INSERT INTO assistant_reads (task_id, revision) VALUES (?, ?) ON CONFLICT(task_id) DO UPDATE SET revision=excluded.revision').run(taskId, revision)
+}
+
+export function clearAssistantHistory(db: Db): void {
+  db.exec('DELETE FROM assistant_proposals; DELETE FROM assistant_reads; DELETE FROM assistant_checks;')
+}
+
+export function forgetAssistantSessions(db: Db, taskIds: string[]): void {
+  const runs = db.prepare('INSERT OR IGNORE INTO assistant_forgotten_sessions SELECT session_id FROM runs WHERE task_id = ?')
+  const hooks = db.prepare("INSERT OR IGNORE INTO assistant_forgotten_sessions SELECT json_extract(data, '$.sessionId') FROM hook_runs WHERE task_id = ? AND json_extract(data, '$.sessionId') IS NOT NULL")
+  for (const id of taskIds) { runs.run(id); hooks.run(id) }
 }
 
 /** Preview only prose, without moving tool payloads or images into global app snapshots. */

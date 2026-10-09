@@ -4,6 +4,7 @@ export const operationNames: string[] = [
   "assistant.configure",
   "assistant.memory",
   "assistant.setMemory",
+  "assistant.reset",
   "assistant.send",
   "assistant.react",
   "assistant.markRead",

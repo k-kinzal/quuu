@@ -412,6 +412,13 @@ The settings editor and `assistant.memory` / `assistant.setMemory` operations al
 edits, with a 16 KiB UTF-8 limit and revision checks to prevent overwriting concurrent edits.
 Every QuuuAI turn receives current memory. Keep durable preferences here, not secrets.
 
+**Settings → QuuuAI → Reset QuuuAI…** clears all conversations (including archived threads),
+suggestions, read receipts, background-check history and shared memory after a native confirmation.
+Settings and tasks already created in other projects stay intact. Running conversations or
+auxiliary work must finish before reset; no partial deletion occurs when they are busy.
+The `assistant.reset` operation uses the same checks. Provider-owned log files remain on disk,
+but their session IDs are remembered so automatic import cannot restore the cleared conversations.
+
 When a project's actual Git remote is `github.com/k-kinzal/quuu`, research can suggest improvements
 to Quuu based on session evidence and existing telemetry query access. It never enables telemetry
 or treats an OTLP export endpoint as a query service. If no telemetry query access is configured,

@@ -1,6 +1,13 @@
 /** Copy for the workbench area: list, composer, palette, rail, footer. Groups are the owning components. */
 export const workbench = {
   quuuAI: {
+    reset: 'Reset QuuuAI…',
+    resetHint: 'Clear conversations, suggestions and shared memory.',
+    resetConfirm: 'Reset QuuuAI?',
+    resetDetail: 'All QuuuAI conversations (including archived threads), suggestions and shared memory will be deleted. This cannot be undone.\n\nSettings and tasks already created in other projects will be kept.',
+    resetAction: 'Reset',
+    resetDone: 'QuuuAI has been reset.',
+
     replyPlaceholder: 'Reply in this thread…',
     reserveReply: 'Send after reply',
     channel: "Conversation",

@@ -6711,5 +6711,12 @@
   },
   "SettingsSetResponseValueSstpScriptsAssistant": {
     "items": 1
+  },
+  "AssistantResetRequest": {},
+  "AssistantResetResponseValue": {
+    "items": 1
+  },
+  "AssistantResetResponse": {
+    "value": 1
   }
 }

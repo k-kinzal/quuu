@@ -103,7 +103,9 @@ describe('the single left menu and the footer of the main surface', () => {
     useStore.getState().setSection({ kind: 'project', id: projectId })
     useStore.getState().openProjectDocuments(true)
     render(<App />)
-    await screen.findByRole('heading', { name: 'Read while planning' }, { timeout: 5000 })
+    // This goes through real IPC and several Git child processes before rendering.
+    // Allow loaded development machines to finish that work without changing the assertion.
+    await screen.findByRole('heading', { name: 'Read while planning' }, { timeout: 15000 })
     const input = screen.getByPlaceholderText<HTMLTextAreaElement>('Task title...')
     fireEvent.change(input, { target: { value: 'Plan the next change' } })
     fireEvent.click(screen.getByRole('button', { name: 'Add' }))
@@ -111,7 +113,7 @@ describe('the single left menu and the footer of the main surface', () => {
     expect(screen.getByRole('heading', { name: 'Read while planning' })).toBeTruthy()
     expect(useStore.getState()).toMatchObject({ projectDocumentsOpen: true, detailOpen: false })
     expect(input.value).toBe('')
-  })
+  }, 30000)
   it('keeps the task draft on reading surfaces and leaves the open task to its own composer', async () => {
     useStore.setState({ ready: true, settingsCategory: 'appearance' })
     render(<App />)

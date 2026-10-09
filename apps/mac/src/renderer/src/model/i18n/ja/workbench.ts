@@ -2,6 +2,13 @@ import type { workbench as en } from '../en/workbench.js'
 
 export const workbench: typeof en = {
   quuuAI: {
+    reset: 'QuuuAIをリセット…',
+    resetHint: '会話・提案履歴・共有メモリを消去します。',
+    resetConfirm: 'QuuuAIをリセットしますか？',
+    resetDetail: 'アーカイブ済みを含むすべての会話・提案履歴・共有メモリを削除します。この操作は取り消せません。\n\n設定と、各プロジェクトに作成済みのタスクは保持されます。',
+    resetAction: 'リセット',
+    resetDone: 'QuuuAIをリセットしました。',
+
     replyPlaceholder: 'このスレッドに返信…',
     reserveReply: '返信後に送信',
     channel: "会話",

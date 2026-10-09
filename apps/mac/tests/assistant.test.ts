@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -62,6 +62,107 @@ describe('shared memory', () => {
     repo.setTaskStatus(app.db, task.id, 'review', { sessionId: first.sessionId })
     const followup = app.runner.prepare({ task: repo.getTask(app.db, task.id)!, project: repo.getProject(app.db, QUUU_PROJECT_ID)!, agent: repo.getAgent(app.db, agent)!, groupId: null, kind: 'followup', sessionId: first.sessionId, messageOverride: 'Continue', fallbackFromRunId: null })
     expect(followup.args.join(' ')).toContain('Prefer focused changes.')
+  })
+})
+
+describe('assistant reset', () => {
+  it('clears all assistant history and memory while retaining settings and approved project work', () => {
+    const check = completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    const approved = app.assistant.react(proposal.taskId, 'approve')
+    const thread = app.assistant.state().threads[0]
+    app.assistant.markRead(thread.taskId, thread.revision)
+    const archived = app.assistant.send('Debug conversation')
+    repo.setTaskArchived(app.db, archived.id, true)
+    const runId = occupy(app.db, archived.id, agent)
+    repo.updateRun(app.db, runId, { status: 'succeeded', endedAt: new Date().toISOString() })
+    repo.setTaskStatus(app.db, archived.id, 'review')
+    const sessionId = repo.getRun(app.db, runId)!.sessionId
+    app.assistant.setMemory('Debug preference', app.assistant.memory().revision)
+    app.assistant.configure({ enabled: false, intervalHours: 24, confidenceThreshold: 88 })
+    const beforeProject = repo.getProject(app.db, QUUU_PROJECT_ID)
+    const settings = app.assistant.settings()
+    const hooks = vi.fn()
+    repo.setLifecycleRecorder(app.db, hooks)
+
+    expect(app.assistant.reset().sort()).toEqual([check, proposal.taskId, archived.id].sort())
+    expect(app.assistant.memory().content).toBe('')
+    expect(app.assistant.state()).toMatchObject({ threads: [], proposals: [], unread: false, lastCheckAt: null, nextCheckAt: null, error: null, settings })
+    expect(repo.listAssistantChecks(app.db)).toEqual([])
+    expect(repo.assistantReads(app.db).size).toBe(0)
+    expect(repo.listRunsByTask(app.db, archived.id)).toEqual([])
+    expect(repo.getProject(app.db, QUUU_PROJECT_ID)).toEqual(beforeProject)
+    expect(repo.getTask(app.db, approved.executionTaskId!)).toMatchObject({ projectId: project, status: 'queued' })
+    expect(existsSync(app.assistant.resultPath(check))).toBe(false)
+    expect(hooks).not.toHaveBeenCalled()
+    // Provider logs remain provider-owned; import must not turn them back into conversations.
+    expect(repo.managedSessionIds(app.db).has(sessionId)).toBe(true)
+    app.shutdown(); app.db.close()
+    app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+    app.assistant.reconcile()
+    expect(app.assistant.state()).toMatchObject({ threads: [], proposals: [], unread: false, settings })
+    expect(repo.managedSessionIds(app.db).has(sessionId)).toBe(true)
+  })
+
+  it.each(['thread', 'research'] as const)('refuses to reset active %s work without deleting anything', kind => {
+    completedProposal()
+    app.assistant.react(app.assistant.state().proposals[0].taskId, 'dismiss')
+    makeDue()
+    const id = kind === 'thread' ? app.assistant.send('Working').id : app.assistant.prepareCheck()!
+    occupy(app.db, id, agent)
+    app.assistant.setMemory('Still needed', app.assistant.memory().revision)
+    const state = app.assistant.state()
+    const tasks = repo.listTasks(app.db, true, true)
+    const memory = app.assistant.memory()
+    expect(() => app.assistant.reset()).toThrow(/finish/)
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    expect(app.assistant.state()).toEqual(state)
+    expect(app.assistant.memory()).toEqual(memory)
+  })
+
+  it('does not erase context while a deletion hook is queued', () => {
+    const task = app.assistant.send('Debug')
+    app.settings.setSettings({ taskHooks: [{ id: 'reset-test', name: 'Deletion hook', kind: 'command', command: 'true', prompt: '', events: ['deleted'], enabled: true, timeoutSeconds: 60 }] })
+    app.hooks.record(task, 'deleted')
+    expect(() => app.assistant.reset()).toThrow(/finish/)
+    expect(repo.getTask(app.db, task.id)).not.toBeNull()
+  })
+
+  it('invalidates pre-reset editors even when memory was empty and recovers oversized memory', () => {
+    const before = app.assistant.memory()
+    app.assistant.reset()
+    expect(() => app.assistant.setMemory('Stale draft', before.revision)).toThrow(/changed/)
+    const empty = app.assistant.memory()
+    app.assistant.reset()
+    expect(() => app.assistant.setMemory('Another stale draft', empty.revision)).toThrow(/changed/)
+    writeFileSync(memoryPath(dir), 'x'.repeat(MEMORY_MAX_BYTES + 1))
+    app.assistant.reset()
+    expect(app.assistant.memory().bytes).toBe(0)
+  })
+
+  it('waits for a canceled process to exit but does not block on a reused historical PID', () => {
+    const task = app.assistant.send('Canceled debug run')
+    const id = occupy(app.db, task.id, agent)
+    repo.updateRun(app.db, id, { status: 'canceled', pid: process.pid, endedAt: new Date().toISOString() })
+    repo.setTaskStatus(app.db, task.id, 'draft')
+    // Our test process predates the run, so move its start back to cover that process.
+    app.db.prepare('UPDATE runs SET started_at = ? WHERE id = ?').run('2000-01-01T00:00:00Z', id)
+    expect(() => app.assistant.reset()).toThrow(/finish/)
+    repo.updateRun(app.db, id, { endedAt: '2000-01-02T00:00:00Z' })
+    expect(app.assistant.reset()).toContain(task.id)
+  })
+
+  it('rolls back deletion if the memory file cannot be replaced', () => {
+    completedProposal()
+    app.assistant.setMemory('Keep this if reset fails', app.assistant.memory().revision)
+    // A directory at the temporary-file path deterministically causes the atomic write to fail.
+    mkdirSync(`${memoryPath(dir)}.tmp`)
+    const before = app.assistant.state()
+    const tasks = repo.listTasks(app.db, true, true)
+    expect(() => app.assistant.reset()).toThrow()
+    expect(app.assistant.state()).toEqual(before)
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    expect(app.assistant.memory().content).toBe('Keep this if reset fails')
   })
 })
 

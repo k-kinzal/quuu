@@ -1,4 +1,5 @@
 import { isProcessAlive } from '../platform/runProcess.js'
+import { processStartedAt } from '../platform/processProbe.js'
 import { setTimeout as delay } from 'node:timers/promises'
 import { assertWorktreeIdle, completeTaskWorktree, discardTaskWorktree, withWorktreeOperation } from './worktrees.js'
 import type { Agent } from '../agents/types.js'
@@ -283,6 +284,36 @@ export class TaskOperations {
       await discardTaskWorktree(this.db, id)
       remove()
     })
+  }
+
+  /** Reset workspace-free conversations atomically, without yielding to new execution claims. */
+  deleteIdleTasks(ids: string[]): void {
+    for (const id of ids) {
+      assertWorktreeIdle(this.db, id)
+      const runs = repo.listRunsByTask(this.db, id)
+      if (repo.getTask(this.db, id)?.status === 'running' ||
+        runs.some(run => run.status === 'running' || run.status === 'starting' || this.stillExiting(run)) ||
+        repo.listHookRuns(this.db, { taskId: id, active: true }).length ||
+        repo.getTaskReport(this.db, id)?.status === 'generating' ||
+        repo.getTaskWorktree(this.db, id) || repo.getRunnerWorkspace(this.db, id)) {
+        throw new Error(t('tasks.deleteBusy'))
+      }
+    }
+    inTransaction(this.db, () => {
+      // Resetting a conversation must not launch deletion hooks with its old context.
+      for (const id of ids) repo.deleteTask(this.db, id, false)
+      this.changed()
+      this.wake()
+    })
+  }
+
+  private stillExiting(run: Run): boolean {
+    if (run.pid === null || !isProcessAlive(run.pid)) return false
+    // Recovered cancellation records its outcome before the process group exits. Old
+    // completed runs can name a PID the OS has since given to an unrelated process.
+    const startedAt = processStartedAt(run.pid)
+    return startedAt === null || startedAt >= Date.parse(run.startedAt) - 1000 &&
+      (run.endedAt === null || startedAt <= Date.parse(run.endedAt) + 1000)
   }
 
   archiveTask(id: string, archived: boolean): Task {

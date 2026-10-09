@@ -20,6 +20,19 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
+it('adds reset session exclusions without changing existing conversations on upgrade', () => {
+  const old = openDatabase(path)
+  const agent = makeAgent(old, { name: 'Agent' })
+  const project = makeProject(old, { name: 'Project', targetId: agent })
+  const task = makeTask(old, project, 'Keep this conversation')
+  old.exec("DROP TABLE assistant_forgotten_sessions; UPDATE meta SET value = '39' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getTask(upgraded, task)?.title).toBe('Keep this conversation')
+  expect(repo.managedSessionIds(upgraded).size).toBe(0)
+  upgraded.close()
+})
+
 it('demotes legacy PR projections to candidates and keeps verified associations across reopening', () => {
   const old = openDatabase(path)
   const projectId = makeProject(old, { name: 'PR migration', targetId: makeAgent(old, { name: 'Agent' }) })
@@ -243,7 +256,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('39')
+    expect(version.value).toBe('40')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -311,7 +324,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('39')
+    expect(version.value).toBe('40')
     db.close()
   })
 

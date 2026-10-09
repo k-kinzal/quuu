@@ -147,6 +147,18 @@ message AssistantSetMemoryResponse {
   optional AssistantSetMemoryResponseValue value = 1;
 }
 
+message AssistantResetRequest {
+
+}
+
+message AssistantResetResponseValue {
+  repeated string items = 1;
+}
+
+message AssistantResetResponse {
+  optional AssistantResetResponseValue value = 1;
+}
+
 message AssistantSendRequest {
   optional string value = 1;
 }
@@ -8823,6 +8835,7 @@ service Quuu {
   rpc AssistantConfigure(AssistantConfigureRequest) returns (AssistantConfigureResponse);
   rpc AssistantMemory(AssistantMemoryRequest) returns (AssistantMemoryResponse);
   rpc AssistantSetMemory(AssistantSetMemoryRequest) returns (AssistantSetMemoryResponse);
+  rpc AssistantReset(AssistantResetRequest) returns (AssistantResetResponse);
   rpc AssistantSend(AssistantSendRequest) returns (AssistantSendResponse);
   rpc AssistantReact(AssistantReactRequest) returns (AssistantReactResponse);
   rpc AssistantMarkRead(AssistantMarkReadRequest) returns (AssistantMarkReadResponse);

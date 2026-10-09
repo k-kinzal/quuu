@@ -10,15 +10,25 @@ export function memoryPath(dataDir: string): string { return join(dataDir, 'assi
 
 export function readMemory(dataDir: string): AssistantMemory {
   const path = memoryPath(dataDir)
-  if (existsSync(path) && statSync(path).size > MEMORY_MAX_BYTES) throw new Error(t('assistant.memoryTooLarge', { bytes: MEMORY_MAX_BYTES }))
-  const content = existsSync(path) ? readFileSync(path, 'utf8') : ''
-  return { content, revision: createHash('sha256').update(content).digest('hex'), bytes: Buffer.byteLength(content), maxBytes: MEMORY_MAX_BYTES }
+  const stat = existsSync(path) ? statSync(path) : null
+  if (stat && stat.size > MEMORY_MAX_BYTES) throw new Error(t('assistant.memoryTooLarge', { bytes: MEMORY_MAX_BYTES }))
+  const content = stat ? readFileSync(path, 'utf8') : ''
+  // Even an empty-to-empty reset invalidates editors opened before it.
+  const revision = createHash('sha256').update(content).update(`${stat?.ino}:${stat?.mtimeMs}:${stat?.ctimeMs}`).digest('hex')
+  return { content, revision, bytes: Buffer.byteLength(content), maxBytes: MEMORY_MAX_BYTES }
 }
 
 /** Compare the version the editor read so one thread cannot erase another thread's memories. */
 export function writeMemory(dataDir: string, content: string, revision: string): AssistantMemory {
   if (Buffer.byteLength(content) > MEMORY_MAX_BYTES) throw new Error(t('assistant.memoryTooLarge', { bytes: MEMORY_MAX_BYTES }))
   if (readMemory(dataDir).revision !== revision) throw new Error(t('assistant.memoryConflict'))
+  return replaceMemory(dataDir, content)
+}
+
+/** Reset must also recover a memory file that is already over the size limit. */
+export function clearMemory(dataDir: string): AssistantMemory { return replaceMemory(dataDir, '') }
+
+function replaceMemory(dataDir: string, content: string): AssistantMemory {
   const path = memoryPath(dataDir)
   mkdirSync(dirname(path), { recursive: true })
   const temp = `${path}.tmp`

@@ -31,6 +31,7 @@ export const contract = {
     configure: procedure.input(AssistantSettingsSchema.partial().strict()).output(AssistantSettingsSchema),
     memory: procedure.output(AssistantMemorySchema),
     setMemory: procedure.input(z.object({ content: z.string().max(16384), revision: z.string() }).strict()).output(AssistantMemorySchema),
+    reset: procedure.output(z.string().array()),
     send: procedure.input(z.string().trim().min(1).max(100000)).output(TaskSchema),
     react: procedure.input(z.object({ taskId: z.string(), reaction: z.enum(['approve', 'dismiss']) }).strict()).output(AssistantProposalSchema),
     markRead: procedure.input(z.object({ taskId: z.string(), revision: z.string() }).strict()).output(z.void())

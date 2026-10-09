@@ -268,6 +268,7 @@ export const en = {
   },
 
   tasks: {
+    deleteBusy: 'Wait for QuuuAI conversations and background work to finish, then reset again.',
     notFound: 'Task not found',
     projectNotFound: 'Project not found',
     emptyMessage: 'The message is empty',

@@ -294,6 +294,18 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "assistant.reset": {
+    "method": "assistantReset",
+    "input": {
+      "kind": "void"
+    },
+    "output": {
+      "kind": "array",
+      "items": {
+        "kind": "string"
+      }
+    }
+  },
   "assistant.send": {
     "method": "assistantSend",
     "input": {
