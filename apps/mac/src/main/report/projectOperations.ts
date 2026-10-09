@@ -1,4 +1,5 @@
 import { EventEmitter } from 'node:events'
+import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { adapterFor } from '../agent-adapters/registry.js'
@@ -22,6 +23,7 @@ import type { ProjectReport, ReportHistoryEntry } from './types.js'
 import { chooseWriter } from './writer.js'
 
 const TIMEOUT_MS = 20 * 60_000
+const RETRY_MS = 15 * 60_000
 
 /** The Mac's calendar day, matching the app's other daily schedules. */
 export function projectReportDue(checkedAt: string | undefined, now = new Date()): boolean {
@@ -72,8 +74,8 @@ export class ProjectReportOperations extends EventEmitter {
   report(projectId: string): ProjectReport | null {
     const row = repo.getProjectReport(this.db, projectId)
     if (!row) return null
-    const { status, revision, path, logPath, error, startedAt, endedAt } = row
-    return { projectId, status, revision, path, logPath, error, startedAt, endedAt }
+    const { status, revision, path, logPath, error, startedAt, endedAt, retryAt } = row
+    return { projectId, status, revision, path, logPath, error, startedAt, endedAt, retryAt }
   }
 
   /** Read-only checks run at most once a day per project; unavailable writers are retried later. */
@@ -110,32 +112,45 @@ export class ProjectReportOperations extends EventEmitter {
     this.settle()
     const previous = repo.getProjectReport(this.db, projectId)
     if (previous?.status === 'generating' || this.starting.has(projectId)) return
-    if (!requested && !projectReportDue(previous?.checkedAt)) return
-    let writer = chooseWriter(this.db, settings)
-    if (!writer.ok) {
-      if (!requested) return
-      throw new Error(t(writer.reason === 'cooling' ? 'report.allCooling' : 'report.noAgent'))
+    const retryKey = createHash('sha256').update(JSON.stringify([
+      project.path, settings.projectReportInstructions, settings.reportTargetKind, settings.reportTargetId
+    ])).digest('hex')
+    if (!requested) {
+      if (previous?.retryAt) {
+        if (previous.retryKey === retryKey && Date.now() < Date.parse(previous.retryAt)) return
+      } else if (!projectReportDue(previous?.checkedAt)) return
     }
     this.starting.add(projectId)
-    try {
-      if (!existsSync(project.path)) throw new Error(t('report.dirMissing', { path: project.path }))
-      const revision = await projectRevision(project.path, settings.projectReportInstructions)
-      if (this.stopped) return
+    const stillCurrent = (): boolean => {
+      if (this.stopped) return false
       const current = repo.getProject(this.db, projectId)
       const latest = this.getSettings()
-      // Settings or the project may have changed while Git was being read.
-      if (!current || current.deletedAt || !current.reportEnabled || current.path !== project.path ||
-        !latest.reportEnabled || latest.projectReportInstructions !== settings.projectReportInstructions) return
+      return !!current && !current.deletedAt && current.reportEnabled && current.path === project.path &&
+        latest.reportEnabled && latest.projectReportInstructions === settings.projectReportInstructions &&
+        latest.reportTargetKind === settings.reportTargetKind && latest.reportTargetId === settings.reportTargetId
+    }
+    const attemptedAt = nowIso()
+    let launched = false
+    try {
+      let writer = chooseWriter(this.db, settings)
+      if (!writer.ok) {
+        if (!requested) return
+        throw new Error(t(writer.reason === 'cooling' ? 'report.allCooling' : 'report.noAgent'))
+      }
+      if (!existsSync(project.path)) throw new Error(t('report.dirMissing', { path: project.path }))
+      const revision = await projectRevision(project.path, settings.projectReportInstructions)
+      // Settings or the project may have changed while its files were being read.
+      if (!stillCurrent()) return
       if (!requested && previous?.revision === revision && previous.path && existsSync(previous.path)) {
-        repo.markProjectReportChecked(this.db, projectId, nowIso())
+        if (previous.retryAt) {
+          repo.saveProjectReport(this.db, { ...previous, status: 'ready', error: '',
+            retryAt: null, retryKey: '', checkedAt: nowIso() })
+        } else repo.markProjectReportChecked(this.db, projectId, nowIso())
         return
       }
       const path = await resolveLoginPath()
-      if (this.stopped) return
-      const beforeLaunch = repo.getProject(this.db, projectId)
+      if (!stillCurrent()) return
       const launchSettings = this.getSettings()
-      if (!beforeLaunch || beforeLaunch.deletedAt || !beforeLaunch.reportEnabled || beforeLaunch.path !== project.path ||
-        !launchSettings.reportEnabled || launchSettings.projectReportInstructions !== settings.projectReportInstructions) return
       writer = chooseWriter(this.db, launchSettings)
       if (!writer.ok) {
         if (!requested) return
@@ -158,13 +173,27 @@ export class ProjectReportOperations extends EventEmitter {
       const pid = spawnReport({ command: agent.command, args, cwd: project.path, log, exitPath,
         env: { ...withPath({ ...process.env, ...agent.env }, path), ELECTRON_RUN_AS_NODE: undefined,
           NODE_OPTIONS: undefined, QUUU_TASK_ID: undefined, QUUU_EXIT_FILE: exitPath } })
+      launched = true
       if (writer.value.groupId) repo.advanceGroupRotation(this.db, writer.value.groupId, agent.id)
       repo.openReportSession(this.db, project.path, startedAt, new Date(Date.parse(startedAt) + TIMEOUT_MS).toISOString())
       repo.saveProjectReport(this.db, {
         projectId, status: 'generating', cwd: project.path, revision: previous?.revision ?? '',
         pendingRevision: revision, checkedAt: startedAt, path: previous?.path ?? '', pending: page,
-        logPath: log, exitPath, error: '', pid, startedAt, endedAt: null
+        logPath: log, exitPath, error: '', pid, startedAt, endedAt: null, retryAt: null, retryKey: ''
       })
+    } catch (error) {
+      // Persist before propagating: a restart or another minute tick must honor the same wait.
+      if (!launched && stillCurrent()) {
+        const endedAt = nowIso()
+        repo.saveProjectReport(this.db, {
+          projectId, status: 'failed', cwd: project.path, revision: previous?.revision ?? '',
+          pendingRevision: '', checkedAt: endedAt, path: previous?.path ?? '', pending: '',
+          logPath: '', exitPath: '', error: error instanceof Error ? error.message : String(error),
+          pid: null, startedAt: attemptedAt, endedAt,
+          retryAt: new Date(Date.parse(endedAt) + RETRY_MS).toISOString(), retryKey
+        })
+      }
+      throw error
     } finally { this.starting.delete(projectId) }
   }
 

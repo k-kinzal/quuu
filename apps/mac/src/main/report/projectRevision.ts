@@ -1,18 +1,45 @@
 import { execFile, spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
-import { lstat, readlink } from 'node:fs/promises'
-import { join } from 'node:path'
+import { lstat, readlink, realpath } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { promisify } from 'node:util'
+import { documentRevision } from './projectDocuments.js'
 
 const exec = promisify(execFile)
 
 async function git(cwd: string, args: string[]): Promise<string> {
   const { stdout } = await exec('git', args, {
     cwd, encoding: 'utf8', timeout: 60_000, maxBuffer: 32 * 1024 * 1024,
-    env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' }
+    env: { ...process.env, GIT_OPTIONAL_LOCKS: '0', LC_ALL: 'C' }
   })
   return stdout
+}
+
+async function present(path: string): Promise<boolean> {
+  try { await lstat(path); return true }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw error
+  }
+}
+
+/** Git also says "not a repository" for broken metadata; absence needs independent evidence. */
+async function ordinaryDirectory(cwd: string, error: unknown): Promise<boolean> {
+  const failure = error as { code?: unknown; stderr?: unknown }
+  if (failure.code !== 128 || typeof failure.stderr !== 'string' ||
+    !/^fatal: not a git repository \((or any of the parent directories|or any parent up to mount point .+)\)/m.test(failure.stderr)) return false
+  if (process.env.GIT_DIR || process.env.GIT_WORK_TREE || process.env.GIT_COMMON_DIR) return false
+  let directory = await realpath(cwd)
+  for (;;) {
+    if (await present(join(directory, '.git'))) return false
+    // Bare repositories have no .git entry. Do not reinterpret damaged ones as documents.
+    if (await present(join(directory, 'HEAD')) &&
+      (await present(join(directory, 'objects')) || await present(join(directory, 'refs')))) return false
+    const parent = dirname(directory)
+    if (parent === directory) return true
+    directory = parent
+  }
 }
 
 /** Stream binary diffs into the digest so large changes never get silently truncated. */
@@ -56,7 +83,11 @@ async function untrackedHash(cwd: string): Promise<string> {
 /** No checkout, staging or object writes: projects may be actively edited on main. */
 export async function projectRevision(cwd: string, instructions: string): Promise<string> {
   // An unreadable repository is an error, never proof that nothing changed.
-  await git(cwd, ['rev-parse', '--show-toplevel'])
+  try { await git(cwd, ['rev-parse', '--show-toplevel']) }
+  catch (error) {
+    if (await ordinaryDirectory(cwd, error)) return documentRevision(cwd, instructions)
+    throw error
+  }
   const refs = await git(cwd, ['show-ref', '--head']).catch(async (error: unknown) => {
     // An unborn repository legitimately has no refs.
     if ((await git(cwd, ['rev-parse', '--is-inside-work-tree'])).trim() === 'true' &&

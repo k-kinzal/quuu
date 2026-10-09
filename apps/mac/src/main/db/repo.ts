@@ -362,7 +362,7 @@ function toProjectReport(row: Row): StoredProjectReport {
   const { taskId: _taskId, ...report } = toReport(row)
   return {
     ...report, projectId: s(row.project_id), checkedAt: s(row.checked_at),
-    pendingRevision: s(row.pending_revision)
+    pendingRevision: s(row.pending_revision), retryAt: sn(row.retry_at), retryKey: s(row.retry_key)
   }
 }
 
@@ -377,11 +377,11 @@ export function listGeneratingProjectReports(db: Db): StoredProjectReport[] {
 
 export function saveProjectReport(db: Db, report: StoredProjectReport): void {
   db.prepare(`INSERT OR REPLACE INTO project_reports (project_id, status, cwd, revision,
-    pending_revision, checked_at, path, pending, log_path, exit_path, error, pid, started_at, ended_at)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
+    pending_revision, checked_at, path, pending, log_path, exit_path, error, pid, started_at, ended_at, retry_at, retry_key)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`).run(
     report.projectId, report.status, report.cwd, report.revision, report.pendingRevision,
     report.checkedAt, report.path, report.pending, report.logPath, report.exitPath, report.error,
-    report.pid, report.startedAt, report.endedAt
+    report.pid, report.startedAt, report.endedAt, report.retryAt ?? null, report.retryKey ?? ''
   )
 }
 

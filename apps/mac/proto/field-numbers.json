@@ -3733,7 +3733,8 @@
     "error": 5,
     "startedAt": 6,
     "endedAt": 7,
-    "projectId": 8
+    "projectId": 8,
+    "retryAt": 9
   },
   "ReportProjectGetResponseValue": {
     "variant1": 1,
@@ -6725,5 +6726,9 @@
   "AssistantNoReplyRequest": {
     "value": 1
   },
-  "AssistantNoReplyResponse": {}
+  "AssistantNoReplyResponse": {},
+  "ReportProjectGetResponseValueVariant1RetryAt": {
+    "variant1": 1,
+    "variant2": 2
+  }
 }

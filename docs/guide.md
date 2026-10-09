@@ -646,14 +646,50 @@ The default includes gaps only when supported by evidence and relevant to the
 purpose; it omits Git status, branch comparisons and commit bookkeeping. Customizing
 the focus preserves the introduction; task change reports keep their before/after opening.
 
-A saved fingerprint includes the local main commit (master when main is absent),
+Git projects fingerprint the local main commit (master when main is absent),
 HEAD, staged and unstaged binary diffs, non-ignored untracked file contents, and
-the dashboard instructions. An unchanged project keeps its last report. Git is
-read without staging, checking out, or writing objects. Missed days do not queue
-extra generations. **Regenerate report** in the dashboard header always requests
-a new report. Until a page exists the dashboard body is empty; while regenerating,
-it keeps the previous page. A failed generation also keeps that page, and running
-generators survive app restarts just like task report generators.
+the dashboard instructions. Git is read without staging, checking out, or writing
+objects. Unborn repositories and linked worktrees are supported.
+
+Ordinary directories also support initial generation and regeneration; Quuu never
+initializes Git. Their automatic change detection uses a SHA-256 fingerprint of
+document names and complete contents plus the project path and dashboard instructions:
+
+- Files immediately under the project root, and under `doc`, `docs`, or
+  `documentation` (case-insensitive), down to four directory levels below the root.
+- Extensions `.md`, `.markdown`, `.mdx`, `.rst`, `.txt`, `.adoc`, and extensionless
+  `README`, `AGENTS`, `CLAUDE`, `LICENSE`, `COPYING` (case-insensitive).
+- Hidden entries and symbolic links are excluded. Directories named `node_modules`,
+  `vendor`, `venv`, `env`, `build`, `dist`, `target`, `coverage`, `__pycache__`,
+  `models`, `checkpoints`, or `outputs` are never traversed.
+- Files larger than 1 MiB are excluded entirely. Each asynchronous scan is limited
+  to 4,096 directory entries, 16 MiB of document content, and a five-second budget
+  checked between reads. Reaching a scan limit fails the check explicitly; a partial
+  fingerprint is never accepted as unchanged.
+
+Content edits (even with unchanged timestamps), additions, removals and renames
+within that scope trigger the next daily generation. Source-only changes outside
+that scope, binary/model files, and larger documents require manual regeneration
+in non-Git projects. This scope limits only change detection: the writer still
+reads project documentation and code to explain the project. Missing or unreadable
+directories, damaged Git metadata (including in parent directories), and Git
+execution errors remain failures; they do not fall back to document scanning.
+
+An unchanged project keeps its last report. Missed days do not queue extra
+generations. **Regenerate report** in the dashboard header always requests a new
+report, including when automatic checks are waiting to retry. Failures before the
+writer starts retain their reason, check time and automatic retry deadline in the
+database (`report project-get` exposes `error` and `retryAt`). Automatic retries
+wait 15 minutes, including across midnight and app restarts. Editing the project
+path, dashboard instructions or report writer selection permits an earlier retry;
+otherwise a resolved cause recovers on the next retry, or immediately through
+manual regeneration. An unavailable/cooling writer still waits for availability
+without consuming the daily check. Neither kind of failure disables reports.
+
+Until a page exists the dashboard body is empty; while regenerating or after any
+failure, it keeps the previous successful page and history. A successful retry of
+the check clears its error; if the saved page is still current it needs no new
+generation. Running generators survive app restarts just like task report generators.
 
 ## Report appearance
 

@@ -20,6 +20,31 @@ beforeEach(() => {
 })
 afterEach(() => rmSync(dir, { recursive: true, force: true }))
 
+it('adds project report retry state without losing existing pages, history or an active generation', () => {
+  const old = openDatabase(path)
+  const agent = makeAgent(old, { name: 'Writer' })
+  const projectId = makeProject(old, { name: 'Existing project', targetId: agent })
+  const report = { projectId, status: 'generating' as const, cwd: dir, revision: 'successful',
+    pendingRevision: 'next', checkedAt: '2026-10-08T00:00:00.000Z', path: '/saved.html',
+    pending: '/next.html', logPath: '/next.log', exitPath: '/next.exit', error: '', pid: 123,
+    startedAt: '2026-10-08T00:00:00.000Z', endedAt: null }
+  repo.saveProjectReport(old, report)
+  repo.addReportHistory(old, { projectId }, { path: report.path, revision: report.revision, generatedAt: report.startedAt })
+  old.exec("ALTER TABLE project_reports DROP COLUMN retry_at; ALTER TABLE project_reports DROP COLUMN retry_key; UPDATE meta SET value = '41' WHERE key = 'schema_version'")
+  old.close()
+  const upgraded = openDatabase(path)
+  expect(repo.getProjectReport(upgraded, projectId)).toEqual({ ...report, retryAt: null, retryKey: '' })
+  expect(repo.listReportHistory(upgraded, { projectId })).toHaveLength(1)
+  repo.saveProjectReport(upgraded, { ...report, status: 'failed', retryAt: '2026-10-09T00:15:00.000Z', retryKey: 'inputs', error: 'Unreadable repository' })
+  upgraded.close()
+  const reopened = openDatabase(path)
+  expect(repo.getProjectReport(reopened, projectId)).toMatchObject({ path: report.path, revision: report.revision,
+    retryAt: '2026-10-09T00:15:00.000Z', retryKey: 'inputs', error: 'Unreadable repository' })
+  expect(repo.listReportHistory(reopened, { projectId })).toHaveLength(1)
+  expect(repo.getProject(reopened, projectId)?.reportEnabled).toBe(true)
+  reopened.close()
+})
+
 it('adds reset session exclusions without changing existing conversations on upgrade', () => {
   const old = openDatabase(path)
   const agent = makeAgent(old, { name: 'Agent' })
@@ -256,7 +281,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('41')
+    expect(version.value).toBe('42')
     for (const table of ['session_indexes', 'session_messages', 'session_images', 'task_review_evidence', 'task_review_snapshots', 'task_reports', 'project_reports']) {
       expect(db.prepare(`PRAGMA table_info(${table})`).all().length).toBeGreaterThan(0)
     }
@@ -324,7 +349,7 @@ describe('schema migration', () => {
     const version = db.prepare("SELECT value FROM meta WHERE key='schema_version'").get() as {
       value: string
     }
-    expect(version.value).toBe('41')
+    expect(version.value).toBe('42')
     db.close()
   })
 

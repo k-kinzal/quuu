@@ -72,10 +72,14 @@ export interface ReportHistoryEntry {
 /** The last readable project assessment, kept while its replacement is written. */
 export interface ProjectReport extends Omit<TaskReport, 'taskId'> {
   projectId: string
+  /** Automatic retry after a failure before the writer launched; manual requests bypass it. */
+  retryAt?: string | null
 }
 
 export interface StoredProjectReport extends ProjectReport, Omit<StoredReport, keyof TaskReport> {
   checkedAt: string
   /** Only becomes revision when the new page succeeds. */
   pendingRevision: string
+  /** Inputs whose change allows an earlier retry. Empty outside a pre-launch failure. */
+  retryKey?: string
 }

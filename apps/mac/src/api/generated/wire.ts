@@ -18315,6 +18315,17 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             },
             "projectId": {
               "kind": "string"
+            },
+            "retryAt": {
+              "kind": "union",
+              "variants": [
+                {
+                  "kind": "string"
+                },
+                {
+                  "kind": "null"
+                }
+              ]
             }
           },
           "required": [

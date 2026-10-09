@@ -295,6 +295,8 @@ CREATE TABLE IF NOT EXISTS project_reports (
   revision TEXT NOT NULL DEFAULT '',
   pending_revision TEXT NOT NULL DEFAULT '',
   checked_at TEXT NOT NULL,
+  retry_at TEXT,
+  retry_key TEXT NOT NULL DEFAULT '',
   path TEXT NOT NULL DEFAULT '',
   pending TEXT NOT NULL DEFAULT '',
   log_path TEXT NOT NULL DEFAULT '',
@@ -400,7 +402,7 @@ export function openDatabase(path: string = dbPath()): Db {
  */
 function migrate(db: Db): void {
   const current = getSchemaVersion(db)
-  const target = 41
+  const target = 42
   if (current >= target) return
 
   // v1 -> v2: let the composer pick an agent for this one run.
@@ -800,6 +802,11 @@ function migrate(db: Db): void {
   if (current < 41) db.exec(`CREATE TABLE IF NOT EXISTS assistant_turns (
     run_id TEXT PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE, data TEXT NOT NULL
   )`)
+
+  if (current < 42) {
+    addColumnIfMissing(db, 'project_reports', 'retry_at', 'TEXT')
+    addColumnIfMissing(db, 'project_reports', 'retry_key', "TEXT NOT NULL DEFAULT ''")
+  }
 
   setSchemaVersion(db, target)
 }

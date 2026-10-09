@@ -26,7 +26,11 @@ export const TaskReportSchema = z.object({
 })
 export type TaskReport = z.infer<typeof TaskReportSchema>
 
-export const ProjectReportSchema = TaskReportSchema.omit({ taskId: true }).extend({ projectId: z.string() })
+export const ProjectReportSchema = TaskReportSchema.omit({ taskId: true }).extend({
+  projectId: z.string(),
+  /** Earliest automatic retry after a pre-launch failure. Manual regeneration bypasses it. */
+  retryAt: z.string().nullable().optional()
+})
 export type ProjectReport = z.infer<typeof ProjectReportSchema>
 
 /**

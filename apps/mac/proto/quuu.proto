@@ -8289,6 +8289,13 @@ message ReportProjectGetResponseValueVariant1EndedAt {
   }
 }
 
+message ReportProjectGetResponseValueVariant1RetryAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
 message ReportProjectGetResponseValueVariant1 {
   optional string status = 1;
   optional string revision = 2;
@@ -8298,6 +8305,7 @@ message ReportProjectGetResponseValueVariant1 {
   optional string startedAt = 6;
   optional ReportProjectGetResponseValueVariant1EndedAt endedAt = 7;
   optional string projectId = 8;
+  optional ReportProjectGetResponseValueVariant1RetryAt retryAt = 9;
 }
 
 message ReportProjectGetResponseValue {
