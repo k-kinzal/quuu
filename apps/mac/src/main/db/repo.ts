@@ -98,7 +98,22 @@ export function carryRetiredSessionIndexes(db: Db, current: Map<string, string>)
   }
   // Pages or images left under a key with no index row are unreachable: nothing names them.
   for (const table of SESSION_TABLES.slice(1)) {
-    db.exec(`DELETE FROM ${table} WHERE log_key NOT IN (SELECT log_key FROM session_indexes)`)
+    const remove = db.prepare(`DELETE FROM ${table} WHERE log_key = ?`)
+    if (table === 'session_images') {
+      // Images are keyed by id, unlike the paged tables below. Read keys, never image bytes.
+      const keys = db.prepare(`SELECT DISTINCT log_key FROM ${table}`).all() as Row[]
+      for (const row of keys) if (!known.has(s(row.log_key))) remove.run(s(row.log_key))
+      continue
+    }
+    // Seek once per session through the primary index. Even DISTINCT would walk every
+    // message's index entry; a direct NOT IN delete also reads gigabytes of message bodies.
+    const next = db.prepare(`SELECT log_key FROM ${table} WHERE log_key > ? ORDER BY log_key LIMIT 1`)
+    let row = db.prepare(`SELECT log_key FROM ${table} ORDER BY log_key LIMIT 1`).get()
+    while (row) {
+      const key = s(row.log_key)
+      if (!known.has(key)) remove.run(key)
+      row = next.get(key)
+    }
   }
   return { carried, dropped }
 }
@@ -1690,10 +1705,11 @@ export function listRunsByTask(db: Db, taskId: string): Run[] {
   ).map(toRun)
 }
 
-export function listRunsForProjection(db: Db): Run[] {
+export function listRunsForProjection(db: Db): Pick<Run, 'id' | 'status' | 'sessionId' | 'sessionLogPath' | 'startedAt'>[] {
+  // Polling history needs identity and change markers, not every run's prompt and launch config.
   return (
-    db.prepare('SELECT * FROM runs ORDER BY started_at DESC, rowid DESC').all() as Row[]
-  ).map(toRun)
+    db.prepare('SELECT id, status, session_id, session_log_path, started_at FROM runs ORDER BY started_at DESC, rowid DESC').all() as Row[]
+  ).map(row => ({ id: s(row.id), status: s(row.status) as Run['status'], sessionId: s(row.session_id), sessionLogPath: sn(row.session_log_path), startedAt: s(row.started_at) }))
 }
 
 export function getTaskReviewBase(db: Db, taskId: string): TaskReviewBase | null {

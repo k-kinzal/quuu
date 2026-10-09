@@ -30,6 +30,7 @@ import { offerNewAgents, seedIfEmpty } from './seed.js'
 import { attachActiveRuns, sessionReadTarget } from './session/sessionAttach.js'
 import { SessionView } from './session/view.js'
 import { SessionIndex, sessionKey } from './session/index.js'
+import { SessionProjections } from './session/projections.js'
 import { workplaceDerivation } from './session/workplace.js'
 import { reviewEvidenceDerivation } from './review/evidence.js'
 import { SettingsOperations } from './settings/operations.js'
@@ -82,6 +83,8 @@ export class QuuuApp extends EventEmitter {
   private initialImport: NodeJS.Timeout | null = null
   private importTimer: NodeJS.Timeout | null = null
   private livenessTimer: NodeJS.Timeout | null = null
+  private importing = false
+  private stopped = false
   readonly tasks: TaskOperations
   readonly assistant: AssistantOperations
   readonly projects: ProjectOperations
@@ -94,8 +97,7 @@ export class QuuuApp extends EventEmitter {
   readonly sessions: SessionIndex
   private projectionTimer: NodeJS.Timeout | null = null
   private retentionTimer: NodeJS.Timeout | null = null
-  private projectionRuns = new Map<string, string>()
-  private historicalProbeAt = 0
+  private readonly projections: SessionProjections
   private builtInWorkspace: string | null = null
   private controls: AppControls | null = null
   constructor(dbPath?: string) {
@@ -145,6 +147,7 @@ export class QuuuApp extends EventEmitter {
      * the terminal read what was derived; none of them opens a session log.
      */
     this.sessions = new SessionIndex(this.db, [reviewEvidenceDerivation, workplaceDerivation])
+    this.projections = new SessionProjections(this.db, this.sessions)
     this.sessions.on('indexed', (_key: string, taskId: string) => {
       this.reviews.requestRefresh(taskId)
       const task = repo.getTask(this.db, taskId)
@@ -289,15 +292,21 @@ export class QuuuApp extends EventEmitter {
     if (this.initialImport) clearTimeout(this.initialImport)
     if (this.importTimer) clearInterval(this.importTimer)
     const run = (): void => {
-      if (!this.settings.getSettings().importExternalSessions) return
-      try {
-        // Re-bind first, so sessions we launched ourselves are not picked up as external.
-        this.attachSessions()
-        const result = this.importer.sync(this.settings.getSettings())
-        if (result.createdTasks > 0 || result.updated > 0) this.changed()
-      } catch {
-        // An import failure must not stop the app
+      if (this.stopped || this.importing || !this.settings.getSettings().importExternalSessions) return
+      this.importing = true
+      const settings = this.settings.getSettings()
+      const active = (): boolean => {
+        const current = this.settings.getSettings()
+        return !this.stopped && current.importExternalSessions &&
+          current.importHistoryDays === settings.importHistoryDays && current.importCreateProjects === settings.importCreateProjects
       }
+      // Runs can launch while discovery yields. Re-bind immediately before applying its results.
+      void this.importer.syncInBackground(settings, active, () => this.attachSessions())
+        .then(result => {
+          if (result && (result.createdTasks > 0 || result.updated > 0)) this.changed()
+        })
+        .catch(error => { console.warn('Cannot import external sessions', error) })
+        .finally(() => { this.importing = false })
     }
     this.initialImport = setTimeout(run, 1200)
     this.initialImport.unref?.()
@@ -349,6 +358,8 @@ export class QuuuApp extends EventEmitter {
 
 
   shutdown(): void {
+    this.stopped = true
+    this.projections.stop()
     this.assistant.stop()
     this.pullRequestFollowUp.stop()
     if (this.projectionTimer) clearInterval(this.projectionTimer)
@@ -460,17 +471,6 @@ export class QuuuApp extends EventEmitter {
   }
 
   private refreshProjections(): void {
-    const runs = repo.listRunsForProjection(this.db)
-    const probeHistory = Date.now() >= this.historicalProbeAt
-    if (probeHistory) this.historicalProbeAt = Date.now() + 60_000
-    // Prioritize current work; historical logs are queued once and then only stat-ed.
-    runs.sort((a, b) => Number(b.status === 'running') - Number(a.status === 'running') || b.startedAt.localeCompare(a.startedAt))
-    for (const run of runs) {
-      const signature = `${run.status}:${run.sessionId}:${run.sessionLogPath}`
-      if (!probeHistory && run.status !== 'running' && this.projectionRuns.get(run.id) === signature) continue
-      this.projectionRuns.set(run.id, signature)
-      try { this.sessions.request(run) }
-      catch (error) { console.warn('Cannot schedule session indexing', error) }
-    }
+    void this.projections.refresh().catch(error => { console.warn('Cannot discover session history', error) })
   }
 }

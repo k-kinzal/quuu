@@ -3,6 +3,7 @@ import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { appendFileSync, mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { setImmediate as yieldToApp } from 'node:timers/promises'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { AppSnapshot } from '../src/main/snapshot.js'
 import { DEFAULT_SETTINGS } from '../src/main/settings/types.js'
@@ -14,7 +15,7 @@ import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { CodexSessionParser } from '../src/main/agent-adapters/codex/parser.js'
 import { targetLabel, taskTargetKey, taskTargetLabel } from '../src/renderer/src/model/derive.js'
-import { isolateSessionDirs, makeAgent, memoryDb, releaseSessionDirs } from './helpers.js'
+import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, occupy, releaseSessionDirs } from './helpers.js'
 
 let root: string
 let claudeDir: string
@@ -184,6 +185,47 @@ function writeCodex(
 const settings = { ...DEFAULT_SETTINGS, importHistoryDays: 30 }
 
 describe('importing external sessions', () => {
+  it('discovers in the background without blocking the app and preserves import policy', async () => {
+    const db = memoryDb()
+    writeClaude('11111111-1111-1111-1111-111111111111', 'Human session', 60 * 60 * 1000)
+    writeCodex('22222222-2222-2222-2222-222222222222', 'Agent session', 60 * 60 * 1000, { originator: 'codex_exec' })
+    let turns = 0
+    const result = await new SessionImporter(db).syncInBackground(settings, () => { turns++; return true })
+    expect(turns).toBeGreaterThan(2)
+    expect(result?.createdTasks).toBe(1)
+    expect(result?.skipped).toBe(1)
+    expect(repo.listTasks(db).map(task => task.title)).toEqual(['Human session'])
+    expect(new SessionImporter(db).sync(settings).createdTasks).toBe(0)
+    db.close()
+  })
+
+  it('can shut down during background discovery without importing into a closed database', async () => {
+    const db = memoryDb()
+    writeClaude('11111111-1111-1111-1111-111111111111', 'Not imported', 60 * 60 * 1000)
+    let active = true
+    const work = new SessionImporter(db).syncInBackground(settings, () => active)
+    await yieldToApp()
+    expect(repo.listTasks(db)).toEqual([])
+    active = false
+    db.close()
+    expect(await work).toBeNull()
+  })
+
+  it('excludes managed sessions bound after background discovery started', async () => {
+    const db = memoryDb()
+    const sessionId = '11111111-1111-1111-1111-111111111111'
+    writeClaude(sessionId, 'Managed session', 60 * 60 * 1000)
+    const result = await new SessionImporter(db).syncInBackground(settings, () => true, () => {
+      const agent = makeAgent(db, { name: 'fixture' })
+      const project = makeProject(db, { name: 'fixture', path: work, targetId: agent })
+      const task = makeTask(db, project, 'Own task')
+      repo.updateRun(db, occupy(db, task, agent), { sessionId })
+    })
+    expect(result?.createdTasks).toBe(0)
+    expect(repo.listTasks(db).map(task => task.title)).toEqual(['Own task'])
+    db.close()
+  })
+
   it('imports Claude and Codex sessions as tasks', () => {
     const db = memoryDb()
     writeClaude('11111111-1111-1111-1111-111111111111', 'クロードの作業', 60 * 60 * 1000)

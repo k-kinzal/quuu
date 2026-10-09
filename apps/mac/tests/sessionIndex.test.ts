@@ -289,6 +289,26 @@ it('indexes raw output incrementally and patches only its unfinished page', asyn
 
 const retiredMessage = { id: 'old', role: 'user' as const, isSidechain: false, timestamp: null, blocks: [], model: null }
 
+it('removes unreachable pages, images and workdirs while retaining every indexed session', () => {
+  const kept = 'v1:stdout:kept'
+  repo.finishSessionIndex(db, kept, { stamp: 's', generation: 'g', title: null, total: 300, evidenceVersion: DERIVATION_VERSION, updatedAt: '2026-01-01T00:00:00.000Z' })
+  for (const key of ['', 'before', kept, 'z-after']) {
+    repo.writeSessionMessages(db, key, 'g', 0, Array.from({ length: 300 }, (_, i) => ({ ...retiredMessage, id: `${key}-${i}` })))
+    repo.writeSessionImage(db, key, `${key}-image`, 'data:image/png;base64,aGVsbG8=')
+    repo.writeSessionWorkDirs(db, key, 'g', 0, ['/kept'])
+  }
+  expect(index.sweepRetired()).toEqual({ carried: 0, dropped: 0 })
+  expect(repo.readSessionMessages(db, kept, 'g', 0, 300)).toHaveLength(300)
+  expect(repo.readSessionImage(db, kept, `${kept}-image`)).not.toBeNull()
+  expect(repo.readSessionWorkDirs(db, kept, 'g')).toEqual(['/kept'])
+  for (const key of ['', 'before', 'z-after']) {
+    expect(repo.readSessionMessages(db, key, 'g', 0, 300)).toEqual([])
+    expect(repo.readSessionImage(db, key, `${key}-image`)).toBeNull()
+    expect(repo.readSessionWorkDirs(db, key, 'g')).toEqual([])
+  }
+  expect(index.sweepRetired()).toEqual({ carried: 0, dropped: 0 })
+})
+
 /**
  * A parser that learned to read something new gets a new version, and with it a new key. Where
  * the current key already holds the session, the pages under the old one are never opened again,

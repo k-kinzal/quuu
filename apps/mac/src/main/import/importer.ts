@@ -14,7 +14,8 @@ import * as repo from '../db/repo.js'
 import { lastWrittenMs, resolveLogPath } from '../session/logAdapters.js'
 import { nowIso, truncate } from '../util.js'
 import type { ExternalSession } from './adapters.js'
-import { discoverSessions, startedByProgram } from './adapters.js'
+import { discoverSessions, discoverSessionsInBackground, startedByProgram } from './adapters.js'
+import type { DiscoverOptions } from '../agent-adapters/external.js'
 import type { LivenessProbe } from './liveness.js'
 import { probeLiveSessions } from './liveness.js'
 import { t } from '../i18n/index.js'
@@ -66,6 +67,27 @@ export class SessionImporter {
   constructor(private db: Db) { }
 
   sync(settings: AppSettings, now = Date.now()): ImportResult {
+    const sessions = settings.importExternalSessions ? discoverSessions(this.options(settings, now)) : []
+    return this.apply(sessions, settings, now)
+  }
+
+  async syncInBackground(settings: AppSettings, active: () => boolean, beforeApply: () => void = () => {}): Promise<ImportResult | null> {
+    if (!settings.importExternalSessions) return null
+    const sessions = await discoverSessionsInBackground(this.options(settings, Date.now()), active)
+    // Shutdown may already have closed the database while discovery yielded.
+    if (!active()) return null
+    beforeApply()
+    return this.apply(sessions, settings, Date.now())
+  }
+
+  private options(settings: AppSettings, now: number): DiscoverOptions {
+    return {
+      since: settings.importHistoryDays > 0 ? new Date(now - settings.importHistoryDays * 24 * 60 * 60 * 1000) : null,
+      limit: MAX_PER_SYNC
+    }
+  }
+
+  private apply(sessions: ExternalSession[], settings: AppSettings, now: number): ImportResult {
     const result: ImportResult = {
       scanned: 0,
       createdTasks: 0,
@@ -76,12 +98,6 @@ export class SessionImporter {
     }
     if (!settings.importExternalSessions) return result
 
-    const since =
-      settings.importHistoryDays > 0
-        ? new Date(now - settings.importHistoryDays * 24 * 60 * 60 * 1000)
-        : null
-
-    const sessions = discoverSessions({ since, limit: MAX_PER_SYNC })
     result.scanned = sessions.length
 
     // Never import sessions Quuu itself started
