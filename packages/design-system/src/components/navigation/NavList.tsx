@@ -4,6 +4,7 @@ import { styled } from '@mui/material/styles'
 import { blockProps, canHover, surfaceStyles, type SurfaceLevel } from '../../theme/styled.js'
 import { footerBandHeight, headerBandHeight } from '../layout/Panel.js'
 import { ControlTooltip } from '../utils/ControlTooltip.js'
+import { windowHeader } from '../layout/WindowControls.js'
 
 export { default as Tabs } from '@mui/material/Tabs'
 export { default as Tab } from '@mui/material/Tab'
@@ -241,21 +242,21 @@ export const MenuNav = styled('nav')(({ theme }) => ({
 }))
 
 /**
- * The column's heading. It shares the window's top band with the OS window controls,
- * so it takes the same `startInset` as `PanelHeader` (this column is the leading
- * surface when the navigation beside it is collapsed).
+ * The column's heading shares PanelHeader's automatic clearance of native window controls.
  */
-export const MenuNavTitle = styled('h1', { shouldForwardProp: blockProps('startInset') })<{
-  /** Width (px) reserved outside the normal padding when the OS window controls overhang this column. */
-  startInset?: number
-}>(({ theme, startInset }) => ({
+export const MenuNavTitle = styled(windowHeader('h1'))(({ theme }) => ({
+  position: 'sticky',
+  top: 0,
+  zIndex: 1,
+  background: theme.palette.surface.default,
   flex: '0 0 auto',
   display: 'flex',
   alignItems: 'center',
   height: headerBandHeight(theme),
   margin: `0 0 ${theme.spacing(2)}`,
   padding: `0 ${theme.spacing(2)}`,
-  ...(startInset !== undefined ? { paddingLeft: `calc(${startInset}px + ${theme.spacing(2)})` } : {}),
+  '--ds-window-controls-inset': '0px',
+  paddingLeft: `calc(var(--ds-window-controls-inset) + ${theme.spacing(2)})`,
   ...theme.typography.caption,
   fontWeight: 600,
   color: theme.palette.text.tertiary

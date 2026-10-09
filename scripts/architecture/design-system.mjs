@@ -15,7 +15,7 @@ const dimensions = new Set([
   'size',
   'gap',
   'pad',
-  'padX', 'padY', 'termWidth', 'indent', 'offset', 'minSize', 'startInset', 'inset', 'grow'
+  'padX', 'padY', 'termWidth', 'indent', 'offset', 'minSize', 'startInset', 'inset', 'windowControlsInset', 'grow'
 ])
 const nativeControls = new Set([
   'button',
@@ -33,7 +33,7 @@ const stylingImports = /^(?:@mui\/|@emotion\/|styled-components(?:\/|$))/
 const rawColor = /^(?:#[\da-f]{3,8}|rgba?\(|hsla?\(|oklch\()/i
 
 /** Retired tuning props must not come back, even via variables or spreads. */
-const retiredProps = new Set(['padX', 'padY', 'termWidth', 'indent', 'offset'])
+const retiredProps = new Set(['padX', 'padY', 'termWidth', 'indent', 'offset', 'startInset'])
 
 /** Follow imports and local variable references via TS symbols; never infer a binding from name equality alone. */
 function sourceProgram(sources) {

@@ -32,7 +32,7 @@ export function LeftMenu({ showTasks, project }: { showTasks: boolean; project?:
           {project && showTasks && <GlassPanelDivider />}
           {!showTasks ? null : layout.listMode === 'compact' ? (
             <>
-              <TaskSidebar besideNavigation={Boolean(project)} />
+              <TaskSidebar />
               <Resizer
                 value={layout.list}
                 profile="collection"

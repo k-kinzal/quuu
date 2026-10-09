@@ -49,7 +49,6 @@ import type { TaskRule } from '../../../api/schemas/automation.js'
 import type { Project } from '../../../api/schemas/projects.js'
 import type { Priority, Task, TaskStatus } from '../../../api/schemas/tasks.js'
 import { useClockText } from '../interaction/useClockText.js'
-import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import { PRIORITY_LABEL, RUN_STATUS_LABEL, TASK_STATUS_LABEL } from '../model/labels.js'
 
@@ -134,9 +133,7 @@ function useVisibleRange(
  * not to a separate search screen.
  */
 export function TaskOverview(): JSX.Element {
-  const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
   const snapshot = useStore((s) => s.snapshot)
-  const layout = useStore((s) => s.layout)
   const section = useStore((s) => s.section)
   const toggleShowDone = useStore((s) => s.toggleShowDone)
   const cursorTaskId = useStore((s) => s.cursorTaskId)
@@ -387,7 +384,7 @@ export function TaskOverview(): JSX.Element {
 
   return (
     <Panel surface="canvas" windowHeader grow onContextMenu={onSectionMenu} {...motionRegion('collection', 'left')}>
-      <PanelHeader startInset={layout.railCollapsed ? WINDOW_BUTTONS_OVERHANG : undefined}>
+      <PanelHeader>
         {project && <Dot color={project.color} />}
         <PanelHeading title={title} count={view.matched}><span {...motionAnchor('heading')}>{title}</span></PanelHeading>
         {/* The band's empty space is a window-drag surface. The window has no title bar, so give that back here */}

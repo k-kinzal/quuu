@@ -1,3 +1,4 @@
+import { AppShell, AppShellBody } from '../layout/AppShell.js'
 import { useState } from 'react'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import {
@@ -127,30 +128,32 @@ export const Menu: StoryObj = { render: () => <MenuExample /> }
 
 /**
  * When the navigation beside it is collapsed, this column takes the window's top-left
- * corner, where the OS window controls sit. `startInset` on the title is the width it
- * leaves clear for them; the rows below keep the column's own padding.
+ * corner, where the shell automatically keeps the title clear of the OS window controls.
+ * The rows below keep the column's own padding.
  */
 export const MenuWindowControls: StoryObj = {
   render: () => (
-    <div style={{ position: 'relative', display: 'flex', height: 320 }}>
+    <AppShell windowControlsInset={84} style={{ position: 'relative', height: 320 }}>
+      <AppShellBody>
       {/* The collapsed navigation: one symbol column wide, too narrow to hold the controls */}
       <div style={{ width: 42, flex: '0 0 42px', background: '#2b2f36' }} />
-      <MenuExample startInset={42} />
+      <MenuExample />
+      </AppShellBody>
       <div style={{ position: 'absolute', left: 14, top: 14, display: 'flex', gap: 9, zIndex: 2 }}>
         {['#ff5f57', '#febc2e', '#28c840'].map((fill) => (
           <span key={fill} style={{ width: 14, height: 14, borderRadius: '50%', background: fill }} />
         ))}
       </div>
-    </div>
+    </AppShell>
   )
 }
 
-function MenuExample({ startInset }: { startInset?: number }): JSX.Element {
+function MenuExample(): JSX.Element {
   const [active, setActive] = useState('general')
   return (
     <div style={{ display: 'flex', height: 320 }}>
       <MenuNav>
-        <MenuNavTitle startInset={startInset}>Settings</MenuNavTitle>
+        <MenuNavTitle>Settings</MenuNavTitle>
         <MenuNavItem
           icon={<SlidersHorizontal size={iconSize.md} {...iconDefaults} />}
           label="General"

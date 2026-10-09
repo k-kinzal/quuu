@@ -9,6 +9,7 @@ import { TextInput } from '../inputs/TextInput.js'
 import { GroupTitle, OrderedNotes, Page, Section } from './Page.js'
 import { MenuNav, MenuNavTitle } from '../navigation/NavList.js'
 import { Panel, PanelHeader, PanelHeading } from './Panel.js'
+import { AppShell, AppShellBody } from './AppShell.js'
 
 const meta: Meta = { title: 'Layout/Page', parameters: { layout: 'fullscreen' } }
 export default meta
@@ -51,15 +52,17 @@ const OVERHANG = 42
 
 function WindowFrame({ children }: { children: ReactNode }): JSX.Element {
   return (
-    <div style={{ position: 'relative', display: 'flex', height: '100vh' }}>
+    <AppShell windowControlsInset={RAIL + OVERHANG} style={{ position: 'relative', height: '100vh' }}>
+      <AppShellBody>
       <div style={{ width: RAIL, flex: `0 0 ${RAIL}px`, background: '#2b2f36' }} />
       {children}
+      </AppShellBody>
       <div style={{ position: 'absolute', left: 14, top: 14, display: 'flex', gap: 9, zIndex: 2 }}>
         {['#ff5f57', '#febc2e', '#28c840'].map((fill) => (
           <span key={fill} style={{ width: 14, height: 14, borderRadius: '50%', background: fill }} />
         ))}
       </div>
-    </div>
+    </AppShell>
   )
 }
 
@@ -136,7 +139,7 @@ export const Detail: StoryObj = {
 
 /**
  * On a window with no title bar the surface reaches the top-left corner, where the OS
- * window controls sit. `startInset` is the width the head leaves clear for them, and the
+ * window controls sit. The shell keeps the head clear automatically, and the
  * head stays put while the body scrolls, so nothing ever passes underneath them.
  */
 export const WindowControlsInset: StoryObj = {
@@ -145,7 +148,6 @@ export const WindowControlsInset: StoryObj = {
       <Panel surface="canvas" grow sx={{ overflowY: 'auto' }}>
         <Page
           title="Alpha"
-          startInset={OVERHANG}
           lead={
             <IconButton
               title="Back to the list (Esc)"

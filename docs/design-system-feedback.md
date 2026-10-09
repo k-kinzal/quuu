@@ -1,5 +1,21 @@
 # Call-site feedback and decisions
 
+## 2026-10-09 Automatic clearance for native window controls
+
+- Request: new screens repeatedly place their headings beneath the macOS traffic
+  lights; QuuuAI exposed another missing per-screen inset.
+- Accepted: the host supplies the occupied width once at `AppShell`. `PanelHeader`,
+  `Page`, and `MenuNavTitle` derive clearance from their actual bounds, including
+  preceding sibling resizing, layout motion, and responsive conversation replacement.
+  Headers below the window band and beyond the controls retain their ordinary padding.
+- Accepted: the settings category heading stays above its scrolling rows, like the
+  existing page heading. No new title bar or wider collapsed icon column is needed.
+- Supersedes the September per-screen `startInset` API. Removed that prop and the
+  consumers' rail/list conditionals; the architecture check prevents its return.
+- Verification: Chromium measures initial paint, expanded/collapsed navigation,
+  motion, narrow conversation layouts, scrolling, and native-title-bar hosts across
+  both themes and densities. Storybook and the fixture app cover the visible result.
+
 ## 2026-10-09 Keep attachment actions in the conversation's visual language
 
 - Finding: a filled primary form button overpowered the conversation, and mixing

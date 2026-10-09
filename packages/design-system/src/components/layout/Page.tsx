@@ -21,7 +21,7 @@ const PageRoot = styled('div')({ display: 'flex', flexDirection: 'column', minHe
  * the head go with it sends the title and the way back off the screen, and on a window
  * with no title bar it sends the body **under the OS window controls** — the one place
  * on the surface where a click belongs to the window, not to the page. Staying put keeps
- * that corner the head's, and `startInset` is what the head leaves clear there.
+ * that corner the head's, and the shell automatically keeps its contents clear there.
  */
 const PageHead = styled(PanelHeader)(({ theme }) => ({
   position: 'sticky',
@@ -54,8 +54,6 @@ export interface PageProps {
   lead?: ReactNode
   /** The actions that sit to the right of the title */
   actions?: ReactNode
-  /** Width (px) reserved outside the normal padding when the OS window controls overhang this surface. */
-  startInset?: number
   maxWidth?: number
   children: ReactNode
 }
@@ -70,13 +68,12 @@ export function Page({
   description,
   lead,
   actions,
-  startInset,
   maxWidth,
   children
 }: PageProps): JSX.Element {
   return (
     <PageRoot>
-      <PageHead startInset={startInset}>
+      <PageHead>
         {lead}
         <PanelHeading>{title}</PanelHeading>
         <Spacer />

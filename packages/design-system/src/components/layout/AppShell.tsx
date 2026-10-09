@@ -1,14 +1,16 @@
-import { styled } from '@mui/material/styles'
+import { forwardRef, useMemo, type ComponentProps } from 'react'
+import { styled, useTheme } from '@mui/material/styles'
 import { blockProps } from '../../theme/styled.js'
 import { glassMaterial } from '../../theme/glass.js'
 import { footerBandHeight, headerBandHeight } from './Panel.js'
+import { WindowControlsContext } from './WindowControls.js'
 
 /**
  * The skeleton of the whole window. The left/right composition lives in body; the main pane and its bottom edge are grouped in main.
  *
  * Height distribution is fully decided here, so inner panes only need to honor `min-height: 0` themselves.
  */
-export const AppShell = styled('div', { shouldForwardProp: blockProps('glass') })<{
+const AppShellRoot = styled('div', { shouldForwardProp: blockProps('glass') })<{
   /** Join transparent pane headers and side panels on one continuous material. */
   glass?: boolean
 }>(({ theme, glass }) => ({
@@ -24,6 +26,15 @@ export const AppShell = styled('div', { shouldForwardProp: blockProps('glass') }
     '--ds-glass-panel-filter': 'none'
   } : {})
 }))
+
+export const AppShell = forwardRef<HTMLDivElement, ComponentProps<typeof AppShellRoot> & {
+  /** Width occupied by native controls in the top-left window band. Zero for a native title bar. */
+  windowControlsInset?: number
+}>(function AppShell({ windowControlsInset = 0, ...props }, forwardedRef) {
+  const height = headerBandHeight(useTheme())
+  const controls = useMemo(() => ({ width: windowControlsInset, height }), [windowControlsInset, height])
+  return <WindowControlsContext.Provider value={controls}><AppShellRoot {...props} ref={forwardedRef} data-ds-app-shell="" /></WindowControlsContext.Provider>
+})
 
 /**
  * The top band. In a desktop app it doubles as the window drag region.

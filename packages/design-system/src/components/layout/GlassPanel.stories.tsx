@@ -26,7 +26,7 @@ function Example({ collapsed = false, hidden = false, plain = false, secondaryNa
       <div style={{ position: 'absolute', inset: 0, background: plain ? '#42464b' : 'linear-gradient(145deg, #203f74, #596880 42%, #78475a 64%, #372d45)' }}>
         {!plain && <div style={{ margin: '15% 5%', width: 240, height: 300, background: 'repeating-linear-gradient(0deg, #c39c6b 0 4px, #364963 4px 20px)' }} />}
       </div>
-      <AppShell glass style={{ position: 'relative' }}>
+      <AppShell glass windowControlsInset={76} style={{ position: 'relative' }}>
         <AppShellBody>
           <GlassPanel aria-label="Side panel">
             <SideNav collapsed={railCollapsed} width={railWidth} collapsedWidth={38} surface="transparent" bordered={false}>
@@ -55,7 +55,7 @@ function Example({ collapsed = false, hidden = false, plain = false, secondaryNa
             ) : (
               <>
                 <Panel width={listWidth} surface="transparent">
-                  <PanelHeader size="sm" startInset={railCollapsed ? 38 : undefined}>
+                  <PanelHeader size="sm">
                     <Text weight="bold">List</Text><WindowDragArea />
                     <IconButton title="Collapse the list" icon={<PanelLeftClose size={16} />} onClick={() => setListHidden(true)} />
                   </PanelHeader>
@@ -69,7 +69,7 @@ function Example({ collapsed = false, hidden = false, plain = false, secondaryNa
           </GlassPanel>
           <AppShellMain windowHeader>
             <Panel grow surface="canvas" windowHeader>
-              <PanelHeader startInset={railCollapsed && listHidden ? 20 : undefined}><Text weight="bold">Contents</Text><WindowDragArea /></PanelHeader>
+              <PanelHeader><Text weight="bold">Contents</Text><WindowDragArea /></PanelHeader>
             </Panel>
             <AppShellFooter>Footer of the main surface</AppShellFooter>
           </AppShellMain>

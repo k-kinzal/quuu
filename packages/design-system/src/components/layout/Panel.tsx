@@ -3,6 +3,7 @@ import { styled, type Theme } from '@mui/material/styles'
 import { blockProps, surfaceStyles, type SurfaceLevel } from '../../theme/styled.js'
 import { shellMetrics } from '../../layoutSpec.js'
 import { optical } from '../../theme/tokens.js'
+import { windowHeader } from './WindowControls.js'
 
 export type { SurfaceLevel }
 
@@ -59,17 +60,15 @@ export const footerBandHeight = (theme: Theme): number => Math.max(shellMetrics.
  *
  * `size` changes **only the horizontal padding**. The narrower the pane, the tighter.
  */
-export const PanelHeader = styled('header', {
-  shouldForwardProp: blockProps('size', 'startInset', 'leadingColumn', 'trailingColumn')
+export const PanelHeader = styled(windowHeader('header'), {
+  shouldForwardProp: blockProps('size', 'leadingColumn', 'trailingColumn')
 })<{
   size?: 'sm' | 'md' | 'lg'
   /** Align the leading control to the ActivityBar's symbol column that continues below. */
   leadingColumn?: boolean
   /** Align the trailing control to the ActivityBar's symbol column at the right edge. */
   trailingColumn?: boolean
-  /** Width (px) reserved outside the normal padding when the OS window controls overhang the pane. */
-  startInset?: number
-}>(({ theme, size = 'md', startInset, leadingColumn, trailingColumn }) => ({
+}>(({ theme, size = 'md', leadingColumn, trailingColumn }) => ({
   flex: '0 0 auto',
   display: 'flex',
   alignItems: 'center',
@@ -77,9 +76,9 @@ export const PanelHeader = styled('header', {
   gap: theme.spacing(size === 'sm' ? 1 : 2),
   height: headerBandHeight(theme),
   padding: `0 ${theme.spacing(size === 'sm' ? 3 : 4)}`,
-  ...(leadingColumn ? { paddingLeft: 0 } : {}),
+  '--ds-window-controls-inset': '0px',
+  paddingLeft: `calc(var(--ds-window-controls-inset) + ${leadingColumn ? '0px' : theme.spacing(size === 'sm' ? 3 : 4)})`,
   ...(trailingColumn ? { paddingRight: 0 } : {}),
-  ...(startInset !== undefined ? { paddingLeft: `calc(${startInset}px + ${theme.spacing(size === 'sm' ? 3 : 4)})` } : {}),
   // Including the rule in the height shifts the content's center to an awkward position. Draw it inside the band.
   boxShadow: `inset 0 -1px 0 ${theme.palette.border.subtle}`,
   // The header band. It holds only the title and controls, so it must not be a drag-to-select target

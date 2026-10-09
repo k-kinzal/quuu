@@ -27,7 +27,6 @@ import { PullRequestPromptFields } from '../../components/PullRequestPromptField
 import { pane } from '../../interaction/focus.js'
 import { confirmDeleteProject } from '../../interaction/projectActions.js'
 import { usePreview } from '../../interaction/usePreview.js'
-import { useWindowLayout } from '../../interaction/useWindowLayout.js'
 import { editorAppName } from '../../model/editorName.js'
 import { t } from '../../model/i18n/index.js'
 import { useSettings, useStore } from '../../state/store.js'
@@ -51,8 +50,6 @@ export function ProjectDetail({
   const settings = useSettings()
   const identityPreview = usePreview(JSON.stringify([settings, project]), () => window.quuu.settings.previewIdentity({ identity: settings.commitIdentity, projectId: project.id })).value
   const editors = useStore((s) => s.editors)
-  const layout = useStore((s) => s.layout)
-  const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
   // projectActions owns the cleanup after a delete (where to move the visible surface), so no setSection here
   const agents = userAgents(snapshot?.agents ?? [])
   const groups = snapshot?.groups ?? []
@@ -75,9 +72,6 @@ export function ProjectDetail({
     <Panel surface="canvas" grow scroll {...pane('settings', { tab: true })} aria-label={t('projectDetail.paneLabel')}>
       <Page
         title={t('projectDetail.title', { name: project.name })}
-        /* With the rail collapsed this surface takes the window's top-left, and the
-           traffic lights land on the way back. Step aside by what they overhang */
-        startInset={layout.railCollapsed ? WINDOW_BUTTONS_OVERHANG : undefined}
         lead={
           <IconButton
             title={t('projectDetail.back')}

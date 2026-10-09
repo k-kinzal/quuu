@@ -25,7 +25,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } fr
 import type { Run } from '../../../api/schemas/execution.js'
 import type { Task, TaskStatus } from '../../../api/schemas/tasks.js'
 import { useClockText } from '../interaction/useClockText.js'
-import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import { TASK_STATUS_LABEL } from '../model/labels.js'
 
@@ -70,11 +69,7 @@ import { shortcut } from '../interaction/shortcut.js'
  * stays opaque paper; only the incidental surfaces in front of it (the rail and this list)
  * are translucent, so the quality of the ground says which one is primary.
  */
-export function TaskSidebar({ besideNavigation = false }: {
-  /** The project's navigation column already sits between the rail and this list, clear of the window buttons */
-  besideNavigation?: boolean
-} = {}): JSX.Element {
-  const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
+export function TaskSidebar(): JSX.Element {
   const snapshot = useStore((s) => s.snapshot)
   const cursorTaskId = useStore((s) => s.cursorTaskId)
   const openTask = useStore((s) => s.openTask)
@@ -168,7 +163,6 @@ export function TaskSidebar({ besideNavigation = false }: {
     <Panel width={layout.list} surface="transparent" onContextMenu={openSectionMenu} {...motionRegion('collection', 'left')}>
       <PanelHeader
         size="sm"
-        startInset={layout.railCollapsed && !besideNavigation ? WINDOW_BUTTONS_OVERHANG : undefined}
       >
         <PanelHeading title={sectionTitle} count={view.matched}><span {...motionAnchor('heading')}>{sectionTitle}</span></PanelHeading>
         {/* The empty part of the bar is a drag surface. It gives back what the window loses by having no title bar */}

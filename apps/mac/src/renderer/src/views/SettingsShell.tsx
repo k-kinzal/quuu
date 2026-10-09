@@ -4,7 +4,6 @@ import { ConnectionSettings } from './settings/ConnectionSettings.js'
 import { NetworkSettings } from './settings/NetworkSettings.js'
 import { MenuNav, MenuNavItem, MenuNavTitle, Panel, Row } from '@design-system/react'
 import { moveWithinList, pane } from '../interaction/focus.js'
-import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { t } from '../model/i18n/index.js'
 import type { SettingsCategory } from '../state/store.js'
 import { useStore } from '../state/store.js'
@@ -48,16 +47,12 @@ const CATEGORIES: Array<{
 export function SettingsShell(): JSX.Element {
   const category = useStore((s) => s.settingsCategory)
   const setCategory = useStore((s) => s.setSettingsCategory)
-  const layout = useStore((s) => s.layout)
-  const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
 
   return (
     <Row gap="none" align="stretch" grow min>
       {/* The category column is walkable with ↑↓ too (rows stacked vertically behave the same everywhere) */}
       <MenuNav onKeyDown={(e) => moveWithinList(e, 'button')}>
-        {/* With the rail collapsed this column takes the window's top-left, so the
-            traffic lights land on the title. Step aside by exactly what they overhang */}
-        <MenuNavTitle startInset={layout.railCollapsed ? WINDOW_BUTTONS_OVERHANG : undefined}>
+        <MenuNavTitle>
           {t('settingsShell.title')}
         </MenuNavTitle>
         {CATEGORIES.map((c) => (

@@ -61,6 +61,7 @@ test('allows only the View Theme type augmentation and rejects implementation im
 test('retired tuning props cannot come back via variables, aliases, or spreads', () => {
   for (const source of [
     `const gap = 4; const V = () => <Toolbar padX={gap} />`,
+    `const props = { startInset: windowInset }; const V = () => <PanelHeader {...props} />`,
     `const props = {indent: 52}; const V = () => <DataList {...props} />`,
     `const props = {termWidth: width}; const V = () => <DescriptionList {...props} />`,
     `import { Resizer as Boundary } from '@design-system/react'; const V = () => <Boundary min={176} max={300} />`,

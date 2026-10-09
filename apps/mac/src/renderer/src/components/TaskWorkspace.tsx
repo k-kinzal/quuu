@@ -1,6 +1,5 @@
 import {
   Button,
-  COLLAPSE_HANDLE_WIDTH,
   IconButton,
   InlineInput,
   Menu,
@@ -17,7 +16,6 @@ import { useEffect, useRef, useState } from 'react'
 import type { Task } from '../../../api/schemas/tasks.js'
 import { contextMenu } from '../interaction/menu.js'
 import { useOrderedTasks } from '../interaction/useTasks.js'
-import { useWindowLayout } from '../interaction/useWindowLayout.js'
 import { isImeComposing } from '../model/composer.js'
 import { t } from '../model/i18n/index.js'
 import { useStore } from '../state/store.js'
@@ -34,10 +32,8 @@ import { shortcut } from '../interaction/shortcut.js'
  *   job at the end of the conversation.
  */
 export function TaskWorkspace({ task }: { task: Task }): JSX.Element {
-  const { WINDOW_BUTTONS_OVERHANG } = useWindowLayout()
   const snapshot = useStore((s) => s.snapshot)
   const closeDetail = useStore((s) => s.closeDetail)
-  const layout = useStore((s) => s.layout)
   const markDoneAndAdvance = useStore((s) => s.markDoneAndAdvance)
   const refreshRuns = useStore((s) => s.refreshRuns)
   const pushToast = useStore((s) => s.pushToast)
@@ -93,11 +89,6 @@ export function TaskWorkspace({ task }: { task: Task }): JSX.Element {
         size="lg"
         leadingColumn
         trailingColumn
-        startInset={
-          layout.railCollapsed && layout.listMode === 'hidden'
-            ? WINDOW_BUTTONS_OVERHANG - COLLAPSE_HANDLE_WIDTH
-            : undefined
-        }
         onContextMenu={(e) => {
           if (claimContextMenu(e)) void contextMenu(menuItems())
         }}

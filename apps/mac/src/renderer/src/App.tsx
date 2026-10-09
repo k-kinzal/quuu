@@ -90,6 +90,7 @@ function focusList(): void {
 }
 
 function Shell(): JSX.Element {
+  const windowControlsInset = useStore((s) => s.windowLayout.leftInset)
   const ready = useStore((s) => s.ready)
   const initializationError = useStore((s) => s.initializationError)
   const init = useStore((s) => s.init)
@@ -364,7 +365,7 @@ function Shell(): JSX.Element {
 
   if (!ready) {
     return (
-      <AppShell glass>
+      <AppShell glass windowControlsInset={windowControlsInset}>
         <AppShellBody>
           <AppShellMain windowHeader>
             <AppShellBody>
@@ -389,7 +390,7 @@ function Shell(): JSX.Element {
   const taskProject = section.kind === 'quuuAI' ? snapshot?.projects.find(p => p.builtIn) : project
 
   return (
-    <AppShell glass>
+    <AppShell glass windowControlsInset={windowControlsInset}>
       <AppShellBody>
         <MotionLayout
           motionKey={`${detailOpen ? task?.id ?? 'missing' : 'overview'}:${layout.railCollapsed}:${layout.listMode}`}

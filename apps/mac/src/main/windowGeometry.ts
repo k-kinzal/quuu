@@ -20,8 +20,8 @@ export const WINDOW_BUTTONS = {
  * The width to leave clear at the window's top-left to avoid the traffic lights.
  *
  * With the rail collapsed, only the traffic lights overhang into the neighboring
- * header's space. The header leaves `WINDOW_BUTTONS_OVERHANG` clear; the icon
- * column itself stays narrow.
+ * header's space. AppShell receives the full inset and its headers automatically
+ * reserve the part intersecting their position; the icon column itself stays narrow.
  */
 export const WINDOW_BUTTONS_INSET = WINDOW_BUTTONS.x + WINDOW_BUTTONS.width + 10
 
@@ -29,5 +29,5 @@ export const WINDOW_BUTTONS_INSET = WINDOW_BUTTONS.x + WINDOW_BUTTONS.width + 10
 // The close circle's center is shared with the center of the icon column below it.
 export const COLLAPSED_RAIL_WIDTH = 2 * WINDOW_BUTTONS.x + WINDOW_BUTTONS.height
 
-/** How far the traffic lights overhang the collapsed rail to the right. */
+/** Legacy operation-contract field. Screen layout now uses the full inset at AppShell. */
 export const WINDOW_BUTTONS_OVERHANG = WINDOW_BUTTONS_INSET - COLLAPSED_RAIL_WIDTH

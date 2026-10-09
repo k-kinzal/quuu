@@ -269,6 +269,14 @@ children, and holds no Git / IPC / app state.
 
 ### APIs that keep call sites from choosing dimensions
 
+- Desktop hosts pass the OS's occupied top-left width once to
+  `AppShell.windowControlsInset` (zero with a native title bar). `PanelHeader`,
+  `Page`, and `MenuNavTitle` automatically reserve only the part that overlaps their
+  actual position in the window band, including resizing, layout motion and responsive
+  pane replacement. New screens use these headers without window-button calculations.
+  Settings heads stay above scrolling content. Per-screen `startInset` is retired
+  and rejected by the architecture check. `Layout/WindowControls` and the Chromium
+  window-controls regression exercise new screens in both themes and densities.
 - Panes use `Resizer profile="navigation | collection | inspector | explorer"`. The initial
   width is `paneProfiles[profile].initial`; a saved width comes back through
   `restorePaneWidth(profile, saved)`. Store `PaneWidth` as-is; do not fabricate
