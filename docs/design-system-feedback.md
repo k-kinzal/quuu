@@ -57,6 +57,16 @@
   Chromium focus/tooltip/reaction and narrow-layout checks, plus the isolated Mac
   channel, thread, proposal states and settings in both themes.
 
+## 2026-10-10 Align unread marks with navigation counts
+
+- Finding: expanded navigation used the collapsed mark's absolute top-right position,
+  leaving unread marks above the row center and outside the count column.
+- Accepted: expanded `NavItem` marks and counts share a centered trailing slot. The
+  slot keeps one- and two-digit counts on the same axis; collapsed marks retain
+  their icon-corner placement. The kit owns both layouts without app-side overrides.
+- Verification: `Navigation/NavList/Side` compares unread, one-digit and two-digit
+  rows; inspect both themes and collapsed navigation, plus the isolated Mac screen.
+
 ## 2026-10-08 Unread navigation indicators
 
 Accepted: `NavItem.unread` shows a small presence mark in expanded and collapsed navigation. Unread content is independent of a task count. The caller supplies its accessible description and owns read state; the kit owns the mark.

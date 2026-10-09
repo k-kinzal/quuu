@@ -156,20 +156,26 @@ const ItemLabel = styled('span')({
 const ItemBadge = styled('span', { shouldForwardProp: blockProps('accent') })<{ accent?: string }>(
   ({ theme, accent }) => ({
     ...theme.typography.caption,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: theme.spacing(1),
+    // Counts and unread marks share one trailing column, including single-digit counts.
+    minWidth: theme.iconSize.md,
+    flexShrink: 0,
     fontVariantNumeric: 'tabular-nums',
     color: accent ?? theme.palette.text.tertiary,
     fontWeight: accent ? 600 : 400
   })
 )
 
-/** Collapsed there is no room for the count, so only its presence is kept, as a dot. */
-const ItemMark = styled('span', { shouldForwardProp: blockProps('accent') })<{ accent?: string }>(
-  ({ theme, accent }) => ({
-    position: 'absolute',
-    top: theme.spacing(2),
-    right: 0,
+/** Only collapsed navigation overlays the icon; expanded marks sit with the counts. */
+const ItemMark = styled('span', { shouldForwardProp: blockProps('accent', 'collapsed') })<{ accent?: string; collapsed?: boolean }>(
+  ({ theme, accent, collapsed }) => ({
+    ...(collapsed ? { position: 'absolute', top: theme.spacing(2), right: 0 } : {}),
     width: 6,
     height: 6,
+    flexShrink: 0,
     borderRadius: theme.radius.full,
     background: accent ?? theme.palette.text.tertiary
   })
@@ -220,8 +226,13 @@ export function NavItem({
       >
         <ItemIcon data-icon>{icon}</ItemIcon>
         {!collapsed && <ItemLabel>{label}</ItemLabel>}
-        {!collapsed && hasBadge && <ItemBadge accent={accent}>{badge}</ItemBadge>}
-        {(unread || collapsed && hasBadge) && <ItemMark aria-hidden="true" data-unread={unread || undefined} accent={accent} />}
+        {!collapsed && (hasBadge || unread) && (
+          <ItemBadge accent={accent}>
+            {hasBadge && badge}
+            {unread && <ItemMark aria-hidden="true" data-unread accent={accent} />}
+          </ItemBadge>
+        )}
+        {collapsed && (unread || hasBadge) && <ItemMark collapsed aria-hidden="true" data-unread={unread || undefined} accent={accent} />}
       </ItemRoot>
     </ControlTooltip>
   )

@@ -63,7 +63,7 @@ export const Side: StoryObj = {
             <NavItem
               icon={<Inbox size={iconSize.md} {...iconDefaults} />}
               label="All"
-              badge={6}
+              badge={16}
               collapsed={collapsed}
               active={active === 'all'}
               onClick={() => setActive('all')}
