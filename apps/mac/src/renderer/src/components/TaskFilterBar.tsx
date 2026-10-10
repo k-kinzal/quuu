@@ -96,14 +96,6 @@ export function TaskFilterBar({
 
   return (
     <Toolbar placement="panel">
-      {/* Words first: a name is how a task is remembered, the axes narrow what that leaves */}
-      <SearchInput
-        value={filters.query}
-        aria-label={t('filterBar.searchLabel')}
-        placeholder={t('filterBar.searchPlaceholder')}
-        icon={<Search size={ICON.sm} {...iconProps} />}
-        onChange={(event) => setFilters({ query: event.target.value })}
-      />
       {axes.map((axis) => {
         const selected = filterValues(filters, axis)
         /* The status axis alone carries the scope itself (include done?) besides the values */
@@ -139,8 +131,6 @@ export function TaskFilterBar({
         )
       })}
 
-      <Spacer />
-
       <Row gap="lg">
         {/* Show the denominator only when reduced. Otherwise the heading's count suffices */}
         {matched !== total && (
@@ -155,6 +145,16 @@ export function TaskFilterBar({
           </LinkButton>
         )}
       </Row>
+
+      <Spacer />
+
+      <SearchInput
+        value={filters.query}
+        aria-label={t('filterBar.searchLabel')}
+        placeholder={t('filterBar.searchPlaceholder')}
+        icon={<Search size={ICON.sm} {...iconProps} />}
+        onChange={(event) => setFilters({ query: event.target.value })}
+      />
 
       <SearchPicker
         open={menu.isOpen}
