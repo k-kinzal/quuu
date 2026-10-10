@@ -670,7 +670,10 @@ export class Scheduler extends EventEmitter {
       const project = repo.getProject(this.db, task.projectId)
       const retry = !repo.isAssistantCheck(this.db, task.id) && classification.kind !== null && project !== null &&
         this.shouldAutoRetry(classification.kind, task, project, run)
-      const disposition = runDisposition(task, classification.kind, retry)
+      const pendingContinuation = classification.kind === null && run.exitCode === 0 &&
+        !repo.isAssistantCheck(this.db, task.id) && canResumeConversation(this.db, task) &&
+        (adapterFor(run.logAdapter ?? 'stdout').pendingContinuation?.(run) ?? false)
+      const disposition = runDisposition(task, classification.kind, retry, pendingContinuation)
       // Asked before the commit, so the claim this transition triggers cannot hand the slot to
       // another task while the gate's owner finds out whether this one goes straight back
       const checking = !repo.isAssistantCheck(this.db, task.id) && disposition.kind === 'review' && (this.reviewGate?.(task.id) ?? false)

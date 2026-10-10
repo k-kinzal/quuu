@@ -8,6 +8,7 @@ import { layout } from './layout.js'
 import { probeLiveness, resetLiveness } from './liveness.js'
 import { CodexSessionParser } from './parser.js'
 import { codexSessionId } from './stdout.js'
+import { pendingGoalContinuation } from './goal.js'
 
 export const codexAdapter: AgentAdapter = {
   probeLiveness,
@@ -25,6 +26,7 @@ export const codexAdapter: AgentAdapter = {
   createParser: (_namespace, buffer) => new CodexSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,
+  pendingContinuation: pendingGoalContinuation,
   limitScope: readLimitScope,
   modelOf: definition => modelArgument(definition.argsTemplate),
   retryAt: () => null

@@ -56,6 +56,30 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 | Open in an IDE / editor | Opens the working directory in JetBrains / Xcode / VS Code and so on. Which app to use is chosen per project (Xcode is handed the `.xcworkspace` / `.xcodeproj`) |
 | View and queue from iPhone | State is passed through a folder in iCloud Drive, and the actions taken over there are imported. Each action carries **the state visible when it was tapped**, so crossed updates return to the human instead of silently overwriting |
 
+## Codex goals in non-interactive runs
+
+Quuu launches Codex through `codex exec` and continues a conversation through
+`codex exec resume`. Codex's `-p` selects a configuration profile; it is not a
+print-mode flag. See the official [non-interactive mode documentation](https://developers.openai.com/codex/noninteractive)
+and [Goals guide](https://developers.openai.com/cookbook/examples/codex/using_goals_in_codex).
+
+Codex 0.160.1 can finish a turn, dispatch the next goal turn, then interrupt that
+turn as `exec` exits successfully. Quuu recognizes this sequence in the session
+log and queues a continuation of the same conversation. The last user input is
+preserved and retried through the configured resume template; a reserved new
+instruction takes precedence. Queue limits, agent selection and cooldowns still apply.
+The same recovery applies when the process ended while Quuu was closed.
+
+Detection requires Codex's native `goal.internal_context` metadata and an immediate
+interruption following a completed turn that used a tool. Goal wording or an old
+`create_goal` result alone never starts another run. A cancellation, unknown exit
+code, missing evidence, unsupported resume template, or answer-only run is left to
+the normal finish policy. Goals that Codex stops for completion, pause, blockage,
+budget or usage do not dispatch this continuation. The check reads the last 1 MiB
+of the log and supports argument templates starting with `exec`; it does not alter
+Codex's persisted goal state. Work reaches Review when no continuation remains;
+Done still requires the human's decision.
+
 ## Project documents
 
 Open **Documents** in a project's left navigation. The searchable list includes

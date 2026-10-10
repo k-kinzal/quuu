@@ -1,7 +1,7 @@
 import type { Invocation, InvocationRequest } from '../agent-clis/invocation.js'
 import type { CliDriver } from '../agent-clis/types.js'
 import type { LogAdapter } from '../agents/cliAdapter.js'
-import type { RunOutcome } from '../execution/types.js'
+import type { Run, RunOutcome } from '../execution/types.js'
 import type { MessageBuffer } from '../session/messageBuffer.js'
 import type { SessionMessage } from '../session/types.js'
 import type { SessionCandidate } from './discovery.js'
@@ -50,6 +50,8 @@ export interface AgentAdapter {
   createParser(imageNamespace?: string, buffer?: MessageBuffer): SessionParser
   classify(input: ClassifyInput): Classification
   classifyDetached(input: { output: string; limitPatterns: string[] }): Classification
+  /** A native continuation dispatched by the provider but cut off by its successful CLI exit. */
+  pendingContinuation?(run: Pick<Run, 'args' | 'sessionLogPath' | 'startedAt'>): boolean
   /** Which allowance a limit's message says was spent: the account's, one model's share of it, or neither. */
   limitScope(message: string): LimitScope
   /** The model a definition selects, as it spelled it. null when it leaves the choice to the CLI. */

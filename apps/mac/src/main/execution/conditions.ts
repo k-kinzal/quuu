@@ -11,18 +11,21 @@ export type RunDisposition =
   | { kind: 'answered'; status: 'review'; pendingMessage: '' }
   | { kind: 'interrupted'; status: 'review' }
   | { kind: 'retry'; status: 'queued' }
+  | { kind: 'continue'; status: 'queued' }
   | { kind: 'failed'; status: 'failed' }
 
 export function runDisposition(
   task: Pick<Task, 'reservedMessage' | 'projectId'>,
   error: RunErrorKind | null,
-  retry: boolean
+  retry: boolean,
+  pendingContinuation = false
 ): RunDisposition {
   if (error === null) {
     const message = task.reservedMessage
-    // Only an instruction a human reserved mid-run may be sent on after a normal finish.
+    // A human's new instruction takes precedence over the provider's unfinished continuation.
     return message.trim()
       ? { kind: 'send-reserved', status: 'queued', pendingMessage: message }
+      : pendingContinuation ? { kind: 'continue', status: 'queued' }
       // A thread rests at the resumable boundary without a human work-approval decision.
       : { kind: isBuiltInProject(task.projectId) ? 'answered' : 'review', status: 'review', pendingMessage: '' }
   }
