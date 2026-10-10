@@ -956,8 +956,14 @@ export function inTransaction<T>(db: Db, fn: () => T): T {
   } catch (error) {
     state.effects.length = mark
     try {
-      if (savepoint) { db.exec('ROLLBACK TO ' + savepoint); db.exec('RELEASE ' + savepoint) }
-      else db.exec('ROLLBACK')
+      // SQLITE_FULL and other storage errors can roll back the whole transaction, including savepoints.
+      if (db.isTransaction) {
+        if (savepoint) { db.exec('ROLLBACK TO ' + savepoint); db.exec('RELEASE ' + savepoint) }
+        else db.exec('ROLLBACK')
+      }
+    } catch (rollbackError) {
+      // Keep cleanup failures diagnosable without replacing the original error, its SQLite codes or cause.
+      console.error('Transaction rollback failed', rollbackError)
     } finally { if (!parent) transactions.delete(db) }
     throw error
   }
