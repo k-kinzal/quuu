@@ -307,6 +307,7 @@ export const ja: typeof en = {
   },
 
   scheduler: {
+    tickFailed: 'タスクの実行処理に失敗しました。自動で再試行します: {{error}}',
     automationEvalFailed: '自動タスクを評価できませんでした',
     waitingOnBlocker: '{{task}}: 「{{blocker}}」待ち',
     waitingOnBlockerMore: '{{task}}: 「{{blocker}}」 ほか{{count}}件待ち',

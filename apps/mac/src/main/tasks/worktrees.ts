@@ -16,8 +16,10 @@ import type { Task } from './types.js'
 
 const busy = new WeakMap<Db, Set<string>>()
 
+export class WorktreeBusyError extends Error {}
+
 export function assertWorktreeIdle(db: Db, taskId: string): void {
-  if (busy.get(db)?.has(taskId)) throw new Error(t('worktree.busy'))
+  if (busy.get(db)?.has(taskId)) throw new WorktreeBusyError(t('worktree.busy'))
 }
 
 /** Protect every task entry point while Git is working outside a SQLite transaction. */

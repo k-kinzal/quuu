@@ -125,6 +125,14 @@ backends that do not index the field yet).
 | `quuu.error` | an uncaught error, unhandled rejection, a renderer render crash, or a renderer/helper process that died | `quuu.error.origin` (`main.uncaught`, `main.unhandled_rejection`, `main.render_process_gone`, `main.child_process_gone`, `renderer.uncaught`, `renderer.unhandled_rejection`, `renderer.render`), `exception.*`, `quuu.ui.screen` |
 | `quuu.log` | every `console.warn` / `console.error` in main | `quuu.log.label` (the fixed leading text, for grouping), `exception.*` when an Error was logged |
 
+Automatic scheduler tick failures appear in status warnings and in `quuu.log` with
+`quuu.log.label="Scheduler tick failed"`, including the original Error and its stack.
+The same warning is logged once until a complete tick succeeds or the failure changes.
+Ticks keep retrying on their ordinary schedule; recovery clears the warning without
+changing `scheduler.enabled`. These failures do not send toasts or reach
+`main.unhandled_rejection`. If status cannot read the database either, the warning
+is retained for the next successful status read and the log remains available.
+
 ## Metrics
 
 | Instrument | Attributes |

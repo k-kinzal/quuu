@@ -1,4 +1,4 @@
-import { assertWorktreeIdle } from '../tasks/worktrees.js'
+import { assertWorktreeIdle, WorktreeBusyError } from '../tasks/worktrees.js'
 import { EventEmitter } from 'node:events'
 import { isManagedAgent } from '../agents/types.js'
 import { isBuiltInProject, type Project } from '../projects/types.js'
@@ -29,6 +29,7 @@ import { canResumeConversation, cooldownClearsAt, eligibleAgents, fallbackHolds,
 import { cliLabel } from '../agents/cli.js'
 import type { FinishedEvent } from './runner.js'
 import { Runner } from './runner.js'
+import { PreparationBlockedError } from './preparation.js'
 
 /** How many stuck tasks the status names outright. The rest are reported as a count. */
 const STUCK_WARNING_LIMIT = 3
@@ -84,6 +85,8 @@ export class Scheduler extends EventEmitter {
   private stuckReasons = new Map<string, string>()
   /** Warnings such as "the automation rules could not be read". Surfaced in the status. */
   private ruleWarnings: string[] = []
+  /** Retained until a complete tick succeeds; repeated failures do not re-log or re-announce it. */
+  private tickWarning: string | null = null
   private tickIntervalMs = 3000
   /**
    * Runs a human started through a Limit cooldown, and the moment that cooldown ended.
@@ -339,13 +342,29 @@ export class Scheduler extends EventEmitter {
         const promise = this.runner.start(claim.params, claim.run)
         await promise
         started++
-        if (this.stopped) return
+        if (this.stopped || !this.enabled) return
       }
       // A tick that found nothing to do changed nothing. Announcing one anyway made every
       // window rebuild its whole picture every few seconds; rules and the runner already
       // announce what they change, so only a tick that started something speaks.
       if (started > 0) this.emit('changed')
-      this.emitStatus()
+      const previousWarning = this.tickWarning
+      this.tickWarning = null
+      try { this.emitStatus() }
+      catch (error) {
+        // A failed status read is not recovery, and must not reset failure deduplication.
+        this.tickWarning = previousWarning
+        throw error
+      }
+    } catch (error) {
+      const warning = t('scheduler.tickFailed', { error: error instanceof Error ? error.message : String(error) })
+      if (warning !== this.tickWarning) {
+        this.tickWarning = warning
+        console.error('Scheduler tick failed', error)
+      }
+      // Reporting must not reject the fire-and-forget tick if the DB is also unreadable.
+      // Keep the warning for the next status read; the original error is already logged above.
+      try { this.emitStatus() } catch { /* Status needs the same DB that just failed. */ }
     } finally {
       this.ticking = false
     }
@@ -556,9 +575,10 @@ export class Scheduler extends EventEmitter {
         try {
           run = this.runner.prepare(params)
         } catch (error) {
-          // The runner's own gate against a CLI switch. Unreachable once resolution is right,
-          // but a task it stops must not take the whole tick down with it - it is named and skipped
-          stuck.set(task.id, `${truncate(task.title, 24)} — ${error instanceof Error ? error.message : String(error)}`)
+          // Only a known launch gate is safe to skip. Storage failures must leave the claim
+          // transaction, including when SQLite already rolled it back, so COMMIT cannot hide them.
+          if (!(error instanceof PreparationBlockedError) && !(error instanceof WorktreeBusyError)) throw error
+          stuck.set(task.id, `${truncate(task.title, 24)} — ${error.message}`)
           continue
         }
         if (!backgroundTaskId) {
@@ -971,6 +991,7 @@ export class Scheduler extends EventEmitter {
     }))
 
     const warnings: string[] = [...this.ruleWarnings]
+    if (this.tickWarning) warnings.push(this.tickWarning)
     for (const slot of slots) {
       if (slot.cooldownUntil) {
         warnings.push(t('scheduler.cooldownUntil', { agent: slot.agentName, time: formatTime(slot.cooldownUntil) }))

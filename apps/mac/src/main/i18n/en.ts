@@ -306,6 +306,7 @@ export const en = {
   },
 
   scheduler: {
+    tickFailed: 'Could not schedule tasks; will retry automatically: {{error}}',
     automationEvalFailed: 'Could not evaluate automations',
     waitingOnBlocker: '{{task}}: waiting on "{{blocker}}"',
     waitingOnBlockerMore: '{{task}}: waiting on "{{blocker}}" and {{count}} more',

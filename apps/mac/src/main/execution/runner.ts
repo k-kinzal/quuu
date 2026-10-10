@@ -29,6 +29,7 @@ import { commitIdentityEnv, resolveCommitIdentity } from '../settings/commitIden
 import type { Task } from '../tasks/types.js'
 import { newId, newSessionId, nowIso } from '../util.js'
 import { sameLineage, taskLineage } from './agentResolver.js'
+import { PreparationBlockedError } from './preparation.js'
 import type { Classification } from './errorClassifier.js'
 import { runStatusForKind } from './errorClassifier.js'
 import type { TemplateVars } from '../agent-clis/templating.js'
@@ -150,7 +151,7 @@ export class Runner extends EventEmitter {
        */
       const lineage = taskLineage(this.db, task)
       if (!sameLineage(agent, lineage)) {
-        throw new Error(`refusing to launch ${agent.command} for a task that belongs to ${lineage.command}`)
+        throw new PreparationBlockedError(`refusing to launch ${agent.command} for a task that belongs to ${lineage.command}`)
       }
       const workspace = this.remote?.choose(task.id, project, agent) ?? null
       const runId = newId('run')

@@ -12,6 +12,7 @@ import { inTransaction } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import { resolveHooks } from '../hooks/config.js'
 import { candidateAgents } from '../execution/agentResolver.js'
+import { PreparationBlockedError } from '../execution/preparation.js'
 import { t } from '../i18n/index.js'
 import { issueToken } from '../platform/githubAuthRuntime.mjs'
 import { GITHUB_API_VERSION, githubAppKeyStore, githubRepositoryFromRemote } from '../platform/githubAuth.js'
@@ -156,7 +157,7 @@ export class RunnerOperations extends EventEmitter {
   private online(runner: Pick<RemoteRunner, 'revoked' | 'lastSeen'>): boolean { return !runner.revoked && Date.now() - Date.parse(runner.lastSeen) < ONLINE_MS && !!this.server }
   private requireRunner(id: string): RemoteRunner {
     const runner = repo.listRemoteRunners(this.db).find(runner => runner.id === id)
-    if (!runner) throw new Error(t('runners.notFound'))
+    if (!runner) throw new PreparationBlockedError(t('runners.notFound'))
     return runner
   }
   /** Installed and not known to be signed out. Older workers do not report sign-in. */
@@ -183,9 +184,9 @@ export class RunnerOperations extends EventEmitter {
     if (existing) {
       const runner = this.requireRunner(existing.runnerId)
       if (!project.runnerEnabled || !this.online(runner) || !this.supports(runner, agent) || (auxiliary && !this.supports(runner, auxiliary)) || !this.dependenciesAvailable(runner, project)) {
-        throw new Error(t('runners.waiting', { name: runner.name }))
+        throw new PreparationBlockedError(t('runners.waiting', { name: runner.name }))
       }
-      if (repo.listRemoteJobs(this.db, runner.id).length >= runner.capacity) throw new Error(t('runners.full', { name: runner.name }))
+      if (repo.listRemoteJobs(this.db, runner.id).length >= runner.capacity) throw new PreparationBlockedError(t('runners.full', { name: runner.name }))
       return existing
     }
     if (!project.runnerEnabled || project.builtIn || repo.listRunsByTask(this.db, taskId).some(run => !run.runnerId)) return null
@@ -217,7 +218,7 @@ export class RunnerOperations extends EventEmitter {
   workspace(taskId: string): RunnerWorkspace | null { return repo.getRunnerWorkspace(this.db, taskId) }
   agentCommand(workspace: RunnerWorkspace, agent: Agent): string {
     const command = this.requireRunner(workspace.runnerId).agents.find(item => item.name === runnerAgentName(agent.command))?.command
-    if (!command) throw new Error(t('runners.agentMissing', { name: agent.name }))
+    if (!command) throw new PreparationBlockedError(t('runners.agentMissing', { name: agent.name }))
     return command
   }
   canUseAgent(taskId: string, agent: Agent): boolean {
