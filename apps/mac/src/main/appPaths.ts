@@ -75,6 +75,12 @@ export function grokSessionsDir(): string {
   return process.env.QUUU_GROK_SESSIONS_DIR ?? join(homedir(), '.grok', 'sessions')
 }
 
+/** Pi's session root; its own overrides also apply when inherited by Quuu. */
+export function piSessionsDir(): string {
+  return process.env.QUUU_PI_SESSIONS_DIR ?? process.env.PI_CODING_AGENT_SESSION_DIR ??
+    join(process.env.PI_CODING_AGENT_DIR || join(homedir(), '.pi', 'agent'), 'sessions')
+}
+
 /** Root where the GitHub Copilot CLI keeps sessions. */
 export function copilotSessionsDir(): string {
   return process.env.QUUU_COPILOT_SESSIONS_DIR ?? join(homedir(), '.copilot', 'session-state')

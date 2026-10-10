@@ -117,6 +117,7 @@ export const en = {
     codex: 'Codex (session logs in ~/.codex)',
     cursor: 'Cursor (session logs in ~/.cursor/chats)',
     grok: 'Grok (session logs in ~/.grok/sessions)',
+    pi: 'Pi (session logs in ~/.pi/agent/sessions)',
     copilot: 'GitHub Copilot (session logs in ~/.copilot)',
     agy: 'Antigravity (transcripts in ~/.gemini/antigravity-cli)',
     opencode: 'opencode (sessions in ~/.local/share/opencode)',
@@ -151,6 +152,7 @@ export const en = {
   },
 
   seed: {
+    pi: 'Pi 1.1 or later. Runs once with JSON output and resumes saved sessions. Prompts beginning with @ are treated as file references by Pi.',
     codex: 'Codex CLI. Reads the conversation and tool calls from its structured session log.',
     cursor: 'Cursor CLI (cursor-agent). Passing an unused ID to --resume creates a chat under that ID.',
     grok: 'Grok CLI. One run with -p. Continues the same session with --resume.',

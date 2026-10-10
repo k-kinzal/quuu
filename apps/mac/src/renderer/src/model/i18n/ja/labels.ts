@@ -28,6 +28,7 @@ export const labels: typeof enLabels = {
     codex: 'Codex (~/.codex のセッションログ)',
     cursor: 'Cursor (~/.cursor/chats のセッションログ)',
     grok: 'Grok (~/.grok/sessions のセッションログ)',
+    pi: 'Pi (~/.pi/agent/sessions のセッションログ)',
     copilot: 'GitHub Copilot (~/.copilot のセッションログ)',
     agy: 'Antigravity (~/.gemini/antigravity-cli の記録)',
     opencode: 'opencode (~/.local/share/opencode のセッション)',

@@ -27,6 +27,7 @@ export const labels = {
     codex: 'Codex (session logs in ~/.codex)',
     cursor: 'Cursor (session logs in ~/.cursor/chats)',
     grok: 'Grok (session logs in ~/.grok/sessions)',
+    pi: 'Pi (session logs in ~/.pi/agent/sessions)',
     copilot: 'GitHub Copilot (session logs in ~/.copilot)',
     agy: 'Antigravity (transcripts in ~/.gemini/antigravity-cli)',
     opencode: 'opencode (sessions in ~/.local/share/opencode)',

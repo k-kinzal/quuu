@@ -1710,6 +1710,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                   "copilot",
                   "agy",
                   "opencode",
+                  "pi",
                   "stdout"
                 ]
               }
@@ -9119,6 +9120,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "copilot",
               "agy",
               "opencode",
+              "pi",
               "stdout"
             ]
           }
@@ -9237,6 +9239,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "copilot",
             "agy",
             "opencode",
+            "pi",
             "stdout"
           ]
         },
@@ -9350,6 +9353,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "copilot",
             "agy",
             "opencode",
+            "pi",
             "stdout"
           ]
         }
@@ -9453,6 +9457,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
                 "copilot",
                 "agy",
                 "opencode",
+                "pi",
                 "stdout"
               ]
             },
@@ -9557,6 +9562,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "copilot",
             "agy",
             "opencode",
+            "pi",
             "stdout"
           ]
         }
@@ -9673,6 +9679,7 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
             "copilot",
             "agy",
             "opencode",
+            "pi",
             "stdout"
           ]
         }

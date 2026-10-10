@@ -88,7 +88,8 @@ for (const [i, def] of (
     { name: 'Grok', command: 'grok', logAdapter: 'grok' as const },
     { name: 'GitHub Copilot', command: 'copilot', logAdapter: 'copilot' as const },
     { name: 'Antigravity', command: 'agy', logAdapter: 'agy' as const },
-    { name: 'opencode', command: 'opencode', logAdapter: 'opencode' as const }
+    { name: 'opencode', command: 'opencode', logAdapter: 'opencode' as const },
+    { name: 'Pi', command: 'pi', logAdapter: 'pi' as const }
   ]
 ).entries()) {
   repo.insertAgent(db, {

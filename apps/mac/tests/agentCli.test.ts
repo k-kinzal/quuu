@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { promptAsValue, resumeInvocation } from '../src/main/agents/cli.js'
 import { AgentOperations } from '../src/main/agents/operations.js'
 import * as repo from '../src/main/db/repo.js'
 import { seedIfEmpty } from '../src/main/seed.js'
+import * as shellEnv from '../src/main/platform/shellEnv.js'
 import { memoryDb } from './helpers.js'
 
 /**
@@ -200,15 +201,22 @@ describe('saving an agent definition', () => {
 describe('the definitions seeded on first launch', () => {
   it('already hand the prompt over as a value', async () => {
     const db = memoryDb()
-    await seedIfEmpty(db)
-    const agents = repo.listAgents(db)
-    expect(agents.length).toBeGreaterThan(0)
-    for (const agent of agents) {
-      expect(promptAsValue(agent.command, agent.argsTemplate)).toEqual(agent.argsTemplate)
-      expect(promptAsValue(agent.command, agent.resumeArgsTemplate)).toEqual(
-        agent.resumeArgsTemplate
-      )
+    // Cover every supported CLI, independently of installed binaries and login-shell startup.
+    vi.spyOn(shellEnv, 'resolveLoginPath').mockResolvedValue('/test/bin')
+    vi.spyOn(shellEnv, 'commandExists').mockReturnValue(true)
+    try {
+      await seedIfEmpty(db)
+      const agents = repo.listAgents(db)
+      expect(agents.length).toBeGreaterThan(0)
+      for (const agent of agents) {
+        expect(promptAsValue(agent.command, agent.argsTemplate)).toEqual(agent.argsTemplate)
+        expect(promptAsValue(agent.command, agent.resumeArgsTemplate)).toEqual(
+          agent.resumeArgsTemplate
+        )
+      }
+    } finally {
+      vi.restoreAllMocks()
+      db.close()
     }
-    db.close()
   })
 })

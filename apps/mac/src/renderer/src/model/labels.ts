@@ -49,6 +49,7 @@ export const LOG_ADAPTER_LABEL: Record<LogAdapter, string> = {
   copilot: t('logAdapter.copilot'),
   agy: t('logAdapter.agy'),
   opencode: t('logAdapter.opencode'),
+  pi: t('logAdapter.pi'),
   stdout: t('logAdapter.stdout')
 }
 

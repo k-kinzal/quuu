@@ -5,6 +5,7 @@ import { grokCli } from './agent-clis/grok.js'
 import { agyCli } from './agent-clis/agy.js'
 import { opencodeCli } from './agent-clis/opencode.js'
 import { copilotCli } from './agent-clis/copilot.js'
+import { piCli } from './agent-clis/pi.js'
 import type { LogAdapter } from './agents/cliAdapter.js'
 import { DEFAULT_LIMIT_PATTERNS } from './agents/defaults.js'
 import type { AgentInput } from './agents/types.js'
@@ -111,6 +112,15 @@ const OPTIONAL_AGENTS: Array<
       resumeArgsTemplate: opencodeCli.resumeArgsTemplate,
       concurrency: 1,
       logAdapter: 'opencode'
+    },
+    {
+      name: 'Pi',
+      descriptionKey: 'seed.pi',
+      command: 'pi',
+      argsTemplate: piCli.argsTemplate,
+      resumeArgsTemplate: piCli.resumeArgsTemplate,
+      concurrency: 1,
+      logAdapter: 'pi'
     },
     {
       name: 'GitHub Copilot',

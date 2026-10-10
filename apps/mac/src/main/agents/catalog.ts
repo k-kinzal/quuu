@@ -20,7 +20,8 @@ const CLI_BRAND_NAME: Record<Exclude<LogAdapter, 'stdout'>, string> = {
   grok: 'Grok',
   copilot: 'GitHub Copilot',
   agy: 'Antigravity',
-  opencode: 'opencode'
+  opencode: 'opencode',
+  pi: 'Pi'
 }
 
 export function externalAgentName(adapter: LogAdapter): string {

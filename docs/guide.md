@@ -35,7 +35,7 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 | Limit fallback | Match the output against a regex → cooldown → follow the chain and automatically re-run with another agent (no human is asked). A running agent holds one slot on each agent it could still fall back to, so a Limit — which moves every run on that agent at once — always finds room. A run with no lane free waits instead of starting |
 | Who waits out a Limit | Everything drawing on the allowance it spent. An account that is out ("You've hit your usage limit", "session limit", "weekly limit") cools every definition on that account — the same CLI command with the same environment variables — so Opus and Sonnet wait together. A limit on **one model** cools only the definitions selecting that model (`--model fable`, `claude-fable-5-1`, `ANTHROPIC_MODEL`). An overload or a model at capacity names no allowance and holds back only the definition that met it. A definition left on the CLI's default model is never assumed to be on a named one. Cursor's own models and the others run out apart and its wording is not known yet, so a Cursor limit holds back only the definition that met it |
 | When a Limit lifts | The moment the CLI printed ("try again at Sep 19th, 2026 7:13 PM", "resets 3pm") is cooled for exactly that long. A limit on **one model** ("You've reached your Fable limit") names no moment because that share is a slice of the account's **weekly** allowance — so it waits for the week to turn, read off the last turn Quuu watched any definition on that model make, plus seven days. Until it has watched one, the configured cooldown is what probes for it. **Run Now** during a Limit starts that one task anyway: a plan change or credits bought can lift it from outside. If the run is still limited, the task goes back to waiting. Other tasks keep waiting until that probe gets through. Right-click the agent in Settings → Agents and choose **Reset Limit** to lift the cooldown for every task waiting on it — and on every definition sharing that Limit — when the account is already back |
-| Supported agents | Claude Code / Codex / Cursor (`cursor-agent`) / Grok / GitHub Copilot / Antigravity (`agy`) / opencode. Definitions are only added where the command exists (disabled initially). A CLI supported after your database was made is offered once, on the next launch |
+| Supported agents | Claude Code / Codex / Cursor (`cursor-agent`) / Grok / GitHub Copilot / Antigravity (`agy`) / opencode / Pi (1.1+). Definitions are only added where the command exists (disabled initially). A CLI supported after your database was made is offered once, on the next launch |
 | Session log display | Opens the latest 80 messages from a durable index, pages in both directions, and retains at most 240 messages in the view. Log ingestion runs independently of windows; an uncached JSONL log opens from a bounded tail while history is indexed |
 | Continued runs | Carries over the same session-id and runs the equivalent of `claude --resume <uuid> -p "<follow-up>"`. When the opener is cooling down, its configured fallback chain can continue on a compatible CLI with resume arguments. Unrelated group members are excluded. If both models hit Limit, the history shows the handoff, for example `Fable → Opus → Limit`, and waits until a candidate returns |
 | Unattended operation | The scheduler keeps running with the window closed (lives in the menu bar) |
@@ -51,7 +51,7 @@ Only an explicit human action re-queues it; the scheduler never touches it.
 | GitHub App setup | Available from "Set up GitHub App" in Settings (click → follow the browser flow to approve → the identity fills in). When the required permissions change, "Update GitHub App" replaces it through the same flow — no copying values by hand |
 | GitHub App credentials | Each Run starts with a private `GH_CONFIG_DIR`, shared by native `gh` and Git's credential helper. Quuu refreshes the installation token 15 minutes before expiration, including while the app is closed or restarting. Failed refreshes retry every minute and retain the existing token; they do not fall back to a personal login. Initial authentication failure stops the Run before launching the agent. Applies to newly started Runs |
 | Automation | Definitions that queue a task when conditions line up: "when the queue is free", "past a cron time", "when nothing unfinished remains". Any number per project |
-| External session import | Detects directly launched Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode sessions and syncs them as projects and tasks. Running ones become Running; stopped ones become Done |
+| External session import | Detects directly launched Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode / Pi sessions and syncs them as projects and tasks. Running ones become Running; stopped ones become Done |
 | Continue in the terminal | Reopens a finished session in the terminal, **still interactive** (the equivalent of `claude --resume <id>`). Can also just open the working directory |
 | Open in an IDE / editor | Opens the working directory in JetBrains / Xcode / VS Code and so on. Which app to use is chosen per project (Xcode is handed the `.xcworkspace` / `.xcodeproj`) |
 | View and queue from iPhone | State is passed through a folder in iCloud Drive, and the actions taken over there are imported. Each action carries **the state visible when it was tapped**, so crossed updates return to the human instead of silently overwriting |
@@ -266,6 +266,7 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | `QUUU_GROK_SESSIONS_DIR` | Root of Grok sessions (default: `~/.grok/sessions`) |
 | `QUUU_COPILOT_SESSIONS_DIR` | Root of GitHub Copilot sessions (default: `~/.copilot/session-state`) |
 | `QUUU_AGY_DIR` | Everything the Antigravity CLI wrote (default: `~/.gemini/antigravity-cli`) |
+| `QUUU_PI_SESSIONS_DIR` | Root of Pi sessions (default: `~/.pi/agent/sessions`; also honors `PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DIR`) |
 | `QUUU_OPENCODE_DB` | The one store opencode keeps every session in (default: `~/.local/share/opencode/opencode.db`) |
 | `QUUU_APPLICATION_DIRS` | Where to look for IDEs / editors (`:`-separated; default: `/Applications` and `~/Applications`, plus `JetBrains Toolbox` under them) |
 | `QUUU_OTEL` | `1` turns on OpenTelemetry export, `0` keeps it off whatever `quuu app set-telemetry` saved ([telemetry](telemetry.md)) |
@@ -565,7 +566,7 @@ what is running now and what has been done" holds.
 
 | Behavior | Detail |
 |------|------|
-| Detection source | The locations in the table below (Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode) |
+| Detection source | The locations in the table below (Claude Code / Codex / Cursor / Grok / Copilot / Antigravity / opencode / Pi) |
 | Project | Resolved from the session's working directory. Auto-created if absent and assigned the default agent group when one is marked. Existing and restored projects keep their saved target |
 | Status | **Running** if there is a liveness marker; **Done** on an exit marker or sustained silence (CLIs without markers are judged by updates within the last 3 minutes) |
 | Sync | 1.2 s after launch + every 60 s thereafter. Running it any number of times never duplicates (matched via `external_key`) |
@@ -607,6 +608,7 @@ provider implementations live in
 | Grok | `~/.grok/sessions/<percent-encoded cwd>/<id>/chat_history.jsonl` | `--session-id` | No marker → modification time |
 | GitHub Copilot | `~/.copilot/session-state/<id>/events.jsonl` | No | Ended once `session.shutdown` is written |
 | Antigravity | `~/.gemini/antigravity-cli/brain/<id>/.system_generated/logs/transcript.jsonl` | No (the CLI announces the conversation it opened on the first line of `--output-format stream-json`) | No marker → modification time |
+| Pi | `~/.pi/agent/sessions/--<encoded cwd>--/<timestamp>_<id>.jsonl` | `--session-id` (1.1+); resume with `--session` | No marker → modification time |
 | opencode | `~/.local/share/opencode/opencode.db` (SQLite; **every session in one store**) | No | Ended once the session's `time_idle` is stamped |
 
 Two of them need more than a path. The Antigravity CLI ignores the directory it was started
@@ -936,6 +938,14 @@ Quuu pins no permission mode. Things like `--permission-mode bypassPermissions` 
 Non-interactive runs (`-p`) stall the moment a permission prompt appears, so for
 unattended operation it must be specified in the argument template. The first-launch
 presets include configurations that do not stall.
+
+Pi defaults to `--print --mode json --approve --session-id {{sessionId}} -- {{prompt}}`.
+Follow-ups use `--session {{sessionId}}`. Its saved model/provider configuration is used;
+add `--model` / `--provider` to the argument templates to select another. JSON-mode errors
+are classified from the final assistant event even when Pi exits with code zero.
+Pi interprets a positional argument beginning with `@` as a file reference, including
+after `--`; avoid that prefix for literal prompts. When using a custom session directory,
+point Quuu's session directory override at the same location.
 
 ## Entry points for operations
 

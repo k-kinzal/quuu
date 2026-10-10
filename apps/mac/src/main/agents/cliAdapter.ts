@@ -8,6 +8,7 @@ export type LogAdapter =
   | 'copilot'
   | 'agy'
   | 'opencode'
+  | 'pi'
   | 'stdout'
 
 export const IMPORTABLE_ADAPTERS: LogAdapter[] = [
@@ -17,7 +18,8 @@ export const IMPORTABLE_ADAPTERS: LogAdapter[] = [
   'grok',
   'copilot',
   'agy',
-  'opencode'
+  'opencode',
+  'pi'
 ]
 
 export function adapterOfExternalKey(externalKey: string | null): LogAdapter | null {

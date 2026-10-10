@@ -118,6 +118,7 @@ export const ja: typeof en = {
     codex: 'Codex (~/.codex のセッションログ)',
     cursor: 'Cursor (~/.cursor/chats のセッションログ)',
     grok: 'Grok (~/.grok/sessions のセッションログ)',
+    pi: 'Pi (~/.pi/agent/sessions のセッションログ)',
     copilot: 'GitHub Copilot (~/.copilot のセッションログ)',
     agy: 'Antigravity (~/.gemini/antigravity-cli の記録)',
     opencode: 'opencode (~/.local/share/opencode のセッション)',
@@ -152,6 +153,7 @@ export const ja: typeof en = {
   },
 
   seed: {
+    pi: 'Pi 1.1 以降。JSON 出力で実行し、保存したセッションを再開します。@ で始まるプロンプトは Pi がファイル参照として扱います。',
     codex: 'Codex CLI。構造化されたセッションログから会話とツール実行を読む。',
     cursor: 'Cursor CLI（cursor-agent）。--resume に未使用の ID を渡すと、その ID でチャットが作られる。',
     grok: 'Grok CLI。-p の 1 回実行。継続は --resume で同じセッションへ続ける。',

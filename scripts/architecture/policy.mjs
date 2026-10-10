@@ -33,7 +33,7 @@ export function layerViolation(from, to, typeOnly = false) {
   if (source === 'main/api' && ['main/servers', 'main/ipc', 'main/desktop'].includes(target)) return 'operation reception must not depend on a transport or desktop implementation'
   if (source === 'main/servers' && ['main/db', 'main/tasks', 'main/execution', 'main/ipc', 'main/desktop'].includes(target)) return 'servers call the operation reception, not storage or feature implementations'
   if (source === 'main/agent-clis' && target.startsWith('main/') && target !== source) return 'CLI drivers must not depend on Quuu or its adapters'
-  const provider = /^apps\/mac\/src\/main\/agent-adapters\/(claude|codex|cursor|grok|copilot|agy|opencode|stdout)\//
+  const provider = /^apps\/mac\/src\/main\/agent-adapters\/(claude|codex|cursor|grok|copilot|agy|opencode|pi|stdout)\//
   if (provider.test(to) && source !== 'main/agent-adapters') return 'provider formats are private to agent adapters; use the adapter registry'
   if (source === 'main/agent-adapters' && ['main/db', 'main/tasks', 'main/import'].includes(target)) return 'adapters translate provider evidence; Quuu owns persistence and task policy'
   if (source === 'main/agent-adapters' && target === 'main/execution' && !(typeOnly && to.endsWith('/types.ts'))) return 'adapters must not depend on execution management'

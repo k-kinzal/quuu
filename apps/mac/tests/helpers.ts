@@ -163,6 +163,7 @@ export function isolateSessionDirs(root: string): {
   copilot: string
   agy: string
   opencodeDb: string
+  pi: string
 } {
   const dirs = {
     claude: join(root, 'claude'),
@@ -174,6 +175,7 @@ export function isolateSessionDirs(root: string): {
     grok: join(root, 'grok'),
     copilot: join(root, 'copilot'),
     agy: join(root, 'agy'),
+    pi: join(root, 'pi'),
     // opencode keeps every session in one store, so what is redirected is a file, not a directory
     opencodeDb: join(root, 'opencode', 'opencode.db')
   }
@@ -187,6 +189,7 @@ export function isolateSessionDirs(root: string): {
   process.env.QUUU_COPILOT_SESSIONS_DIR = dirs.copilot
   process.env.QUUU_AGY_DIR = dirs.agy
   process.env.QUUU_OPENCODE_DB = dirs.opencodeDb
+  process.env.QUUU_PI_SESSIONS_DIR = dirs.pi
   return dirs
 }
 
@@ -202,4 +205,5 @@ export function releaseSessionDirs(): void {
   delete process.env.QUUU_COPILOT_SESSIONS_DIR
   delete process.env.QUUU_AGY_DIR
   delete process.env.QUUU_OPENCODE_DB
+  delete process.env.QUUU_PI_SESSIONS_DIR
 }

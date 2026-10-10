@@ -5,9 +5,10 @@ import { copilotCli } from './copilot.js'
 import { cursorCli } from './cursor.js'
 import { grokCli } from './grok.js'
 import { opencodeCli } from './opencode.js'
+import { piCli } from './pi.js'
 import type { CliDriver } from './types.js'
 
-const drivers: Record<string, CliDriver> = { claude: claudeCli, codex: codexCli, cursor: cursorCli, grok: grokCli, agy: agyCli, opencode: opencodeCli, copilot: copilotCli }
+const drivers: Record<string, CliDriver> = { claude: claudeCli, codex: codexCli, cursor: cursorCli, grok: grokCli, agy: agyCli, opencode: opencodeCli, copilot: copilotCli, pi: piCli }
 export function cliForId(id: string): CliDriver | null { return drivers[id] ?? null }
 /**
  * The CLI a command names: `/opt/homebrew/bin/claude`, `C:\\…\\claude.exe` and `claude.cmd` are all

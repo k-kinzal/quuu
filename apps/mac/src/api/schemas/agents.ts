@@ -9,7 +9,7 @@ import { RecordSourceSchema } from './tasks.js'
 export const RunTargetKindSchema = z.union([z.literal('agent'), z.literal('group')])
 export type RunTargetKind = z.infer<typeof RunTargetKindSchema>
 
-export const LogAdapterSchema = z.union([z.literal('claude'), z.literal('codex'), z.literal('cursor'), z.literal('grok'), z.literal('copilot'), z.literal('agy'), z.literal('opencode'), z.literal('stdout')])
+export const LogAdapterSchema = z.union([z.literal('claude'), z.literal('codex'), z.literal('cursor'), z.literal('grok'), z.literal('copilot'), z.literal('agy'), z.literal('opencode'), z.literal('pi'), z.literal('stdout')])
 export type LogAdapter = z.infer<typeof LogAdapterSchema>
 
 export const AgentSchema = z.object({

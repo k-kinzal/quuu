@@ -103,6 +103,30 @@ The [Claude CLI documentation](https://code.claude.com/docs/en/headless) describ
 text, JSON and stream-JSON outputs. The diagnostic above is local observed evidence,
 not a promised universal message format.
 
+## Pi
+
+Pi uses its JSON event stream for run classification and its persisted v3 JSONL session
+for conversation history. The defaults require Pi 1.1+ (`--session-id` for a new run,
+`--session` for follow-ups). `--approve` trusts project resources in unattended runs.
+Pi may exit zero after an assistant error in JSON mode, so the adapter reads terminal
+assistant events, including recovered exits, and lets a later successful retry supersede
+an earlier error. Different Pi definitions can select different providers, so an error
+does not establish a shared account allowance across those definitions.
+
+Logs have a timestamped filename under an encoded working-directory folder; the header
+supplies the exact ID and cwd. Discovery validates that cwd because directory encoding is
+lossy. The parser preserves human input, thinking, tools/results, images and cwd; summaries
+and displayed extension context are system messages. External-session liveness uses mtime
+because the file has no process-lifetime marker. Pi treats an argument starting with `@`
+as a file reference even after `--`; the defaults retain that native CLI behavior.
+
+Verified against installed Pi 1.1.0 with an isolated configuration and a local simulated
+OpenAI-compatible endpoint: initial execution, a real file-writing tool call, session
+resume with both human messages retained, and an authentication error with exit code zero.
+No real provider credentials or production tasks are used for this verification.
+References: [CLI integration](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/cli-integration.md),
+[session format](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/docs/session-format.md).
+
 ## Durable identity and compatibility
 
 Schema v27 records `log_adapter` and `limit_patterns` on each Run. Editing the
