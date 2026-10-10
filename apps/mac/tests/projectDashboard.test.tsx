@@ -339,9 +339,9 @@ describe('project navigation and dashboard', () => {
     expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Regenerate report' }).disabled).toBe(false)
   })
 
-  it('saves the project report purpose independently of task report instructions', async () => {
+  it('saves the project report prompt independently of the task report prompt', async () => {
     render(<ThemeProvider><ReportSettings /></ThemeProvider>)
-    fireEvent.change(screen.getByRole('textbox', { name: 'Project report instructions' }), { target: { value: 'Focus on usability' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Project report prompt' }), { target: { value: 'Focus on usability' } })
     await waitFor(() => expect(save).toHaveBeenCalledWith({ projectReportInstructions: 'Focus on usability' }))
     await waitFor(() => expect(useStore.getState().settings?.projectReportInstructions).toBe('Focus on usability'))
     expect(useStore.getState().settings?.reportInstructions).toBe('')

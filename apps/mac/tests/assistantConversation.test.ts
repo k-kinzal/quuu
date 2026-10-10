@@ -1,3 +1,4 @@
+import type { Run } from '../src/api/schemas/execution.js'
 import { expect, it } from 'vitest'
 import { assistantConversation } from '../src/renderer/src/model/assistantConversation.js'
 import type { SessionMessage } from '../src/api/schemas/session.js'
@@ -47,22 +48,37 @@ it('keeps only main conversation text and attachments without mutating mixed mes
   expect(messages).toEqual(original)
 })
 
-it('keeps supplied context out of displayed requests while preserving the stored conversation and assistant replies', () => {
+it('preserves user text that resembles the old context wrapper without invocation evidence', () => {
   const text = 'What should I do today?\n\n<quuu-assistant-context>Shared memory and proposal context\n</quuu-assistant-context>'
   const message: SessionMessage = { id: '1', role: 'user', blocks: [{ kind: 'text', text }], timestamp: null, model: null, isSidechain: false }
   const reply: SessionMessage = { ...message, id: '2', role: 'assistant' }
-  expect(assistantConversation([message, reply])[0].blocks).toEqual([{ kind: 'text', text: 'What should I do today?' }])
+  expect(assistantConversation([message, reply])[0]).toEqual(message)
   expect(message.blocks).toEqual([{ kind: 'text', text }])
   expect(assistantConversation([message, reply])[1]).toEqual(reply)
 })
 
-it('shows a proposal once and keeps the appended reply without changing its durable prompt', () => {
+it('preserves user text quoting a proposal without invocation evidence', () => {
   const proposal = { taskId: 'p', projectId: 'project', title: 'Restore the conversation', reason: 'Two sessions lost their place.',
     prompt: 'Persist the selected conversation on restart.', confidence: 86, status: 'pending' as const, createdAt: '', respondedAt: null, executionTaskId: null }
   const context = `Discuss this proposed task: ${proposal.title}\n\nWhy: ${proposal.reason}\n\nSuggested work: ${proposal.prompt}`
   const message: SessionMessage = { id: '1', role: 'user', blocks: [{ kind: 'text', text: context + '\n\nCan it keep the scroll position too?' }], timestamp: null, model: null, isSidechain: false }
-  expect(assistantConversation([message], proposal)[0].blocks).toEqual([{ kind: 'text', text: 'Can it keep the scroll position too?' }])
+  expect(assistantConversation([message], proposal)[0]).toEqual(message)
   expect(message.blocks[0]).toEqual({ kind: 'text', text: context + '\n\nCan it keep the scroll position too?' })
   const ordinary: SessionMessage = { ...message, blocks: [{ kind: 'text', text: `I would change this instruction: ${proposal.prompt}` }] }
   expect(assistantConversation([ordinary], proposal)[0]).toEqual(ordinary)
+})
+
+
+it('removes only proven legacy proposal input and context while retaining the original log', () => {
+  const prefix = 'Discuss this proposed task: Fix downloads\n\nWhy: Evidence\n\nSuggested work: Fix it'
+  const reply = '  根拠は？'
+  const text = `${prefix}\n\n${reply}\n\n<quuu-assistant-context>\n\nQuuuAI conversation turn: run_old\n</quuu-assistant-context>`
+  const proposal = { taskId: 'p', projectId: 'project', title: 'Fix downloads', reason: 'Evidence', prompt: 'Fix it',
+    confidence: 86, status: 'pending' as const, createdAt: '', respondedAt: null, executionTaskId: null,
+    legacyDiscussion: { prefix, runIds: ['run_old'] } }
+  const message: SessionMessage = { id: '1', role: 'user', blocks: [{ kind: 'text', text }], timestamp: null, model: null, isSidechain: false }
+  const run = { id: 'run_old', args: [text] } as Run
+  expect(assistantConversation([message], proposal, [run])[0].blocks).toEqual([{ kind: 'text', text: reply }])
+  expect(message.blocks).toEqual([{ kind: 'text', text }])
+  expect(assistantConversation([message], proposal, [{ ...run, id: 'run_new' }])).toEqual([message])
 })

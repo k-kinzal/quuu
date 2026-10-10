@@ -2240,6 +2240,27 @@ export function assistantTurnHasReply(db: Db, key: string, generation: string, m
       (json_extract(block.value, '$.kind') = 'text' AND LENGTH(${ASSISTANT_TEXT}) > 0)
       OR json_extract(block.value, '$.kind') = 'image') LIMIT 1`).get(key, generation, n(anchor.ordinal)))
 }
+/** Only a new user turn beyond the captured history can own a new reply. */
+export function assistantReplyAfter(db: Db, key: string, generation: string,
+  boundary: { verified: boolean; afterMessageId: string | null }, startedAt: string): boolean {
+  const before = boundary.afterMessageId === null ? -1 : db.prepare(
+    "SELECT ordinal FROM session_messages WHERE log_key = ? AND generation = ? AND json_extract(message, '$.id') = ?"
+  ).get(key, generation, boundary.afterMessageId) as Row | undefined
+  if (before === undefined) return false
+  const ordinal = before === -1 ? -1 : n(before.ordinal)
+  const anchor = db.prepare(`SELECT MAX(ordinal) AS ordinal FROM session_messages
+    WHERE log_key = ? AND generation = ? AND ordinal > ? AND json_extract(message, '$.role') = 'user'
+      AND COALESCE(json_extract(message, '$.isSidechain'), 0) = 0
+      AND (? OR julianday(json_extract(message, '$.timestamp')) >= julianday(?))`)
+    .get(key, generation, ordinal, boundary.verified ? 1 : 0, startedAt) as Row
+  if (anchor.ordinal === null) return false
+  return Boolean(db.prepare(`SELECT 1 FROM session_messages WHERE log_key = ? AND generation = ? AND ordinal > ?
+    AND json_extract(message, '$.role') = 'assistant' AND COALESCE(json_extract(message, '$.isSidechain'), 0) = 0
+    AND EXISTS (SELECT 1 FROM json_each(message, '$.blocks') block WHERE
+      (json_extract(block.value, '$.kind') = 'text' AND LENGTH(${ASSISTANT_TEXT}) > 0)
+      OR json_extract(block.value, '$.kind') = 'image') LIMIT 1`).get(key, generation, n(anchor.ordinal)))
+}
+
 export function listAssistantChecks(db: Db): AssistantCheck[] {
   return (db.prepare('SELECT data FROM assistant_checks ORDER BY rowid DESC').all() as Row[]).map(row => JSON.parse(s(row.data)) as AssistantCheck)
 }

@@ -11,7 +11,7 @@ import { focusAny, pane } from '../interaction/focus.js'
 import { deliveredInstructions, failureReason, nextSend } from '../model/derive.js'
 import { clockOrDate } from '../model/format.js'
 import { t } from '../model/i18n/index.js'
-import { assistantConversation, proposalContextPrefix } from '../model/assistantConversation.js'
+import { assistantConversation } from '../model/assistantConversation.js'
 import { buildSections, buildTurns } from '../model/summarize.js'
 import { placeByTime } from '../model/timeline.js'
 import { useStore } from '../state/store.js'
@@ -74,8 +74,12 @@ export function Chat({ task, project, active = true, proposal }: { task: Task; p
   const run = runs.find((r) => r.id === selectedRunId) ?? null
   const cwd = run?.cwd ?? project?.path ?? null
   // A fresh array every time would make the useMemos below run on every render
-  const conversation = useMemo(() => project?.builtIn ? assistantConversation(session?.messages ?? []) : session?.messages ?? [], [session, project?.builtIn])
-  const messages = useMemo(() => proposal ? assistantConversation(conversation, proposal) : conversation, [conversation, proposal])
+  const messages = useMemo(() => project?.builtIn
+    ? assistantConversation(session?.messages ?? [], proposal, runs)
+    : session?.messages ?? [], [session, project?.builtIn, proposal, runs])
+  const conversation = messages
+  const displayRun = run && proposal?.legacyDiscussion?.runIds.includes(run.id)
+    ? { ...run, promptPreview: task.prompt.slice(0, 500) } : run
   const turns = useMemo(() => buildTurns(messages), [messages])
   const sections = useMemo(() => buildSections(turns), [turns])
 
@@ -325,9 +329,8 @@ export function Chat({ task, project, active = true, proposal }: { task: Task; p
           )}
 
           <HookInterlude key={task.id} entries={placed.end} error={showExecutionDetails && latestConversation && !session?.hasNewer ? hooks.error : null} />
-          {!session?.hasNewer && run && <ExecutionActivity run={run} messages={messages} />}
-          {!session?.hasNewer && next && <PendingTurn task={task} next={next} conversation={project?.builtIn}
-            hiddenPrefix={proposal ? proposalContextPrefix(next.value, proposal) : undefined} />}
+          {!session?.hasNewer && displayRun && <ExecutionActivity run={displayRun} messages={messages} />}
+          {!session?.hasNewer && next && <PendingTurn task={task} next={next} conversation={project?.builtIn} />}
           </Column>
         </ChatScroll>
 

@@ -50,8 +50,8 @@ export function TaskWorkspace({ task }: { task: Task }): JSX.Element {
   const reviewable = task.status === 'review' || task.status === 'failed'
 
   const commitTitle = (): void => {
-    const next = title.trim()
-    if (next.length === 0) {
+    const next = title
+    if (next.trim().length === 0) {
       setTitle(task.title)
       return
     }

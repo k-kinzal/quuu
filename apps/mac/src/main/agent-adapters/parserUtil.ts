@@ -60,13 +60,13 @@ export function collectText(value: unknown): string {
  *
  * Cursor and Grok wrap a human's utterance in `<user_query>` and prepend a timestamp and so on.
  * Without unwrapping it, the tags themselves line the conversation surface.
- * When it is not wrapped, only the surrounding whitespace is trimmed.
+ * Unwrapped text and the body inside a wrapper retain their original whitespace.
  */
 const USER_QUERY = /<user_query>\n?([\s\S]*?)\n?<\/user_query>/
 
 export function extractUserQuery(text: string): string {
   const hit = USER_QUERY.exec(text)
-  return (hit ? hit[1] : text).trim()
+  return hit ? hit[1] : text
 }
 
 /** One line for the title. Anything too long is elided. */

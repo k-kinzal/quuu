@@ -100,7 +100,7 @@ function cursorTitle(messages: Array<{ role: string; content: unknown }>): strin
     if (isMachineNotification(text)) continue
     const body = extractUserQuery(text)
     // Messages without `<user_query>` are preamble such as environment info
-    if (body === text.trim()) continue
+    if (body === text) continue
     const line = firstLine(body)
     if (line) return line
   }

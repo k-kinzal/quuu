@@ -30,6 +30,13 @@ A project-level setting overrides the app's for that project ([projects](project
 | lifecycle hooks | `taskHooks` - see [hooks](hooks.md) |
 
 Reports cost one agent run per review; turn them on only when asked, and name the writer.
+`reportInstructions` and `projectReportInstructions` are complete prompt templates. Empty
+selects the built-in default; custom text is sent unchanged except for explicit variables:
+`{{page}}`, `{{cwd}}`, `{{title}}`, `{{language}}`, `{{context}}`,
+`{{documentInstructions}}`, `{{defaultPrompt}}`, and task-only `{{prompt}}`.
+Include `{{page}}` or `{{context}}` when the writer needs the output path. Expansion is
+single-pass and unknown names remain literal. Never rewrite a person's prompt or silently
+add these variables on their behalf.
 
 ## GitHub identity
 

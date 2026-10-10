@@ -184,7 +184,7 @@ export class AgySessionParser {
 /** Drop the metadata the CLI appends and keep what the human wrote. */
 export function userText(content: string): string {
   const hit = USER_REQUEST.exec(content)
-  return (hit ? hit[1] : content).trim()
+  return hit ? hit[1] : content
 }
 
 /** Each argument value is a JSON-encoded string. Anything unreadable is passed through as-is. */

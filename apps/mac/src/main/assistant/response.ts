@@ -6,16 +6,27 @@ import { t } from '../i18n/index.js'
 import { QUUU_PROJECT_ID } from '../projects/types.js'
 import { sessionKey, type SessionIndex } from '../session/index.js'
 import { sessionReadTarget } from '../session/sessionAttach.js'
+import { snapshotStamp } from '../session/sessionWatcher.js'
+import type { AssistantTurn } from './types.js'
 
 function turnMarker(runId: string): string { return `QuuuAI conversation turn: ${runId}` }
 
-export function responsePrompt(db: Db, taskId: string, runId: string): string {
-  if (repo.isAssistantCheck(db, taskId)) return ''
-  if (!repo.getAssistantTurn(db, runId)) repo.saveAssistantTurn(db, { taskId, runId, noReply: false, outcome: null })
-  return `\n\n${turnMarker(runId)}
-Decide from the whole conversation whether a user-facing reply is useful. For a closing acknowledgement such as "ありがとう" or "thanks" with no question, request, unresolved issue or needed confirmation, you may deliberately finish without replying. Do not decide by keywords: thanks combined with a question or additional request still needs an answer or action. Never omit a necessary answer, operation result, failure report or confirmation.
-To choose no reply, call: quuu call assistant.noReply '{"runId":"${runId}"}'
-After that call succeeds, end normally without any user-facing text (no acknowledgement, placeholder, control token, or "I will not reply"). If the call fails, report the failure. Do not emit commentary before choosing silence. Otherwise reply normally; no special call is needed. Empty output without this explicit decision is an error. This option applies only to this QuuuAI conversation turn, not development-task reports or background research.`
+/** Record the existing conversation boundary without putting control text in the user's message. */
+export function registerTurn(db: Db, run: Run): void {
+  const task = repo.getTask(db, run.taskId)
+  if (task?.projectId !== QUUU_PROJECT_ID || repo.isAssistantCheck(db, task.id)) return
+  const previous = repo.listRunsByTask(db, task.id).find(other => other.id !== run.id && other.sessionId === run.sessionId)
+  let boundary: NonNullable<AssistantTurn['boundary']> = { verified: !previous, afterMessageId: null }
+  if (previous) {
+    const target = sessionReadTarget(db, previous)
+    const key = sessionKey(target)
+    const index = repo.getSessionIndex(db, key)
+    if (index && index.stamp === snapshotStamp(target.logPath)) {
+      const last = repo.readSessionMessages(db, key, index.generation, Math.max(0, index.total - 1), 1)[0]
+      boundary = { verified: true, afterMessageId: last?.id ?? null }
+    }
+  }
+  repo.saveAssistantTurn(db, { taskId: task.id, runId: run.id, noReply: false, outcome: null, boundary })
 }
 
 export function chooseNoReply(db: Db, runId: string): void {
@@ -43,7 +54,9 @@ export function validateResponse(db: Db, sessions: SessionIndex, run: Run): Prom
     if (!turn) throw new Error('Assistant turn disappeared during validation')
     const reply = index && (target.mode === 'stdout' && run.logAdapter === 'stdout'
       ? repo.readSessionMessages(db, key, index.generation, 0, 1).length > 0
-      : repo.assistantTurnHasReply(db, key, index.generation, turnMarker(run.id)))
+      : turn.boundary
+        ? repo.assistantReplyAfter(db, key, index.generation, turn.boundary, run.startedAt)
+        : repo.assistantTurnHasReply(db, key, index.generation, turnMarker(run.id)))
     // Real prose wins over an earlier silence decision; never hide an answer or operation result.
     if (reply || turn.noReply) {
       repo.saveAssistantTurn(db, { ...turn, outcome: reply ? 'reply' : 'no-reply' })

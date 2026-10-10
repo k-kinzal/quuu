@@ -141,26 +141,22 @@ describe('a run in QuuuAI', () => {
     }).args
   }
 
-  it('tells a fresh conversation where the bundled skill is', () => {
+  it('passes fresh conversation input without injecting workspace instructions', () => {
     const app = makeApp()
     const project = app.projects.ensureBuiltIn(workspace)
 
     const [prompt] = prepare(app, project.id, 'initial')
 
-    expect(prompt.startsWith('Register ~/src/api as a project\n')).toBe(true)
-    expect(prompt).toContain(join(workspace, 'AGENTS.md'))
-    expect(prompt).toContain(join(workspace, 'skills', 'quuu', 'SKILL.md'))
-    expect(prompt).toContain(join(workdir, 'Resources', 'bin', 'quuu'))
+    expect(prompt).toBe('Register ~/src/api as a project')
   })
 
-  it('refreshes shared memory for follow-ups and leaves other projects’ prompts unchanged', () => {
+  it('passes follow-ups and ordinary project prompts without hidden context', () => {
     const app = makeApp()
     const project = app.projects.ensureBuiltIn(workspace)
     const agent = makeAgent(app.db, { name: 'plain' })
     const plain = makeProject(app.db, { name: 'plain', targetId: agent, path: workdir })
 
-    expect(prepare(app, project.id, 'followup')[0]).toContain('Register ~/src/api as a project\n\n<quuu-assistant-context>')
-    expect(prepare(app, project.id, 'followup')[0]).toContain('Shared memory')
+    expect(prepare(app, project.id, 'followup')).toEqual(['Register ~/src/api as a project'])
     expect(prepare(app, plain, 'initial')).toEqual(['Register ~/src/api as a project'])
   })
 

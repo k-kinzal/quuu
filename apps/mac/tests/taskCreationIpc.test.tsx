@@ -608,7 +608,7 @@ describe('file transfer in a prompt -> contract-based IPC -> disk and task persi
     await waitFor(() => expect(input.value).toBe(''))
     const task = app.tasks.listPage({ projectId: project.id }).tasks[0]
     const first = app.runner.prepare({ task, project, agent, groupId: null, kind: 'initial', fallbackFromRunId: null })
-    expect(first.args.join(' ')).toContain(initial)
+    expect(first.args).toEqual([initial])
     expect(readFileSync(path, 'utf8')).toBe('The fixture reference is readable.')
     repo.updateRun(app.db, first.id, { status: 'succeeded', endedAt: new Date().toISOString() })
     repo.setTaskStatus(app.db, task.id, 'review', { sessionId: first.sessionId })
@@ -631,10 +631,10 @@ describe('file transfer in a prompt -> contract-based IPC -> disk and task persi
     expect(resolvePath).toHaveBeenCalledTimes(2)
     expect(input.value).toBe('Keep this separate draft')
     fireEvent.keyDown(reply, { key: 'Enter', metaKey: true })
-    await waitFor(() => expect(repo.getTask(app.db, task.id)?.pendingMessage).toBe(followup.trim()))
+    await waitFor(() => expect(repo.getTask(app.db, task.id)?.pendingMessage).toBe(followup))
     const updated = repo.getTask(app.db, task.id)!
     const next = app.runner.prepare({ task: updated, project, agent, groupId: null, kind: 'followup', sessionId: first.sessionId, messageOverride: updated.pendingMessage, fallbackFromRunId: null })
-    expect(next.args.join(' ')).toContain(followup.trim())
+    expect(next.args).toEqual([first.sessionId, followup])
     expect(input.value).toBe('Keep this separate draft')
   })
 

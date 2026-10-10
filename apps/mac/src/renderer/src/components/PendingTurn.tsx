@@ -32,7 +32,7 @@ const keepFocus = (e: MouseEvent): void => e.preventDefault()
  * and one mark suffices. The same holds while writing: commit and discard are pressable
  * buttons, not key hints.
  */
-export function PendingTurn({ task, next, conversation = false, hiddenPrefix = '' }: { task: Task; next: NextSend; conversation?: boolean; hiddenPrefix?: string }): JSX.Element {
+export function PendingTurn({ task, next, conversation = false }: { task: Task; next: NextSend; conversation?: boolean }): JSX.Element {
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const [editing, setEditing] = useState(false)
 
@@ -74,12 +74,11 @@ export function PendingTurn({ task, next, conversation = false, hiddenPrefix = '
     }
   }
 
-  const value = next.value.slice(hiddenPrefix.length)
-  if (hiddenPrefix && !value.trim()) return <></>
+  const value = next.value
   const body = <EditableBody
     value={value} label={label} placeholder={task.title} inputRef={inputRef}
     onEditingChange={setEditing} actionsRef={actions}
-    onCommit={text => patch(next.field === 'pendingMessage' ? { pendingMessage: hiddenPrefix + text } : { prompt: hiddenPrefix + text }, true)}
+    onCommit={text => patch(next.field === 'pendingMessage' ? { pendingMessage: text } : { prompt: text }, true)}
   />
   const Root = conversation ? MessageGroup : TurnRoot
   return (

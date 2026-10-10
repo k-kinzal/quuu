@@ -9,6 +9,10 @@ export const DEFAULT_ASSISTANT_SETTINGS: AssistantSettings = {
 }
 
 export interface AssistantProposal {
+  /** Marks proposals created without a fabricated opening user message. */
+  inputVersion?: 1
+  /** Provenance for old run logs; their original bytes remain intact. */
+  legacyDiscussion?: { prefix: string; runIds: string[] }
   taskId: string
   projectId: string
   title: string
@@ -35,6 +39,8 @@ export interface AssistantTurn {
   taskId: string
   noReply: boolean
   outcome: 'reply' | 'no-reply' | null
+  /** Absent on older runs whose prompts contained a turn marker. */
+  boundary?: { verified: boolean; afterMessageId: string | null }
 }
 
 export interface AssistantThread {

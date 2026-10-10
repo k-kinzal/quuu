@@ -98,8 +98,8 @@ export function TaskView({ taskId }: { taskId: string }): JSX.Element {
   const running = task.status === 'running'
 
   const send = (): void => {
-    const text = message.trim()
-    if (!text) return
+    const text = message
+    if (!text.trim()) return
     setDraft(key, '')
     void sendBack(taskId, text).then(() => {
       end.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })

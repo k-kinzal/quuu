@@ -139,6 +139,20 @@ describe('the new task surface', () => {
     })
   })
 
+  it('sends the exact title and prompt, including whitespace and literal variables', async () => {
+    const createTask = vi.fn().mockResolvedValue(undefined)
+    useStore.setState({ createTask })
+    show(PROJECTS)
+    const title = '  確認してください  '
+    const prompt = '\n  {{context}} はそのまま残してください。\n\n'
+    fireEvent.change(screen.getByPlaceholderText('Task name'), { target: { value: title } })
+    fireEvent.change(screen.getByPlaceholderText('Instructions for the agent...'), { target: { value: prompt } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }))
+    await waitFor(() => expect(createTask).toHaveBeenCalledWith({
+      projectId: 'p1', title, prompt, priority: 2, action: 'queued'
+    }))
+  })
+
   it('keeps the input when the device write fails, and shows the reason in place', async () => {
     const createTask = vi.fn().mockRejectedValue(new Error('iCloud へ書けませんでした'))
     useStore.setState({ createTask })

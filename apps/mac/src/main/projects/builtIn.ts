@@ -83,21 +83,3 @@ export function assertBuiltInEdit(project: Project, patch: Partial<Pick<Project,
   if (patch.path !== undefined && patch.path !== project.path) throw new Error(t('project.builtInPath'))
   if (patch.worktreeMode !== undefined && patch.worktreeMode !== 'off') throw new Error(t('project.builtInWorktree'))
 }
-
-/**
- * The instruction a fresh conversation in the built-in project ends with.
- *
- * The rules live in the workspace's AGENTS.md (CLAUDE.md for Claude Code), which most CLIs read
- * on their own. Naming both files by absolute path here reaches the ones that do not, and a slash
- * command would reach only one CLI. The files ship inside the app, so the path is also what
- * tells the agent which copy is current. A continued conversation already read them, so
- * follow-ups go out as the human wrote them.
- */
-export function builtInPrompt(project: Project, message: string): string {
-  if (!project.builtIn) return message
-  return `${message.trimEnd()}
-
----
-This task runs in Quuu's built-in ${QUUU_PROJECT_NAME} project: operate Quuu itself through the \`quuu\` CLI (on PATH: ${join(quuuBinDir(project), 'quuu')}).
-Before acting, follow ${quuuInstructionsPath(project)} and read ${quuuSkillPath(project)} with the references it lists for this request.`
-}

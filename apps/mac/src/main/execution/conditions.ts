@@ -19,9 +19,9 @@ export function runDisposition(
   retry: boolean
 ): RunDisposition {
   if (error === null) {
-    const message = task.reservedMessage.trim()
+    const message = task.reservedMessage
     // Only an instruction a human reserved mid-run may be sent on after a normal finish.
-    return message
+    return message.trim()
       ? { kind: 'send-reserved', status: 'queued', pendingMessage: message }
       // A thread rests at the resumable boundary without a human work-approval decision.
       : { kind: isBuiltInProject(task.projectId) ? 'answered' : 'review', status: 'review', pendingMessage: '' }
@@ -31,17 +31,6 @@ export function runDisposition(
 }
 
 /**
- * What a resume says when the agent already has everything that was waiting to be sent.
- *
- * Every CLI's resume takes a message, so "just carry on" has to be written out. It is addressed to
- * the agent, not drawn on a screen, so it stays in English in code like the report writer's
- * instructions - and it names what to continue, because the instruction it refers to is the one
- * already sitting at the end of that conversation.
- */
-export const CONTINUE_INSTRUCTION =
-  'Continue the instruction above. It reached you, but the run ended before it was answered.'
-
-/**
  * What is left of an instruction once the parts the agent already has are taken off the front.
  *
  * Follow-ups written one after another are joined in writing order, so what was handed over is
@@ -49,17 +38,18 @@ export const CONTINUE_INSTRUCTION =
  * instruction for one already sent would drop it without a trace.
  */
 export function undelivered(message: string, delivered: string[]): string {
-  let rest = message.trim()
+  let rest = message
   for (const text of delivered) {
-    const sent = text.trim()
-    if (sent.length > 0 && rest.startsWith(sent)) rest = rest.slice(sent.length).trim()
+    if (!text) continue
+    if (rest === text) rest = ''
+    else if (rest.startsWith(text + '\n\n')) rest = rest.slice(text.length + 2)
   }
   return rest
 }
 
-/** What a resume sends: whatever the agent has not been given, or a nudge to answer what it has. */
+/** A retry sends unsent messages, or repeats the original input without inventing a user instruction. */
 export function resumeMessage(pending: string, delivered: string[]): string {
-  return undelivered(pending, delivered) || CONTINUE_INSTRUCTION
+  return undelivered(pending, delivered) || pending
 }
 
 export const MAX_AUTO_ATTEMPTS = 5

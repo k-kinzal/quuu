@@ -97,8 +97,8 @@ export class CopilotSessionParser {
         }
 
         case 'user.message': {
-          const text = collectText(data?.content).trim()
-          if (text.length === 0) break
+          const text = collectText(data?.content)
+          if (text.trim().length === 0) break
           if (!this.title) this.title = firstLine(text)
           this.push({ role: 'user', timestamp: ts, blocks: [{ kind: 'text', text }] }, mark)
           break

@@ -61,16 +61,9 @@ export interface DraftParts {
  * empty when pasted text starts with a blank line.
  */
 export function splitDraft(text: string): DraftParts {
-  const lines = text.replace(/\r\n?/g, '\n').split('\n')
-  let head = 0
-  while (head < lines.length && lines[head].trim().length === 0) head += 1
-  return {
-    title: (lines[head] ?? '').trim(),
-    prompt: lines
-      .slice(head + 1)
-      .join('\n')
-      .trim()
-  }
+  const first = /([^\r\n]*\S[^\r\n]*)(?:\r\n|\r|\n|$)/.exec(text)
+  if (!first) return { title: '', prompt: '' }
+  return { title: first[1], prompt: text.slice(first.index + first[0].length) }
 }
 
 export interface DraftLead {
@@ -85,7 +78,7 @@ export interface DraftLead {
 /**
  * Split a work-in-progress draft into the shape shown on screen right now.
  *
- * `splitDraft` extracts the values at queue time (it trims the edges). This one is for
+ * `splitDraft` extracts the title and preserves the instruction body at queue time. This one is for
  * **display while typing** and returns the characters as typed.
  * If whitespace disappeared mid-keystroke, the caret would look like it jumped.
  *

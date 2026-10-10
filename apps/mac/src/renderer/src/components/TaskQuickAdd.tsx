@@ -105,8 +105,8 @@ export function TaskQuickAdd({
 
   const submit = async (openAfter: boolean): Promise<void> => {
     if (queryClient.isMutating({ mutationKey: ['tasks', 'create'] })) return
-    const value = title.trim()
-    if (value.length === 0) return
+    const value = title
+    if (value.trim().length === 0) return
     const link = linked?.link ?? null
     const [error, task] = await safe(creation.mutateAsync({
       projectId: target.id,

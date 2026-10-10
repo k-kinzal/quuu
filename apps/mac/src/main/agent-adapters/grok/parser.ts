@@ -211,7 +211,7 @@ export class GrokSessionParser {
 export function unwrapQuery(text: string): string {
   const trimmed = text.trim()
   const hit = USER_QUERY.exec(trimmed)
-  return (hit ? hit[1] : trimmed).trim()
+  return hit ? hit[1] : text
 }
 
 /** tool_calls.arguments arrives as a JSON string. If unreadable, pass the string through. */

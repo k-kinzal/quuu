@@ -20,7 +20,7 @@ describe('run outcomes and human authority', () => {
   })
   it('only success moves the reserved message to pending send; whitespace-only goes to review', () => {
     expect(runDisposition({ projectId: 'work', reservedMessage: ' 続けて ' }, null, false)).toEqual({
-      kind: 'send-reserved', status: 'queued', pendingMessage: '続けて'
+      kind: 'send-reserved', status: 'queued', pendingMessage: ' 続けて '
     })
     expect(runDisposition({ projectId: 'work', reservedMessage: '  ' }, null, false)).toEqual({
       kind: 'review', status: 'review', pendingMessage: ''

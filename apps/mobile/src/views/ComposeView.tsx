@@ -70,10 +70,10 @@ export function ComposeView({ footer }: { footer: JSX.Element }): JSX.Element {
   const current = drafts[NEW_PROJECT] || projects[0]?.id || ''
   const currentName = projects.find((p) => p.id === current)?.name ?? ''
 
-  const prompt = body.trim()
-  const name = title.trim()
+  const prompt = body
+  const name = title
   const submit = async (): Promise<void> => {
-    if (!name || !current) return
+    if (!name.trim() || !current) return
     setSubmitError('')
     try {
       await createTask({ projectId: current, title: name, prompt, priority, action })

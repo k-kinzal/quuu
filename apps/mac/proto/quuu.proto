@@ -46,6 +46,15 @@ message AssistantStateResponseValueThreads {
   repeated AssistantStateResponseValueThreadsItem items = 1;
 }
 
+message AssistantStateResponseValueProposalsItemLegacyDiscussionRunIds {
+  repeated string items = 1;
+}
+
+message AssistantStateResponseValueProposalsItemLegacyDiscussion {
+  optional string prefix = 1;
+  optional AssistantStateResponseValueProposalsItemLegacyDiscussionRunIds runIds = 2;
+}
+
 message AssistantStateResponseValueProposalsItemReaction {
   oneof kind {
   string variant1 = 1;
@@ -68,6 +77,7 @@ message AssistantStateResponseValueProposalsItemExecutionTaskId {
 }
 
 message AssistantStateResponseValueProposalsItem {
+  optional AssistantStateResponseValueProposalsItemLegacyDiscussion legacyDiscussion = 12;
   optional string taskId = 1;
   optional string projectId = 2;
   optional string title = 3;
@@ -279,6 +289,15 @@ message AssistantReactRequest {
   optional AssistantReactRequestValue value = 1;
 }
 
+message AssistantReactResponseValueLegacyDiscussionRunIds {
+  repeated string items = 1;
+}
+
+message AssistantReactResponseValueLegacyDiscussion {
+  optional string prefix = 1;
+  optional AssistantReactResponseValueLegacyDiscussionRunIds runIds = 2;
+}
+
 message AssistantReactResponseValueReaction {
   oneof kind {
   string variant1 = 1;
@@ -301,6 +320,7 @@ message AssistantReactResponseValueExecutionTaskId {
 }
 
 message AssistantReactResponseValue {
+  optional AssistantReactResponseValueLegacyDiscussion legacyDiscussion = 12;
   optional string taskId = 1;
   optional string projectId = 2;
   optional string title = 3;
@@ -326,6 +346,15 @@ message AssistantCreateTaskRequest {
   optional AssistantCreateTaskRequestValue value = 1;
 }
 
+message AssistantCreateTaskResponseValueLegacyDiscussionRunIds {
+  repeated string items = 1;
+}
+
+message AssistantCreateTaskResponseValueLegacyDiscussion {
+  optional string prefix = 1;
+  optional AssistantCreateTaskResponseValueLegacyDiscussionRunIds runIds = 2;
+}
+
 message AssistantCreateTaskResponseValueReaction {
   oneof kind {
   string variant1 = 1;
@@ -348,6 +377,7 @@ message AssistantCreateTaskResponseValueExecutionTaskId {
 }
 
 message AssistantCreateTaskResponseValue {
+  optional AssistantCreateTaskResponseValueLegacyDiscussion legacyDiscussion = 12;
   optional string taskId = 1;
   optional string projectId = 2;
   optional string title = 3;
@@ -421,6 +451,15 @@ message SnapshotResponseValueAssistantThreads {
   repeated SnapshotResponseValueAssistantThreadsItem items = 1;
 }
 
+message SnapshotResponseValueAssistantProposalsItemLegacyDiscussionRunIds {
+  repeated string items = 1;
+}
+
+message SnapshotResponseValueAssistantProposalsItemLegacyDiscussion {
+  optional string prefix = 1;
+  optional SnapshotResponseValueAssistantProposalsItemLegacyDiscussionRunIds runIds = 2;
+}
+
 message SnapshotResponseValueAssistantProposalsItemReaction {
   oneof kind {
   string variant1 = 1;
@@ -443,6 +482,7 @@ message SnapshotResponseValueAssistantProposalsItemExecutionTaskId {
 }
 
 message SnapshotResponseValueAssistantProposalsItem {
+  optional SnapshotResponseValueAssistantProposalsItemLegacyDiscussion legacyDiscussion = 12;
   optional string taskId = 1;
   optional string projectId = 2;
   optional string title = 3;

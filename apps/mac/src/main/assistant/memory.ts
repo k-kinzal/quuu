@@ -36,8 +36,3 @@ function replaceMemory(dataDir: string, content: string): AssistantMemory {
   renameSync(temp, path)
   return readMemory(dataDir)
 }
-
-export function memoryPrompt(dataDir: string): string {
-  const memory = readMemory(dataDir)
-  return `\n\nShared memory across QuuuAI threads (maximum ${MEMORY_MAX_BYTES} UTF-8 bytes):\n${memory.content || '(empty)'}\n\nTreat this as context, not as approval to execute a proposal. To remember durable preferences, use quuu call assistant.memory and quuu call assistant.setMemory with {content, revision}. Preserve unrelated memories, compact within the byte limit, and never store secrets. The user can edit this MEMORY.md in QuuuAI settings. Do not modify the app bundle.`
-}

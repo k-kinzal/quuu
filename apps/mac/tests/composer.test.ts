@@ -95,21 +95,21 @@ describe('splitting the composer draft', () => {
   it('keeps newlines and blank lines inside the prompt', () => {
     const { title, prompt } = splitDraft('移行する\n\n手順:\n1. 調べる\n\n2. 直す')
     expect(title).toBe('移行する')
-    expect(prompt).toBe('手順:\n1. 調べる\n\n2. 直す')
+    expect(prompt).toBe('\n手順:\n1. 調べる\n\n2. 直す')
   })
 
   it('skips leading blank lines to find the first line', () => {
     expect(splitDraft('\n\n直す\n理由はこう')).toEqual({ title: '直す', prompt: '理由はこう' })
   })
 
-  it('does not turn trailing newlines alone into a prompt', () => {
-    expect(splitDraft('直す\n\n  \n')).toEqual({ title: '直す', prompt: '' })
+  it('preserves trailing whitespace in the prompt', () => {
+    expect(splitDraft('直す\n\n  \n')).toEqual({ title: '直す', prompt: '\n  \n' })
   })
 
-  it('normalizes CRLF', () => {
+  it('preserves CRLF in the instruction body', () => {
     expect(splitDraft('直す\r\n理由はこう\r\nもう 1 行')).toEqual({
       title: '直す',
-      prompt: '理由はこう\nもう 1 行'
+      prompt: '理由はこう\r\nもう 1 行'
     })
   })
 

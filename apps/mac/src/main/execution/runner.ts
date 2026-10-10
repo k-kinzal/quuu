@@ -19,7 +19,7 @@ import { clearExitFile, killProcessGroup, readExitCode, readLogTail } from '../p
 import { detachedLaunch } from '../platform/detachedLaunch.js'
 import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
-import { builtInPrompt, quuuBinDir } from '../projects/builtIn.js'
+import { quuuBinDir } from '../projects/builtIn.js'
 import type { Project } from '../projects/types.js'
 import { captureReviewBaseline } from '../review/git.js'
 import { resolveLogPath } from '../session/logAdapters.js'
@@ -115,8 +115,8 @@ export class Runner extends EventEmitter {
   private stopped = false
   private live = new Map<string, Live>()
 
-  private promptContext: (project: Project, task: Task, runId: string) => string = () => ''
-  setPromptContext(context: (project: Project, task: Task, runId: string) => string): void { this.promptContext = context }
+  private prepared: (run: Run) => void = () => {}
+  setPrepared(prepared: (run: Run) => void): void { this.prepared = prepared }
   private validateResult: (run: Run) => Promise<Classification> | null = () => null
   private settling = new Set<string>()
   setResultValidator(validate: (run: Run) => Promise<Classification> | null): void { this.validateResult = validate }
@@ -155,11 +155,11 @@ export class Runner extends EventEmitter {
       const workspace = this.remote?.choose(task.id, project, agent) ?? null
       const runId = newId('run')
       const sessionId = params.sessionId ?? newSessionId()
-      const message = params.messageOverride ?? (task.prompt.trim() || task.title)
+      const message = params.messageOverride ?? (task.prompt || task.title)
 
       const template = kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate
       const vars: TemplateVars = {
-        prompt: agentPrompt(project, kind, message, this.promptContext(project, task, runId)),
+        prompt: message,
         title: task.title,
         sessionId,
         projectPath: workspace?.cwd ?? project.path,
@@ -197,6 +197,8 @@ export class Runner extends EventEmitter {
         stdoutLogPath: stdoutLog
       })
 
+      this.prepared(run)
+
       if (workspace && this.remote) {
         this.remote.reserve(workspace)
         this.remote.enqueue({ id: runId, taskId: task.id, projectId: project.id, workspace,
@@ -227,7 +229,7 @@ export class Runner extends EventEmitter {
       if (repo.getRun(this.db, runId)?.status !== 'starting') return repo.getRun(this.db, runId) ?? run
       const invocation = adapterFor(agent.logAdapter).invoke({ command: agent.command,
         template: params.kind === 'followup' ? agent.resumeArgsTemplate : agent.argsTemplate,
-        vars: { prompt: agentPrompt(project, params.kind, params.messageOverride ?? (task.prompt.trim() || task.title), this.promptContext(project, task, runId)), title: task.title,
+        vars: { prompt: params.messageOverride ?? (task.prompt || task.title), title: task.title,
           sessionId, projectPath: cwd, projectName: project.name, taskId: task.id, runId } })
       args = invocation.args
       run.cwd = cwd
@@ -683,12 +685,4 @@ export class Runner extends EventEmitter {
 
 function quoteForDisplay(arg: string): string {
   return /[\s"'$`\\]/.test(arg) ? JSON.stringify(arg) : arg
-}
-
-
-/** What the agent is handed: the built-in project's fresh conversations also learn where the skill is. */
-function agentPrompt(project: Project, kind: RunKind, message: string, context: string): string {
-  if (!project.builtIn) return message
-  const instructions = kind === 'followup' ? '' : builtInPrompt(project, '')
-  return `${message.trimEnd()}\n\n<quuu-assistant-context>${instructions}${context}\n</quuu-assistant-context>`
 }

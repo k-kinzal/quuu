@@ -97,7 +97,7 @@ export function refreshImportedSession(db: Db, run: Run, task: Task, running: bo
       // Even for directly launched sessions, "wait for it to finish, then say the next thing" stays the same experience.
       if (!running && task.reservedMessage.trim().length > 0) {
         repo.setTaskStatus(db, task.id, 'queued', {
-          pendingMessage: task.reservedMessage.trim(),
+          pendingMessage: task.reservedMessage,
           doneAt: null
         })
         repo.setReservedMessage(db, task.id, '')

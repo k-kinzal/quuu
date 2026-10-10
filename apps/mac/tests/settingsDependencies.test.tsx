@@ -35,13 +35,13 @@ it('requires report activation before choosing a writer or editing instructions,
   fireEvent.click(toggle)
   const input = await screen.findByRole('textbox', { name: t('reportSettings.projectInstructions') })
   expect(screen.getByText(t('reportSettings.targetNeeded'))).toBeVisible()
-  fireEvent.change(input, { target: { value: 'Evaluate the project goals' } })
-  await waitFor(() => expect(useStore.getState().settings?.projectReportInstructions).toBe('Evaluate the project goals'))
+  fireEvent.change(input, { target: { value: '  Evaluate the project goals\n{{context}}\n' } })
+  await waitFor(() => expect(useStore.getState().settings?.projectReportInstructions).toBe('  Evaluate the project goals\n{{context}}\n'))
   fireEvent.click(toggle)
   await waitFor(() => expect(input).not.toBeVisible())
   fireEvent.click(toggle)
   await waitFor(() => expect(input).toBeVisible())
-  expect(input).toHaveValue('Evaluate the project goals')
+  expect(input).toHaveValue('  Evaluate the project goals\n{{context}}\n')
 })
 
 it('only offers import options and the manual action while importing is enabled', async () => {

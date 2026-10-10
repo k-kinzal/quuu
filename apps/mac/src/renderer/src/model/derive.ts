@@ -440,7 +440,7 @@ export function nextSend(task: Task, hasRuns: boolean, delivered: string[] = [])
     if (delivered.length === 0) return { field: 'prompt', value: task.prompt }
     const rest = undelivered(task.prompt, delivered)
     return rest.length > 0
-      ? { field: 'prompt', value: rest === task.prompt.trim() ? task.prompt : rest }
+      ? { field: 'prompt', value: rest === task.prompt ? task.prompt : rest }
       : null
   }
   return null
@@ -520,7 +520,6 @@ function messageText(message: SessionMessage): string {
     .map((block) => (block.kind === 'text' ? block.text : ''))
     .filter((part) => part.length > 0)
     .join('\n\n')
-    .trim()
 }
 
 /** How many messages back a sentence still counts as "the conversation just said that". */
@@ -560,10 +559,11 @@ function collapse(text: string): string {
  * always the front of what waits. Anything that does not match is left whole.
  */
 export function undelivered(message: string, delivered: string[]): string {
-  let rest = message.trim()
+  let rest = message
   for (const text of delivered) {
-    const sent = text.trim()
-    if (sent.length > 0 && rest.startsWith(sent)) rest = rest.slice(sent.length).trim()
+    if (!text) continue
+    if (rest === text) rest = ''
+    else if (rest.startsWith(text + '\n\n')) rest = rest.slice(text.length + 2)
   }
   return rest
 }

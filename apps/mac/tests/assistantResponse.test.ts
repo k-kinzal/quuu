@@ -105,8 +105,7 @@ it('delivers reserved conversation input after success and retains it after an i
 
 it('calls the agent for thanks and completes an explicit no-reply turn without a reply, unread mark or notification', async () => {
   const run = prepare('ありがとう')
-  expect(run.args.join(' ')).toContain(`quuu call assistant.noReply '{"runId":"${run.id}"}'`)
-  expect(run.args.join(' ')).toContain('Do not decide by keywords')
+  expect(run.args).toEqual(['ありがとう'])
   app.assistant.noReply(run.id)
   app.assistant.noReply(run.id)
   reply(run, ' \n\t\u3000\u00a0 ')

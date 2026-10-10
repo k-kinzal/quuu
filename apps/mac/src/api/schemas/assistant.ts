@@ -4,6 +4,7 @@ export const AssistantSettingsSchema = z.object({
   enabled: z.boolean(), intervalHours: z.number().int().min(1).max(168), confidenceThreshold: z.number().int().min(70).max(100)
 })
 export const AssistantProposalSchema = z.object({
+  legacyDiscussion: z.object({ prefix: z.string(), runIds: z.string().array() }).optional(),
   taskId: z.string(), projectId: z.string(), title: z.string(), prompt: z.string(), reason: z.string(), confidence: z.number(),
   // Older hosts omit feedback; never infer it from task acceptance in the renderer.
   reaction: z.enum(['approve', 'dismiss']).nullable().optional(),

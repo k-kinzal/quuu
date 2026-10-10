@@ -278,8 +278,8 @@ export class Scheduler extends EventEmitter {
     const sent = inTransaction(this.db, () => {
       const task = repo.getTask(this.db, taskId)
       if (!task || !this.isChecking(task)) return false
-      const reserved = task.reservedMessage.trim()
-      const body = [reserved, message.trim()].filter(part => part.length > 0).join('\n\n')
+      const reserved = task.reservedMessage
+      const body = [reserved, message].filter(part => part.length > 0).join('\n\n')
       if (body) {
         recordExecutionState(this.db, task.id, 'queued', { pendingMessage: body })
         if (reserved) {
@@ -381,7 +381,7 @@ export class Scheduler extends EventEmitter {
 
   private messageFor(task: Task): string | undefined {
     if (this.kindFor(task) !== 'followup') return undefined
-    const waiting = task.pendingMessage.trim() || task.prompt.trim() || task.title
+    const waiting = task.pendingMessage || task.prompt || task.title
     return resumeMessage(waiting, this.alreadyDelivered(task))
   }
 

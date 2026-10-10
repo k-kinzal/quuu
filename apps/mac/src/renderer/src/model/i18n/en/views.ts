@@ -245,9 +245,10 @@ export const views = {
     failed: 'Could not display or generate the project report'
   },
   reportSettings: {
-    projectHint: 'Checks once a day while Quuu is running. Unchanged projects keep their previous report. Leave empty to use the default instructions.',
-    projectPlaceholder: 'Explain what the project is and how its design and implementation realize its purpose. Include gaps only when supported by evidence.',
-    projectInstructions: 'Project report instructions',
+    templateHint: 'Sent exactly as written, with only explicit variables expanded. Empty uses the built-in default. Variables: {{page}} (output HTML path), {{cwd}}, {{title}}, {{language}}, {{context}} (report data), {{documentInstructions}} (HTML/style guide), {{defaultPrompt}} (complete default). Task reports also support {{prompt}} (original request). Include {{page}} so the agent knows where to write the report.',
+    projectHint: 'Checks once a day while Quuu is running. Unchanged projects keep their previous report.',
+    projectPlaceholder: '{{defaultPrompt}}',
+    projectInstructions: 'Project report prompt',
     projectSection: 'Project dashboard',
     title: 'Report',
     generationSection: 'Generation',
@@ -258,8 +259,8 @@ export const views = {
     agentsGroup: 'Agents',
     targetNeeded: 'Pick who writes the report',
     instructionsSection: 'Task reports',
-    instructions: 'Task report instructions',
-    instructionsPlaceholder: 'What every task report should cover'
+    instructions: 'Task report prompt',
+    instructionsPlaceholder: '{{defaultPrompt}}'
   },
   pullRequestSettings: {
     title: 'Pull Requests',

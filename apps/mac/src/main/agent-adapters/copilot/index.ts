@@ -20,7 +20,7 @@ export const copilotAdapter: AgentAdapter = {
 
   idleWindowMs: 3 * 60 * 1000,
   // v2: the working directory rides on every message
-  parserVersion: 'v2',
+  parserVersion: 'v3',
   createParser: (_namespace, buffer) => new CopilotSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,

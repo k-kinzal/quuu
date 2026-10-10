@@ -1,3 +1,5 @@
+import { en } from '../i18n/en.js'
+import { ja } from '../i18n/ja.js'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
@@ -12,8 +14,8 @@ import type { ToastPayload } from '../snapshot.js'
 import type { TaskOperations } from '../tasks/operations.js'
 import type { Task } from '../tasks/types.js'
 import { newId, nowIso } from '../util.js'
-import { clearMemory, memoryPath, memoryPrompt, readMemory, writeMemory } from './memory.js'
-import { chooseNoReply, responsePrompt } from './response.js'
+import { clearMemory, memoryPath, readMemory, writeMemory } from './memory.js'
+import { chooseNoReply } from './response.js'
 import { DEFAULT_ASSISTANT_SETTINGS, type AssistantProposal, type AssistantSettings, type AssistantState, type AssistantThread } from './types.js'
 
 const Settings = z.object({ enabled: z.boolean(), intervalHours: z.number().int().min(1).max(168), confidenceThreshold: z.number().int().min(70).max(100) }).strict()
@@ -31,7 +33,27 @@ export class AssistantOperations {
   private timer: NodeJS.Timeout | null = null
   private unobserve: (() => void) | null = null
   constructor(private db: Db, readonly dataDir: string, private tasks: TaskOperations, private changed: () => void,
-    private cancel: (taskId: string) => void, private notify: (payload: ToastPayload) => void) {}
+    private cancel: (taskId: string) => void, private notify: (payload: ToastPayload) => void) {
+    this.restoreProposalInputs()
+  }
+
+  /** Remove only the exact opening Quuu generated, once; never guess from the user's wording. */
+  private restoreProposalInputs(): void {
+    inTransaction(this.db, () => {
+      for (const proposal of repo.listAssistantProposals(this.db)) {
+        if (proposal.inputVersion === 1) continue
+        const task = repo.getTask(this.db, proposal.taskId)
+        const runs = repo.listRunsByTask(this.db, proposal.taskId)
+        const prefixes = [en.assistant.discussProposal, ja.assistant.discussProposal].map(template =>
+          template.replace(/\{\{(title|reason|prompt)\}\}/g, (_, key: 'title' | 'reason' | 'prompt') => proposal[key]))
+        const prefix = prefixes.find(value => task?.prompt === value || task?.prompt.startsWith(value + '\n\n'))
+        const legacyDiscussion = prefix ? { prefix, runIds: runs.filter(run =>
+          run.args.some(arg => arg === prefix || arg.startsWith(prefix + '\n\n'))).map(run => run.id) } : undefined
+        if (prefix && task) repo.patchTask(this.db, task.id, { prompt: task.prompt === prefix ? '' : task.prompt.slice(prefix.length + 2) })
+        repo.saveAssistantProposal(this.db, { ...proposal, inputVersion: 1, ...(legacyDiscussion ? { legacyDiscussion } : {}) })
+      }
+    })
+  }
 
   settings(): AssistantSettings {
     const saved = repo.getSetting(this.db, SETTINGS_KEY)
@@ -82,11 +104,6 @@ export class AssistantOperations {
   }
   noReply(runId: string): void { chooseNoReply(this.db, runId) }
 
-  promptContext(taskId: string, runId: string): string {
-    const proposal = repo.listAssistantProposals(this.db).find(p => p.taskId === taskId)
-    return responsePrompt(this.db, taskId, runId) + memoryPrompt(this.dataDir) + (proposal
-      ? `\n\nThis is a discussion of a proposal. Its current state is ${proposal.status}. Do not execute the proposed work or create a task from this conversation. Only the user's explicit Create task button on the proposal card authorizes creation. Reactions are feedback only, never approval. Do not call assistant.createTask or assistant.react on the user's behalf. Discuss evidence, scope and alternatives. Proposal data: ${JSON.stringify(proposal)}` : '')
-  }
   resultPath(taskId: string): string { return join(this.dataDir, 'assistant', 'checks', `${taskId}.json`) }
 
   start(): void {
@@ -176,10 +193,10 @@ export class AssistantOperations {
     if (repo.listAssistantProposals(this.db).some(p => p.projectId === project.id && normalized(p.title) === normalized(candidate.title))) return
     if (repo.listTasks(this.db, false, false).some(task => task.projectId === project.id && normalized(task.title) === normalized(candidate.title))) return
     const taskId = newId('tsk')
-    const proposal: AssistantProposal = { ...candidate, taskId, status: 'pending', reaction: null, createdAt: nowIso(), respondedAt: null, executionTaskId: null }
+    const proposal: AssistantProposal = { ...candidate, inputVersion: 1, taskId, status: 'pending', reaction: null, createdAt: nowIso(), respondedAt: null, executionTaskId: null }
     repo.saveAssistantProposal(this.db, proposal)
     this.tasks.createTask({ projectId: QUUU_PROJECT_ID, title: candidate.title,
-      prompt: t('assistant.discussProposal', { title: candidate.title, reason: candidate.reason, prompt: candidate.prompt }), status: 'draft', priority: 2 }, taskId)
+      prompt: '', status: 'draft', priority: 2 }, taskId)
     afterCommit(this.db, () => this.notify({ notificationKind: 'assistant', id: `proposal-${taskId}`, level: 'info',
       message: t('assistant.proposalNotification', { title: candidate.title }), detail: candidate.reason, taskId }))
   }
@@ -224,9 +241,9 @@ export class AssistantOperations {
   }
 
   send(message: string): Task {
-    const text = message.trim()
-    if (!text) throw new Error(t('assistant.emptyMessage'))
-    return this.tasks.createTask({ projectId: QUUU_PROJECT_ID, title: text.split('\n')[0].slice(0, 120), prompt: text, status: 'queued', priority: 2 })
+    const text = message
+    if (!text.trim()) throw new Error(t('assistant.emptyMessage'))
+    return this.tasks.createTask({ projectId: QUUU_PROJECT_ID, title: text.trim().split('\n')[0].slice(0, 120), prompt: text, status: 'queued', priority: 2 })
   }
 
   markRead(taskId: string, revision: string): void {

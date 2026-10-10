@@ -23,7 +23,7 @@ export const grokAdapter: AgentAdapter = {
     .map(candidate => ({ sessionId: candidate.sessionId, startedAtMs: candidate.bornMs })), lookup.startedAtMs),
 
   idleWindowMs: 3 * 60 * 1000,
-  parserVersion: 'v1',
+  parserVersion: 'v2',
   createParser: (_namespace, buffer) => new GrokSessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,

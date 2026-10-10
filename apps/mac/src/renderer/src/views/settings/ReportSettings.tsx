@@ -63,12 +63,12 @@ export function ReportSettings(): JSX.Element {
           {settings.reportEnabled && settings.reportTargetId.length === 0 && (
             <SettingsBlock><FieldHint tone="danger">{t('reportSettings.targetNeeded')}</FieldHint></SettingsBlock>
           )}
-          <SettingRow label={t('reportSettings.projectInstructions')} hint={t('reportSettings.projectHint')} width="full" layout="stacked">
+          <SettingRow label={t('reportSettings.projectInstructions')} hint={`${t('reportSettings.projectHint')} ${t('reportSettings.templateHint')}`} width="full" layout="stacked">
             <TextArea rows={6} value={settings.projectReportInstructions}
               placeholder={t('reportSettings.projectPlaceholder')}
               onChange={(e) => void setSettings({ projectReportInstructions: e.target.value })} />
           </SettingRow>
-          <SettingRow label={t('reportSettings.instructions')} width="full" layout="stacked">
+          <SettingRow label={t('reportSettings.instructions')} hint={t('reportSettings.templateHint')} width="full" layout="stacked">
             <TextArea
               rows={8}
               placeholder={t('reportSettings.instructionsPlaceholder')}

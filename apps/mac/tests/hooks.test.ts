@@ -60,7 +60,7 @@ it('inherits every field independently, including activation of a globally disab
 })
 
 it('queues no work when only an AI is configured, then runs with project timing overrides', async () => {
-  configure([{ id: 'commit', targetId: agentId, prompt: 'literal {{diff}}\n$(must not execute) `backticks`' }])
+  configure([{ id: 'commit', targetId: agentId, prompt: '  literal {{diff}}\n$(must not execute) `backticks`\n  ' }])
   const untouched = makeTask(db, projectId, 'disabled')
   expect(hooks.list({ taskId: untouched })).toEqual([])
   repo.updateProject(db, projectId, { taskHooks: [{ id: 'commit', enabled: true, events: ['created'] }] })
@@ -68,7 +68,7 @@ it('queues no work when only an AI is configured, then runs with project timing 
   await settled(taskId)
   const [run] = hooks.list({ taskId })
   expect(run.status).toBe('succeeded')
-  expect(hooks.log(run.id).output).toBe('literal {{diff}}\n$(must not execute) `backticks`\n')
+  expect(hooks.log(run.id).output).toBe('  literal {{diff}}\n$(must not execute) `backticks`\n  \n')
   expect(repo.listRunsByTask(db, taskId)).toHaveLength(0)
   expect(repo.getTask(db, taskId)?.sessionId).toBeNull()
 }, 20_000)

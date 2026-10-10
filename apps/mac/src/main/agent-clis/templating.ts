@@ -31,7 +31,7 @@ const PLACEHOLDER = /\{\{\s*([a-zA-Z][a-zA-Z0-9_]*)\s*\}\}/g
 
 export function expandTemplate(template: string, vars: TemplateVars): string {
   return template.replace(PLACEHOLDER, (match, key: string) => {
-    const value = vars[key]
+    const value = Object.hasOwn(vars, key) ? vars[key] : undefined
     return value === undefined ? match : value
   })
 }

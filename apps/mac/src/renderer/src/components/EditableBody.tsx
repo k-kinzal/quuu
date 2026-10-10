@@ -110,8 +110,8 @@ export function EditableBody({
       onEditingChange?.(false)
       return
     }
-    const next = text.trim()
-    if (next === value.trim() || next.length === 0) {
+    const next = text
+    if (next === value || next.trim().length === 0) {
       setText(value)
       saving.reset()
       onEditingChange?.(false)

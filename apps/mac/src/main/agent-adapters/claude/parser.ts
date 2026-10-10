@@ -199,8 +199,8 @@ export class ClaudeSessionParser {
       entry.isMeta === true || entry.isCompactSummary === true || entry.isVisibleInTranscriptOnly === true
 
     if (typeof content === 'string') {
-      const text = content.trim()
-      if (text.length === 0) return { appended: false, patched }
+      const text = content
+      if (text.trim().length === 0) return { appended: false, patched }
       if (injected || isInjectedUserText(text)) return { appended: false, patched }
       this.buffer.push({
         id: this.nextId(entry),

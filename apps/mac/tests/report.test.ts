@@ -11,7 +11,7 @@ import { pruneReportHistory } from '../src/main/report/history.js'
 import type { StoredReport } from '../src/main/report/types.js'
 import type { Project } from '../src/main/projects/types.js'
 import { REPORT_ASSETS, REPORT_NOTICE_FILE, REPORT_STYLE_FILE, writeReportAssets } from '../src/main/report/assets.js'
-import { reportPrompt } from '../src/main/report/prompt.js'
+import { projectReportPrompt, reportPrompt } from '../src/main/report/prompt.js'
 import { captureReviewBaseline, snapshotWorktree } from '../src/main/review/git.js'
 import type { ReviewSnapshot } from '../src/main/review/types.js'
 import type { Run } from '../src/main/execution/types.js'
@@ -829,5 +829,32 @@ describe('what the generator is told', () => {
     // No upper bound: a change with more to say must not be told to stop
     expect(text).toMatch(/As many sections as the change needs/)
     expect(text).not.toMatch(/Two to four/)
+  })
+})
+
+
+describe('literal report templates', () => {
+  const request = { cwd: '/tmp/project', title: 'Title {{page}}', prompt: '  User {{title}}\n',
+    revision: null, uncommitted: null, changes: [], commits: [], pullRequests: [], runs: [], page: '/tmp/report.html' }
+  it.each(['task', 'project'])('sends a custom %s prompt without trimming or appending any instructions', kind => {
+    const render = kind === 'task' ? reportPrompt : projectReportPrompt
+    const instructions = '  独自の指示\r\n余計な指示を足さないでください。\n\t'
+    expect(render({ ...request, instructions })).toBe(instructions)
+    expect(render({ ...request, instructions: '  ' })).toBe('  ')
+  })
+  it.each(['task', 'project'])('expands only explicit %s variables once, without interpreting values as templates', kind => {
+    const render = kind === 'task' ? reportPrompt : projectReportPrompt
+    expect(render({ ...request, instructions: '  {{title}}\r\n{{ page }}\n{{unknown}} {{constructor}}  ' }))
+      .toBe('  Title {{page}}\r\n/tmp/report.html\n{{unknown}} {{constructor}}  ')
+  })
+  it('supports task evidence and default instructions only through explicit variables', () => {
+    expect(reportPrompt({ ...request, instructions: '{{prompt}}' })).toBe(request.prompt)
+    const context = reportPrompt({ ...request, instructions: '{{context}}' })
+    expect(context).toContain('Original request (JSON string):')
+    expect(context).not.toContain('Please create an infographic')
+    expect(context).not.toContain('Components the stylesheet draws')
+    const defaults = reportPrompt({ ...request, instructions: '' })
+    expect(reportPrompt({ ...request, instructions: '{{defaultPrompt}}' })).toBe(defaults)
+    expect(reportPrompt({ ...request, instructions: 'Before\n{{defaultPrompt}}\nAfter' })).toBe('Before\n' + defaults + '\nAfter')
   })
 })

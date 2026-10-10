@@ -100,7 +100,7 @@ export class CursorSessionParser {
        * Where there is no wrapper at all, detect by shape.
        */
       if (isMachineNotification(text)) return null
-      if (body === text.trim() && isInjectedUserText(text)) return null
+      if (body === text && isInjectedUserText(text)) return null
       return {
         id: `cursor_${index}`,
         role: 'user',

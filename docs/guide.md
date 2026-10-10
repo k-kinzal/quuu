@@ -411,8 +411,8 @@ logs are unchanged. Assistant explanations of results or failures and native con
 dialogs remain available; ordinary development tasks still show their execution details.
 
 The agent is called for every message and may decide that a closing acknowledgement needs
-no reply. Each conversation turn supplies `quuu call assistant.noReply '{"runId":"..."}'`
-to record that decision. A confirmed successful exit completes the turn without a message,
+no reply. The workspace instructions describe `quuu call assistant.noReply '{"runId":"..."}'`,
+using the current `QUUU_RUN_ID` environment variable to record that decision. A confirmed successful exit completes the turn without a message,
 new unread mark or completion notification; the same thread can continue normally. Questions,
 additional requests and necessary operation results still receive replies, including when
 accompanied by thanks. Real reply text takes precedence over a silence decision. A missing
@@ -459,7 +459,8 @@ Replies and suggestions use the review notification switch and the existing nati
 Shared context lives in `assistant/MEMORY.md` beside `taskd.db`, outside the application bundle.
 The settings editor and `assistant.memory` / `assistant.setMemory` operations allow user and agent
 edits, with a 16 KiB UTF-8 limit and revision checks to prevent overwriting concurrent edits.
-Every QuuuAI turn receives current memory. Keep durable preferences here, not secrets.
+The workspace instructions direct QuuuAI to read current memory and proposal state through
+these APIs each turn. They are never appended to your message. Keep durable preferences here, not secrets.
 
 **Settings → QuuuAI → Reset QuuuAI…** clears all conversations (including archived threads),
 suggestions, read receipts, background-check history and shared memory after a native confirmation.
@@ -477,9 +478,8 @@ it uses available session evidence and reports that limitation in the proposal.
   instructions ([AGENTS.md](../apps/mac/quuu-ai/AGENTS.md), with a `CLAUDE.md` that points at it)
   and the [quuu skill](../skills/quuu/SKILL.md) with its use-case references. These instructions
   are for operating Quuu through its CLI and are separate from the repository's own AGENTS.md.
-  Most CLIs read them from the working directory; a fresh conversation there also ends with an
-  instruction naming both files by absolute path, so every CLI reads the copy that matches the
-  running app. Follow-ups preserve the conversation and receive refreshed shared memory.
+  CLIs that support workspace instructions read them from the working directory. Messages and
+  follow-ups are sent exactly as written; Quuu adds no instructions or memory to their bodies.
 - Its runs find the bundled `quuu` first on `PATH`. Without Node.js, the launcher runs the CLI on
   Quuu's own runtime.
 - It cannot be deleted, and its directory and worktree mode are fixed: the operations refuse
@@ -673,9 +673,9 @@ only when report AI and the project's reports are enabled.
 While Quuu is running, the report AI checks projects once per Mac calendar day.
 It explains what the project is and how its design and implementation realize its
 purpose, using AGENTS.md, README.md, project documentation and current code.
-**Settings → Report → Project dashboard** can replace that focus; an empty field
-uses the default. Task report instructions remain separate. Both use the same
-writer or group and bundled HTML document resources.
+**Settings → Report → Project report prompt** replaces the entire prompt; an empty field
+uses the default. Task report prompts remain separate. Both use the same writer or group;
+the default templates describe the bundled HTML document resources.
 
 The project report opens by explaining what the project is: its name and concrete
 function, who uses it for what, and a use case showing input, system behavior and
@@ -1181,6 +1181,43 @@ agent are retained. Reopening a completed task creates a fresh workspace on its 
 run and starts a fresh conversation. Completion from iPhone, CLI and MCP uses the
 same integration checks as the Mac.
 
+## Prompt text and report templates
+
+Your task prompts, QuuuAI replies, follow-ups, reservations, hook prompts and automation
+prompts retain the text you enter, including surrounding whitespace. A proposal is an
+assistant attachment, not a user message. When several messages wait for one run, Quuu joins
+their unchanged bodies with two newlines in submission order. A retry sends pending input,
+or repeats the original input if it was already delivered, without inventing a continuation
+message. Agent argument templates expand their explicit variables once; variables inside a
+prompt value are not expanded again.
+
+Both report fields are complete prompt templates. An empty field selects the built-in default;
+custom text is never wrapped in other instructions. Existing custom settings remain unchanged.
+Write only the variables you want:
+
+| Variable | Value |
+|---|---|
+| `{{page}}` | Absolute HTML output path |
+| `{{cwd}}` | Working directory |
+| `{{title}}` | Task or project title |
+| `{{language}}` | Report language |
+| `{{context}}` | Task evidence and run references, or project context; includes output path |
+| `{{documentInstructions}}` | Bundled HTML/style instructions |
+| `{{defaultPrompt}}` | Complete built-in prompt with its context and document instructions |
+| `{{prompt}}` | Original task request (task reports only) |
+
+Unknown variables stay literal. Replacement values are not expanded recursively. For example:
+
+```text
+Summarize the verified outcome in HTML. Write the page to {{page}}.
+{{context}}
+```
+
+If a custom prompt needs the output location, include `{{page}}` or `{{context}}` explicitly.
+The app will report a missing output if the agent does not write the expected page; it will
+never silently add that instruction to your text. `{{defaultPrompt}}` explicitly opts into
+all default instructions and can be surrounded by your own text.
+
 ## Task lifecycle hooks
 
 **Settings > Lifecycle hooks** defines reusable hooks. Project settings show the same
@@ -1230,8 +1267,8 @@ restarts too.
 Task reports are a built-in review hook. Their request waits for custom hooks and
 survives restart; their agent, output contract, revision deduplication, and report
 settings remain owned by Quuu. Project assessments keep their daily schedule. The
-hook settings show this built-in behavior without exposing its system prompt or
-trigger as an editable custom hook.
+hook settings show this built-in behavior; its full prompt is configured separately in
+Report settings and its trigger remains owned by reports.
 
 ## Remote Runners
 

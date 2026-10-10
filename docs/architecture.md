@@ -292,8 +292,10 @@ Conversation turns register their run identity in `assistant_turns`; `assistant.
 records an explicit per-attempt decision. The runner validates opted-in successful results
 against the durable session index before committing completion or releasing capacity. Local,
 remote and recovered exits use the same path, and the exit receipt survives until settlement.
-A unique turn marker in the injected prompt prevents previous replies from satisfying a new
-turn, even in timestamp-free logs. Missing or unverifiable results fail separately from
+The run records the existing conversation's last message before launch, so only a new user
+turn and its following reply can satisfy it, including in timestamp-free logs. An index that
+has not caught up requires timestamped evidence; unverifiable results fail visibly. Older
+in-flight runs retain support for their historical markers. User prompts carry no control text. Missing or unverifiable results fail separately from
 intentional silence. Assistant read revisions follow reply content rather than run or index
 status, so silent turns neither re-notify nor consume earlier unread replies.
 
@@ -305,3 +307,18 @@ channel. Explicit project-scoped history queries remain available. Conversation 
 observers still receive facts for proposal discussion, while work hooks, PR follow-ups and P0
 reservations exclude threads. Existing records need no rewrite, and proposal-created tasks in
 development projects follow the normal approval workflow.
+
+
+## Prompt integrity
+
+Task and conversation inputs travel unchanged through storage, scheduler, local launch and
+remote dispatch. Multiple submitted messages retain their bodies and submission order, joined
+by two newlines. Retries never invent a replacement instruction. QuuuAI's workspace instructions
+read memory and proposal state through the CLI using the existing task/run environment IDs.
+Proposal cards own suggested work; publishing one leaves the human message empty. A one-time
+repair removes only the exact historical generated opening, recording its run provenance;
+original run arguments and provider logs remain intact.
+
+Report settings own the complete prompt. Empty selects the built-in default. Custom text has
+only explicitly named variables expanded, once; context and document instructions are opt-in.
+Hooks and automation prompts remain literal; PR prompts retain their documented variables.

@@ -99,5 +99,4 @@ function messageText(message: SessionMessage): string {
     .map((block) => (block.kind === 'text' ? block.text : ''))
     .filter((text) => text.length > 0)
     .join('\n\n')
-    .trim()
 }

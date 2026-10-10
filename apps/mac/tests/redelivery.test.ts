@@ -3,22 +3,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import * as repo from '../src/main/db/repo.js'
-import { CONTINUE_INSTRUCTION } from '../src/main/execution/conditions.js'
 import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { SessionIndex } from '../src/main/session/index.js'
 import { isolateSessionDirs, makeAgent, makeProject, makeTask, memoryDb, releaseSessionDirs } from './helpers.js'
 
-/**
- * An instruction the agent already has is never handed to it twice.
- *
- * What this locks down actually happened: a resume died against a usage limit, and because a CLI
- * writes the instruction into its session the moment it accepts the resume, the instruction was
- * already in that conversation. Quuu kept it waiting and sent the same text on every retry, so one
- * session ended up holding five copies of one instruction - five in what the reader sees, and five
- * in what the model reads on the next turn.
- */
-
+/** Retries retain the user's own words, including when the CLI already recorded them. */
+const LEGACY_CONTINUE = 'Continue the instruction above. It reached you, but the run ended before it was answered.'
 const INSTRUCTION = 'ではcore・DB実装のFuzzを再整備してください。'
 
 let workdir: string
@@ -149,11 +140,11 @@ function claimed(): string | undefined {
 describe('a retry of a resume that died before answering', () => {
   beforeEach(() => cli('claude'))
 
-  it('asks the agent to carry on instead of writing the instruction into the session a second time', async () => {
+  it('retries the original instruction without substituting an application-written message', async () => {
     limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
     await sessionHolding([[INSTRUCTION, '2026-09-18T00:33:17.366Z']])
 
-    expect(claimed()).toBe(CONTINUE_INSTRUCTION)
+    expect(claimed()).toBe(INSTRUCTION)
   })
 
   it('sends only what the agent never received when a follow-up was written on top', async () => {
@@ -177,15 +168,15 @@ describe('a retry of a resume that died before answering', () => {
     expect(claimed()).toBe(INSTRUCTION)
   })
 
-  it('does not go back to the instruction because the attempt before only left a nudge', async () => {
+  it('retains the original instruction after a legacy retry left a generated nudge', async () => {
     limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
     limitedResume(INSTRUCTION, '2026-09-18T01:10:11.863Z', 'run_limited_again')
     await sessionHolding([
       [INSTRUCTION, '2026-09-18T00:33:17.366Z'],
-      [CONTINUE_INSTRUCTION, '2026-09-18T01:10:17.466Z']
+      [LEGACY_CONTINUE, '2026-09-18T01:10:17.466Z']
     ])
 
-    expect(claimed()).toBe(CONTINUE_INSTRUCTION)
+    expect(claimed()).toBe(INSTRUCTION)
   })
 })
 
@@ -200,11 +191,11 @@ describe('a retry of a resume that died before answering', () => {
 describe('a retry of a resume whose CLI writes no timestamps', () => {
   beforeEach(() => cli('grok'))
 
-  it('asks the agent to carry on once the conversation holds the instruction', async () => {
+  it('retries the original words even when the conversation already holds them', async () => {
     limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
     await untimedSessionHolding([INSTRUCTION])
 
-    expect(claimed()).toBe(CONTINUE_INSTRUCTION)
+    expect(claimed()).toBe(INSTRUCTION)
   })
 
   it('sends the instruction when the conversation shows no sign of it', async () => {
@@ -221,11 +212,11 @@ describe('a retry of a resume whose CLI writes no timestamps', () => {
     expect(claimed()).toBe('please continue')
   })
 
-  it('does not go back to the instruction because the attempt before only left a nudge', async () => {
+  it('retains the original instruction after a legacy retry left a generated nudge', async () => {
     limitedResume(INSTRUCTION, '2026-09-18T00:33:13.877Z')
     limitedResume(INSTRUCTION, '2026-09-18T01:10:11.863Z', 'run_limited_again')
-    await untimedSessionHolding([INSTRUCTION, CONTINUE_INSTRUCTION])
+    await untimedSessionHolding([INSTRUCTION, LEGACY_CONTINUE])
 
-    expect(claimed()).toBe(CONTINUE_INSTRUCTION)
+    expect(claimed()).toBe(INSTRUCTION)
   })
 })

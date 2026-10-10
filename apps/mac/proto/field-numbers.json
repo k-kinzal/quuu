@@ -6479,7 +6479,8 @@
     "createdAt": 8,
     "respondedAt": 9,
     "executionTaskId": 10,
-    "reaction": 11
+    "reaction": 11,
+    "legacyDiscussion": 12
   },
   "AssistantStateResponseValueProposals": {
     "items": 1
@@ -6630,7 +6631,8 @@
     "createdAt": 8,
     "respondedAt": 9,
     "executionTaskId": 10,
-    "reaction": 11
+    "reaction": 11,
+    "legacyDiscussion": 12
   },
   "AssistantReactResponse": {
     "value": 1
@@ -6689,7 +6691,8 @@
     "createdAt": 8,
     "respondedAt": 9,
     "executionTaskId": 10,
-    "reaction": 11
+    "reaction": 11,
+    "legacyDiscussion": 12
   },
   "SnapshotResponseValueAssistantProposals": {
     "items": 1
@@ -6771,7 +6774,8 @@
     "status": 8,
     "createdAt": 9,
     "respondedAt": 10,
-    "executionTaskId": 11
+    "executionTaskId": 11,
+    "legacyDiscussion": 12
   },
   "AssistantCreateTaskResponse": {
     "value": 1
@@ -6779,5 +6783,33 @@
   "SnapshotResponseValueAssistantProposalsItemReaction": {
     "variant1": 1,
     "variant2": 2
+  },
+  "AssistantStateResponseValueProposalsItemLegacyDiscussionRunIds": {
+    "items": 1
+  },
+  "AssistantStateResponseValueProposalsItemLegacyDiscussion": {
+    "prefix": 1,
+    "runIds": 2
+  },
+  "AssistantReactResponseValueLegacyDiscussionRunIds": {
+    "items": 1
+  },
+  "AssistantReactResponseValueLegacyDiscussion": {
+    "prefix": 1,
+    "runIds": 2
+  },
+  "AssistantCreateTaskResponseValueLegacyDiscussionRunIds": {
+    "items": 1
+  },
+  "AssistantCreateTaskResponseValueLegacyDiscussion": {
+    "prefix": 1,
+    "runIds": 2
+  },
+  "SnapshotResponseValueAssistantProposalsItemLegacyDiscussionRunIds": {
+    "items": 1
+  },
+  "SnapshotResponseValueAssistantProposalsItemLegacyDiscussion": {
+    "prefix": 1,
+    "runIds": 2
   }
 }

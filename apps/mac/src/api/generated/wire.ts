@@ -108,6 +108,24 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
           "items": {
             "kind": "object",
             "fields": {
+              "legacyDiscussion": {
+                "kind": "object",
+                "fields": {
+                  "prefix": {
+                    "kind": "string"
+                  },
+                  "runIds": {
+                    "kind": "array",
+                    "items": {
+                      "kind": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "prefix",
+                  "runIds"
+                ]
+              },
               "taskId": {
                 "kind": "string"
               },
@@ -558,6 +576,24 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "legacyDiscussion": {
+          "kind": "object",
+          "fields": {
+            "prefix": {
+              "kind": "string"
+            },
+            "runIds": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "prefix",
+            "runIds"
+          ]
+        },
         "taskId": {
           "kind": "string"
         },
@@ -655,6 +691,24 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
     "output": {
       "kind": "object",
       "fields": {
+        "legacyDiscussion": {
+          "kind": "object",
+          "fields": {
+            "prefix": {
+              "kind": "string"
+            },
+            "runIds": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "prefix",
+            "runIds"
+          ]
+        },
         "taskId": {
           "kind": "string"
         },
@@ -867,6 +921,24 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
               "items": {
                 "kind": "object",
                 "fields": {
+                  "legacyDiscussion": {
+                    "kind": "object",
+                    "fields": {
+                      "prefix": {
+                        "kind": "string"
+                      },
+                      "runIds": {
+                        "kind": "array",
+                        "items": {
+                          "kind": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "prefix",
+                      "runIds"
+                    ]
+                  },
                   "taskId": {
                     "kind": "string"
                   },

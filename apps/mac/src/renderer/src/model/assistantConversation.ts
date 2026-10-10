@@ -1,26 +1,27 @@
 import type { SessionMessage } from '../../../api/schemas/session.js'
 import type { AssistantProposal } from '../../../api/schemas/assistant.js'
+import type { Run } from '../../../api/schemas/execution.js'
 
-/** A proposal is already shown as an attachment. Keep only the person's appended reply. */
-export function proposalContextPrefix(value: string, proposal: AssistantProposal): string {
-  const end = value.indexOf(proposal.prompt)
-  if (end < 0) return ''
-  const before = value.slice(0, end)
-  if (!before.includes(proposal.title) || !before.includes(proposal.reason)) return ''
-  const prefix = value.slice(0, end + proposal.prompt.length)
-  return prefix + (value.slice(prefix.length).match(/^\s*/)?.[0] ?? '')
-}
-
-/** QuuuAI displays the exchange with the person; execution details stay in the durable log. */
-export function assistantConversation(messages: SessionMessage[], proposal?: AssistantProposal): SessionMessage[] {
+/** Old injected text is removed only when the recorded invocation proves its provenance. */
+export function assistantConversation(messages: SessionMessage[], proposal?: AssistantProposal, runs: Run[] = []): SessionMessage[] {
   return messages.filter(message => message.role !== 'system' && !message.isSidechain)
     .map(message => ({
       ...message,
       blocks: message.blocks.filter(block => block.kind === 'text' || block.kind === 'image')
         .map(block => {
           if (message.role !== 'user' || block.kind !== 'text') return block
-          const text = block.text.replace(/\n\n<quuu-assistant-context>[\s\S]*<\/quuu-assistant-context>\s*$/, '')
-          return { ...block, text: proposal ? text.slice(proposalContextPrefix(text, proposal).length) : text }
+          const run = runs.find(run => run.args.includes(block.text) &&
+            block.text.includes(`QuuuAI conversation turn: ${run.id}`))
+          if (!run) return block
+          const end = block.text.lastIndexOf('\n\n<quuu-assistant-context>')
+          if (end < 0 || !block.text.endsWith('\n</quuu-assistant-context>')) return block
+          let text = block.text.slice(0, end)
+          const legacy = proposal?.legacyDiscussion
+          if (legacy?.runIds.includes(run.id)) {
+            if (text === legacy.prefix) text = ''
+            else if (text.startsWith(legacy.prefix + '\n\n')) text = text.slice(legacy.prefix.length + 2)
+          }
+          return { ...block, text }
         })
         .filter(block => block.kind !== 'text' || block.text.trim().length > 0)
     }))

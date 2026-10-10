@@ -242,9 +242,10 @@ export const views: typeof en = {
     failed: 'プロジェクトレポートを表示・作成できませんでした'
   },
   reportSettings: {
-    projectHint: 'Quuuの起動中に1日1回確認し、変更がなければ前回のレポートを維持します。空欄では既定の指示を使います。',
-    projectPlaceholder: '何のプロジェクトか、その目的を設計・実装でどう実現しているかを説明します。不足点は根拠がある場合だけ添えます。',
-    projectInstructions: 'プロジェクトレポートへの指示',
+    templateHint: '入力した全文をそのまま送り、明示した変数だけを展開します。空欄では既定のプロンプトを使います。変数：{{page}}（HTML出力先）、{{cwd}}、{{title}}、{{language}}、{{context}}（レポート資料）、{{documentInstructions}}（HTML・スタイル仕様）、{{defaultPrompt}}（既定の全文）。タスクレポートでは {{prompt}}（元の依頼）も使えます。出力先を伝えるには {{page}} を記述してください。',
+    projectHint: 'Quuuの起動中に1日1回確認し、変更がなければ前回のレポートを維持します。',
+    projectPlaceholder: '{{defaultPrompt}}',
+    projectInstructions: 'プロジェクトレポートのプロンプト',
     projectSection: 'プロジェクトダッシュボード',
     title: 'レポート',
     generationSection: '生成',
@@ -255,8 +256,8 @@ export const views: typeof en = {
     agentsGroup: 'エージェント',
     targetNeeded: 'レポートを書くエージェントを選んでください',
     instructionsSection: 'タスクレポート',
-    instructions: 'タスクレポートへの追加指示',
-    instructionsPlaceholder: '各タスクのレポートに書いてほしいこと'
+    instructions: 'タスクレポートのプロンプト',
+    instructionsPlaceholder: '{{defaultPrompt}}'
   },
   pullRequestSettings: {
     title: 'プルリクエスト',

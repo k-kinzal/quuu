@@ -27,7 +27,7 @@ export const cursorAdapter: AgentAdapter = {
     .map(candidate => ({ sessionId: candidate.sessionId, startedAtMs: candidate.bornMs })), lookup.startedAtMs),
 
   idleWindowMs: 10 * 60 * 1000,
-  parserVersion: 'v2',
+  parserVersion: 'v3',
   createParser: () => new CursorSessionParser(),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,

@@ -50,7 +50,7 @@ describe('automatic tasks - what gets queued', () => {
     const { db, project, agent } = setup()
     makeRule(db, project, {
       name: 'Issue を消化する',
-      prompt: 'gh issue list から 1 つ選んで直す',
+      prompt: '  gh issue list から 1 つ選んで直す\n{{context}}\n  ',
       priority: 1,
       agentOverrideId: agent,
       blockStatuses: [...OPEN_STATUSES]
@@ -62,7 +62,7 @@ describe('automatic tasks - what gets queued', () => {
     const task = repo.getTask(db, created[0].id)!
     expect(task.status).toBe('queued')
     expect(task.title).toBe('Issue を消化する 2026/01/05 06:07:08')
-    expect(task.prompt).toBe('gh issue list から 1 つ選んで直す')
+    expect(task.prompt).toBe('  gh issue list から 1 つ選んで直す\n{{context}}\n  ')
     expect(task.priority).toBe(1)
     expect(task.agentOverrideId).toBe(agent)
     // Where it came from stays visible (both the duplicate check and the display read this marker)

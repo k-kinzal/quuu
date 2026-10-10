@@ -17,7 +17,7 @@ export const agyAdapter: AgentAdapter = {
   sessionIdInStdout: agyConversationId,
 
   idleWindowMs: 3 * 60 * 1000,
-  parserVersion: 'v1',
+  parserVersion: 'v2',
   createParser: (_namespace, buffer) => new AgySessionParser(buffer),
   classify: classifyRunResult,
   classifyDetached: classifyDetachedResult,

@@ -466,7 +466,7 @@ describe('daily project reports', () => {
     expect(repo.getProjectReport(db, projectId)).toBeNull()
   })
 
-  it('uses the configured report group and the same document resources with a customizable purpose', async () => {
+  it('uses the configured report group and sends only the saved prompt', async () => {
     const group = repo.insertGroup(db, { name: 'Writers', description: '', strategy: 'round-robin',
       memberIds: [settings.reportTargetId], sortOrder: 0 })
     settings.reportTargetKind = 'group'
@@ -475,12 +475,13 @@ describe('daily project reports', () => {
     await ops.checkDaily()
     const launch = vi.mocked(spawnReport).mock.calls[0][0]
     expect(launch.args.join(' ')).toContain('Evaluate accessibility goals')
-    expect(launch.args.join(' ')).toContain('../assets/document-design-v1.2.1.css')
+    expect(launch.args).toContain('Evaluate accessibility goals')
+    expect(launch.args.join(' ')).not.toContain('../assets/document-design-v1.2.1.css')
     expect(launch.env.QUUU_TASK_ID).toBeUndefined()
     expect(launch.args.join(' ')).not.toContain('Include gaps only when evidence')
   })
 
-  it.each(['', '  ', 'Evaluate accessibility goals'])('introduces the project and explains its implementation with instructions %j', (instructions) => {
+  it.each(['', '{{defaultPrompt}}'])('introduces the project and explains its implementation with instructions %j', (instructions) => {
     const prompt = projectReportPrompt({ cwd: work, title: 'Project', page: '/tmp/page.html', instructions })
     expect(prompt).toContain('Read AGENTS.md, README.md')
     expect(prompt).toContain("Open with the project's name, what it does and who uses it")
@@ -489,8 +490,7 @@ describe('daily project reports', () => {
     expect(prompt).toContain('distinguish existing behavior from\nplans and unknowns')
     expect(prompt).toContain('how its design and implementation serve that purpose')
     expect(prompt).not.toContain('progress assessment')
-    if (instructions.trim()) expect(prompt).toContain(instructions)
-    else {
+    {
       expect(prompt).toContain("Explain the project's purpose and how its design, key components and their relationships")
       expect(prompt).toContain('Include gaps only when evidence shows something missing for that purpose; otherwise\nomit them')
       expect(prompt).toContain('Omit Git status, branch comparisons and commit bookkeeping')

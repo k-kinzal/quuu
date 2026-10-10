@@ -6,6 +6,13 @@ enforce them live in [architecture.md](architecture.md) and
 
 ## Rules
 
+- **User input is immutable unless the user edits it.** Preserve prompt bodies, follow-ups,
+  reservations and configured prompts, including whitespace. Never prepend/append context,
+  substitute a different instruction, or present app-authored text as the user's words.
+  Context belongs in a separate resource/channel, or in explicitly documented template
+  variables the user chose. Expansion is single-pass; unknown variables stay literal.
+  Defaults may apply when a field explicitly selects its default, never around custom text.
+
 - **Logic is 100% in the main process.** The renderer does display and input only. Windows
   can be destroyed at any time.
 - **A task never changes CLI.** The first CLI that actually read a task (`taskLineage`: a run

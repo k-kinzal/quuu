@@ -113,7 +113,7 @@ function enqueueFromRule(db: Db, rule: TaskRule, now: Date): Task {
     const task = repo.insertTask(db, {
       projectId: rule.projectId,
       title: taskRuleTitle(rule, now),
-      prompt: rule.prompt.trim().length > 0 ? rule.prompt : rule.name,
+      prompt: rule.prompt || rule.name,
       priority: rule.priority,
       status: 'queued',
       agentOverrideId: rule.agentOverrideId,

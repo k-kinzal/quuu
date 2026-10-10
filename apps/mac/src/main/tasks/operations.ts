@@ -216,14 +216,14 @@ export class TaskOperations {
     assertWorktreeIdle(this.db, id)
     return inTransaction(this.db, () => {
       const completedWorkspace = this.prepareCompletedWorkspace(id)
-      const message = note.trim()
+      const message = note
       const current = repo.getTask(this.db, id)
       if (!current) throw new Error(`task not found: ${id}`)
 
       // If the session can't be continued, there is nothing to send back to. Fold into the prompt and run fresh
       const project = repo.getProject(this.db, current.projectId)
       const detached = project ? this.detachDeadSession(current, project, message) : null
-      if (!detached && message.length > 0) {
+      if (!detached && message.trim().length > 0) {
         if (completedWorkspace) repo.patchTask(this.db, id, { prompt: joinMessages(current.prompt, message) })
         else repo.setPendingMessage(this.db, id, message)
       }
@@ -339,7 +339,7 @@ export class TaskOperations {
   send(taskId: string, message: string): RunNowResult {
     assertWorktreeIdle(this.db, taskId)
     return inTransaction(this.db, () => {
-      const text = message.trim()
+      const text = message
       this.prepareCompletedWorkspace(taskId)
 
       const task = repo.getTask(this.db, taskId)
@@ -349,7 +349,7 @@ export class TaskOperations {
       if (!project) return { ok: false, reason: t('tasks.projectNotFound') }
 
       if (task.status === 'running') {
-        if (text.length === 0) return { ok: false, reason: t('tasks.emptyMessage') }
+        if (text.trim().length === 0) return { ok: false, reason: t('tasks.emptyMessage') }
         const owner = this.ownerOf(task)
         if (!this.continuableAgent(task, project, owner)) {
           return { ok: false, reason: this.resumeUnavailable(owner) }
@@ -362,7 +362,7 @@ export class TaskOperations {
 
       // Stopped. If a reservation is being held, carry it along with this send (leave nothing behind).
       const body = joinMessages(task.reservedMessage, text)
-      if (body.length === 0) return { ok: false, reason: t('tasks.emptyMessage') }
+      if (body.trim().length === 0) return { ok: false, reason: t('tasks.emptyMessage') }
 
       // A session that can't be continued gets folded here into an instruction for a new session.
       // Refuse, and the composer's "re-run" / "send back" become buttons that do nothing when pressed
@@ -552,7 +552,6 @@ export class TaskOperations {
 }
 function joinMessages(...parts: string[]): string {
   return parts
-    .map((p) => p.trim())
     .filter((p) => p.length > 0)
     .join('\n\n')
 }

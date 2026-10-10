@@ -93,7 +93,7 @@ describe('assistant execution target', () => {
 })
 
 describe('shared memory', () => {
-  it('keeps bounded UTF-8 memory outside the bundle, detects competing edits and carries it into each run', () => {
+  it('keeps bounded UTF-8 memory outside the bundle, detects competing edits and keeps it available without rewriting messages', () => {
     const before = app.assistant.memory()
     app.assistant.setMemory('日本語で簡潔に答える', before.revision)
     expect(readFileSync(memoryPath(dir), 'utf8')).toBe('日本語で簡潔に答える')
@@ -101,12 +101,13 @@ describe('shared memory', () => {
     expect(() => app.assistant.setMemory('あ'.repeat(MEMORY_MAX_BYTES / 2), app.assistant.memory().revision)).toThrow(/bytes/)
     const task = app.assistant.send('Help me plan today')
     const first = app.runner.prepare({ task, project: repo.getProject(app.db, QUUU_PROJECT_ID)!, agent: repo.getAgent(app.db, agent)!, groupId: null, kind: 'initial', fallbackFromRunId: null })
-    expect(first.args.join(' ')).toContain('日本語で簡潔に答える')
+    expect(first.args).toEqual(['Help me plan today'])
     app.assistant.setMemory('Prefer focused changes.', app.assistant.memory().revision)
     repo.updateRun(app.db, first.id, { status: 'succeeded', endedAt: new Date().toISOString() })
     repo.setTaskStatus(app.db, task.id, 'review', { sessionId: first.sessionId })
     const followup = app.runner.prepare({ task: repo.getTask(app.db, task.id)!, project: repo.getProject(app.db, QUUU_PROJECT_ID)!, agent: repo.getAgent(app.db, agent)!, groupId: null, kind: 'followup', sessionId: first.sessionId, messageOverride: 'Continue', fallbackFromRunId: null })
-    expect(followup.args.join(' ')).toContain('Prefer focused changes.')
+    expect(followup.args).toEqual([first.sessionId, 'Continue'])
+    expect(app.assistant.memory().content).toBe('Prefer focused changes.')
   })
 })
 
@@ -331,7 +332,7 @@ describe('proactive suggestions', () => {
     const id = completedProposal(99, proposal.title)
     expect(repo.getTask(app.db, id)?.prompt).toContain('"status":"pending","reaction":"dismiss"')
     expect(app.assistant.state().proposals).toHaveLength(1)
-    expect(app.assistant.promptContext(proposal.taskId, 'run')).toContain('Reactions are feedback only, never approval')
+    expect(app.assistant.state().proposals.find(item => item.taskId === proposal.taskId)?.reaction).toBe('dismiss')
   })
 
   it('allows a reply to restart future checks without treating discussion as approval', () => {
@@ -452,4 +453,49 @@ describe('proactive suggestions', () => {
     repo.finishSessionIndex(app.db, key, { stamp: '3', generation: 'g1', title: null, total: 2, evidenceVersion: 0, updatedAt: new Date().toISOString() })
     expect(app.assistant.state().threads[0]).toMatchObject({ unread: true, replies: 2, preview: 'A streamed reply grew' })
   })
+})
+
+
+it('starts proposal discussions with only the exact reply, including whitespace and literal variables', () => {
+  completedProposal()
+  const proposal = app.assistant.state().proposals[0]
+  expect(repo.getTask(app.db, proposal.taskId)?.prompt).toBe('')
+  const message = '  根拠を教えてください。\r\n{{context}}\n\n'
+  expect(app.tasks.send(proposal.taskId, message)).toEqual({ ok: true })
+  const task = repo.getTask(app.db, proposal.taskId)!
+  expect(task.prompt).toBe(message)
+  const run = app.runner.prepare({ task, project: repo.getProject(app.db, QUUU_PROJECT_ID)!,
+    agent: repo.getAgent(app.db, agent)!, groupId: null, kind: 'initial', fallbackFromRunId: null })
+  expect(run.args).toEqual([message])
+  expect(app.assistant.state().proposals[0]).toEqual(proposal)
+})
+
+it.each(['en', 'ja'])('repairs the exact legacy %s proposal opening once and preserves original run history', locale => {
+  completedProposal()
+  const proposal = app.assistant.state().proposals[0]
+  const { inputVersion: _version, ...legacy } = repo.listAssistantProposals(app.db)[0]
+  repo.saveAssistantProposal(app.db, legacy)
+  const prefix = locale === 'en'
+    ? `Discuss this proposed task: ${proposal.title}\n\nWhy: ${proposal.reason}\n\nSuggested work: ${proposal.prompt}`
+    : `次のタスクの提案について相談します：${proposal.title}\n\n理由：${proposal.reason}\n\n作業内容：${proposal.prompt}`
+  const reply = 'ユーザーが書いた返信\n'
+  repo.patchTask(app.db, proposal.taskId, { prompt: prefix + '\n\n' + reply })
+  const runId = occupy(app.db, proposal.taskId, agent)
+  const before = repo.getRun(app.db, runId)!
+  repo.setRunWorkspace(app.db, runId, dir, [prefix + '\n\n' + reply])
+  app.shutdown(); app.db.close()
+  app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+  expect(repo.getTask(app.db, proposal.taskId)?.prompt).toBe(reply)
+  expect(repo.getRun(app.db, runId)).toEqual({ ...before, cwd: dir, args: [prefix + '\n\n' + reply] })
+  expect(app.assistant.state().proposals[0].legacyDiscussion).toEqual({ prefix, runIds: [runId] })
+  // After repair this same string can be an intentional user message; startup must leave it alone.
+  repo.patchTask(app.db, proposal.taskId, { prompt: prefix })
+  app.shutdown(); app.db.close()
+  app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+  expect(repo.getTask(app.db, proposal.taskId)?.prompt).toBe(prefix)
+})
+
+it('keeps new conversation messages exactly as entered', () => {
+  const message = '\n  原文\r\n{{prompt}}\n  '
+  expect(app.assistant.send(message).prompt).toBe(message)
 })

@@ -79,15 +79,9 @@ export interface AppSettings {
   reportTargetKind: RunTargetKind
   /** The agent or group that writes reports. Empty means undecided. */
   reportTargetId: string
-  /**
-   * Added to the end of the instructions handed to that agent.
-   *
-   * **What a report should contain is still being found out**, and the answer lives in the
-   * prompt, not in the code. Leaving it editable is what lets that question be worked on
-   * without a rebuild between each attempt.
-   */
+  /** Complete task report template. Empty selects the default; only explicit variables expand. */
   reportInstructions: string
-  /** What the daily project report covers. Empty explains its purpose, implementation and optional gaps. */
+  /** Complete project report template, with the same literal-input contract. */
   projectReportInstructions: string
   /**
    * What a task is told when its run ends and the Pull Request it produced is not in order.

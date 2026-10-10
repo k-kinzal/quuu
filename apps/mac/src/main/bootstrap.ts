@@ -1,3 +1,4 @@
+import { registerTurn } from './assistant/response.js'
 import { RunnerOperations } from './runners/operations.js'
 import { AssistantOperations } from './assistant/operations.js'
 import { validateResponse } from './assistant/response.js'
@@ -116,7 +117,7 @@ export class QuuuApp extends EventEmitter {
     this.tasks = new TaskOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), (id) => this.scheduler.runNow(id), (id) => this.runner.cancel(id), (toast) => this.emit('notify', toast), { beforeComplete: task => this.hooks.beforeComplete(task), beforeDelete: id => this.hooks.beforeDelete(id) })
     this.assistant = new AssistantOperations(this.db, dirname(dbPath && dbPath !== ':memory:' ? dbPath : defaultDbPath()), this.tasks, () => this.changed(), id => { this.tasks.cancelTask(id) }, payload => this.notify(payload))
     this.scheduler.setIdleWork(() => this.assistant.prepareCheck())
-    this.runner.setPromptContext((project, task, runId) => project.builtIn ? this.assistant.promptContext(task.id, runId) : '')
+    this.runner.setPrepared(run => registerTurn(this.db, run))
     this.projects = new ProjectOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()), id => this.tasks.deleteTask(id))
     this.automation = new AutomationOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
     this.agents = new AgentOperations(this.db, () => this.changed(), () => afterCommit(this.db, () => this.scheduler.kick()))
