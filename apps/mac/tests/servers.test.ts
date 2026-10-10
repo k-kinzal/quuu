@@ -68,6 +68,24 @@ describe('the generated gRPC API', () => {
     expect(await http.api.assistant.react({ taskId: thread.id, reaction: 'dismiss' })).toMatchObject({
       status: 'accepted', reaction: 'dismiss', executionTaskId: results[0].executionTaskId
     })
+    await expect(http.api.assistant.close({ taskId: thread.id })).rejects.toThrow(/already been created/)
+  })
+  it('describes closing in the CLI and returns the same receipt through the CLI and gRPC without creating work', async () => {
+    const project = await http.api.projects.create({ name: 'Destination', path: dir })
+    app.projects.ensureBuiltIn(dir)
+    const thread = app.assistant.send('Discuss this suggestion')
+    repo.saveAssistantProposal(app.db, { taskId: thread.id, projectId: project.id, title: 'Suggested work', prompt: 'Self-contained work',
+      reason: 'Evidence', confidence: 85, status: 'pending', reaction: 'approve', createdAt: thread.createdAt, respondedAt: null, executionTaskId: null })
+    const env = { ...process.env, QUUU_CONNECTION_FILE: servers.connectionFile }
+    const described = await execute(cli, ['describe', 'assistant.close'], { env })
+    expect(JSON.parse(described.stdout)).toMatchObject({ name: 'assistant.close', input: { properties: { taskId: { type: 'string' } }, required: ['taskId'] } })
+    const result = await execute(cli, ['assistant', 'close', JSON.stringify({ taskId: thread.id })], { env })
+    const receipt: unknown = JSON.parse(result.stdout)
+    expect(receipt).toMatchObject({ status: 'dismissed', reaction: 'approve', executionTaskId: null })
+    const retries = await Promise.all(Array.from({ length: 5 }, () => http.api.assistant.close({ taskId: thread.id })))
+    for (const retry of retries) expect(retry).toEqual(receipt)
+    await expect(http.api.assistant.createTask({ taskId: thread.id })).rejects.toThrow(/closed/)
+    expect(app.tasks.listTasks().filter(task => task.projectId === project.id)).toHaveLength(0)
   })
   it('creates and operates tasks with real HTTP/2 and preserves partial updates, null, false and empty arrays', async () => {
     const project = await http.api.projects.create({ name: 'API', path: dir })

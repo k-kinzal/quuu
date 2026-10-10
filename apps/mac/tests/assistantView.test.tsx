@@ -29,6 +29,7 @@ const snapshot: AppSnapshot = {
 const sent = vi.fn()
 const reacted = vi.fn()
 const created = vi.fn<() => Promise<AssistantProposal>>()
+const closed = vi.fn<(input: { taskId: string }) => Promise<AssistantProposal>>()
 const revealed = vi.fn()
 const opened = vi.fn()
 const read = vi.fn()
@@ -39,6 +40,7 @@ beforeEach(() => {
   vi.stubGlobal('IntersectionObserver', class { observe() {} disconnect() {} })
   sent.mockReset(); reacted.mockReset(); opened.mockReset(); read.mockReset(); created.mockReset(); revealed.mockReset()
   created.mockResolvedValue({ ...proposal, status: 'accepted', executionTaskId: 'execution' })
+  closed.mockReset().mockImplementation(() => Promise.resolve({ ...useStore.getState().snapshot!.assistant!.proposals[0], status: 'dismissed' }))
   saveFiles.mockReset().mockResolvedValue(['/tmp/staged/image.png'])
   window.quuuFiles = { getPathForFile: () => '' }
   useStore.setState({ snapshot, section: { kind: 'quuuAI' }, cursorTaskId: null, detailOpen: false, drafts: {}, openTask: opened, revealTask: revealed })
@@ -54,6 +56,11 @@ beforeEach(() => {
     }),
     createTask: os.assistant.createTask.handler(async () => {
       const result = await created()
+      updateProposal(result)
+      return result
+    }),
+    close: os.assistant.close.handler(async ({ input }) => {
+      const result = await closed(input)
       updateProposal(result)
       return result
     }),
@@ -78,6 +85,7 @@ it('shows a conversation with thread replies and proposal actions instead of a t
   fireEvent.click(screen.getByRole('button', { name: t('quuuAI.like') }))
   await waitFor(() => expect(reacted).toHaveBeenCalledWith({ taskId: proposal.taskId, reaction: 'approve' }))
   expect(created).not.toHaveBeenCalled()
+  expect(closed).not.toHaveBeenCalled()
   expect(screen.getByRole('button', { name: t('quuuAI.createTask') })).toBeTruthy()
 })
 
@@ -153,7 +161,7 @@ it('keeps the QuuuAI draft on attachment failure and leaves text-only transfers 
   await waitFor(() => expect(sent).toHaveBeenCalledWith('Keep the request'))
 })
 
-it.each(['pending', 'accepted'] as const)('changes and removes feedback while %s without creating a task', async status => {
+it.each(['pending', 'accepted', 'dismissed'] as const)('changes and removes feedback while %s without creating or closing a task', async status => {
   updateProposal({ ...proposal, status, reaction: 'approve', executionTaskId: status === 'accepted' ? 'execution' : null })
   show()
   const like = screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.like') })
@@ -167,6 +175,7 @@ it.each(['pending', 'accepted'] as const)('changes and removes feedback while %s
   await waitFor(() => expect(screen.getByRole('button', { name: t('quuuAI.dislike') }).getAttribute('aria-pressed')).toBe('true'))
   expect(screen.getByText(proposal.reason)).toBeTruthy()
   expect(created).not.toHaveBeenCalled()
+  expect(closed).not.toHaveBeenCalled()
 })
 
 it('shows creation progress, suppresses repeated clicks, and opens the created task after remounting', async () => {
@@ -180,6 +189,7 @@ it('shows creation progress, suppresses repeated clicks, and opens the created t
   fireEvent.click(button)
   const pending = await screen.findByRole<HTMLButtonElement>('button', { name: t('quuuAI.creating') })
   expect(pending.disabled).toBe(true)
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.closeProposal') }).disabled).toBe(true)
   fireEvent.click(pending)
   expect(created).toHaveBeenCalledTimes(1)
   // Navigation can destroy the original observer while the operation is in flight.
@@ -192,11 +202,67 @@ it('shows creation progress, suppresses repeated clicks, and opens the created t
   })
   expect(await screen.findByText(t('quuuAI.created'))).toBeTruthy()
   expect(screen.queryByRole('button', { name: t('quuuAI.createTask') })).toBeNull()
+  expect(screen.queryByRole('button', { name: t('quuuAI.closeProposal') })).toBeNull()
   cleanup()
   show()
   fireEvent.click(screen.getByRole('button', { name: t('quuuAI.viewTask') }))
   expect(revealed).toHaveBeenCalledWith('execution')
   expect(created).toHaveBeenCalledTimes(1)
+  expect(reacted).not.toHaveBeenCalled()
+})
+
+it('closes only from the dedicated action, blocks creation while saving and shows the closed receipt after remounting', async () => {
+  let finish!: (value: AssistantProposal) => void
+  const closing = new Promise<AssistantProposal>(resolve => { finish = resolve })
+  closed.mockReturnValueOnce(closing)
+  updateProposal({ ...proposal, reaction: 'approve' })
+  show()
+  const button = screen.getByRole('button', { name: t('quuuAI.closeProposal') })
+  expect(button.closest('details')).toBeNull()
+  fireEvent.click(button)
+  const pending = await screen.findByRole<HTMLButtonElement>('button', { name: t('quuuAI.closing') })
+  expect(pending.disabled).toBe(true)
+  const create = screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.createTask') })
+  expect(create.disabled).toBe(true)
+  fireEvent.click(create)
+  fireEvent.click(pending)
+  expect(closed).toHaveBeenCalledTimes(1)
+  expect(closed).toHaveBeenCalledWith({ taskId: proposal.taskId })
+  cleanup()
+  show()
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.closing') }).disabled).toBe(true)
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.createTask') }).disabled).toBe(true)
+  await act(async () => {
+    finish({ ...proposal, status: 'dismissed', reaction: 'approve' })
+    await closing
+  })
+  expect(await screen.findByText(t('quuuAI.closed'))).toBeTruthy()
+  cleanup()
+  show()
+  expect(screen.getByText(t('quuuAI.closed'))).toBeTruthy()
+  expect(screen.queryByText(t('quuuAI.created'))).toBeNull()
+  expect(screen.queryByRole('button', { name: t('quuuAI.createTask') })).toBeNull()
+  expect(screen.queryByRole('button', { name: t('quuuAI.closeProposal') })).toBeNull()
+  expect(screen.queryByRole('button', { name: t('quuuAI.viewTask') })).toBeNull()
+  expect(screen.getByRole('button', { name: t('quuuAI.like') }).getAttribute('aria-pressed')).toBe('true')
+  expect(created).not.toHaveBeenCalled()
+  expect(reacted).not.toHaveBeenCalled()
+})
+
+it('keeps the proposal pending on close failure and lets the dedicated action retry', async () => {
+  closed.mockRejectedValueOnce(new Error('Disk full'))
+  updateProposal({ ...proposal, reaction: 'dismiss' })
+  show()
+  fireEvent.click(screen.getByRole('button', { name: t('quuuAI.closeProposal') }))
+  expect(await screen.findByText(t('quuuAI.closeFailed', { reason: 'Disk full' }))).toBeTruthy()
+  expect(screen.getByRole<HTMLButtonElement>('button', { name: t('quuuAI.createTask') }).disabled).toBe(false)
+  expect(screen.queryByText(t('quuuAI.closed'))).toBeNull()
+  expect(screen.getByRole('button', { name: t('quuuAI.dislike') }).getAttribute('aria-pressed')).toBe('true')
+  fireEvent.click(screen.getByRole('button', { name: t('quuuAI.retryClose') }))
+  expect(await screen.findByText(t('quuuAI.closed'))).toBeTruthy()
+  expect(screen.queryByText(t('quuuAI.closeFailed', { reason: 'Disk full' }))).toBeNull()
+  expect(closed).toHaveBeenCalledTimes(2)
+  expect(created).not.toHaveBeenCalled()
   expect(reacted).not.toHaveBeenCalled()
 })
 

@@ -36,6 +36,7 @@ export const contract = {
     noReply: procedure.input(z.object({ runId: z.string().min(1) }).strict()).output(z.void()),
     react: procedure.input(z.object({ taskId: z.string(), reaction: z.enum(['approve', 'dismiss', 'clear']) }).strict()).output(AssistantProposalSchema),
     createTask: procedure.input(z.object({ taskId: z.string() }).strict()).output(AssistantProposalSchema),
+    close: procedure.input(z.object({ taskId: z.string() }).strict()).output(AssistantProposalSchema),
     markRead: procedure.input(z.object({ taskId: z.string(), revision: z.string() }).strict()).output(z.void())
   },
   snapshot: procedure.output(AppSnapshotSchema),

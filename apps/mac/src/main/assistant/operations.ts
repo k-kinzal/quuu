@@ -216,6 +216,7 @@ export class AssistantOperations {
   createTask(taskId: string): AssistantProposal {
     return inTransaction(this.db, () => {
       const proposal = this.proposal(taskId)
+      if (proposal.status === 'dismissed') throw new Error(t('assistant.proposalClosed'))
       // The durable receipt survives retries, restarts, archival and deletion of the task.
       if (proposal.executionTaskId || proposal.status === 'accepted') return proposal
       this.assertThread(taskId)
@@ -223,6 +224,19 @@ export class AssistantOperations {
       if (!project || project.deletedAt || !project.enabled) throw new Error(t('assistant.projectUnavailable'))
       const execution = this.tasks.createTask({ projectId: proposal.projectId, title: proposal.title, prompt: proposal.prompt, status: 'queued', priority: 2 })
       const next: AssistantProposal = { ...proposal, status: 'accepted', respondedAt: nowIso(), executionTaskId: execution.id }
+      repo.saveAssistantProposal(this.db, next)
+      afterCommit(this.db, this.changed)
+      return next
+    })
+  }
+
+  close(taskId: string): AssistantProposal {
+    return inTransaction(this.db, () => {
+      const proposal = this.proposal(taskId)
+      this.assertThread(taskId)
+      if (proposal.status === 'accepted') throw new Error(t('assistant.proposalAccepted'))
+      if (proposal.status === 'dismissed') return proposal
+      const next: AssistantProposal = { ...proposal, status: 'dismissed', respondedAt: nowIso() }
       repo.saveAssistantProposal(this.db, next)
       afterCommit(this.db, this.changed)
       return next

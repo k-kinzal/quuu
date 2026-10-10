@@ -790,6 +790,121 @@ export const wire: Record<string, { method: string; input: WireShape; output: Wi
       ]
     }
   },
+  "assistant.close": {
+    "method": "assistantClose",
+    "input": {
+      "kind": "object",
+      "fields": {
+        "taskId": {
+          "kind": "string"
+        }
+      },
+      "required": [
+        "taskId"
+      ]
+    },
+    "output": {
+      "kind": "object",
+      "fields": {
+        "legacyDiscussion": {
+          "kind": "object",
+          "fields": {
+            "prefix": {
+              "kind": "string"
+            },
+            "runIds": {
+              "kind": "array",
+              "items": {
+                "kind": "string"
+              }
+            }
+          },
+          "required": [
+            "prefix",
+            "runIds"
+          ]
+        },
+        "taskId": {
+          "kind": "string"
+        },
+        "projectId": {
+          "kind": "string"
+        },
+        "title": {
+          "kind": "string"
+        },
+        "prompt": {
+          "kind": "string"
+        },
+        "reason": {
+          "kind": "string"
+        },
+        "confidence": {
+          "kind": "number"
+        },
+        "reaction": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string",
+              "choices": [
+                "approve",
+                "dismiss"
+              ]
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "status": {
+          "kind": "string",
+          "choices": [
+            "pending",
+            "accepted",
+            "dismissed"
+          ]
+        },
+        "createdAt": {
+          "kind": "string"
+        },
+        "respondedAt": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        },
+        "executionTaskId": {
+          "kind": "union",
+          "variants": [
+            {
+              "kind": "string"
+            },
+            {
+              "kind": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "taskId",
+        "projectId",
+        "title",
+        "prompt",
+        "reason",
+        "confidence",
+        "status",
+        "createdAt",
+        "respondedAt",
+        "executionTaskId"
+      ]
+    }
+  },
   "assistant.markRead": {
     "method": "assistantMarkRead",
     "input": {

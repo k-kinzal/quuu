@@ -14,6 +14,8 @@ export const ja: typeof en = {
     "discussProposal": "次のタスクの提案について相談します：{{title}}\n\n理由：{{reason}}\n\n作業内容：{{prompt}}",
     "proposalNotification": "QuuuAIからの提案：{{title}}",
     "proposalMissing": "この提案は利用できなくなりました。",
+    "proposalClosed": "この提案は終了済みです。タスクは作成できません。",
+    "proposalAccepted": "この提案からはタスクが作成済みのため、閉じることはできません。",
     "projectUnavailable": "タスクを作成する前に対象プロジェクトを有効にしてください。",
     "emptyMessage": "メッセージを入力してください。",
     "notificationTitle": "QuuuAI"

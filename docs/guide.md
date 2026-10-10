@@ -466,9 +466,14 @@ its card creates and queues one task in the indicated project. The card shows pr
 retry on failure, and shows **Task created** with **View task** after success. Repeated clicks,
 retries and restarts reuse the same task receipt.
 
+**Close proposal** ends a pending suggestion without creating a task, for example when its
+work was split into other tasks or is no longer needed. The card then shows **Proposal closed**
+and removes the creation and closing actions. Existing feedback remains unchanged, and a
+proposal whose task was already created cannot be closed.
+
 👍 and 👎 record feedback only; either can be changed or removed, even after creation. Reactions
 never approve, reject, create, cancel or run tasks. Replies also discuss the proposal without
-approving it. Until the previous suggestion has a reply, reaction or explicit creation, no further
+approving it. Until the previous pending suggestion has a reply, reaction, explicit creation or closing, no further
 checks run. Simply viewing it does not restart checks. Feedback is included separately from the
 creation status in future research context. Existing reactions migrate without creating work;
 previously created tasks and their proposal links remain intact.
@@ -476,6 +481,12 @@ previously created tasks and their proposal links remain intact.
 The API follows the same separation: `assistant.react` retains the legacy `approve` / `dismiss`
 values for positive / negative feedback, and accepts `clear` to remove it. Only
 `assistant.createTask {taskId}` creates work from a proposal and saves its receipt atomically.
+`assistant.close {taskId}` saves `status: dismissed` without changing the reaction or execution
+task link. Repeated closing returns the saved receipt. Closed proposals cannot create tasks
+or block further research, and their titles remain covered by duplicate detection. Missing or
+archived threads cannot be closed. QuuuAI may close only when explicitly asked by the user;
+discussion, splitting plans and reactions do not authorize it. The ban on calling `react` or
+`createTask` on the user's behalf during research or discussion remains in place.
 
 The rail shows a small unread dot for new replies and proposals; read receipts survive restarts.
 Replies and suggestions use the review notification switch and the existing native/SSTP delivery channels

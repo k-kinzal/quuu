@@ -5,7 +5,7 @@ import { t } from './i18n/index.js'
 type OperationLabels<T> = { [K in keyof T]: T[K] extends (...args: never[]) => unknown ? string : OperationLabels<T[K]> }
 /** The View owns the wording. Adding an operation to the contract means deciding how its failure is told. */
 const labels: OperationLabels<QuuuApi> = {
-  assistant: { state: t('quuuAI.title'), configure: t('quuuAI.settings'), memory: t('quuuAI.memory'), setMemory: t('quuuAI.saveMemory'), reset: t('quuuAI.resetAction'), send: t('quuuAI.send'), noReply: t('quuuAI.title'), react: t('quuuAI.suggestion'), createTask: t('quuuAI.createTask'), markRead: t('quuuAI.unread') },
+  assistant: { state: t('quuuAI.title'), configure: t('quuuAI.settings'), memory: t('quuuAI.memory'), setMemory: t('quuuAI.saveMemory'), reset: t('quuuAI.resetAction'), send: t('quuuAI.send'), noReply: t('quuuAI.title'), react: t('quuuAI.suggestion'), createTask: t('quuuAI.createTask'), close: t('quuuAI.closeProposal'), markRead: t('quuuAI.unread') },
   runners: { status: t('runnerSettings.title'), configure: t('runnerSettings.title'), pairing: t('runnerSettings.pair'), revoke: t('runnerSettings.revoke'), signIn: t('runnerSettings.signInTitle') },
   documents: { list: t('projectDocuments.title'), read: t('projectDocuments.title'), show: t('projectDocuments.title'), hide: t('projectDocuments.title'), navigate: t('projectDocuments.title') },
   hooks: { resolve: t('hooks.title'), list: t('hooks.history'), log: t('hooks.conversation'), conversation: t('hooks.conversation'), image: t('operationFailure.op.session.image'), cancel: t('hooks.cancel'), retry: t('hooks.retry') },

@@ -13,6 +13,8 @@ export const en = {
     "discussProposal": "Discuss this proposed task: {{title}}\n\nWhy: {{reason}}\n\nSuggested work: {{prompt}}",
     "proposalNotification": "QuuuAI suggests: {{title}}",
     "proposalMissing": "This proposal is no longer available.",
+    "proposalClosed": "This proposal is closed. A task cannot be created from it.",
+    "proposalAccepted": "A task has already been created from this proposal. It cannot be closed.",
     "projectUnavailable": "Enable the target project before creating this task.",
     "emptyMessage": "Write a message first.",
     "notificationTitle": "QuuuAI"

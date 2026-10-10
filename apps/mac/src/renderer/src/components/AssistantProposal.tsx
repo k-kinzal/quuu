@@ -5,7 +5,7 @@ import { t } from '../model/i18n/index.js'
 import { failureReason } from '../model/operationFailure.js'
 import { queryClient } from '../state/queryClient.js'
 import { useStore } from '../state/store.js'
-import { Check, ChevronDown, ChevronRight, ICON, Plus, ThumbsDown, ThumbsUp, iconProps } from '../ui/icons.js'
+import { Check, ChevronDown, ChevronRight, ICON, Plus, ThumbsDown, ThumbsUp, X, iconProps } from '../ui/icons.js'
 import { MessageBody } from './MessageBody.js'
 
 /** A suggestion is an utterance with an attached task, with reactions on that same utterance. */
@@ -18,25 +18,34 @@ export function AssistantProposal({ proposal, replies }: { proposal: Proposal; r
   const creationKey = ['assistant', 'createTask', proposal.taskId]
   const creating = useIsMutating({ mutationKey: creationKey }, queryClient) > 0
   const create = useMutation({ mutationKey: creationKey, meta: { feedback: 'inline' }, mutationFn: () => window.quuu.assistant.createTask({ taskId: proposal.taskId }, { context: { feedback: 'inline' } }) }, queryClient)
+  const closeKey = ['assistant', 'close', proposal.taskId]
+  const closing = useIsMutating({ mutationKey: closeKey }, queryClient) > 0
+  const close = useMutation({ mutationKey: closeKey, meta: { feedback: 'inline' }, mutationFn: () => window.quuu.assistant.close({ taskId: proposal.taskId }, { context: { feedback: 'inline' } }) }, queryClient)
   // A successful response can arrive before the snapshot that carries its durable receipt.
   const receipt = create.data?.taskId === proposal.taskId ? create.data : undefined
   const executionTaskId = proposal.executionTaskId ?? receipt?.executionTaskId
   const created = Boolean(executionTaskId) || proposal.status === 'accepted' || receipt?.status === 'accepted'
+  const closed = proposal.status === 'dismissed' || (close.data?.taskId === proposal.taskId && close.data.status === 'dismissed')
   return <>
     <MessageBody text={proposal.reason} />
     <MessageAttachment title={proposal.title} meta={project?.name ?? proposal.projectId}
       caret={<ChevronDown size={ICON.sm} {...iconProps} />}
-      actions={created ? <>
+      actions={closed ? <MessageStatus><X size={ICON.sm} {...iconProps} aria-hidden="true" />{t('quuuAI.closed')}</MessageStatus> : created ? <>
         <MessageStatus><Check size={ICON.sm} {...iconProps} aria-hidden="true" />{t('quuuAI.created')}</MessageStatus>
         {executionTaskId && <MessageAction icon={<ChevronRight size={ICON.sm} {...iconProps} aria-hidden="true" />} onClick={() => { void openTask(executionTaskId) }}>{t('quuuAI.viewTask')}</MessageAction>}
-      </> : <MessageAction loading={creating}
+      </> : <><MessageAction loading={creating} disabled={closing}
         icon={<Plus size={ICON.sm} {...iconProps} aria-hidden="true" />} onClick={() => create.mutate()}>
         {t(creating ? 'quuuAI.creating' : create.isError ? 'quuuAI.retryCreate' : 'quuuAI.createTask')}
-      </MessageAction>}>
+      </MessageAction>
+      <MessageAction loading={closing} disabled={creating}
+        icon={<X size={ICON.sm} {...iconProps} aria-hidden="true" />} onClick={() => close.mutate()}>
+        {t(closing ? 'quuuAI.closing' : close.isError ? 'quuuAI.retryClose' : 'quuuAI.closeProposal')}
+      </MessageAction></>}>
       <Markdown>{proposal.prompt}</Markdown>
       <Text size="xs" tone="tertiary">{t('quuuAI.confidence', { value: proposal.confidence })}</Text>
     </MessageAttachment>
-    {create.error && !created && <Alert>{t('quuuAI.createFailed', { reason: failureReason(create.error) })}</Alert>}
+    {create.error && !created && !closed && <Alert>{t('quuuAI.createFailed', { reason: failureReason(create.error) })}</Alert>}
+    {close.error && !created && !closed && <Alert>{t('quuuAI.closeFailed', { reason: failureReason(close.error) })}</Alert>}
     <MessageActions>
       <ReactionButton title={t('quuuAI.like')}
         icon={<ThumbsUp size={ICON.sm} {...iconProps} />} selected={proposal.reaction === 'approve'}

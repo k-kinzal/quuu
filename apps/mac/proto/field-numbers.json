@@ -6811,5 +6811,47 @@
   "SnapshotResponseValueAssistantProposalsItemLegacyDiscussion": {
     "prefix": 1,
     "runIds": 2
+  },
+  "AssistantCloseRequestValue": {
+    "taskId": 1
+  },
+  "AssistantCloseRequest": {
+    "value": 1
+  },
+  "AssistantCloseResponseValueLegacyDiscussionRunIds": {
+    "items": 1
+  },
+  "AssistantCloseResponseValueLegacyDiscussion": {
+    "prefix": 1,
+    "runIds": 2
+  },
+  "AssistantCloseResponseValueReaction": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCloseResponseValueRespondedAt": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCloseResponseValueExecutionTaskId": {
+    "variant1": 1,
+    "variant2": 2
+  },
+  "AssistantCloseResponseValue": {
+    "legacyDiscussion": 1,
+    "taskId": 2,
+    "projectId": 3,
+    "title": 4,
+    "prompt": 5,
+    "reason": 6,
+    "confidence": 7,
+    "reaction": 8,
+    "status": 9,
+    "createdAt": 10,
+    "respondedAt": 11,
+    "executionTaskId": 12
+  },
+  "AssistantCloseResponse": {
+    "value": 1
   }
 }

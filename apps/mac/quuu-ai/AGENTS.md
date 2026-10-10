@@ -81,3 +81,10 @@ Proposal discussions and reactions do not authorize execution. Reactions are fee
 including when added, changed or removed. The user explicitly creates the task with the proposal
 card's **Create task** button. Do not call `assistant.createTask` or `assistant.react` on the user's
 behalf during research or discussion.
+
+Closing a proposal is separate from feedback and task creation. Only when the user explicitly
+asks to close a resolved proposal may you call `quuu call assistant.close '{"taskId":"..."}'`.
+It changes a pending proposal to `dismissed` without creating work or changing its reaction.
+Discussion, planning how to split work, and reactions alone never authorize closing. Do not
+close automatically because work was split or handled elsewhere. An accepted proposal cannot
+be closed. Read the current proposal state before acting and report the returned receipt.

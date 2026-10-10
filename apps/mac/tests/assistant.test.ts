@@ -283,6 +283,96 @@ describe('proactive suggestions', () => {
     expect(app.tasks.listTasks().filter(t => t.projectId === project)).toHaveLength(0)
   })
 
+  it.each([null, 'approve', 'dismiss'] as const)('closes without changing %s feedback, task storage or lifecycle and retains its receipt after restart', reaction => {
+    completedProposal()
+    const initial = app.assistant.state().proposals[0]
+    const proposal = reaction ? app.assistant.react(initial.taskId, reaction) : initial
+    const tasks = repo.listTasks(app.db, true, true)
+    const lifecycle = vi.fn()
+    repo.setLifecycleRecorder(app.db, lifecycle)
+    const unobserve = repo.observeLifecycle(app.db, lifecycle)
+    // Closing does not depend on whether the destination can accept new work.
+    repo.updateProject(app.db, project, { enabled: false })
+    const receipt = app.assistant.close(proposal.taskId)
+    expect(receipt).toEqual({ ...proposal, status: 'dismissed', respondedAt: receipt.respondedAt })
+    expect(receipt.respondedAt).toBeTruthy()
+    expect(app.assistant.close(proposal.taskId)).toEqual(receipt)
+    expect(() => app.assistant.createTask(proposal.taskId)).toThrow(/closed/)
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    expect(lifecycle).not.toHaveBeenCalled()
+    unobserve()
+    app.shutdown(); app.db.close()
+    app = new QuuuApp(join(dir, 'taskd.db')); app.scheduler.pause()
+    expect(app.assistant.close(proposal.taskId)).toEqual(receipt)
+    expect(() => app.assistant.createTask(proposal.taskId)).toThrow(/closed/)
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    for (const feedback of ['approve', 'dismiss', 'clear'] as const) {
+      expect(app.assistant.react(proposal.taskId, feedback)).toMatchObject({ status: 'dismissed', executionTaskId: null })
+    }
+  })
+
+  it('does not close an accepted proposal or alter its execution task', () => {
+    completedProposal()
+    const receipt = app.assistant.createTask(app.assistant.state().proposals[0].taskId)
+    const tasks = repo.listTasks(app.db, true, true)
+    expect(() => app.assistant.close(receipt.taskId)).toThrow(/already been created/)
+    expect(app.assistant.state().proposals[0]).toEqual(receipt)
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    app.tasks.deleteIdleTasks([receipt.executionTaskId!])
+    expect(() => app.assistant.close(receipt.taskId)).toThrow(/already been created/)
+    expect(app.assistant.state().proposals[0]).toEqual(receipt)
+  })
+
+  it.each(['missing-proposal', 'missing-thread', 'archived-pending', 'archived-closed'] as const)('treats %s as unavailable when closing', target => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    if (target === 'missing-thread') repo.deleteTask(app.db, proposal.taskId)
+    if (target === 'archived-closed') app.assistant.close(proposal.taskId)
+    if (target.startsWith('archived')) repo.setTaskArchived(app.db, proposal.taskId, true)
+    const before = app.assistant.state().proposals
+    expect(() => app.assistant.close(target === 'missing-proposal' ? 'missing' : proposal.taskId)).toThrow(/no longer available/)
+    expect(app.assistant.state().proposals).toEqual(before)
+  })
+
+  it('rolls back closing if receipt storage fails and allows a safe retry', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    const tasks = repo.listTasks(app.db, true, true)
+    const lifecycle = vi.fn()
+    const unobserve = repo.observeLifecycle(app.db, lifecycle)
+    const save = repo.saveAssistantProposal
+    vi.spyOn(repo, 'saveAssistantProposal').mockImplementationOnce((db, next) => {
+      save(db, next)
+      throw new Error('Disk full')
+    })
+    expect(() => app.assistant.close(proposal.taskId)).toThrow('Disk full')
+    expect(app.assistant.state().proposals[0]).toEqual(proposal)
+    expect(repo.listTasks(app.db, true, true)).toEqual(tasks)
+    expect(lifecycle).not.toHaveBeenCalled()
+    expect(app.assistant.canResearch()).toBe(false)
+    expect(app.assistant.close(proposal.taskId).status).toBe('dismissed')
+    unobserve()
+  })
+
+  it('resumes research after closing an unanswered proposal without publishing the same title again', () => {
+    completedProposal()
+    const proposal = app.assistant.state().proposals[0]
+    expect(proposal.respondedAt).toBeNull()
+    makeDue()
+    expect(app.assistant.canResearch()).toBe(false)
+    expect(app.assistant.prepareCheck()).toBeNull()
+    const receipt = app.assistant.close(proposal.taskId)
+    expect(app.assistant.canResearch()).toBe(true)
+    expect(app.assistant.state().activity).toBe('waiting')
+    const id = completedProposal(99, proposal.title.toUpperCase())
+    expect(repo.getTask(app.db, id)?.prompt).toContain('"status":"dismissed","reaction":null')
+    expect(app.assistant.state().proposals).toEqual([receipt])
+    makeDue()
+    completedProposal(99, 'Another useful suggestion')
+    expect(app.assistant.state().proposals).toHaveLength(2)
+    expect(app.assistant.canResearch()).toBe(false)
+  })
+
   it('rolls back the task and lifecycle effects if receipt storage fails, then allows a safe retry', () => {
     completedProposal()
     const proposal = app.assistant.state().proposals[0]

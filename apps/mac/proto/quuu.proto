@@ -395,6 +395,63 @@ message AssistantCreateTaskResponse {
   optional AssistantCreateTaskResponseValue value = 1;
 }
 
+message AssistantCloseRequestValue {
+  optional string taskId = 1;
+}
+
+message AssistantCloseRequest {
+  optional AssistantCloseRequestValue value = 1;
+}
+
+message AssistantCloseResponseValueLegacyDiscussionRunIds {
+  repeated string items = 1;
+}
+
+message AssistantCloseResponseValueLegacyDiscussion {
+  optional string prefix = 1;
+  optional AssistantCloseResponseValueLegacyDiscussionRunIds runIds = 2;
+}
+
+message AssistantCloseResponseValueReaction {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantCloseResponseValueRespondedAt {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantCloseResponseValueExecutionTaskId {
+  oneof kind {
+  string variant1 = 1;
+  google.protobuf.NullValue variant2 = 2;
+  }
+}
+
+message AssistantCloseResponseValue {
+  optional AssistantCloseResponseValueLegacyDiscussion legacyDiscussion = 1;
+  optional string taskId = 2;
+  optional string projectId = 3;
+  optional string title = 4;
+  optional string prompt = 5;
+  optional string reason = 6;
+  optional double confidence = 7;
+  optional AssistantCloseResponseValueReaction reaction = 8;
+  optional string status = 9;
+  optional string createdAt = 10;
+  optional AssistantCloseResponseValueRespondedAt respondedAt = 11;
+  optional AssistantCloseResponseValueExecutionTaskId executionTaskId = 12;
+}
+
+message AssistantCloseResponse {
+  optional AssistantCloseResponseValue value = 1;
+}
+
 message AssistantMarkReadRequestValue {
   optional string taskId = 1;
   optional string revision = 2;
@@ -8971,6 +9028,7 @@ service Quuu {
   rpc AssistantNoReply(AssistantNoReplyRequest) returns (AssistantNoReplyResponse);
   rpc AssistantReact(AssistantReactRequest) returns (AssistantReactResponse);
   rpc AssistantCreateTask(AssistantCreateTaskRequest) returns (AssistantCreateTaskResponse);
+  rpc AssistantClose(AssistantCloseRequest) returns (AssistantCloseResponse);
   rpc AssistantMarkRead(AssistantMarkReadRequest) returns (AssistantMarkReadResponse);
   rpc Snapshot(SnapshotRequest) returns (SnapshotResponse);
   rpc RunnersStatus(RunnersStatusRequest) returns (RunnersStatusResponse);

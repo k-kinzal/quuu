@@ -81,8 +81,16 @@ worktrees; everything else (agent, priority, concurrency, enabled) is configurab
 there, do not write files in the working directory, and turn a request that needs code changes
 into a task for the project that holds that code.
 
-Proposed work has two independent operations. `assistant.react` records feedback only
+Proposed work separates feedback, task creation and closing. `assistant.react` records feedback only
 (`approve` = like, `dismiss` = dislike, `clear` = remove); none approves or creates work.
 The user creates a proposal's task through its **Create task** button, backed by
 `assistant.createTask {taskId}`. During proposal research or discussion, never call either
 operation on the user's behalf or turn a reaction into a `tasks.create` call.
+
+Only an explicit user request to close a resolved proposal authorizes
+`quuu call assistant.close '{"taskId":"..."}'`. Read `assistant.state` first to resolve its
+current state. Closing changes `pending` to `dismissed`, creates no task, and preserves
+feedback and any execution task link. Repeating the close returns the saved receipt;
+accepted proposals cannot be closed. Discussion, a plan to split work, reactions, or learning
+that work was handled elsewhere do not authorize closing by themselves. Never call close
+automatically during research or discussion. Report the returned receipt after an explicit close.
