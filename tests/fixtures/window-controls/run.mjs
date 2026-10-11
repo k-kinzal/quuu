@@ -6,6 +6,8 @@ void app.whenReady().then(async () => {
   try {
     window.webContents.on('console-message', details => { if (details.level === 'error') console.error(details.message) })
     await window.loadURL(process.argv[2])
+    // Exercise first-paint geometry on a visible native surface without taking focus.
+    window.showInactive()
     // Start in the renderer's frame callback, outside the executeJavaScript IPC evaluation.
     // The fixture still mounts and checks its initial layout synchronously, before that frame paints.
     const result = await window.webContents.executeJavaScript(`new Promise((resolve, reject) => requestAnimationFrame(() => {
