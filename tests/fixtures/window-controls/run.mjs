@@ -1,15 +1,16 @@
 import { app, BrowserWindow } from 'electron'
-import { once } from 'node:events'
 import { writeSync } from 'node:fs'
 
 void app.whenReady().then(async () => {
   const window = new BrowserWindow({ show: false, width: 1100, height: 700, webPreferences: { sandbox: true, backgroundThrottling: false } })
   try {
     window.webContents.on('console-message', details => { if (details.level === 'error') console.error(details.message) })
-    // Loading can finish before the hidden window's renderer is ready on macOS.
-    // Wait with the fixture still empty; each component's first-paint assertion stays synchronous.
-    await Promise.all([once(window, 'ready-to-show'), window.loadURL(process.argv[2])])
-    const result = await window.webContents.executeJavaScript(`window.checkWindowControls().catch(error => {
+    await window.loadURL(process.argv[2])
+    // Start in the renderer's frame callback, outside the executeJavaScript IPC evaluation.
+    // The fixture still mounts and checks its initial layout synchronously, before that frame paints.
+    const result = await window.webContents.executeJavaScript(`new Promise((resolve, reject) => requestAnimationFrame(() => {
+      window.checkWindowControls().then(resolve, reject)
+    })).catch(error => {
       console.error(error.stack)
       throw error
     })`)

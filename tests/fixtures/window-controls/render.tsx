@@ -19,6 +19,21 @@ function checkClear(message: string, inset = 84): void {
   const node = element('[data-window-content]')
   const rect = node.getBoundingClientRect()
   assert(rect.width > 0, `${message}: content is visible`)
+  if (rect.left < shell.left + inset) {
+    const header = node.closest<HTMLElement>('header, h1')!
+    // Keep the original failed measurement; diagnose it before another frame or IPC can update layout.
+    console.error('Synchronous window controls layout:', JSON.stringify({
+      message, shell, content: rect,
+      bodyRules: [...document.styleSheets].flatMap(sheet => [...sheet.cssRules])
+        .filter((rule): rule is CSSStyleRule => rule instanceof CSSStyleRule && rule.selectorText.split(',').some(selector => selector.trim() === 'body'))
+        .map(rule => rule.cssText),
+      bodyMargin: getComputedStyle(document.body).margin,
+      inlineInset: header.style.getPropertyValue('--ds-window-controls-inset'),
+      computedInset: getComputedStyle(header).getPropertyValue('--ds-window-controls-inset'),
+      paddingLeft: getComputedStyle(header).paddingLeft,
+      measuredAgain: { shell: element('[data-ds-app-shell]').getBoundingClientRect(), content: node.getBoundingClientRect() }
+    }))
+  }
   assert(rect.left >= shell.left + inset, `${message}: content starts at ${rect.left - shell.left}, inside native controls ending at ${inset}`)
   const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2)
   assert(Boolean(hit && node.contains(hit)), `${message}: heading or action is reachable`)
