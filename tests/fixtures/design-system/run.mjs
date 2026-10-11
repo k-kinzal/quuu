@@ -160,6 +160,8 @@ void app.whenReady().then(async () => {
       assert.ok(wide.thread > 360, 'a thread keeps a readable text column')
       assert.equal(wide.overflow, false)
       await window.webContents.executeJavaScript(`window.renderMessages(360, '${scheme}')`)
+      // Measure after the thread's container-query styles have followed the resize.
+      await waitFor(`getComputedStyle(document.querySelector('[data-conversation-thread]')).flexGrow === '1'`, 'the narrow thread receives its responsive layout')
       const narrow = await window.webContents.executeJavaScript('window.messageGeometry()')
       assert.equal(narrow.channelVisible, false, 'narrow layouts focus the opened thread')
       assert.equal(narrow.thread, 360)
@@ -249,6 +251,20 @@ void app.whenReady().then(async () => {
     app.exit(0)
   } catch (error) {
     console.error(currentCheck, error)
+    if (currentCheck.includes('conversation layout')) {
+      console.error('Conversation layout', await window.webContents.executeJavaScript(`JSON.stringify({
+        geometry: window.messageGeometry(), userAgent: navigator.userAgent,
+        panes: [...document.querySelectorAll('[data-conversation-channel], [data-conversation-thread]')].map(pane => {
+          const style = getComputedStyle(pane)
+          const container = pane.parentElement
+          return { role: pane.hasAttribute('data-conversation-thread') ? 'thread' : 'channel',
+            bounds: pane.getBoundingClientRect().toJSON(), flex: style.flex, display: style.display,
+            container: container.getBoundingClientRect().toJSON(), containerType: getComputedStyle(container).containerType }
+        }),
+        rules: [...document.styleSheets].flatMap(sheet => [...sheet.cssRules].map(rule => rule.cssText))
+          .filter(rule => rule.includes('data-conversation'))
+      })`).catch(() => 'Renderer unavailable'))
+    }
     if (currentCheck.includes('explorer resizing')) {
       console.error('Explorer geometry', await window.webContents.executeJavaScript('window.explorerGeometry()').catch(() => 'Renderer unavailable'))
     }
