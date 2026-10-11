@@ -1,4 +1,5 @@
 import {
+  appendFileSync,
   mkdtempSync,
   mkdirSync,
   readFileSync,
@@ -30,8 +31,8 @@ function runGit(...args: string[]): string {
 
 function initGit(): void {
   runGit('init', '-q')
-  runGit('config', 'user.name', 'Quuu Test')
-  runGit('config', 'user.email', 'quuu@example.invalid')
+  // Fixture identity needs no extra Git processes; the operations under review still use real Git.
+  appendFileSync(join(dir, '.git', 'config'), '\n[user]\n\tname = Quuu Test\n\temail = quuu@example.invalid\n')
 }
 
 function project(): Project {
