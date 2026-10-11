@@ -1,4 +1,5 @@
 import { app, BrowserWindow } from 'electron'
+import assert from 'node:assert/strict'
 import { writeSync } from 'node:fs'
 
 void app.whenReady().then(async () => {
@@ -6,13 +7,15 @@ void app.whenReady().then(async () => {
   try {
     window.webContents.on('console-message', details => { if (details.level === 'error') console.error(details.message) })
     await window.loadURL(process.argv[2])
-    // Exercise first-paint geometry on a visible native surface without taking focus.
-    window.showInactive()
-    // Start in the renderer's frame callback, outside the executeJavaScript IPC evaluation.
-    // The fixture still mounts and checks its initial layout synchronously, before that frame paints.
-    const result = await window.webContents.executeJavaScript(`new Promise((resolve, reject) => requestAnimationFrame(() => {
-      window.checkWindowControls().then(resolve, reject)
-    })).catch(error => {
+    // Cover both accessibility settings without changing the host's preferences.
+    const motion = process.argv[3]
+    assert.ok(['no-preference', 'reduce'].includes(motion), 'motion preference is explicit')
+    window.webContents.debugger.attach('1.3')
+    await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', {
+      features: [{ name: 'prefers-reduced-motion', value: motion }]
+    })
+    assert.equal(await window.webContents.executeJavaScript(`matchMedia('(prefers-reduced-motion: reduce)').matches`), motion === 'reduce')
+    const result = await window.webContents.executeJavaScript(`window.checkWindowControls().catch(error => {
       console.error(error.stack)
       throw error
     })`)

@@ -335,7 +335,9 @@ function components(
           fontVariantNumeric: 'tabular-nums'
         },
         '@media (prefers-reduced-motion: reduce)': {
-          '*, *::before, *::after': { animationDuration: '0.01ms !important', animationIterationCount: '1 !important', transitionDuration: '0.01ms !important', scrollBehavior: 'auto !important' }
+          // A nonzero duration creates transitions even on otherwise static elements (transition-property defaults to all).
+          // Layout corrections, including native window-control clearance, must apply in the same frame.
+          '*, *::before, *::after': { animationDuration: '0.01ms !important', animationIterationCount: '1 !important', transitionDuration: '0s !important', scrollBehavior: 'auto !important' }
         },
         'button, input, textarea, select': { font: 'inherit', color: 'inherit' },
         /*
