@@ -842,7 +842,7 @@ saved.
 | Condition | Meaning |
 |------|------|
 | **Only queue when the queue is empty** | When the project has nothing `Queued` and nothing `Running`. If something else is in progress, nothing is queued until it clears. Review, Failed, and Held don't count (so things keep moving while a human's attention is awaited) |
-| **Frequency** | Choose once a day, once a week, or once each weekday without choosing a time. Periods follow the Mac’s local calendar (weeks start on Monday). A new definition can enqueue in the current period as soon as its other conditions allow; at most one task is enqueued per period. Weekdays skip Saturday and Sunday even when a previous day was blocked. Missed periods never accumulate. |
+| **Frequency** | Choose once a day, once a week, or once each weekday without choosing a time. Daily and weekday rules wait at least 24 hours, and weekly rules at least 7 days, after the latest enqueue or human completion of a task from that definition, whichever is later. Completing overdue work therefore starts a fresh interval. A new definition can enqueue as soon as its other conditions allow. Weekdays skip Saturday and Sunday in the Mac’s local time; an interval ending on a weekend moves to Monday at the same local time. Missed intervals never accumulate. |
 | **Cron expression** | Treated **not as firing at that time, but as a signal that queueing is allowed once it has passed** (a deadline). As a point event, a day that was busy at 3:00 would be skipped entirely; as a deadline it becomes "queue when free". Queueing advances to the next deadline, so the days the app was off never pile up |
 | **States that count as duplicates** | Nothing is queued while **a task created by this definition** remains in one of the chosen states. Which states count is selectable (default: everything except Done). Archived tasks don't count, so one stuck task can be cleared that way |
 
@@ -855,8 +855,11 @@ rapid fire: each time one clears, the next is queued.
 - Deleting a definition keeps the tasks it queued (only the origin mark is removed)
 - A queued task shows which definition it came from under **Origin** in the info panel
 - **Queue now** creates one without waiting for the conditions (an entry point for
-  verifying the setup). It counts toward the current frequency period too
+  verifying the setup). It starts a new frequency interval too
 - Nothing is queued while the scheduler is paused
+- Completion spacing also applies to existing definitions and survives restart. Archiving a
+  completed task keeps its completion time in the calculation; archiving unfinished work
+  still clears the duplicate gate. Custom cron and continuous definitions retain their own schedules.
 
 ## P0 keeps its slot
 

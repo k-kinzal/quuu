@@ -4,34 +4,32 @@
  */
 export type Frequency = 'none' | 'daily' | 'weekly' | 'weekdays' | 'continuous'
 
-export function isCalendarFrequency(value: string): value is Exclude<Frequency, 'none'> {
+type IntervalFrequency = Exclude<Frequency, 'none' | 'continuous'>
+
+export function isIntervalFrequency(value: string): value is IntervalFrequency {
   return value === 'daily' || value === 'weekly' || value === 'weekdays'
 }
 
-/** Calendar periods follow the Mac's local date, including changes in UTC offset. */
-export function frequencyDueAt(frequency: Exclude<Frequency, 'none'>, lastEnqueuedAt: string | null, now: Date): string {
-  const start = new Date(now)
-  start.setHours(0, 0, 0, 0)
-  if (frequency === 'weekly') start.setDate(start.getDate() - (start.getDay() + 6) % 7)
+/** Measure elapsed time so midnight and late approval cannot produce consecutive tasks. */
+export function frequencyDueAt(frequency: IntervalFrequency, lastActivityAt: string | null, now: Date): string {
+  const today = new Date(now)
+  today.setHours(0, 0, 0, 0)
+  const interval = (frequency === 'weekly' ? 7 : 1) * 24 * 60 * 60 * 1000
+  const due = lastActivityAt ? new Date(new Date(lastActivityAt).getTime() + interval) : today
 
-  const last = lastEnqueuedAt ? new Date(lastEnqueuedAt) : null
-  if (last && last >= start) {
-    // A clock moved backwards must not let the same period enqueue again.
-    start.setTime(last.getTime())
-    start.setHours(0, 0, 0, 0)
-    if (frequency === 'weekly') start.setDate(start.getDate() - (start.getDay() + 6) % 7)
-    start.setDate(start.getDate() + (frequency === 'weekly' ? 7 : 1))
-  }
   if (frequency === 'weekdays') {
-    while (start.getDay() === 0 || start.getDay() === 6) start.setDate(start.getDate() + 1)
+    // Overdue weekday work must not catch up on Saturday or Sunday.
+    const weekdayDue = nextWeekday(due)
+    return nextWeekday(weekdayDue < today ? today : weekdayDue).toISOString()
   }
-  return start.toISOString()
+  return due.toISOString()
+}
+
+function nextWeekday(date: Date): Date {
+  while (date.getDay() === 0 || date.getDay() === 6) date.setDate(date.getDate() + 1)
+  return date
 }
 
 export function isScheduleFrequency(value: string): value is Exclude<Frequency, 'none'> {
-  return isCalendarFrequency(value) || value === 'continuous'
-}
-
-export function frequencyReady(rule: { frequency: Frequency; lastEnqueuedAt: string | null }, now: Date): boolean {
-  return isCalendarFrequency(rule.frequency) && frequencyDueAt(rule.frequency, rule.lastEnqueuedAt, now) <= now.toISOString()
+  return isIntervalFrequency(value) || value === 'continuous'
 }

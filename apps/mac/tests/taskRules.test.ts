@@ -5,6 +5,7 @@ import { OPEN_STATUSES } from '../src/main/tasks/status.js'
 
 import * as repo from '../src/main/db/repo.js'
 import { enqueueRuleNow, nextDueAt, runTaskRules } from '../src/main/automation/evaluate.js'
+import { AutomationOperations } from '../src/main/automation/operations.js'
 import { Runner } from '../src/main/execution/runner.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { makeAgent, makeProject, makeTask, memoryDb, occupy, reviewed } from './helpers.js'
@@ -350,26 +351,44 @@ describe('automatic tasks - manual runs and cleaning up definitions', () => {
   })
 })
 
-describe('automatic tasks - calendar frequency without a time', () => {
+describe('automatic tasks - spaced frequency without a time', () => {
   const at = (day: number, hour = 12) => new Date(2026, 8, day, hour)
 
-  it('can start today and queues only once per local day, even after reading the rule again', () => {
+  it('waits a full day after a delayed completion instead of immediately replacing the task', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily', blockStatuses: [...OPEN_STATUSES] })
+    const [first] = runTaskRules(db, at(21)).created
+    repo.setTaskStatus(db, first.id, 'review')
+    expect(runTaskRules(db, at(23, 15)).created).toHaveLength(0)
+
+    repo.setTaskStatus(db, first.id, 'done', { doneAt: at(23, 15).toISOString() })
+    expect(runTaskRules(db, at(23, 15)).created).toHaveLength(0)
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(24, 15).toISOString())
+    expect(runTaskRules(db, new Date(at(24, 15).getTime() - 1)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(24, 15)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(24, 15)).created).toHaveLength(0)
+  })
+
+  it('can start today and leaves 24 hours between tasks, even across midnight', () => {
     const { db, project } = setup()
     const rule = makeRule(db, project, { frequency: 'daily' })
     expect(runTaskRules(db, at(21, 15)).created).toHaveLength(1)
     expect(repo.getTaskRule(db, rule.id)?.frequency).toBe('daily')
-    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(22, 0).toISOString())
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(22, 15).toISOString())
     expect(runTaskRules(db, at(21, 23)).created).toHaveLength(0)
-    expect(runTaskRules(db, at(22, 0)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(22, 0)).created).toHaveLength(0)
     expect(runTaskRules(db, at(22, 9)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(22, 15)).created).toHaveLength(1)
   })
 
-  it('queues once in a Monday to Sunday week and starts another period on Monday', () => {
+  it('leaves seven days between weekly tasks instead of resetting on Monday', () => {
     const { db, project } = setup()
     makeRule(db, project, { frequency: 'weekly' })
     expect(runTaskRules(db, at(23)).created).toHaveLength(1)
     expect(runTaskRules(db, at(27, 23)).created).toHaveLength(0)
-    expect(runTaskRules(db, at(28, 0)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(28, 0)).created).toHaveLength(0)
+    expect(runTaskRules(db, new Date(at(30).getTime() - 1)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(30)).created).toHaveLength(1)
   })
 
   it('does not catch up a blocked Friday on the weekend, and only queues once on Monday', () => {
@@ -394,12 +413,12 @@ describe('automatic tasks - calendar frequency without a time', () => {
     expect(first).toHaveLength(1)
     repo.setTaskStatus(db, first[0].id, 'review')
     expect(runTaskRules(db, at(25)).created).toHaveLength(0)
-    repo.setTaskStatus(db, first[0].id, 'done')
+    repo.setTaskStatus(db, first[0].id, 'done', { doneAt: at(25).toISOString() })
     expect(runTaskRules(db, at(28)).created).toHaveLength(1)
     expect(runTaskRules(db, at(28, 23)).created).toHaveLength(0)
   })
 
-  it('counts an explicit enqueue against the current period, even across disabling and re-enabling', () => {
+  it('counts an explicit enqueue toward the interval, even across disabling and re-enabling', () => {
     const { db, project } = setup()
     const rule = makeRule(db, project, { frequency: 'daily', enabled: false })
     expect(runTaskRules(db, at(21)).created).toHaveLength(0)
@@ -407,6 +426,94 @@ describe('automatic tasks - calendar frequency without a time', () => {
     repo.updateTaskRule(db, rule.id, { enabled: true })
     expect(runTaskRules(db, at(21, 23)).created).toHaveLength(0)
     expect(runTaskRules(db, at(22)).created).toHaveLength(1)
+  })
+
+  it('waits seven days after weekly work is completed late', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'weekly', blockStatuses: [...OPEN_STATUSES] })
+    const [first] = runTaskRules(db, at(7)).created
+    repo.setTaskStatus(db, first.id, 'done', { doneAt: at(21).toISOString() })
+    expect(runTaskRules(db, at(21)).created).toHaveLength(0)
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(28).toISOString())
+    expect(runTaskRules(db, new Date(at(28).getTime() - 1)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(28)).created).toHaveLength(1)
+  })
+
+  it('defers a weekday interval that ends on the weekend until Monday at the same time', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'weekdays', blockStatuses: [...OPEN_STATUSES] })
+    const [first] = runTaskRules(db, at(21)).created
+    repo.setTaskStatus(db, first.id, 'done', { doneAt: at(25, 15).toISOString() })
+    expect(runTaskRules(db, at(25, 15)).created).toHaveLength(0)
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(28, 15).toISOString())
+    expect(runTaskRules(db, at(26, 15)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(27, 15)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(28, 14)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(28, 15)).created).toHaveLength(1)
+  })
+
+  it('uses each rule’s completion time when multiple projects are approved together', () => {
+    const { db, project, agent } = setup()
+    const other = makeProject(db, { name: 'Other project', targetId: agent })
+    const rules = [project, other].map(projectId => makeRule(db, projectId, {
+      frequency: 'daily', blockStatuses: [...OPEN_STATUSES]
+    }))
+    const tasks = runTaskRules(db, at(21)).created
+    for (const [index, rule] of rules.entries()) {
+      const task = tasks.find(task => task.ruleId === rule.id)!
+      repo.setTaskStatus(db, task.id, 'done', { doneAt: at(23, 14 + index).toISOString() })
+    }
+    expect(runTaskRules(db, at(23, 15)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(24, 14)).created.map(task => task.ruleId)).toEqual([rules[0].id])
+    expect(runTaskRules(db, at(24, 15)).created.map(task => task.ruleId)).toEqual([rules[1].id])
+  })
+
+  it('honors archived completions and legacy deadlines after scheduling was stopped', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily', blockStatuses: [...OPEN_STATUSES] })
+    const first = enqueueRuleNow(db, rule.id, at(21))
+    repo.setTaskStatus(db, first.id, 'done', { doneAt: at(23, 15).toISOString() })
+    repo.setTaskArchived(db, first.id, true)
+    repo.updateTaskRule(db, rule.id, { dueAt: at(22, 0).toISOString() })
+
+    // No in-memory completion observer ran; the persisted facts must be sufficient.
+    const result = runTaskRules(db, at(24, 14))
+    expect(result.created).toHaveLength(0)
+    expect(result.changed).toBe(true)
+    expect(repo.getTaskRule(db, rule.id)?.dueAt).toBe(at(24, 15).toISOString())
+    expect(runTaskRules(db, at(24, 14)).changed).toBe(false)
+    expect(runTaskRules(db, at(24, 15)).created).toHaveLength(1)
+  })
+
+  it('lets queue now override a completion wait and starts a new interval from that enqueue', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily' })
+    const first = enqueueRuleNow(db, rule.id, at(21))
+    repo.setTaskStatus(db, first.id, 'done', { doneAt: at(23, 15).toISOString() })
+    expect(runTaskRules(db, at(23, 16)).created).toHaveLength(0)
+    expect(enqueueRuleNow(db, rule.id, at(23, 16)).status).toBe('queued')
+    expect(runTaskRules(db, at(24, 15)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(24, 16)).created).toHaveLength(1)
+  })
+
+  it('uses completed work when a rule changes from daily to weekly', () => {
+    const { db, project } = setup()
+    const rule = makeRule(db, project, { frequency: 'daily' })
+    const first = enqueueRuleNow(db, rule.id, at(7))
+    repo.setTaskStatus(db, first.id, 'done', { doneAt: at(21).toISOString() })
+    const operations = new AutomationOperations(db, () => {}, () => {})
+    expect(operations.updateTaskRule(rule.id, { frequency: 'weekly' }).dueAt).toBe(at(28).toISOString())
+    expect(runTaskRules(db, at(27)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(28)).created).toHaveLength(1)
+  })
+
+  it('does not shorten an interval when the clock moves backwards', () => {
+    const { db, project } = setup()
+    makeRule(db, project, { frequency: 'daily' })
+    expect(runTaskRules(db, at(23)).created).toHaveLength(1)
+    expect(runTaskRules(db, at(21)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(23)).created).toHaveLength(0)
+    expect(runTaskRules(db, at(24)).created).toHaveLength(1)
   })
 })
 

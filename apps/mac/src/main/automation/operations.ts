@@ -49,7 +49,7 @@ export class AutomationOperations {
     // Recompute the deadline only when the schedule changed, so renaming a rule does not push
     // back the next scheduled time of a rule nobody touched
     const dueAt = next.cron !== current.cron || next.frequency !== current.frequency
-      ? this.dueAt(next, current.lastEnqueuedAt) : current.dueAt
+      ? scheduleDueAt(next, current.lastEnqueuedAt, new Date(), repo.lastRuleCompletedAt(this.db, id)) : current.dueAt
     const rule = repo.updateTaskRule(this.db, id, { ...patch, dueAt })
     this.changed()
     this.wake()

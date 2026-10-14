@@ -9,7 +9,7 @@ import { nextCronDate, parseCron } from './cron.js'
 import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { truncate } from '../util.js'
-import { frequencyDueAt, frequencyReady, isCalendarFrequency, isScheduleFrequency } from './frequency.js'
+import { frequencyDueAt, isIntervalFrequency, isScheduleFrequency } from './frequency.js'
 import type { Frequency } from './frequency.js'
 import { taskRuleTitle } from './title.js'
 
@@ -23,6 +23,7 @@ import { taskRuleTitle } from './title.js'
 
 export interface TaskRuleResult {
   created: Task[]
+  changed: boolean
   /** Rules whose settings cannot be read. Stalling silently goes unnoticed, so it shows in the status. */
   warnings: string[]
 }
@@ -46,6 +47,7 @@ export function nextDueAt(cron: string, from: Date = new Date()): string | null 
 export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
   const created: Task[] = []
   const warnings: string[] = []
+  let changed = false
 
   for (const rule of orderTaskRules(repo.listTaskRules(db))) {
     if (!rule.enabled) continue
@@ -65,9 +67,20 @@ export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
       continue
     }
 
+    // Read durable completion facts, including tasks approved before this version or while
+    // scheduling was paused. A saved calendar deadline must not bypass the new interval.
+    if (isIntervalFrequency(rule.frequency)) {
+      const dueAt = scheduleDueAt(rule, rule.lastEnqueuedAt, now, repo.lastRuleCompletedAt(db, rule.id))
+      if (dueAt !== rule.dueAt) {
+        repo.updateTaskRule(db, rule.id, { dueAt })
+        rule.dueAt = dueAt
+        changed = true
+      }
+    }
+
     const due = rule.frequency === 'none'
       ? ruleDueState(rule, now.toISOString(), parseCron(rule.cron) !== null)
-      : rule.frequency === 'continuous' || frequencyReady(rule, now) ? 'ready' : 'waiting'
+      : rule.frequency === 'continuous' || (rule.dueAt !== null && rule.dueAt <= now.toISOString()) ? 'ready' : 'waiting'
     if (due === 'invalid') {
       warnings.push(t('automation.cronUnreadableFor', { name: truncate(rule.name, 24) }))
       continue
@@ -76,6 +89,7 @@ export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
       // There is an expression but no deadline (old data, or hand-edited).
       // Put the deadline back here and do not enqueue this time round
       repo.updateTaskRule(db, rule.id, { dueAt: nextDueAt(rule.cron, now) })
+      changed = true
       continue
     }
     if (due === 'waiting') continue
@@ -85,9 +99,10 @@ export function runTaskRules(db: Db, now: Date = new Date()): TaskRuleResult {
       repo.countRuleTasks(db, rule.id, rule.blockStatuses))) continue
 
     created.push(enqueueFromRule(db, rule, now))
+    changed = true
   }
 
-  return { created, warnings }
+  return { created, warnings, changed }
 }
 
 /**
@@ -121,15 +136,20 @@ function enqueueFromRule(db: Db, rule: TaskRule, now: Date): Task {
     })
     repo.updateTaskRule(db, rule.id, {
       lastEnqueuedAt: now.toISOString(),
-      dueAt: scheduleDueAt(rule, now.toISOString(), now)
+      dueAt: scheduleDueAt(rule, now.toISOString(), now, repo.lastRuleCompletedAt(db, rule.id))
     })
     return task
   })
 }
 
-/** The next eligible period or cron deadline. A continuous rule has neither. */
-export function scheduleDueAt(rule: { frequency?: Frequency; cron: string }, lastEnqueuedAt: string | null, now: Date): string | null {
+/** Space automatic work from the latest enqueue or completion; cron keeps its explicit clock. */
+export function scheduleDueAt(
+  rule: { frequency?: Frequency; cron: string }, lastEnqueuedAt: string | null, now: Date,
+  lastCompletedAt: string | null = null
+): string | null {
   const frequency = rule.frequency ?? 'none'
   if (frequency === 'none') return nextDueAt(rule.cron, now)
-  return isCalendarFrequency(frequency) ? frequencyDueAt(frequency, lastEnqueuedAt, now) : null
+  const lastActivityAt = lastCompletedAt && (!lastEnqueuedAt || lastCompletedAt > lastEnqueuedAt)
+    ? lastCompletedAt : lastEnqueuedAt
+  return isIntervalFrequency(frequency) ? frequencyDueAt(frequency, lastActivityAt, now) : null
 }

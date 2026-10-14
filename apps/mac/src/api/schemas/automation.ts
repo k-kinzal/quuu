@@ -44,7 +44,7 @@ export const TaskRuleSchema = z.object({
    * at 3:00 would be skipped entirely.
    */
   cron: z.string(),
-  /** `continuous` enqueues whenever the project's queue is empty; it implies `whenIdle`. */
+  /** Daily/weekly/weekday intervals follow the latest enqueue or completion. `continuous` implies `whenIdle`. */
   frequency: z.enum(['none', 'daily', 'weekly', 'weekdays', 'continuous']),
   /**
    * Task states that count as duplicates.
@@ -57,7 +57,7 @@ export const TaskRuleSchema = z.object({
    */
   blockStatuses: TaskStatusSchema.array(),
   enabled: z.boolean(),
-  /** The next eligible period or cron deadline. Null when there is no schedule. */
+  /** The next eligible time or cron deadline. Null when there is no schedule. */
   dueAt: z.union([z.string(), z.null()]),
   lastEnqueuedAt: z.union([z.string(), z.null()]),
   sortOrder: z.number(),

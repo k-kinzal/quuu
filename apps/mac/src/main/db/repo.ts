@@ -1579,6 +1579,13 @@ export function countRuleTasks(db: Db, ruleId: string, statuses: TaskStatus[]): 
   return n(r.c)
 }
 
+/** Completed work still determines spacing after it is archived. */
+export function lastRuleCompletedAt(db: Db, ruleId: string): string | null {
+  const row = db.prepare("SELECT MAX(done_at) AS at FROM tasks WHERE rule_id = ? AND status = 'done'")
+    .get(ruleId) as Row
+  return sn(row.at)
+}
+
 /** How many tasks in that project are in the given statuses. Answers "is the queue empty". */
 export function countProjectTasks(db: Db, projectId: string, statuses: TaskStatus[]): number {
   if (statuses.length === 0) return 0

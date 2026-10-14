@@ -380,7 +380,7 @@ export class Scheduler extends EventEmitter {
     try {
       const result = runTaskRules(this.db)
       this.ruleWarnings = result.warnings
-      if (result.created.length > 0) this.emit('changed')
+      if (result.changed) this.emit('changed')
     } catch {
       this.ruleWarnings = [t('scheduler.automationEvalFailed')]
     }

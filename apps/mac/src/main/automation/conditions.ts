@@ -41,7 +41,7 @@ export interface TaskRule {
    * As a point event, a day that happened to be busy at 3:00 would be skipped entirely.
    */
   cron: string
-  /** A local calendar frequency with no chosen time, or `continuous`. Exclusive with cron. */
+  /** An interval after the latest enqueue or completion, or `continuous`. Exclusive with cron. */
   frequency: Frequency
   /**
    * The task statuses that count as a duplicate.
@@ -52,7 +52,7 @@ export interface TaskRule {
    */
   blockStatuses: TaskStatus[]
   enabled: boolean
-  /** The next eligible period or cron deadline. Null when there is no schedule. */
+  /** The next eligible time or cron deadline. Null when there is no schedule. */
   dueAt: string | null
   lastEnqueuedAt: string | null
   sortOrder: number

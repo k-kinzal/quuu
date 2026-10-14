@@ -16,6 +16,9 @@ Fields: `projectId`, `name`, `prompt`, `priority` (0-3), `agentOverrideId` (or `
 - `frequency` / `cron`: when it may enqueue again. Use `frequency` for daily/weekly/weekdays,
   `cron` (`"0 9 * * 1-5"`) for anything else; leave the other empty (`cron:""`,
   `frequency:"none"`).
+  Daily/weekday rules wait at least 24 hours and weekly rules at least 7 days after the
+  latest enqueue or human completion, whichever is later. Late approval starts a fresh
+  interval; missed intervals do not accumulate. Weekdays also skip local Saturday/Sunday.
 - `whenIdle: true`: only when the project has nothing queued or running.
 - `blockStatuses`: skip while a task from this rule is still in one of these states. Include
   unfinished states (`["queued","running","review","failed"]`) so copies do not pile up.
