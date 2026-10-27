@@ -9,7 +9,7 @@ const state = vi.hoisted(() => ({
   flush: vi.fn(),
   clearStorageData: vi.fn(),
   clearCache: vi.fn(),
-  permissions: vi.fn()
+  permissionHandler: undefined as ((contents: unknown, permission: string, callback: (allowed: boolean) => void) => void) | undefined
 }))
 
 vi.mock('electron', async () => {
@@ -34,12 +34,12 @@ vi.mock('electron', async () => {
   }
   return {
     BrowserWindow,
-    app: { isPackaged: true }, clipboard: { writeText: vi.fn() }, shell: { openExternal: vi.fn() },
+    app: { isPackaged: true }, clipboard: { writeText: vi.fn().mockResolvedValue(undefined) }, shell: { openExternal: vi.fn().mockResolvedValue(undefined) },
     Menu: { buildFromTemplate: () => ({ popup: vi.fn() }) },
     session: { fromPartition: (partition: string) => {
       state.partitions.push(partition)
       return {
-        setPermissionRequestHandler: state.permissions,
+        setPermissionRequestHandler: (handler: NonNullable<typeof state.permissionHandler>) => { state.permissionHandler = handler },
         clearStorageData: state.clearStorageData.mockImplementation(() => { state.cookies = []; return Promise.resolve() }),
         clearCache: state.clearCache.mockResolvedValue(undefined),
         cookies: {
@@ -76,8 +76,9 @@ describe('the sign-in the GitHub pages keep', () => {
     expect(state.partitions.every(partition => partition === 'persist:quuu-github')).toBe(true)
   })
 
-  it('allows a page to copy and refuses everything else it might ask for', () => {
-    const handler = state.permissions.mock.calls[0][0] as (contents: unknown, permission: string, callback: (allowed: boolean) => void) => void
+  it('allows a page to copy and refuses everything else it might ask for', async () => {
+    await githubWebStatus()
+    const handler = state.permissionHandler!
     const answer = vi.fn()
     handler(null, 'clipboard-sanitized-write', answer)
     handler(null, 'notifications', answer)

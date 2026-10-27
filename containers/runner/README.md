@@ -14,6 +14,11 @@ docker build -f containers/runner/Dockerfile -t quuu-runner:local .
 docker build -f containers/runner/Dockerfile.agents -t quuu-runner-agents:local .
 ```
 
+The base and build stages pin Node.js 24.22.1, which includes the
+CVE-2026-111497 Brotli decoder fix. Rebuild derived images and recreate existing
+Runner containers to apply it; changing the Dockerfile does not update a running
+container. Keep the existing persistent data and agent-session volumes.
+
 The first image includes Node.js, Git, GitHub CLI and the Runner entrypoint. The second
 adds Codex, Claude Code and Cursor CLI. Extend either image to install your project's
 compilers, package managers and system dependencies. The runtime user is `node`

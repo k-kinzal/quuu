@@ -2,19 +2,6 @@ import { resolve } from 'node:path'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
-/**
- * Vite 5's builtin-module list lacks `node:sqlite`, so it tries to resolve it
- * as `sqlite` and fails. Treat it as external explicitly.
- */
-const externalizeNodeSqlite = {
-  name: 'externalize-node-sqlite',
-  enforce: 'pre' as const,
-  resolveId(id: string) {
-    if (id === 'node:sqlite') return { id, external: true }
-    return null
-  }
-}
-
 /*
  * Tests run from one place (`npm test` covers the whole repo). Splitting the
  * config per workspace nudges `npm run check` toward "some of it passed".
@@ -24,7 +11,7 @@ const externalizeNodeSqlite = {
 const root = import.meta.dirname
 
 export default defineConfig({
-  plugins: [externalizeNodeSqlite, react()],
+  plugins: [react()],
   resolve: {
     alias: {
       '@design-system/react/layout-spec': resolve(root, 'packages/design-system/src/layoutSpec.ts'),
@@ -57,7 +44,5 @@ export default defineConfig({
      * is co-resident, so leave headroom for child processes and the OS.
      */
     maxWorkers: '25%',
-    minWorkers: 1,
-    server: { deps: { external: ['node:sqlite'] } }
   }
 })

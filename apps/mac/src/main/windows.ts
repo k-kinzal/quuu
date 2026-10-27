@@ -1,9 +1,8 @@
 import { app, BrowserWindow, shell, type BrowserWindowConstructorOptions } from 'electron'
-import { dirname, join } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { attachContextMenu } from './contextMenu.js'
 import { WINDOW_BUTTONS } from './windowGeometry.js'
-const __dirname = dirname(fileURLToPath(import.meta.url))
 export let mainWindow: BrowserWindow | null = null
 let isQuitting = false
 let keepRunning = () => true
@@ -57,7 +56,7 @@ export function createWindow(): BrowserWindow {
     show: false,
     ...(process.platform === 'darwin' ? macChrome : windowsChrome),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.cjs'),
+      preload: join(import.meta.dirname, '../preload/index.cjs'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
@@ -90,12 +89,12 @@ export function createWindow(): BrowserWindow {
   })
 
   const devUrl = process.env['ELECTRON_RENDERER_URL']
-  const expectedUrl = !app.isPackaged && devUrl ? new URL(devUrl).href : pathToFileURL(join(__dirname, '../renderer/index.html')).href
+  const expectedUrl = !app.isPackaged && devUrl ? new URL(devUrl).href : pathToFileURL(join(import.meta.dirname, '../renderer/index.html')).href
   trustedWindows.set(win, expectedUrl)
   if (!app.isPackaged && devUrl) {
     void win.loadURL(devUrl)
   } else {
-    void win.loadFile(join(__dirname, '../renderer/index.html'))
+    void win.loadFile(join(import.meta.dirname, '../renderer/index.html'))
   }
 
   win.on('close', (event) => {

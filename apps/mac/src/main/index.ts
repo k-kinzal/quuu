@@ -1,9 +1,8 @@
 import { deliverNotification } from './notifications/delivery.js'
 import { nativeNotificationLaunch, restoreNativeNotifications, showNativeNotification } from './desktop/notifications.js'
 import { app, BrowserWindow, nativeImage, nativeTheme } from 'electron'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { unlinkSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { EVENTS } from '../api/channels.js'
 import { userDataDir } from './appPaths.js'
 import { QuuuApp } from './bootstrap.js'
@@ -26,8 +25,6 @@ import { readTelemetryConfig } from './telemetry/config.js'
 import { observeApp, reportLaunch } from './telemetry/app.js'
 import { observeElectron, reportQuit } from './telemetry/electron.js'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
 let quuu: QuuuApp | null = null
 let servers: ServerController | null = null
 let updates: AppUpdates | null = null
@@ -39,7 +36,7 @@ let pendingNotification: { taskId?: string } | null = null
 
 const RESOURCES = app.isPackaged
   ? join(process.resourcesPath, 'build')
-  : join(__dirname, '../../build')
+  : join(import.meta.dirname, '../../build')
 
 // ---------------------------------------------------------------------------
 // Windows
@@ -169,9 +166,9 @@ if (!app.requestSingleInstanceLock()) {
     catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ENOENT') console.warn('Cannot remove stale connection information:', error) }
     configureWindows(() => quuu?.settings.getSettings().keepRunningInBackground ?? true)
     // The Mac distributes the iPhone UI via iCloud (so it can be fixed without plugging in a device)
-    quuu.setMobileWebRoot(mobileWebRoot(app.isPackaged, process.resourcesPath, __dirname))
+    quuu.setMobileWebRoot(mobileWebRoot(app.isPackaged, process.resourcesPath, import.meta.dirname))
     // QuuuAI, the project for operating Quuu itself, runs in the workspace that ships with the app
-    quuu.setBuiltInWorkspace(quuuWorkspaceDir(app.isPackaged, process.resourcesPath, __dirname))
+    quuu.setBuiltInWorkspace(quuuWorkspaceDir(app.isPackaged, process.resourcesPath, import.meta.dirname))
     quuu.setAppControls(appControls)
     wire(quuu)
     registerIpc(quuu)

@@ -24,7 +24,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
@@ -32,6 +32,9 @@ jobs:
 
       - name: Install Gitleaks for hook integration tests
         run: brew install gitleaks
+
+      - name: Runtime security
+        run: npm run check:runtime
 
       - name: Lint
         run: npm run lint
@@ -60,7 +63,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version-file: .node-version
           cache: npm
 
       # zig cc builds the native helpers (terminal host, process probe) for x64 and arm64
@@ -70,6 +73,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Runtime security
+        run: npm run check:runtime
 
       - name: Build
         run: npm run build

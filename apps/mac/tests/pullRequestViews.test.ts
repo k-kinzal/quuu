@@ -28,7 +28,7 @@ const electronState = vi.hoisted(() => ({
   partitions: [] as string[],
   flush: vi.fn().mockResolvedValue(undefined),
   template: [] as MenuItemConstructorOptions[],
-  popup: vi.fn(), openExternal: vi.fn().mockResolvedValue(undefined), copy: vi.fn()
+  popup: vi.fn(), openExternal: vi.fn().mockResolvedValue(undefined), copy: vi.fn().mockResolvedValue(undefined)
 }))
 
 vi.mock('electron', async () => {
@@ -163,7 +163,7 @@ describe('the embedded Pull Request view', () => {
     expect(electronState.views).toHaveLength(before)
   })
 
-  it('attaches a native browser menu to the PR contents and acts on the current page', () => {
+  it('attaches a native browser menu to the PR contents and acts on the current page', async () => {
     const target = owner()
     showPullRequestView(target.window, {
       id: 'menu-pr', url: 'https://github.com/openai/quuu/pull/42',
@@ -191,6 +191,14 @@ describe('the embedded Pull Request view', () => {
     expect(electronState.openExternal).toHaveBeenLastCalledWith(params.linkURL)
     choose('Copy Link')
     expect(electronState.copy).toHaveBeenLastCalledWith(params.linkURL)
+    const failure = new Error('Clipboard unavailable')
+    const log = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      electronState.copy.mockRejectedValueOnce(failure)
+      choose('Copy Link')
+      await Promise.resolve()
+      expect(log).toHaveBeenCalledWith('Could not copy link', failure)
+    } finally { log.mockRestore() }
     choose('Copy Image')
     expect(contents.copyImageAt).toHaveBeenLastCalledWith(25, 30)
     choose('Back')

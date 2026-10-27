@@ -24,7 +24,7 @@ try { numbers = JSON.parse(readFileSync(numbersPath, 'utf8')) as typeof numbers 
   if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
 }
 interface Schema {
-  type?: string
+  type?: string | string[]
   properties?: Record<string, Schema>
   required?: string[]
   items?: Schema
@@ -44,10 +44,15 @@ function message(name: string, fields: Array<{ key: string; type: string; repeat
   return name
 }
 function shape(schema: Schema, name: string): { type: string; shape: WireShape } {
+  // Zod 4.6 emits nullable primitives as a JSON Schema type array. Preserve the
+  // existing oneof wire representation used by already-paired clients.
+  if (Array.isArray(schema.type)) {
+    return shape({ anyOf: schema.type.map(type => ({ ...schema, type })) }, name)
+  }
   const variants = schema.anyOf ?? schema.oneOf
   if (variants) {
     const kinds = new Set(variants.map(item => item.type))
-    if (kinds.size === 1 && ['string', 'number', 'integer', 'boolean'].includes(variants[0].type ?? '')) {
+    if (kinds.size === 1 && typeof variants[0].type === 'string' && ['string', 'number', 'integer', 'boolean'].includes(variants[0].type)) {
       return shape({ type: variants[0].type, enum: variants.flatMap(item => item.enum ?? (item.const !== undefined ? [item.const] : [])) }, name)
     }
     const children = variants.map((variant, i) => shape(variant, `${name}Variant${i + 1}`))
@@ -81,7 +86,16 @@ for (const operation of operations()) {
   const sides = (['input', 'output'] as const).map(side => {
     const name = `${method}${side === 'input' ? 'Request' : 'Response'}`
     if (operation[side] instanceof z.ZodVoid) { message(name, []); return { kind: 'void' } satisfies WireShape }
-    const result = shape(z.toJSONSchema(operation[side], { unrepresentable: 'any', io: side === 'input' ? 'input' : 'output' }) as Schema, `${name}Value`)
+    const result = shape(z.toJSONSchema(operation[side], {
+      unrepresentable: 'any', io: side === 'input' ? 'input' : 'output',
+      override: ({ zodSchema, jsonSchema }) => {
+        // Intersections previously emitted allOf, represented on the wire as
+        // google.protobuf.Value. Zod's new merged form must not change that ABI.
+        if (zodSchema instanceof z.ZodIntersection) {
+          for (const key of Object.keys(jsonSchema)) delete jsonSchema[key]
+        }
+      }
+    }) as Schema, `${name}Value`)
     message(name, [{ key: 'value', type: result.type }])
     return result.shape
   })

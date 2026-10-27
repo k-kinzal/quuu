@@ -16,6 +16,6 @@
   },
   "dependencies": {
     "@design-system/react": "*",
-    "i18next": "^26.4.2"
+    "i18next": "^26.5.11"
   }
 }

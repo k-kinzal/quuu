@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version-file: .node-version
           cache: npm
 
       - name: Install dependencies
@@ -103,7 +103,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 26
+          node-version-file: .node-version
           cache: npm
 
       # zig cc builds the native helpers (terminal host, process probe) for x64 and arm64

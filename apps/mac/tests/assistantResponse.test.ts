@@ -15,7 +15,7 @@ import { makeAgent, makeProject, makeTask } from './helpers.js'
 let dir: string
 let app: QuuuApp
 let agentId: string
-let notify: ReturnType<typeof vi.fn>
+let notify: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'quuu-response-'))
   vi.stubEnv('QUUU_USER_DATA', dir)

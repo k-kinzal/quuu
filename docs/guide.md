@@ -126,6 +126,11 @@ the composer. Drafts remain available when returning from settings.
 
 ## Development
 
+Use Node.js 26.12.1 (pinned in `.node-version` and CI), or a patched Node.js 24
+release starting at 24.22.1. These releases include the CVE-2026-111497 Brotli
+decoder fix; updating npm packages alone does not update Node.js. See the
+[security update notes](security-updates.md) for runtime verification and remaining limits.
+
 ```sh
 brew install gitleaks # secret checks for Git commits and pushes
 npm install          # also enables the repository's Git hooks
@@ -134,7 +139,8 @@ npm run lint         # ESLint (type-aware)
 npm run typecheck    # type check
 npm test             # scheduler, parser, lifecycle, and restart tests
 npm run check:architecture # layer, public-entry, and circular-dependency checks
-npm run check        # lint + architecture check + typecheck + tests (run before finishing any work)
+npm run check:runtime # patched runtimes and Brotli smoke tests
+npm run check        # runtime security + lint + architecture + API compatibility + typecheck + tests
 npm run build        # native helpers + typecheck + bundle
 npm run build:native # the native helpers (macOS: xcrun; Windows: zig cc, x64 + arm64)
 npm run dist         # build the .app into apps/mac/release/
@@ -1146,7 +1152,8 @@ shown on the Mac. Operations that open dialogs or draw inside the window
 (`system.pickDirectory`, `report.show`, …) still need a person at the Mac; the
 [troubleshooting reference](../skills/quuu/references/troubleshooting.md) lists them.
 
-The CLI requires Node.js 22.12 or later. Commander handles subcommands, options,
+The standalone CLI requires a patched Node.js release: 22.23.4+, 24.22.1+, or
+26.12.1+ within those supported release lines. Commander handles subcommands, options,
 errors and `--help` / `-h` at every command level. Help reads only a generated
 operation-name catalog; it does not initialize gRPC, load schemas or contact Quuu.
 

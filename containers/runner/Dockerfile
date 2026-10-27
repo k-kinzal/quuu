@@ -1,4 +1,4 @@
-FROM node:24-bookworm-slim AS build
+FROM node:24.22.1-bookworm-slim AS build
 WORKDIR /src
 ENV ELECTRON_SKIP_BINARY_DOWNLOAD=1
 COPY package.json package-lock.json ./
@@ -10,7 +10,7 @@ COPY apps/mac/src/main apps/mac/src/main
 COPY apps/mac/runner.vite.config.ts apps/mac/runner.vite.config.ts
 RUN npx vite build --config apps/mac/runner.vite.config.ts
 
-FROM node:24-bookworm-slim AS base
+FROM node:24.22.1-bookworm-slim AS base
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates git openssh-client gh tini curl bash \
     && rm -rf /var/lib/apt/lists/* \

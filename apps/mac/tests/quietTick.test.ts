@@ -23,7 +23,7 @@ describe('automatic tick failures', () => {
   let db: ReturnType<typeof memoryDb>
   let runner: Runner
   let scheduler: Scheduler
-  let unhandled: ReturnType<typeof vi.fn>
+  let unhandled: ReturnType<typeof vi.fn<(...args: unknown[]) => void>>
 
   beforeEach(() => {
     vi.useFakeTimers()

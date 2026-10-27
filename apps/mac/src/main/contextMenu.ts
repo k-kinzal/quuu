@@ -29,7 +29,9 @@ export function attachContextMenu(
           if (browser && !isWebUrl(url)) return
           void shell.openExternal(url).catch((error: unknown) => console.error('Could not open browser link', error))
         },
-        copyLink: (url) => clipboard.writeText(url),
+        copyLink: (url) => {
+          void clipboard.writeText(url).catch((error: unknown) => console.error('Could not copy link', error))
+        },
         copyImage: () => { if (!contents.isDestroyed()) contents.copyImageAt(params.x, params.y) },
         inspect: () => { if (!contents.isDestroyed()) contents.inspectElement(params.x, params.y) }
       },

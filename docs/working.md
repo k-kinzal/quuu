@@ -67,15 +67,16 @@ those boundaries are in [architecture.md](architecture.md).
 command passing, not the feeling that the implementation is finished.
 
 ```sh
-npm run check     # lint + check:architecture + api:check + typecheck + test. Always before reporting done
+npm run check     # runtime security + lint + check:architecture + api:check + typecheck + test. Always before reporting done
 ```
 
 | Command | What it runs | When |
 |---------|--------------|------|
+| `npm run check:runtime` | Patched Node.js and Electron baseline, Brotli smoke tests | always |
 | `npm run lint` | ESLint (type-aware). A single warning fails | always |
 | `npm run typecheck` | `tsc --noEmit` (the node and web projects) | always |
 | `npm test` | Vitest. Scheduler, lifecycle, parsers, import, restart | always |
-| `npm run check` | lint, architecture, API generation/compatibility, typecheck, tests | **always, before reporting done** |
+| `npm run check` | runtime security, lint, architecture, API generation/compatibility, typecheck, tests | **always, before reporting done** |
 | `npm run storybook` | visual check of the design system | when you changed appearance |
 | `npm run build` | typecheck + bundle | when you touched the main process or build config |
 

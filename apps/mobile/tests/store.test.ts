@@ -96,6 +96,8 @@ async function boot(snap = snapshot()): Promise<void> {
 }
 
 beforeEach(async () => {
+  // Each test owns a separate fake device; newer jsdom exposes persistent storage.
+  localStorage.clear()
   await boot()
 })
 

@@ -136,10 +136,10 @@ export function desktopOperations(owner: BrowserWindow): DesktopOperations {
     openExternal: async (input) => {
       await openExternalLink(input)
     },
-    copy: (input) => {
+    copy: async (input) => {
       const text = input
 
-      clipboard.writeText(text)
+      await clipboard.writeText(text)
 
     },
     openPullRequest: (input) => {
