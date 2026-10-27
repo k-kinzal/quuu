@@ -48,6 +48,9 @@ Electron's asynchronous clipboard writes are awaited or handled at the native
 menu boundary. Main-process paths use `import.meta.dirname` to avoid collisions
 with electron-vite's CommonJS shims, and builds syntax-check the emitted main
 and preload entrypoints. The updated app was also launched against fixture data.
+The macOS signing hook preserves electron-builder's selected certificate hash;
+26.18's default path substitutes the display name and fails when renewed
+certificates share that name. Signing and signature verification remain enabled.
 
 Zod's nullable type arrays and merged intersections are normalized to preserve
 the existing Protobuf wire format. The schema and field-number registry remain

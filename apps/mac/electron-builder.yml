@@ -41,6 +41,8 @@ mac:
   # Notification Center resolves a bundle ID to one app, even when another copy is running.
   # Local builds must not send clicks to an installed GitHub Release in /Applications.
   appId: net.kinzal.quuu.local
+  # Preserve the selected certificate hash when renewed certificates share a name.
+  sign: scripts/sign-mac.mjs
   category: public.app-category.developer-tools
   icon: build/icon.icns
   extraResources:

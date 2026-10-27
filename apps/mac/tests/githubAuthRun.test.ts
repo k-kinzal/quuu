@@ -135,6 +135,8 @@ describe('detached GitHub App authentication', () => {
     expect(existsSync(authDir)).toBe(false)
   })
 
+  // Startup, refresh, and detached exit each have bounded waits. Allow their
+  // combined duration when the full suite competes for CPU.
   it('starts authenticated, refreshes after Quuu quits, and cleans up with the agent exit code', async () => {
     const run = await start(waitingAgent)
     await waitFor(() => expect(existsSync(join(workdir, 'started'))).toBe(true))
@@ -153,7 +155,7 @@ describe('detached GitHub App authentication', () => {
     await waitFor(() => expect(existsSync(runExitPath(run.id))).toBe(true))
     expect(readFileSync(runExitPath(run.id), 'utf8')).toBe('7')
     expect(existsSync(authDir)).toBe(false)
-  })
+  }, 20_000)
 
   it('leaves nothing behind when the supervisor is killed outright, as every stop on Windows is', async () => {
     await start(waitingAgent)
