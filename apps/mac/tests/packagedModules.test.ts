@@ -49,3 +49,32 @@ it('checks dependencies loaded only by a nested main-process chunk on the host p
   })
   expect(missingModules(target)).toEqual(['missing-helper (needed by @vendor/updater)'])
 })
+
+it('ignores JSDoc imports and import examples inside strings retained by the bundler', async () => {
+  const target = await archive({
+    'out/main/index.js': `
+      /** @type {import('mdast').Root} */
+      // import { Node } from 'unist'
+      const example = "import('example-only')"
+      const help = 'from "You"'
+      import 'zod'
+    `,
+    'node_modules/zod/package.json': manifest()
+  })
+  expect(missingModules(target)).toEqual([])
+})
+
+it('checks executable imports with comments, re-exports, and CommonJS calls', async () => {
+  const target = await archive({
+    'out/main/index.js': `
+      export { value } from 'missing-export'
+      import(/* lazy */ 'missing-dynamic')
+      require(/* runtime */ 'missing-commonjs')
+    `
+  })
+  expect(missingModules(target)).toEqual([
+    'missing-commonjs (needed by out/main/index.js)',
+    'missing-dynamic (needed by out/main/index.js)',
+    'missing-export (needed by out/main/index.js)'
+  ])
+})

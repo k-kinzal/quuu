@@ -15,10 +15,26 @@
 import { extractFile, listPackage } from '@electron/asar'
 import { builtinModules } from 'node:module'
 import { join, normalize, posix } from 'node:path'
+import ts from 'typescript'
 
-const specifier = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*)["']([^"']+)["']/g
 const bare = /^((?:@[\w-][\w.-]*\/)?[\w-][\w.-]*)(?:\/[\w./-]+)?$/
 const runtime = new Set(['electron', ...builtinModules])
+
+function importedModules(file, source) {
+  // Bundlers retain JSDoc imports and strings containing examples. Only syntax
+  // nodes describe executable imports; matching their text invents dependencies.
+  const modules = []
+  const visit = node => {
+    let target
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) target = node.moduleSpecifier
+    if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+      ts.isIdentifier(node.expression) && node.expression.text === 'require')) target = node.arguments[0]
+    if (target && ts.isStringLiteralLike(target)) modules.push(target.text)
+    ts.forEachChild(node, visit)
+  }
+  visit(ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS))
+  return modules
+}
 
 export function archivePath(context) {
   return context.electronPlatformName === 'darwin'
@@ -53,7 +69,7 @@ export function missingModules(archive) {
   }
   for (const file of files) {
     if (!/^\/out\/(main|preload)\/.*\.(c|m)?js$/.test(file)) continue
-    for (const [, target] of read(file).matchAll(specifier)) {
+    for (const target of importedModules(file, read(file))) {
       const name = bare.exec(target)?.[1]
       if (name) visit(posix.dirname(file), name, file.slice(1))
     }
