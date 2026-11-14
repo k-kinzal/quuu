@@ -18,6 +18,7 @@ import { normalizeRepository, projectRepository } from '../src/main/runners/repo
 import { configuredRunnerLabels } from '../src/main/runners/labels.js'
 import { issueToken } from '../src/main/platform/githubAuthRuntime.mjs'
 import { memoryDb, makeAgent, makeProject, makeTask } from './helpers.js'
+import { OUTPUT_MAX_BYTES } from '../src/main/platform/boundedOutput.mjs'
 
 vi.mock('../src/main/platform/githubAuthRuntime.mjs', async importOriginal => ({
   ...await importOriginal<typeof import('../src/main/platform/githubAuthRuntime.mjs')>(),
@@ -77,6 +78,19 @@ async function until(worker: RunnerWorker, condition: () => boolean): Promise<vo
   while (!condition() && Date.now() < deadline) { await worker.tick(); await delay(60) }
   expect(condition()).toBe(true)
 }
+
+it('bounds remote stdout on both computers and releases the worker receipt after acknowledgement', async () => {
+  const { worker } = await pair()
+  const { projectId } = project('printf startup; head -c 8388608 /dev/zero; printf final-result')
+  const taskId = makeTask(db, projectId, 'Large output')
+  const claim = scheduler.claimNext()!
+  await until(worker, () => repo.getTask(db, taskId)?.status === 'review')
+  const log = readFileSync(claim.run.stdoutLogPath)
+  expect(log.length).toBeLessThanOrEqual(OUTPUT_MAX_BYTES)
+  expect(log.toString()).toContain('startup')
+  expect(log.toString()).toMatch(/final-result$/)
+  expect(existsSync(join(worker.root, 'jobs', claim.run.id, 'stdout.log'))).toBe(false)
+}, 20_000)
 
 it('pins the controller before sending secrets and consumes a PIN only once', async () => {
   const paired = await pair()

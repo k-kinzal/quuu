@@ -141,6 +141,8 @@ describe('detached GitHub App authentication', () => {
     const run = await start(waitingAgent)
     await waitFor(() => expect(existsSync(join(workdir, 'started'))).toBe(true))
     expect(hosts()).toContain('quuu-invalid-1')
+    // Execution output is published in bounded snapshots, independently of the agent's writes.
+    await waitFor(() => expect(readFileSync(run.stdoutLogPath, 'utf8')).toContain('GH_REPO=acme/query-kit'))
     const log = readFileSync(run.stdoutLogPath, 'utf8')
     expect(log).toContain(`GH_CONFIG_DIR=${join(authDir, 'config')}`)
     expect(log).toContain('GH_REPO=acme/query-kit')

@@ -6,6 +6,7 @@ import { basename, join, posix } from 'node:path'
 import type { Server } from 'node:https'
 import { setTimeout as delay } from 'node:timers/promises'
 import { userDataDir, runLogPath } from '../appPaths.js'
+import { BoundedOutput, OUTPUT_PREFIX, outputSnapshot, writeOutputSnapshot } from '../platform/boundedOutput.mjs'
 import type { Agent } from '../agents/types.js'
 import type { Db } from '../db/database.js'
 import { inTransaction } from '../db/database.js'
@@ -317,7 +318,7 @@ export class RunnerOperations extends EventEmitter {
         const job = this.job(update.id)
         if (!job || job.runnerId !== runner.id) continue
         if (job.status !== 'finished') {
-          job.logOffset = appendChunk(job.logPath, job.logOffset, update.logOffset, update.log)
+          job.logOffset = receiveOutput(job.logPath, job.logOffset, update.logOffset, update.log, update.logSnapshot ?? false)
           if (update.session) {
             job.sessionPath ??= `${job.logPath}.session.jsonl`
             job.sessionOffset = appendChunk(job.sessionPath, job.sessionOffset, update.sessionOffset, update.session)
@@ -389,5 +390,20 @@ function appendChunk(path: string, offset: number, incoming: number, encoded: st
   const data = Buffer.from(encoded, 'base64')
   const fd = openSync(path, existsSync(path) ? 'r+' : 'w', 0o600)
   try { writeSync(fd, data, 0, data.length, offset) } finally { closeSync(fd) }
+  return offset + data.length
+}
+
+/** Console receipts are bounded even when an older worker still sends its full byte stream. */
+function receiveOutput(path: string, offset: number, incoming: number, encoded: string, snapshot: boolean): number {
+  if (incoming !== offset || !encoded) return offset
+  mkdirSync(join(path, '..'), { recursive: true })
+  const data = Buffer.from(encoded, 'base64')
+  if (snapshot) writeOutputSnapshot(path, data)
+  else {
+    const output = new BoundedOutput()
+    if (existsSync(path)) output.append(outputSnapshot(path).subarray(Buffer.byteLength(OUTPUT_PREFIX)))
+    output.append(data)
+    writeOutputSnapshot(path, output.snapshot())
+  }
   return offset + data.length
 }

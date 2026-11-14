@@ -3,6 +3,8 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { userDataDir } from '../appPaths.js'
 import windowsLaunchSource from './windowsLaunch.mjs?raw'
+import outputCaptureSource from './outputCapture.mjs?raw'
+import boundedOutputSource from './boundedOutput.mjs?raw'
 
 /**
  * The process that wraps a detached launch (an agent run, a hook, a report generator).
@@ -40,4 +42,17 @@ export function windowsLauncherPath(): string {
     writeFileSync(path, source, 'utf8')
   }
   return path
+}
+
+/** Each detached collector has bounded memory/disk and outlives the desktop consuming it. */
+export function capturedLaunch(launch: string[], output: string, root = userDataDir()): DetachedLaunch {
+  const hash = createHash('sha256').update(outputCaptureSource + boundedOutputSource + windowsLaunchSource).digest('hex').slice(0, 16)
+  const dir = join(root, 'bin', `output-${hash}`)
+  mkdirSync(dir, { recursive: true, mode: 0o700 })
+  for (const [name, source] of Object.entries({ 'capture.mjs': `${outputCaptureSource}\ncapture()\n`,
+    'boundedOutput.mjs': boundedOutputSource, 'windowsLaunch.mjs': windowsLaunchSource })) {
+    const path = join(dir, name)
+    if (!existsSync(path)) writeFileSync(path, source, { mode: 0o600 })
+  }
+  return { command: process.execPath, args: [join(dir, 'capture.mjs'), output, ...launch], env: { ELECTRON_RUN_AS_NODE: '1' } }
 }

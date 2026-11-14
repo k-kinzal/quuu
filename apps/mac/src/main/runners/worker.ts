@@ -7,6 +7,9 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { adapterFor } from '../agent-adapters/registry.js'
 import { isStoreParser } from '../agent-adapters/types.js'
 import { killProcessGroup, readLogTail } from '../platform/runProcess.js'
+import { capturedLaunch } from '../platform/detachedLaunch.js'
+import { isOutputSnapshot } from '../platform/runOutput.js'
+import { outputSnapshot } from '../platform/boundedOutput.mjs'
 import { resolveLogPath } from '../session/logAdapters.js'
 import { pinnedRequest } from './tls.js'
 import { configuredRunnerLabels } from './labels.js'
@@ -59,7 +62,9 @@ export class RunnerWorker {
   }
   async tick(): Promise<void> {
     if (Date.now() - this.checkedAt > 60_000) { this.agents = await detectRunnerAgents(this.root); this.checkedAt = Date.now() }
-    const records = this.records().filter(record => !record.acknowledged)
+    const all = this.records()
+    for (const record of all) if (record.acknowledged) this.releaseOutput(record.spec.id)
+    const records = all.filter(record => !record.acknowledged)
     // Two bounded results plus log chunks fit under the listener's request limit.
     const batch = records.slice(this.cursor, this.cursor + 2)
     this.cursor = this.cursor + 2 >= records.length ? 0 : this.cursor + 2
@@ -90,7 +95,10 @@ export class RunnerWorker {
       record.sessionOffset = acknowledgement.sessionOffset
       record.acknowledged = acknowledgement.finished
       this.save(record)
-      if (record.acknowledged) rmSync(jobAuthDir(this.root, record.spec.id), { recursive: true, force: true })
+      if (record.acknowledged) {
+        rmSync(jobAuthDir(this.root, record.spec.id), { recursive: true, force: true })
+        this.releaseOutput(record.spec.id)
+      }
     }
     let active = records.filter(record => !existsSync(join(this.root, 'jobs', record.spec.id, 'result.json'))).length
     const preparing = new Set(records.filter(record => !existsSync(join(this.root, 'jobs', record.spec.id, 'result.json')))
@@ -113,6 +121,13 @@ export class RunnerWorker {
     })
   }
   private save(record: WorkerRecord): void { atomicJson(join(this.root, 'jobs', record.spec.id, 'record.json'), record) }
+  private releaseOutput(id: string): void {
+    if (!safeId(id)) return
+    for (const name of ['stdout.log', 'stdout.log.tmp']) {
+      const path = join(this.root, 'jobs', id, name)
+      if (existsSync(path)) rmSync(path, { force: true })
+    }
+  }
   private launch(spec: RemoteJobSpec, canceled = false): void {
     if (!safeId(spec.id) || !safeId(spec.taskId) || spec.workspace.runnerId !== this.connection.id) throw new Error('Invalid Runner job identity')
     const dir = join(this.root, 'jobs', spec.id)
@@ -126,15 +141,15 @@ export class RunnerWorker {
       ...(fingerprint ? { authentication: { fingerprint } } : {}) })
     atomicJson(join(dir, 'spec.json'), spec)
     if (canceled) { atomicJson(join(dir, 'result.json'), { ...this.failed(spec, ''), canceled: true }); return }
-    const fd = openSync(join(dir, 'stdout.log'), 'a', 0o600)
-    try {
-      const child = spawn(process.execPath, [this.entry, 'execute', this.root, spec.id], {
-        detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, ELECTRON_RUN_AS_NODE: undefined }
+    {
+      const launch = capturedLaunch([process.execPath, this.entry, 'execute', this.root, spec.id], join(dir, 'stdout.log'), this.root)
+      const child = spawn(launch.command, launch.args, {
+        detached: true, stdio: 'ignore', env: { ...process.env, ...launch.env, QUUU_EXIT_FILE: undefined, QUUU_HOOK_PID_FILE: undefined }
       })
       child.once('error', error => atomicJson(join(dir, 'result.json'), this.failed(spec, error.message)))
-      if (child.pid) recordProcess(join(dir, 'pid'), child.pid)
+      if (child.pid) recordProcess(join(dir, 'capture-pid'), child.pid)
       child.unref()
-    } finally { closeSync(fd) }
+    }
   }
   private failed(spec: RemoteJobSpec, error: string): RemoteResult {
     return { started: false, exitCode: null, canceled: false, timedOut: false, sessionId: spec.sessionId, error }
@@ -148,16 +163,19 @@ export class RunnerWorker {
         claimed: new Set(this.records().filter(other => other.spec.taskId !== spec.taskId).map(other => other.sessionId)) }) ?? record.sessionId
     }
     const source = spec.adapter === 'stdout' || isStoreParser(adapter.createParser()) ? null : resolveLogPath(spec.adapter, spec.workspace.cwd, record.sessionId)
-    const log = readChunk(stdout, record.logOffset), session = source ? readChunk(source, record.sessionOffset) : { data: '', end: true }
+    const snapshot = isOutputSnapshot(stdout)
+    const log = snapshot ? { data: outputSnapshot(stdout).toString('base64'), end: true } : readChunk(stdout, record.logOffset)
+    const session = source ? readChunk(source, record.sessionOffset) : { data: '', end: true }
     const resultPath = join(dir, 'result.json')
     const pid = recordedProcess(join(dir, 'pid'))
-    if (!existsSync(resultPath) && !pid) {
+    const collector = recordedProcess(join(dir, 'capture-pid'))
+    if (!existsSync(resultPath) && !pid && !collector) {
       const child = recordedProcess(join(dir, 'child-pid'))
       if (child) killProcessGroup(child, 'SIGKILL')
       atomicJson(resultPath, { ...this.failed(spec, 'Runner execution was interrupted; the instruction was not replayed'),
         started: existsSync(join(dir, 'child-pid')) })
     }
-    const result = existsSync(resultPath) && log.end && session.end
+    const result = existsSync(resultPath) && !pid && !collector && log.end && session.end
       ? { ...JSON.parse(readFileSync(resultPath, 'utf8')) as RemoteResult, sessionId: record.sessionId } : undefined
     if (result && record.authentication && !record.authentication.observed) {
       if (result.started && !result.error) {
@@ -170,13 +188,15 @@ export class RunnerWorker {
       record.authentication.observed = true
       this.save(record)
     }
-    return { id: spec.id, logOffset: record.logOffset, log: log.data, sessionOffset: record.sessionOffset,
+    return { id: spec.id, logOffset: record.logOffset, log: log.data, ...(snapshot ? { logSnapshot: true } : {}), sessionOffset: record.sessionOffset,
       session: session.data, sessionId: record.sessionId, ...(result ? { result } : {}) }
   }
   private cancel(id: string): void {
     if (!safeId(id)) return
     const dir = join(this.root, 'jobs', id)
     const pid = recordedProcess(join(dir, 'pid')), child = recordedProcess(join(dir, 'child-pid'))
+    const collector = recordedProcess(join(dir, 'capture-pid'))
+    if (collector) killProcessGroup(collector, 'SIGTERM')
     if (pid) killProcessGroup(pid, 'SIGTERM')
     if (child) {
       killProcessGroup(child, 'SIGTERM')

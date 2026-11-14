@@ -6,7 +6,7 @@ import { afterCommit, inTransaction } from '../db/database.js'
 import { recordExecutionState } from '../tasks/execution.js'
 
 import { EventEmitter } from 'node:events'
-import { closeSync, existsSync, openSync, writeSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { delimiter } from 'node:path'
 import type { LogAdapter } from '../agents/cliAdapter.js'
 import type { Agent } from '../agents/types.js'
@@ -16,7 +16,7 @@ import * as repo from '../db/repo.js'
 import { t } from '../i18n/index.js'
 import { cleanupGitHubAuth, prepareGitHubAuthEnvironment, sweepGitHubAuth } from '../platform/githubAuth.js'
 import { clearExitFile, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
-import { detachedLaunch } from '../platform/detachedLaunch.js'
+import { capturedLaunch } from '../platform/detachedLaunch.js'
 import { withPath } from '../platform/processEnv.js'
 import { resolveLoginPath } from '../platform/shellEnv.js'
 import { quuuBinDir } from '../projects/builtIn.js'
@@ -47,21 +47,6 @@ const KILL_GRACE_MS = 5000
  */
 const ADOPT_SESSION_POLL_MS = 500
 const ADOPT_SESSION_GIVEUP_MS = 2 * 60 * 1000
-
-/**
- * What the sh wrapper around the agent does.
- *
- * 1. Leave the exit code in a file - a run that finishes while Quuu is down can still be
- *    settled on the next launch (restarting the app must not stop agents)
- * 2. Exit with that same code - while Quuu is alive it is picked up from `exit` as before
- *
- * The command and arguments are passed through `"$@"`, so the shell never interprets them
- * (none of the quoting accidents of `shell: true`).
- * Defer handled signals until the foreground child exits, keeping the recorded
- * process group alive while the auth supervisor finishes cancellation/cleanup.
- */
-const WRAPPER =
-  'trap ":" TERM INT HUP; "$@"; __quuu_code=$?; printf %s "$__quuu_code" > "$QUUU_EXIT_FILE" 2>/dev/null; exit $__quuu_code'
 
 export interface StartParams {
   task: Task
@@ -109,7 +94,7 @@ interface Live {
  * It launches and classifies the exit result, then hands that to Scheduler via `finished`.
  *
  * A launched agent is **not tied to Quuu's lifetime**. It runs in a detached process group, its
- * output goes straight to a log file's fd, and its exit code is left in a file. Quit Quuu and
+ * output goes through an independent bounded collector, and its exit code is left in a file. Quit Quuu and
  * start it again and the agent keeps running; Scheduler.reconcile() picks the result up.
  */
 export class Runner extends EventEmitter {
@@ -325,48 +310,22 @@ export class Runner extends EventEmitter {
     }
     clearExitFile(exitFile)
 
-    // Write output straight to the log file instead of through a pipe.
-    // With a pipe the reader disappears the moment Quuu exits and the agent dies of EPIPE.
-    let logFd: number
-    try {
-      logFd = openSync(stdoutLog, 'a')
-    } catch (err) {
-      cleanupGitHubAuth(githubAuthDir)
-      this.fail(run, 'spawn', err instanceof Error ? err.message : String(err))
-      return repo.getRun(this.db, runId)!
-    }
-    try {
-      writeSync(
-        logFd,
-        `# Quuu run ${runId}\n# ${nowIso()}\n# cwd: ${run.cwd}\n# cmd: ${run.command} ${args
-          .map(quoteForDisplay)
-          .join(' ')}\n\n`
-      )
-    } catch {
-      // Keep running even if the header could not be written
-    }
-
     let child: ChildProcess
     try {
-      const wrapped = detachedLaunch(WRAPPER, 'Quuu', launch)
+      const wrapped = capturedLaunch(launch, stdoutLog)
       child = spawn(wrapped.command, wrapped.args, {
         cwd: run.cwd,
         env: { ...env, ...wrapped.env },
-        stdio: ['ignore', logFd, logFd],
-        // Its own process group, so a signal that kills Quuu (a terminal Ctrl-C, say)
-        // does not reach the agent.
+        stdio: 'ignore',
         detached: true,
         shell: false,
         windowsHide: true
       })
     } catch (err) {
-      closeSync(logFd)
       cleanupGitHubAuth(githubAuthDir)
       this.fail(run, 'spawn', err instanceof Error ? err.message : String(err))
       return repo.getRun(this.db, runId)!
     }
-    // The child holds its own copy, so the parent's fd can be closed (writing continues after the parent is gone)
-    closeSync(logFd)
 
     const live: Live = {
       child,
@@ -386,14 +345,10 @@ export class Runner extends EventEmitter {
     }
 
     child.on('error', (err) => {
-      // A failure to launch lands here. Settling it is left to 'exit'.
-      try {
-        const fd = openSync(stdoutLog, 'a')
-        writeSync(fd, `\n[spawn error] ${err.message}\n`)
-        closeSync(fd)
-      } catch {
-        // Keep classifying even if it cannot be written to the log
-      }
+      // A collector that never spawned has no exit event or receipt.
+      this.live.delete(runId)
+      cleanupGitHubAuth(githubAuthDir)
+      if (!this.stopped) this.fail(run, 'spawn', err.message)
     })
 
     if (agent.timeoutSeconds > 0) {
@@ -665,8 +620,8 @@ export class Runner extends EventEmitter {
  * On app exit. Running agents are **let go, not killed**.
    *
  * Quuu is rebuilt and restarted constantly. If agents went down with it every time, "queue it and
- * forget it" would not hold. Children are launched detached with their output wired straight to a
- * log file, and the exit code is left in a file, so they keep running once Quuu is gone.
+ * forget it" would not hold. Children are launched detached with an independent bounded output
+ * collector, and the exit code is left in a file, so they keep running once Quuu is gone.
  * The next launch has `Scheduler.reconcile()` pick them back up.
    *
  * To stop an agent, use cancel rather than quitting the app.
@@ -682,8 +637,4 @@ export class Runner extends EventEmitter {
     }
     this.live.clear()
   }
-}
-
-function quoteForDisplay(arg: string): string {
-  return /[\s"'$`\\]/.test(arg) ? JSON.stringify(arg) : arg
 }

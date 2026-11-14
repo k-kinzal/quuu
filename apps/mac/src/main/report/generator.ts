@@ -1,17 +1,5 @@
 import { spawn } from 'node:child_process'
-import { closeSync, openSync, writeSync } from 'node:fs'
-import { detachedLaunch } from '../platform/detachedLaunch.js'
-import { nowIso } from '../util.js'
-
-/**
- * What the sh wrapper around the report generator does.
- *
- * The same shape a task run uses (`execution/runner.ts`): leave the exit code in a file, then
- * exit with it. A report can take longer than the gap between two Quuu restarts, and a
- * generation that ends while the app is gone still has to be settled on the next launch.
- */
-const WRAPPER =
-  '"$@"; __quuu_code=$?; printf %s "$__quuu_code" > "$QUUU_EXIT_FILE" 2>/dev/null; exit $__quuu_code'
+import { capturedLaunch } from '../platform/detachedLaunch.js'
 
 export interface ReportLaunch {
   command: string
@@ -23,37 +11,18 @@ export interface ReportLaunch {
   exitPath: string
 }
 
-/**
- * Start the generator and return its pid.
- *
- * Detached, with output wired straight to the log file's fd — the same two properties that keep
- * a task's agent alive across a restart. A report is not worth losing a run over, but a
- * generator killed halfway leaves a half-written page, and half a report reads like a whole one.
- */
+/** A bounded collector owns output independently of the desktop's lifetime. */
 export function spawnReport(launch: ReportLaunch): number {
-  const fd = openSync(launch.log, 'a')
-  try {
-    writeSync(fd, `# Quuu report\n# ${nowIso()}\n# cwd: ${launch.cwd}\n# cmd: ${launch.command}\n\n`)
-  } catch {
-    // Keep going even if the header could not be written
-  }
-  try {
-    const wrapped = detachedLaunch(WRAPPER, 'Quuu', [launch.command, ...launch.args])
-    const child = spawn(wrapped.command, wrapped.args, {
-      cwd: launch.cwd,
-      env: { ...launch.env, ...wrapped.env },
-      stdio: ['ignore', fd, fd],
-      detached: true,
-      shell: false,
-      windowsHide: true
-    })
-    child.unref()
-    if (child.pid === undefined) throw new Error('the report generator did not start')
-    return child.pid
-  } finally {
-    // The child holds its own copy, so writing continues after this fd is gone
-    closeSync(fd)
-  }
+  const wrapped = capturedLaunch([launch.command, ...launch.args], launch.log)
+  const child = spawn(wrapped.command, wrapped.args, {
+    cwd: launch.cwd,
+    env: { ...launch.env, QUUU_EXIT_FILE: launch.exitPath, ...wrapped.env },
+    stdio: 'ignore', detached: true, shell: false, windowsHide: true
+  })
+  child.on('error', error => { console.error('Report collector could not start', error) })
+  child.unref()
+  if (child.pid === undefined) throw new Error('the report generator did not start')
+  return child.pid
 }
 
 /** What can be observed about a generation from outside it. */

@@ -81,6 +81,8 @@ export interface RunnerUpdate {
   id: string
   logOffset: number
   log: string
+  /** Bounded replacement receipt; old workers still send append-only chunks. */
+  logSnapshot?: boolean
   sessionOffset: number
   session: string
   sessionId: string

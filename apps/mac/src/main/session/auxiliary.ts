@@ -9,7 +9,7 @@ import type { SessionMessage } from './types.js'
 export function auxiliaryMessages(adapter: LogAdapter | null, cwd: string, sessionId: string, stdout: string, mirroredPath?: string | null): SessionMessage[] {
   if (!adapter || adapter === 'stdout') return []
   const parser = adapterFor(adapter).createParser()
-  // Store-backed providers cannot be tailed; their full stdout remains available in the log.
+  // Store-backed conversations are read through the durable session index instead.
   if (isStoreParser(parser)) return []
   const path = mirroredPath === undefined ? resolveLogPath(adapter, cwd, sessionId) : mirroredPath
   parser.pushLines((path ? readLogTail(path) : stdout).split('\n'))

@@ -272,7 +272,7 @@ redrawn**, `npm run dist` carries none of those requirements.
 ### App restarts and agents
 
 Agents are not bound to Quuu's lifetime. They run in their own process groups, write
-output straight to log files, and leave their exit codes in `logs/<runId>.exit`.
+output to an independent bounded collector, and leave their exit codes in `logs/<runId>.exit`.
 Therefore **the app may be killed, rebuilt, and relaunched even while runs are in
 flight**. On launch it re-adopts whatever is running, and settles whatever finished in
 its absence from the exit codes.
@@ -676,7 +676,7 @@ Session ingestion is owned by `main/session/index.ts` for the app's lifetime.
 It parses appended JSONL in bounded read/write batches, yields between batches,
 and stores messages and images in SQLite. Completed message bodies and image
 bytes leave parser memory after each batch; late tool results retrieve their calls
-from the index. Raw stdout keeps only its unfinished page. Changed Cursor stores
+from the index. Runtime stdout is a bounded snapshot; it never backfills a full console stream into SQLite. Changed Cursor stores
 are re-read.
 Windows subscribe to the index and hold their own bounded page range. A first
 backfill or a log changed while the app was closed shows a tail preview first;
@@ -956,7 +956,30 @@ failure is logged and does not interrupt tasks or create recursive app popups.
 `~/Library/Application Support/taskd/` (Windows: `%APPDATA%\taskd\`)
 
 - `taskd.db` — SQLite (WAL). Tasks, run history, agent definitions, projects
-- `logs/<runId>.log` — stdout / stderr of each run
+- `logs/<runId>.log` — temporary, bounded execution receipt; removed after settlement and conversation capture
+
+Execution output is not a diagnostic archive. Each detached collector keeps only the first
+64 KiB (startup/session identity) and last 64 KiB (exit classification), plus a fixed marker
+when intermediate output is omitted. It publishes complete snapshots at most four times a
+second. An atomic replacement temporarily needs one additional snapshot, so disk usage per
+collector is at most about 257 KiB, independent of output volume or run duration. The collector
+continues while Quuu is closed, including through app rebuilds. Exit receipts are written only
+after the final snapshot.
+
+On startup and every five seconds, Quuu removes settled task, hook and report receipts after
+preserving their conversation identity and available chat. Existing saved conversations are
+not replaced or erased when legacy logs are collected. Native CLI transcripts and structured
+Runner mirrors remain conversation sources and are never treated as runtime output. A
+stdout-only integration keeps a bounded conversation snapshot, with omitted output marked;
+a native integration's temporary console preview is not archived as another conversation.
+Orphaned receipts are collected after a five-minute launch grace period. Active processes
+started by an older build keep their old output mechanism until they finish; they are never
+interrupted or unlinked during migration. New runs use the bound immediately.
+
+Diagnostics use the existing opt-in OpenTelemetry errors and run outcomes, without exporting
+raw agent output or retaining local stdout for later investigation. This does not enable OTel
+or change the user's export settings. Reports use saved conversation history when a provider
+transcript is unavailable, rather than depending on runtime output files.
 
 The location and file names keep the old name (taskd). Moving them when the public name
 changed to Quuu would have orphaned the existing tasks and run history, so they were
@@ -1309,8 +1332,8 @@ A transition to the same state does not fire again.
 
 The chat shows hook status, literal instructions and output. Supported stream-based
 AI logs use the existing conversation renderer; commands and other logs show their
-raw output. The preview is bounded to the latest 64 KiB; Open full log opens the
-saved output. Stop and Run again are explicit actions. Settings retains the latest
+bounded execution output while it is available. Temporary output is collected after
+settlement; native AI conversations remain in the durable conversation index. Stop and Run again are explicit actions. Settings retains the latest
 100 executions, including deleted tasks. The `hooks.list`, `hooks.log`, `hooks.resolve`,
 `hooks.cancel`, and `hooks.retry` operations are also available through CLI and MCP.
 

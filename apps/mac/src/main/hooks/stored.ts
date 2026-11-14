@@ -9,6 +9,7 @@ export interface StoredHookRun extends HookRun {
   exitPath: string
   authDir: string | null
   sessionId: string
+  sessionLogPath?: string
   logAdapter: LogAdapter | null
   limitPatterns: string[]
 }

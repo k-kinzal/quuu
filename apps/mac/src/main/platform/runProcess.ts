@@ -1,6 +1,7 @@
 import { spawn } from 'node:child_process'
 import { closeSync, openSync, readFileSync, readSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
+import { OUTPUT_PREFIX } from './boundedOutput.mjs'
 
 /**
  * The plumbing for handling Runs across app restarts.
@@ -9,7 +10,7 @@ import { join } from 'node:path'
  * must not stop an agent. To that end, agents are launched
  *
  *   - detached (their own process group)
- *   - stdout/stderr wired straight to the log file's fd, not a pipe
+ *   - stdout/stderr drained by an independent bounded collector
  *   - exit code written to a file by the wrapper sh
  *
  * What lives here are the tools to read and write that, and to stop it when needed.
@@ -73,7 +74,7 @@ function killProcessTree(pid: number): void {
 /**
  * Read the tail of a run log.
  *
- * The child writes output straight to the file (the parent holds no pipe), so
+ * The detached collector publishes bounded output (the desktop holds no pipe), so
  * the tail used for classification is read out from here at settle time.
  */
 export function readLogTail(path: string, limit = TAIL_LIMIT): string {
@@ -86,7 +87,8 @@ export function readLogTail(path: string, limit = TAIL_LIMIT): string {
     fd = openSync(path, 'r')
     const buf = Buffer.allocUnsafe(length)
     const read = readSync(fd, buf, 0, length, start)
-    return buf.subarray(0, read).toString('utf8')
+    const text = buf.subarray(0, read).toString('utf8')
+    return start === 0 && text.startsWith(OUTPUT_PREFIX) ? text.slice(OUTPUT_PREFIX.length) : text
   } catch {
     // A missing/unreadable log is not a failure
     return ''

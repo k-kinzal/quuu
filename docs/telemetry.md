@@ -140,6 +140,10 @@ is retained for the next successful status read and the log remains available.
 | `quuu.operation.duration` (histogram, s) | `quuu.operation`, `quuu.caller.kind`, `quuu.caller.agent_run`, `error.type` |
 | `quuu.run.duration` (histogram, s) | `quuu.agent.adapter`, `quuu.run.status`, `quuu.run.kind` |
 
+Local execution stdout is only a bounded, temporary receipt and is removed after settlement.
+Use the run spans and error events above for later diagnosis. Raw output is not exported to
+replace those files, and this storage policy never turns telemetry on automatically.
+
 ## Reading it
 
 Fixing bugs:

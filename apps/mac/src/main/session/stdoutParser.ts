@@ -1,6 +1,7 @@
 import { MemoryMessages, type MessageBuffer } from './messageBuffer.js'
 import type { PushResult } from '../agent-adapters/parserUtil.js'
 import type { SessionMessage } from './types.js'
+import { OUTPUT_PREFIX } from '../platform/boundedOutput.mjs'
 
 /** Raw logs also have no length limit. Keep just the unfinished 200-line message between reads. */
 export class StdoutSessionParser {
@@ -26,6 +27,10 @@ export class StdoutSessionParser {
     for (const line of parts) {
       if (this.header) {
         this.header.push(line)
+        if (this.header.length === 1 && line === OUTPUT_PREFIX.trimEnd()) {
+          this.header = null
+          continue
+        }
         if (this.header.length === 1 && !line.startsWith('# Quuu run ')) {
           this.header = null
         } else if (this.header.length === 5) {

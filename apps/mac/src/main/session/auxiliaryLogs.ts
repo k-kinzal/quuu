@@ -27,6 +27,7 @@ export interface AuxiliarySource {
   running: boolean
   adapter?: LogAdapter | null
   sessionId?: string
+  sessionLogPath?: string | null
   input?: string
   /** null means a remote writer has not delivered its session yet. Never search local sessions. */
   mirroredPath?: string | null
@@ -39,7 +40,7 @@ export class AuxiliaryLogs {
   stop(): void { this.index.stop() }
 
   async page(source: AuxiliarySource, request: AuxiliaryPageInput): Promise<AuxiliaryPage> {
-    const target = readTarget(source)
+    const target = auxiliaryReadTarget(source)
     this.index.requestAuxiliary(target, source.running)
     await this.index.ready(sessionKey(target))
     // Raw output groups 200 lines per message; keep its pages smaller than conversation pages.
@@ -52,16 +53,16 @@ export class AuxiliaryLogs {
   }
 
   image(source: AuxiliarySource, id: string): string | null {
-    return this.index.image(readTarget(source), id)
+    return this.index.image(auxiliaryReadTarget(source), id)
   }
 }
 
-function readTarget(source: AuxiliarySource): SessionReadTarget {
+export function auxiliaryReadTarget(source: AuxiliarySource): SessionReadTarget {
   let adapter = source.adapter
   let sessionId = source.sessionId ?? ''
-  let path: string | null = null
+  let path: string | null = source.sessionLogPath ?? null
   if (source.mirroredPath !== undefined) path = source.mirroredPath
-  else if (adapter && adapter !== 'stdout') {
+  else if (!path && adapter && adapter !== 'stdout') {
     const provider = adapterFor(adapter)
     sessionId = provider.sessionIdInStdout?.(source.logPath) ?? sessionId
     path = sessionId ? resolveLogPath(adapter, source.cwd, sessionId) : null
@@ -76,7 +77,7 @@ function readTarget(source: AuxiliarySource): SessionReadTarget {
         .find(candidate => (provider.logMentions ?? jsonLogMentions)(candidate, head))
       if (match) { path = match.logPath; sessionId = match.sessionId }
     }
-  } else if (!adapter) {
+  } else if (!path && !adapter) {
     // Reports made before conversation metadata was kept can still identify themselves in stdout.
     for (const candidate of IMPORTABLE_ADAPTERS) {
       const id = adapterFor(candidate).sessionIdInStdout?.(source.logPath)

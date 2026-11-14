@@ -9,6 +9,8 @@ import { HookOperations } from '../src/main/hooks/operations.js'
 import { resolveHooks, validateHooks } from '../src/main/hooks/config.js'
 import type { HookEvent, TaskHook } from '../src/main/hooks/types.js'
 import { Runner } from '../src/main/execution/runner.js'
+import { OutputCleanup } from '../src/main/execution/outputCleanup.js'
+import { SessionIndex } from '../src/main/session/index.js'
 import { Scheduler } from '../src/main/execution/scheduler.js'
 import { WorkspaceOperations } from '../src/main/projects/workspace.js'
 import { TaskOperations } from '../src/main/tasks/operations.js'
@@ -137,7 +139,9 @@ it('records failure and supports explicit retry and cancellation', async () => {
   await settled(taskId)
   const [run] = hooks.list({ taskId })
   expect(run).toMatchObject({ status: 'failed', exitCode: 7 })
-  hooks.retry(run.id)
+  repo.saveHookRun(db, { ...repo.getHookRun(db, run.id)!, sessionLogPath: join(dir, 'old-conversation.jsonl') })
+  const retried = hooks.retry(run.id)
+  expect(repo.getHookRun(db, retried.id)?.sessionLogPath).toBeUndefined()
   await settled(taskId)
   expect(hooks.list({ taskId })).toHaveLength(2)
   configure([command(['created'], 'sleep 10')])
@@ -146,6 +150,23 @@ it('records failure and supports explicit retry and cancellation', async () => {
   hooks.cancel(hooks.list({ taskId: slow })[0].id)
   expect(hooks.list({ taskId: slow })[0].status).toBe('canceled')
 }, 20_000)
+
+it('keeps a hook conversation accessible after its execution receipt and provider file disappear', async () => {
+  configure([command(['created'], 'printf temporary')])
+  const taskId = makeTask(db, projectId, 'conversation')
+  await settled(taskId)
+  const [run] = hooks.list({ taskId })
+  const provider = join(dir, 'conversation.jsonl')
+  writeFileSync(provider, JSON.stringify({ type: 'assistant', uuid: 'reply', message: { content: [{ type: 'text', text: 'Saved hook conversation' }] } }) + '\n')
+  repo.saveHookRun(db, { ...repo.getHookRun(db, run.id)!, logAdapter: 'claude', sessionLogPath: provider })
+  const index = new SessionIndex(db), cleanup = new OutputCleanup(db, index)
+  try {
+    await cleanup.sweep()
+    expect(existsSync(repo.getHookRun(db, run.id)!.logPath)).toBe(false)
+    rmSync(provider)
+    expect(JSON.stringify((await hooks.conversation({ id: run.id })).messages)).toContain('Saved hook conversation')
+  } finally { cleanup.stop(); index.stop(); await index.settled() }
+})
 
 it('times out an unresponsive process and refuses completion when its before-complete hook fails', async () => {
   configure([{ ...command(['created'], 'sleep 10'), timeoutSeconds: 1 }])

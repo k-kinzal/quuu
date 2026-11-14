@@ -85,7 +85,8 @@ describe('restarting the app and the agents', () => {
         '101 /Applications/Quuu.app/Contents/MacOS/Quuu',
         '102 /Applications/Quuu.app/Contents/MacOS/Quuu /tmp/quuu-github-AbCd/runtime.mjs /bin/sh',
         '103 /Applications/Quuu.app/Contents/Frameworks/Quuu Helper.app/Contents/MacOS/Quuu Helper',
-        '104 /Applications/taskd.app/Contents/MacOS/taskd'
+        '104 /Applications/taskd.app/Contents/MacOS/taskd',
+        '105 /Applications/Quuu.app/Contents/MacOS/Quuu /Users/me/Library/Application Support/taskd/bin/output-abc123/capture.mjs /tmp/run.log'
       ].join('\n') }
     })
     expect(output.trim().split('\n')).toEqual(['101', '104'])

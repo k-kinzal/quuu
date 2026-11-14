@@ -15,7 +15,7 @@ const result = z.object({ exitCode: z.number().int().nullable(), canceled: z.boo
   baseline: z.object({ startedAt: z.string(), baseHead: z.string().nullable(), baseTree: z.string().nullable() }).optional(),
   value: z.unknown().optional(), page: z.string().max(8 * 1024 * 1024).optional() })
 const poll = z.object({ version: z.literal(1), labels: runnerLabels.optional(), agents: agent.array().max(64), updates: z.object({
-  id: z.string().max(100), logOffset: z.number().int().nonnegative(), log: z.string().max(350_000),
+  id: z.string().max(100), logOffset: z.number().int().nonnegative(), log: z.string().max(350_000), logSnapshot: z.boolean().optional(),
   sessionOffset: z.number().int().nonnegative(), session: z.string().max(350_000), sessionId: z.string().max(300),
   result: result.optional()
 }).array().max(64), installed: z.string().max(100).array().max(16).optional() }).strict()

@@ -336,6 +336,12 @@ export function listGeneratingReports(db: Db): StoredReport[] {
   return rows.map(toReport)
 }
 
+/** Runtime receipts are collected independently of the historical report pages. */
+export function listOutputReports(db: Db): Array<StoredReport | StoredProjectReport> {
+  return [...(db.prepare('SELECT * FROM task_reports').all() as Row[]).map(toReport),
+    ...(db.prepare('SELECT * FROM project_reports').all() as Row[]).map(toProjectReport)]
+}
+
 export function saveTaskReport(db: Db, report: StoredReport): void {
   db.prepare(
     `INSERT OR REPLACE INTO task_reports (task_id, status, revision, path, pending, log_path,

@@ -33,6 +33,7 @@ import { attachActiveRuns, sessionReadTarget } from './session/sessionAttach.js'
 import { SessionView } from './session/view.js'
 import { SessionIndex, sessionKey } from './session/index.js'
 import { SessionProjections } from './session/projections.js'
+import { OutputCleanup } from './execution/outputCleanup.js'
 import { workplaceDerivation } from './session/workplace.js'
 import { reviewEvidenceDerivation } from './review/evidence.js'
 import { SettingsOperations } from './settings/operations.js'
@@ -97,6 +98,7 @@ export class QuuuApp extends EventEmitter {
   readonly network: NetworkOperations
   private sessionViews = new Set<SessionView>()
   readonly sessions: SessionIndex
+  private readonly outputCleanup: OutputCleanup | null
   private projectionTimer: NodeJS.Timeout | null = null
   private retentionTimer: NodeJS.Timeout | null = null
   private readonly projections: SessionProjections
@@ -149,6 +151,7 @@ export class QuuuApp extends EventEmitter {
      * the terminal read what was derived; none of them opens a session log.
      */
     this.sessions = new SessionIndex(this.db, [reviewEvidenceDerivation, workplaceDerivation])
+    this.outputCleanup = dbPath === ':memory:' ? null : new OutputCleanup(this.db, this.sessions, dirname(dbPath ?? defaultDbPath()))
     this.runner.setResultValidator(run => validateResponse(this.db, this.sessions, run))
     this.projections = new SessionProjections(this.db, this.sessions)
     this.sessions.on('indexed', (_key: string, taskId: string) => {
@@ -264,6 +267,7 @@ export class QuuuApp extends EventEmitter {
     try { this.sessions.sweepRetired() }
     catch (error) { console.warn('Cannot drop retired session pages', error) }
     this.refreshProjections()
+    this.outputCleanup?.start()
     this.pullRequestFollowUp.start()
     this.projectionTimer = setInterval(() => this.refreshProjections(), 5000)
     this.projectionTimer.unref?.()
@@ -363,6 +367,7 @@ export class QuuuApp extends EventEmitter {
 
   shutdown(): void {
     this.stopped = true
+    this.outputCleanup?.stop()
     this.projections.stop()
     this.assistant.stop()
     this.pullRequestFollowUp.stop()

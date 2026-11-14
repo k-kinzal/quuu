@@ -14,6 +14,8 @@ import { readsWholeStore, sharesOneStore } from './logAdapters.js'
 import { IndexedMessages } from './messageBuffer.js'
 import { sessionReadTarget, type SessionReadTarget } from './sessionAttach.js'
 import { isStoreParser, newParser, snapshotStamp, stdoutToMessages } from './sessionWatcher.js'
+import { outputSnapshot } from '../platform/boundedOutput.mjs'
+import { isOutputSnapshot, isRuntimeOutput } from '../platform/runOutput.js'
 import type { SessionMessage, SessionSnapshot } from './types.js'
 
 export const SESSION_PAGE = 80
@@ -53,6 +55,7 @@ function lastEntryAt(messages: SessionMessage[]): string {
 export class SessionIndex extends EventEmitter {
   private pending = new Map<string, { run: Run | null; target: SessionReadTarget; running: boolean }>()
   private readers = new Map<string, Reader>()
+  private previewStamps = new Map<string, string>()
   private work: Promise<void> | null = null
   private stopped = false
   private activeKey: string | null = null
@@ -113,6 +116,19 @@ export class SessionIndex extends EventEmitter {
     const key = sessionKey(target)
     const stamp = snapshotStamp(target.logPath)
     const saved = repo.getSessionIndex(this.db, key)
+    // A native conversation owns chat history. Its temporary console preview must not become
+    // a second durable transcript. Old saved pages remain readable for compatibility.
+    if (target.awaitingStructured && isRuntimeOutput(target.logPath)) {
+      if (this.previewStamps.get(key) !== stamp) {
+        this.previewStamps.set(key, stamp)
+        this.emit('indexed', key, run?.taskId)
+      }
+      if (stamp === '-|-') this.previewStamps.delete(key)
+      return
+    }
+    // Existing chat survives retiring legacy receipts; do not replace it with a shortened copy.
+    if (run && !['running', 'starting'].includes(run.status) && saved && target.mode === 'stdout' &&
+      isRuntimeOutput(target.logPath) && !isOutputSnapshot(target.logPath)) return
     const rederive = saved && saved.evidenceVersion !== DERIVATION_VERSION
     if (stamp === '-|-' && !rederive) return
     if (saved?.stamp === stamp && !rederive) {
@@ -162,6 +178,7 @@ export class SessionIndex extends EventEmitter {
     }
     this.pending.clear()
     this.readers.clear()
+    this.previewStamps.clear()
   }
 
   page(target: SessionReadTarget, end?: number, count = SESSION_PAGE): SessionSnapshot {
@@ -270,7 +287,7 @@ export class SessionIndex extends EventEmitter {
     }
     const stat = statSync(target.logPath)
     let reader = this.readers.get(key)
-    if (!reader || reader.inode !== stat.ino || reader.offset > stat.size ||
+    if (!reader || target.mode === 'stdout' && isRuntimeOutput(target.logPath) || reader.inode !== stat.ino || reader.offset > stat.size ||
         (reader.offset === stat.size && !readsWholeStore(target.mode))) {
       const generation = randomUUID()
       const buffer = new IndexedMessages(ordinal => repo.readSessionMessages(this.db, key, generation, ordinal, 1)[0])
@@ -311,7 +328,13 @@ export class SessionIndex extends EventEmitter {
         await yieldToApp()
       }
     }
-    if (isStoreParser(parser)) {
+    if (target.mode === 'stdout' && isRuntimeOutput(target.logPath)) {
+      // Snapshots replace each other, so never treat a changed tail as appended conversation.
+      const snapshot = outputSnapshot(target.logPath).toString('utf8')
+      if (!isStoreParser(parser) && parser.pushChunk) parser.pushChunk(snapshot)
+      await persistChanges()
+      reader.offset = stat.size
+    } else if (isStoreParser(parser)) {
       const result = parser.reload(target.logPath, target.sessionId)
       if (!result.readSucceeded) {
         this.emit('failed', key, new Error('Session store is temporarily unreadable'))

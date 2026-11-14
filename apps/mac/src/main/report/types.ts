@@ -28,7 +28,7 @@ export interface TaskReport {
    * written**, so regenerating never blanks the surface you were reading.
    */
   path: string
-  /** The generator's own output. What a person opens when a report failed or reads wrong. */
+  /** Temporary execution receipt. It disappears once the generation has been settled. */
   logPath: string
   /** Why the last generation failed, or what was odd about one that still produced a page. */
   error: string
@@ -45,7 +45,7 @@ export interface TaskReport {
  */
 export interface StoredReport extends TaskReport {
   /** The writer's identity and instruction, retained independently of editable agent settings. */
-  conversation?: { adapter: LogAdapter; sessionId: string; input: string }
+  conversation?: { adapter: LogAdapter; sessionId: string; input: string; sessionLogPath?: string }
   /**
    * Where the generator ran, and the half of the key that identifies its row in `report_sessions`
    * (the other half is `startedAt`). That is the record import reads to tell a report apart from

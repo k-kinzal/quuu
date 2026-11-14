@@ -6,8 +6,8 @@
 #   2. Rebuild the .app
 #   3. Relaunch
 #
-# Running agents live in detached process groups with stdout wired straight to
-# log files, so this procedure does not stop them. Exit codes land in
+# Running agents have detached bounded output collectors, so this procedure
+# does not stop them. Exit codes land in
 # `logs/<runId>.exit`, and reconcile() settles the results after startup.
 #
 set -euo pipefail
@@ -26,7 +26,7 @@ ROOT="$(pwd)"
 # the new one.
 running_pids() {
   ps -ax -o pid=,command= |
-    awk '$0 ~ /(Quuu|QUUUU|taskd)\.app\/Contents\/MacOS\/(Quuu|QUUUU|taskd)([ ]|$)/ && $0 !~ /Helper/ && $0 !~ /\/quuu-github-[^\/]+\/runtime\.mjs([ ]|$)/ { print $1 }'
+    awk '$0 ~ /(Quuu|QUUUU|taskd)\.app\/Contents\/MacOS\/(Quuu|QUUUU|taskd)([ ]|$)/ && $0 !~ /Helper/ && $0 !~ /\/quuu-github-[^\/]+\/runtime\.mjs([ ]|$)/ && $0 !~ /\/output-[^\/]+\/capture\.mjs([ ]|$)/ { print $1 }'
 }
 
 quit_running() {

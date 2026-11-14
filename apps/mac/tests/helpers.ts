@@ -92,9 +92,9 @@ export function occupy(
   db: Db,
   taskId: string,
   agentId: string,
-  over: { stdoutLogPath?: string; kind?: RunKind } = {}
+  over: { id?: string; stdoutLogPath?: string; kind?: RunKind } = {}
 ): string {
-  const id = `run_${Math.random().toString(36).slice(2, 12)}`
+  const id = over.id ?? `run_${Math.random().toString(36).slice(2, 12)}`
   const sessionId = `sess-${id}`
   repo.insertRun(db, {
     id,

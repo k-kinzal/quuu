@@ -2,7 +2,6 @@ import type { RunnerOperations } from '../runners/operations.js'
 import { auxiliaryMessages } from '../session/auxiliary.js'
 import { AuxiliaryLogs, type AuxiliarySource, type AuxiliaryPageInput } from '../session/auxiliaryLogs.js'
 import { spawn } from 'node:child_process'
-import { closeSync, openSync } from 'node:fs'
 import { setTimeout as delay } from 'node:timers/promises'
 import { adapterFor } from '../agent-adapters/registry.js'
 import { orderAgents, type Agent } from '../agents/types.js'
@@ -11,7 +10,7 @@ import { afterCommit, inTransaction, type Db } from '../db/database.js'
 import * as repo from '../db/repo.js'
 import type { Run } from '../execution/types.js'
 import { t } from '../i18n/index.js'
-import { detachedLaunch } from '../platform/detachedLaunch.js'
+import { capturedLaunch } from '../platform/detachedLaunch.js'
 import { cleanupGitHubAuth, prepareGitHubAuthEnvironment } from '../platform/githubAuth.js'
 import { isProcessAlive, killProcessGroup, readExitCode, readLogTail } from '../platform/runProcess.js'
 import { withPath } from '../platform/processEnv.js'
@@ -24,9 +23,6 @@ import type { HookEvent, HookRun } from './types.js'
 import type { StoredHookRun } from './stored.js'
 
 const ACTIVE = new Set(['queued', 'starting', 'running'])
-// The pid file closes the spawn/persistence gap on a restart; ambiguous starts are never replayed.
-const WRAPPER = 'printf %s "$$" > "$QUUU_HOOK_PID_FILE"; "$@"; __quuu_code=$?; printf %s "$__quuu_code" > "$QUUU_EXIT_FILE"; exit $__quuu_code'
-
 export class HookOperations {
   private logs: AuxiliaryLogs
   private timer: NodeJS.Timeout | null = null
@@ -122,7 +118,7 @@ export class HookOperations {
     const nextId = newId('hook')
     const run: StoredHookRun = { ...previous, id: nextId, status: 'queued', pid: null, authDir: null,
       createdAt: nowIso(), startedAt: null, endedAt: null, exitCode: null, error: '', agentId: null,
-      sessionId: newSessionId(), logPath: runLogPath(nextId), exitPath: runExitPath(nextId) }
+      sessionId: newSessionId(), sessionLogPath: undefined, logPath: runLogPath(nextId), exitPath: runExitPath(nextId) }
     repo.saveHookRun(this.db, run)
     this.changed()
     this.kick()
@@ -264,11 +260,10 @@ export class HookOperations {
       const launch = auth.launch ? [...auth.launch, command, ...args] : [command, ...args]
       const started: StoredHookRun = { ...run, status: 'starting', startedAt: nowIso(), agentId: agent?.id ?? null, logAdapter: agent?.logAdapter ?? null, limitPatterns: agent?.limitPatterns ?? [], authDir }
       repo.saveHookRun(this.db, started)
-      const fd = openSync(run.logPath, 'a')
-      try {
-        const wrapped = detachedLaunch(WRAPPER, 'Quuu hook', launch)
+      {
+        const wrapped = capturedLaunch(launch, run.logPath)
         const child = spawn(wrapped.command, wrapped.args, {
-          cwd: run.cwd, detached: true, stdio: ['ignore', fd, fd], windowsHide: true,
+          cwd: run.cwd, detached: true, stdio: 'ignore', windowsHide: true,
           env: { ...baseEnv, ...auth.env, ELECTRON_RUN_AS_NODE: undefined, NODE_OPTIONS: undefined,
             QUUU_TASK_ID: run.taskId, QUUU_PROJECT: run.project.name, QUUU_RUN_ID: run.id,
             QUUU_HOOK_ID: run.hookId, QUUU_HOOK_EVENT: run.event,
@@ -279,7 +274,7 @@ export class HookOperations {
         })
         child.unref()
         repo.saveHookRun(this.db, { ...started, status: 'running', pid: child.pid ?? null })
-      } finally { closeSync(fd) }
+      }
       if (agent && run.definition.targetKind === 'group') repo.advanceGroupRotation(this.db, run.definition.targetId, agent.id)
       this.changed()
     } catch (error) {
@@ -311,6 +306,6 @@ export class HookOperations {
 }
 
 function publicRun(run: StoredHookRun): HookRun {
-  const { definition: _definition, project: _project, pid: _pid, exitPath: _exitPath, authDir: _authDir, sessionId: _sessionId, logAdapter: _logAdapter, limitPatterns: _limitPatterns, ...result } = run
+  const { definition: _definition, project: _project, pid: _pid, exitPath: _exitPath, authDir: _authDir, sessionId: _sessionId, sessionLogPath: _sessionLogPath, logAdapter: _logAdapter, limitPatterns: _limitPatterns, ...result } = run
   return result
 }

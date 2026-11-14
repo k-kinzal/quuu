@@ -119,8 +119,8 @@ is routine**, not an accident. Do not make changes that break it.
 | Mechanism | What it protects | Where |
 |-----------|------------------|-------|
 | `detached: true` | signals that kill Quuu do not propagate to agents | `execution/runner.ts` |
-| stdout/stderr wired straight to the log file fd | no EPIPE death when the parent goes away; no lost output | `execution/runner.ts` |
-| exit code recorded to `logs/<runId>.exit` | a run that ends while Quuu is gone can still be settled correctly | `execution/runner.ts` (the sh wrapper) |
+| detached output collector | output has a reader while Quuu is absent; head/tail receipts have a fixed size | `platform/outputCapture.mjs` |
+| exit code recorded to `logs/<runId>.exit` | a run that ends while Quuu is gone can still be settled correctly | `platform/outputCapture.mjs` |
 | `shutdown()` does not kill agents | restarts never lose tasks | `execution/runner.ts` |
 | `reconcile()` re-adopts on startup | still-running stays running; finished gets classified and settled | `execution/scheduler.ts` |
 

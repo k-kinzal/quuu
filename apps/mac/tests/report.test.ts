@@ -291,7 +291,8 @@ describe('writing one', () => {
     expect(prompt).toContain('Rename the queue and preserve existing entries.')
     for (const run of [first, second, third, last]) {
       expect(prompt).toContain(run.promptPreview)
-      expect(prompt).toContain(run.stdoutLogPath)
+      expect(prompt).not.toContain(run.stdoutLogPath)
+      expect(prompt).toContain('quuu call logs.page')
       if (run.sessionLogPath) expect(prompt).toContain(run.sessionLogPath)
     }
     expect(prompt.indexOf(first.promptPreview)).toBeLessThan(prompt.indexOf(second.promptPreview))

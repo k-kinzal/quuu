@@ -183,7 +183,7 @@ export function runLogPath(runId: string): string {
  * Path where the exit code is written.
  *
  * Agents keep running across Quuu restarts, so the exit code can't rely on the
- * parent's `exit` event alone. The wrapper sh writes it here; the next launch picks it up.
+ * parent's `exit` event alone. The detached collector writes it here; the next launch picks it up.
  */
 export function runExitPath(runId: string): string {
   const dir = runLogDir()
@@ -205,9 +205,8 @@ export function reportRoot(): string {
 /**
  * Where one task's or project's report lives. Creates the directory if missing.
  *
- * The page a person reads, the generator's own output, and its exit code sit together, so
- * "Open logs and data folder" reaches the evidence behind a report that came out wrong, not
- * just the report.
+ * The durable report page and the generator's temporary output and exit receipt sit together.
+ * Execution receipts are removed after settlement; later diagnosis belongs in OTel.
  */
 export function reportDir(taskId: string): string {
   const dir = join(reportRoot(), safeSegment(taskId))

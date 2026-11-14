@@ -322,3 +322,20 @@ original run arguments and provider logs remain intact.
 Report settings own the complete prompt. Empty selects the built-in default. Custom text has
 only explicitly named variables expanded, once; context and document instructions are opt-in.
 Hooks and automation prompts remain literal; PR prompts retain their documented variables.
+
+## Bounded execution output
+
+`platform/outputCapture.mjs` runs in the detached agent process group using Quuu's runtime.
+The desktop owns no output pipe. A content-addressed collector survives a rebuild, drains
+stdout/stderr into a 64 KiB head and 64 KiB tail, and atomically publishes a bounded receipt.
+Its final output precedes the exit receipt. Group cancellation reaches the agent and its
+children; a background child keeping stdout open cannot keep a finished run unsettled.
+Local runs, hooks, report writers and Runner workers use this same collector. Runner
+controllers accept bounded replacement snapshots; old workers' chunks are bounded on receipt.
+Structured conversation delivery retains its acknowledged byte-stream protocol.
+
+`execution/outputCleanup.ts` consumes settled receipts after conversation identity and pages
+are safe. It sweeps on startup and periodically, preserves active/recoverable executions, and
+collects legacy logs without indexing their entire console stream. Native transcript files
+and existing saved chat are not removed. `logs.page` is the durable read interface for report
+evidence; runtime stdout is not an archive. OTel remains the diagnostic channel.
