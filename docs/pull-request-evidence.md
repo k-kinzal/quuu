@@ -79,7 +79,15 @@ history of closed unmerged PRs; candidates supply a separate lookup path.
 ## Failure, retention and upgrades
 
 Network failures, malformed responses and exhausted discovery time are reported
-as incomplete verification, not a successful empty lookup. A candidate without
+as incomplete verification, not a successful empty lookup. One reply is not a
+failure: for a commit GitHub has never received, the commit-associated PR
+endpoint answers HTTP 422 `No commit found for SHA`. A commit an agent has not
+pushed yet is the normal state of work in progress, so that reply for the queried
+SHA is an empty discovery for that commit alone. It raises no warning, leaves the
+other commits and candidates in the batch to be resolved, and keeps the commit
+observed, so the refresh after a push asks again and can verify the PR by its
+exact head. Authentication failures, a missing repository, any other 422 and the
+same reply on a candidate URL lookup remain incomplete. A candidate without
 commit provenance is reported as unverified. Previously confirmed PRs remain
 visible through temporary GitHub failure. Discovery uses at most four concurrent
 requests and stops scheduling further batches after twenty seconds; in-flight
@@ -114,7 +122,8 @@ more facts from prose would not remove that limit.
 - `pullRequestEvidence.test.ts`: minimized incident replay at every record
   boundary; combinations of envelopes; mixed success/failure; no-log discovery;
   exact repository/SHA checks; referenced and stacked PR rejection; fork lookup;
-  malformed responses and offline recovery.
+  malformed responses and offline recovery; unpushed commits as an empty
+  discovery, verified after the push, beside failures that stay incomplete.
 - `sessionIndex.test.ts`: a wait arriving after hundreds of messages, durable
   rederivation after restart/source deletion, and preservation of verified proof.
 - `workbench.test.ts`: real isolated Git repositories distinguish locally created

@@ -15,6 +15,17 @@ const pull = z.object({
 })
 
 /**
+ * GitHub's definite answer that it has never received this commit. A commit an
+ * agent has not pushed yet is the normal state of work in progress, so the lookup
+ * found no PR; it did not fail. Only this exact reply for the queried SHA counts:
+ * every other non-zero exit stays an unknown.
+ */
+function unpublished(stderr: string, commit: string): boolean {
+  const reply = `gh: No commit found for SHA: ${commit} (HTTP 422)`.toLowerCase()
+  return stderr.split('\n').some(line => line.trim().toLowerCase() === reply)
+}
+
+/**
  * Logs propose URLs; GitHub and local commit provenance confirm them. No source
  * code inspection, tool label, branch name, author or timestamp on a PR can
  * promote a candidate. Exact head matching also excludes descendants in a stack
@@ -47,9 +58,14 @@ export async function reconcilePullRequests(
     if (!confirmed.has(ref.url)) verified?.(proof)
     confirmed.set(ref.url, proof)
   }
-  const query = async (path: string, paged: boolean): Promise<void> => {
+  const query = async (path: string, commit?: string): Promise<void> => {
+    const paged = commit !== undefined
     const result = await gh(cwd, project, settings, ['api', ...(paged ? ['--paginate', '--slurp'] : []), path])
-    if (result.code !== 0) throw new Error(result.stderr.trim() || t('review.fetchFailed'))
+    if (result.code !== 0) {
+      // The commit stays observed, so the refresh after a push asks again and can verify it.
+      if (commit && unpublished(result.stderr, commit)) return
+      throw new Error(result.stderr.trim() || t('review.fetchFailed'))
+    }
     const value: unknown = JSON.parse(result.stdout)
     if (paged) {
       for (const page of z.array(z.array(z.unknown())).parse(value)) for (const item of page) accept(item)
@@ -75,11 +91,11 @@ export async function reconcilePullRequests(
     const commits = new Map(observed.map(commit => [`${commit.repository.toLowerCase()}@${commit.sha}`, commit]))
     await execute([...commits.values()].filter(commit => ![...confirmed.values()].some(proof =>
       proof.repository.toLowerCase() === commit.repository.toLowerCase() && proof.headSha === commit.sha
-    )).map(commit => () => query(`repos/${commit.repository}/commits/${commit.sha}/pulls?per_page=100`, true)))
+    )).map(commit => () => query(`repos/${commit.repository}/commits/${commit.sha}/pulls?per_page=100`, commit.sha)))
     // Closed unmerged PRs and upstream fork PRs may not appear in commit discovery.
     await execute([...new Set(evidence.pullRequestCandidates)].filter(url => !seen.has(url) && !confirmed.has(url)).flatMap(url => {
       const ref = pullRequestUrl(url)
-      return ref ? [() => query(`repos/${ref.repository}/pulls/${ref.number}`, false)] : []
+      return ref ? [() => query(`repos/${ref.repository}/pulls/${ref.number}`)] : []
     }))
   } else if (evidence.pullRequestCandidates.some(url => !confirmed.has(url))) {
     notices.add(t('review.prOwnershipUnknown'))

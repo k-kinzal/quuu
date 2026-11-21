@@ -129,6 +129,91 @@ it.each(['failure', 'malformed', 'wrong identity'])('reports incomplete verifica
   expect(result.notice).toBeTruthy()
 })
 
+function mockUnpublished(local: string, other?: (path: string) => { code: number; stdout: string; stderr: string } | undefined): void {
+  const implementation = vi.mocked(command).getMockImplementation()!
+  vi.mocked(command).mockImplementation((executable, args, options) => {
+    const path = args.at(-1) ?? ''
+    const reply = path.includes(`/commits/${local}/`)
+      ? { code: 1, stderr: `gh: No commit found for SHA: ${local} (HTTP 422)\n`,
+        stdout: JSON.stringify([{ message: `No commit found for SHA: ${local}`, status: '422' }]) }
+      : other?.(path)
+    return reply ? Promise.resolve(reply) : implementation(executable, args, options)
+  })
+}
+
+it('treats a commit GitHub has not received as having no PR yet, without a warning or an incomplete notice', async () => {
+  const local = 'c'.repeat(40)
+  const commits = [{ repository: 'example/project', sha: local }, ...observed]
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  mockGitHub([[restPull()]])
+  mockUnpublished(local)
+  const verified = vi.fn()
+  const result = await reconcile({ commits: [], pullRequestCandidates: [url] }, commits, verified)
+  // The pushed head beside it is still verified, and the unpushed commit is still asked about.
+  expect(result.items.map(pr => pr.url)).toEqual([url])
+  expect(result.notice).toBeUndefined()
+  expect(verified).toHaveBeenCalledTimes(1)
+  expect(verified).toHaveBeenCalledWith({ url, repository: 'example/project', headSha: head })
+  expect(warn).not.toHaveBeenCalled()
+  expect(vi.mocked(command).mock.calls.some(call => call[1].at(-1)?.includes(`/commits/${local}/`))).toBe(true)
+
+  vi.mocked(command).mockClear()
+  mockGitHub([])
+  mockUnpublished(local)
+  const alone = await reconcile(undefined, [commits[0]], verified)
+  expect(alone).toEqual({ items: [] })
+  expect(verified).toHaveBeenCalledTimes(1)
+  expect(warn).not.toHaveBeenCalled()
+})
+
+it('verifies the same commit on the refresh after it is pushed', async () => {
+  const local = 'c'.repeat(40)
+  const commits = [{ repository: 'example/project', sha: local }]
+  const verified = vi.fn()
+  mockGitHub([])
+  mockUnpublished(local)
+  expect(await reconcile(undefined, commits, verified)).toEqual({ items: [] })
+  expect(verified).not.toHaveBeenCalled()
+
+  mockGitHub([[restPull(584, local)]])
+  const result = await reconcile(undefined, commits, verified)
+  expect(result.items.map(pr => pr.url)).toEqual([url])
+  expect(result.notice).toBeUndefined()
+  expect(verified).toHaveBeenCalledWith({ url, repository: 'example/project', headSha: local })
+})
+
+it.each([
+  ['an offline lookup', 'gh: error connecting to api.github.com'],
+  ['an authentication failure', 'gh: Bad credentials (HTTP 401)'],
+  ['a missing repository', 'gh: Not Found (HTTP 404)'],
+  ['another validation error', 'gh: Validation Failed (HTTP 422)'],
+  ['a reply about a different commit', `gh: No commit found for SHA: ${'d'.repeat(40)} (HTTP 422)`]
+])('keeps %s beside an unpushed commit incomplete, and still verifies the remaining heads', async (_name, stderr) => {
+  const local = 'c'.repeat(40)
+  const failing = 'e'.repeat(40)
+  const commits = [{ repository: 'example/project', sha: local }, { repository: 'example/project', sha: failing }, ...observed]
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  mockGitHub([[restPull()]])
+  mockUnpublished(local, path => path.includes(`/commits/${failing}/`) ? { code: 1, stdout: '', stderr } : undefined)
+  const result = await reconcile(undefined, commits)
+  expect(result.items.map(pr => pr.url)).toEqual([url])
+  expect(result.notice).toBeTruthy()
+  expect(warn).toHaveBeenCalledTimes(1)
+})
+
+it('does not excuse a candidate URL lookup that fails with the unpushed-commit reply', async () => {
+  const upstream = 'https://github.com/upstream/project/pull/584'
+  vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+  mockGitHub([])
+  const implementation = vi.mocked(command).getMockImplementation()!
+  vi.mocked(command).mockImplementation((executable, args, options) => args.at(-1) === 'repos/upstream/project/pulls/584'
+    ? Promise.resolve({ code: 1, stdout: '', stderr: `gh: No commit found for SHA: ${head} (HTTP 422)` })
+    : implementation(executable, args, options))
+  const result = await reconcile({ commits: [], pullRequestCandidates: [upstream] })
+  expect(result.items).toEqual([])
+  expect(result.notice).toBeTruthy()
+})
+
 it('persists proof separately from candidates and preserves a verified PR after log loss and GitHub failure', async () => {
   mockGitHub([[restPull()]])
   repo.recordObservedCommits(db, taskId, observed)
