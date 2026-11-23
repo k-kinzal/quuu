@@ -412,3 +412,52 @@ it('removes conversations past the retention period without reading an unchanged
   expect(resumed.prunedAt).toBeUndefined()
   expect(resumed.totalMessages).toBeGreaterThan(0)
 })
+
+/**
+ * Deleting a task releases the conversations its runs saved (`repo.releaseSessionKeys`). A read
+ * that was queued or under way at that moment must not write them back: with the run gone,
+ * nothing would name those pages and nothing would ever remove them.
+ */
+const savedSessionRows = (): number => ['session_indexes', 'session_messages', 'session_images', 'session_workdirs']
+  .reduce((total, table) => total + Number(db.prepare(`SELECT COUNT(*) AS c FROM ${table}`).get()?.c), 0)
+
+it('does not save the conversation of a task deleted while its read was still queued', async () => {
+  writeFileSync(logPath, history(10))
+  const parse = vi.spyOn(ClaudeSessionParser.prototype, 'pushLines')
+  index.request(repo.getRun(db, runId)!)
+  repo.deleteTask(db, taskId)
+  await index.settled()
+  expect(parse).not.toHaveBeenCalled()
+  expect(savedSessionRows()).toBe(0)
+})
+
+it('removes what a read under way had saved once its task is deleted', async () => {
+  writeFileSync(logPath, history(6000))
+  index.request(repo.getRun(db, runId)!)
+  while (Number(db.prepare('SELECT COUNT(*) AS c FROM session_messages').get()?.c) === 0) await new Promise(resolve => setImmediate(resolve))
+  repo.deleteTask(db, taskId)
+  await index.settled()
+  expect(savedSessionRows()).toBe(0)
+})
+
+it('reads a log from its beginning again after the conversation saved from it was released', async () => {
+  writeFileSync(logPath, history(10))
+  index.request(repo.getRun(db, runId)!)
+  await index.settled()
+  const key = sessionKey(sessionReadTarget(db, repo.getRun(db, runId)!))
+  expect(repo.getSessionIndex(db, key)?.total).toBe(10)
+  const agentId = repo.getRun(db, runId)!.agentId
+  const projectId = repo.getTask(db, taskId)!.projectId
+  repo.deleteTask(db, taskId)
+  expect(repo.getSessionIndex(db, key)).toBeNull()
+
+  // The session goes on and is picked up as a new task: the reader still remembers where it stopped.
+  const again = occupy(db, makeTask(db, projectId, 'Picked up again'), agentId, { stdoutLogPath: join(dir, 'again.log') })
+  repo.updateRun(db, again, { sessionLogPath: logPath })
+  appendFileSync(logPath, message(10))
+  index.request(repo.getRun(db, again)!)
+  await index.settled()
+  const saved = repo.getSessionIndex(db, key)!
+  expect(saved.total).toBe(11)
+  expect(repo.readSessionMessages(db, key, saved.generation, 0, 100)).toHaveLength(11)
+})

@@ -53,7 +53,7 @@ function lastEntryAt(messages: SessionMessage[]): string {
 
 /** Durable pages are the read path. Parsing is scheduled separately, even with every window closed. */
 export class SessionIndex extends EventEmitter {
-  private pending = new Map<string, { run: Run | null; target: SessionReadTarget; running: boolean }>()
+  private pending = new Map<string, { run: Run | null; target: SessionReadTarget; running: boolean; recorded: boolean }>()
   private readers = new Map<string, Reader>()
   private previewStamps = new Map<string, string>()
   private work: Promise<void> | null = null
@@ -135,8 +135,10 @@ export class SessionIndex extends EventEmitter {
       if (!running) this.readers.delete(key)
       return
     }
-    if (priority) this.pending = new Map([[key, { run, target, running }], ...[...this.pending].filter(([other]) => other !== key)])
-    else this.pending.set(key, { run, target, running })
+    // Whether the run is a row now, so the read can tell a run deleted while it waited from one that never was one.
+    const job = { run, target, running, recorded: run !== null && repo.getRun(this.db, run.id) !== null }
+    if (priority) this.pending = new Map([[key, job], ...[...this.pending].filter(([other]) => other !== key)])
+    else this.pending.set(key, job)
     this.schedule()
   }
 
@@ -245,7 +247,7 @@ export class SessionIndex extends EventEmitter {
       const [key, job] = this.pending.entries().next().value!
       this.pending.delete(key)
       this.activeKey = key
-      try { await this.ingest(key, job.run, job.target, job.running) }
+      try { await this.ingest(key, job.run, job.target, job.running, job.recorded) }
       catch (error) {
         this.readers.delete(key)
         if (!this.stopped) console.warn('Session indexing failed', error)
@@ -255,7 +257,18 @@ export class SessionIndex extends EventEmitter {
     }
   }
 
-  private async ingest(key: string, run: Run | null, target: SessionReadTarget, running: boolean): Promise<void> {
+  private async ingest(key: string, run: Run | null, target: SessionReadTarget, running: boolean, recorded = false): Promise<void> {
+    /*
+     * Deleting a task releases its conversations (`repo.releaseSessionKeys`), and a read still
+     * queued or under way would write them straight back with nothing left to remove them. Whoever
+     * else wants the log asks for it on their own.
+     */
+    const deleted = (): boolean => recorded && run !== null && !repo.getRun(this.db, run.id)
+    if (deleted()) {
+      this.readers.delete(key)
+      this.emit('indexed', key, run?.taskId)
+      return
+    }
     const stamp = snapshotStamp(target.logPath)
     const saved = repo.getSessionIndex(this.db, key)
     if (saved && saved.evidenceVersion !== DERIVATION_VERSION) {
@@ -287,7 +300,9 @@ export class SessionIndex extends EventEmitter {
     }
     const stat = statSync(target.logPath)
     let reader = this.readers.get(key)
-    if (!reader || target.mode === 'stdout' && isRuntimeOutput(target.logPath) || reader.inode !== stat.ino || reader.offset > stat.size ||
+    // A reader continues the pages it wrote. Once those were released, what it remembers is a tail with no beginning.
+    const released = reader && reader.offset > 0 && repo.getSessionIndex(this.db, key)?.generation !== reader.generation
+    if (!reader || released || target.mode === 'stdout' && isRuntimeOutput(target.logPath) || reader.inode !== stat.ino || reader.offset > stat.size ||
         (reader.offset === stat.size && !readsWholeStore(target.mode))) {
       const generation = randomUUID()
       const buffer = new IndexedMessages(ordinal => repo.readSessionMessages(this.db, key, generation, ordinal, 1)[0])
@@ -396,10 +411,13 @@ export class SessionIndex extends EventEmitter {
     const total = isStoreParser(parser) ? parser.messages.length : messageBuffer.length
     // A shared store changes whenever any of its sessions does; the session's own last entry says when it did.
     const updatedAt = (isStoreParser(parser) ? lastEntryAt(parser.messages) : '') || stat.mtime.toISOString()
-    inTransaction(this.db, () => repo.finishSessionIndex(this.db, key, {
-      generation, stamp, title: parser.title, total, evidenceVersion: DERIVATION_VERSION, updatedAt
-    }))
-    if (!running) this.readers.delete(key)
+    const kept = inTransaction(this.db, () => {
+      repo.finishSessionIndex(this.db, key, {
+        generation, stamp, title: parser.title, total, evidenceVersion: DERIVATION_VERSION, updatedAt
+      })
+      return !deleted() || repo.releaseSessionKeys(this.db, [key]) === 0
+    })
+    if (!running || !kept) this.readers.delete(key)
     this.emit('indexed', key, run?.taskId)
   }
 

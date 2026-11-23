@@ -654,6 +654,11 @@ screen says so), kept reviews are forgotten, and replaced report pages are delet
 report shows now never is. The review pane's clock button opens an earlier point: the review a
 run left, or an earlier report page.
 
+Deleting a task or a project is separate from that period: the conversations its runs saved go
+with the runs, even at `0`, because nothing could open them again. A conversation stays while
+something else still names its log — a run of another task, a hook's history (which outlives the
+task), or a report. The database file does not shrink when they go; the space is reused.
+
 ### Where each CLI keeps things
 
 This is not published specification; it was **verified by measurement** (the

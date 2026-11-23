@@ -138,6 +138,70 @@ export function pruneSessionPages(db: Db, before: string, now: string): number {
     WHERE pruned_at IS NULL AND updated_at <> '' AND updated_at < ?`).run(now, before).changes)
 }
 
+/** A log as a row names it: where it is, and which of its sessions. */
+interface SessionLogRef { path: string | null; sessionId: string | null }
+
+/**
+ * How a session key ends for each log: its path, or `path:sessionId` where one store holds every
+ * session (`sessionKey` in `session/index.ts`). The parser version and adapter in front of it say
+ * how the log was read, not which log it is, so they take no part in telling logs apart.
+ */
+function sessionLogNames(refs: SessionLogRef[]): Set<string> {
+  const names = new Set<string>()
+  for (const { path, sessionId } of refs) {
+    if (!path) continue
+    names.add(path)
+    if (sessionId) names.add(`${path}:${sessionId}`)
+  }
+  return names
+}
+
+function sessionLogName(key: string): string {
+  return /^[^:]*:[^:]*:(.*)$/s.exec(key)?.[1] ?? key
+}
+
+function runSessionLogs(db: Db, where = '1', ...params: string[]): SessionLogRef[] {
+  const rows = db.prepare(`SELECT session_id, session_log_path, stdout_log_path FROM runs WHERE ${where}`).all(...params) as Row[]
+  return rows.flatMap(row => [row.session_log_path, row.stdout_log_path].map(path => ({ path: sn(path), sessionId: sn(row.session_id) })))
+}
+
+function hookSessionLogs(db: Db, where = '1', ...params: string[]): SessionLogRef[] {
+  const rows = db.prepare(`SELECT json_extract(data, '$.sessionId') AS session_id, json_extract(data, '$.sessionLogPath') AS session_log_path,
+    json_extract(data, '$.logPath') AS log_path FROM hook_runs WHERE ${where}`).all(...params) as Row[]
+  return rows.flatMap(row => [row.session_log_path, row.log_path].map(path => ({ path: sn(path), sessionId: sn(row.session_id) })))
+}
+
+/**
+ * Remove the saved conversations among `keys` that nothing can open any more. Returns how many went.
+ *
+ * Pages hang off a log, not a task, so nothing takes them along when the task goes. A log is
+ * still wanted while a run, a hook's history or a report names it: a hook or a report reads through
+ * the same index without ever being a run, and its conversation outlives the task it was about.
+ *
+ * Unlike retention the index row goes too. A conversation whose task is gone has no screen left
+ * to explain an empty pane on, and nothing left that would read its log back in.
+ */
+export function releaseSessionKeys(db: Db, keys: string[]): number {
+  if (keys.length === 0) return 0
+  const reports = listOutputReports(db).flatMap(report => [report.logPath, report.conversation?.sessionLogPath]
+    .map(path => ({ path: path ?? null, sessionId: report.conversation?.sessionId ?? null })))
+  const held = sessionLogNames([...runSessionLogs(db), ...hookSessionLogs(db), ...reports])
+  const free = keys.filter(key => !held.has(sessionLogName(key)))
+  if (free.length === 0) return 0
+  // One statement per table: images have no index on the key, so each statement walks them once.
+  const list = JSON.stringify(free)
+  for (const table of SESSION_TABLES) db.prepare(`DELETE FROM ${table} WHERE log_key IN (SELECT value FROM json_each(?))`).run(list)
+  return free.length
+}
+
+/** Release the conversations of logs whose rows are being deleted. Call once those rows are gone. */
+function releaseSessionLogs(db: Db, logs: SessionLogRef[]): number {
+  const names = sessionLogNames(logs)
+  if (names.size === 0) return 0
+  const keys = (db.prepare('SELECT log_key FROM session_indexes').all() as Row[]).map(row => s(row.log_key))
+  return releaseSessionKeys(db, keys.filter(key => names.has(sessionLogName(key))))
+}
+
 /** The directories one message recorded. Nothing is written for a message that recorded none. */
 export function writeSessionWorkDirs(db: Db, key: string, generation: string, ordinal: number, dirs: string[]): void {
   if (dirs.length === 0) {
@@ -1054,23 +1118,31 @@ export function updateProject(db: Db, id: string, patch: Partial<ProjectInput>):
  *
  * The deletion time is stamped into `import_since`. From then on only sessions started after it are
  * picked up, so starting work in that directory again brings the project back, not the deleted history.
+ *
+ * The run history includes the conversations those runs saved (`releaseSessionKeys`): nothing
+ * could open them again, and nothing else would ever remove them.
  */
 export function deleteProject(db: Db, id: string): void {
-  const taskIds = (db.prepare('SELECT id FROM tasks WHERE project_id = ?').all(id) as Row[]).map(
-    (r) => s(r.id)
-  )
-  const delRuns = db.prepare('DELETE FROM runs WHERE task_id = ?')
-  const delReviewBase = db.prepare('DELETE FROM task_review_bases WHERE task_id = ?')
-  taskIds.forEach((tid) => delRuns.run(tid))
-  taskIds.forEach((tid) => delReviewBase.run(tid))
-  const delDeps = db.prepare('DELETE FROM task_dependencies WHERE task_id = ? OR depends_on_id = ?')
-  taskIds.forEach((tid) => delDeps.run(tid, tid))
-  db.prepare('DELETE FROM tasks WHERE project_id = ?').run(id)
-  db.prepare('DELETE FROM task_rules WHERE project_id = ?').run(id)
+  // All or nothing: runs deleted without their conversations would leave pages nothing names.
+  inTransaction(db, () => {
+    const taskIds = (db.prepare('SELECT id FROM tasks WHERE project_id = ?').all(id) as Row[]).map(
+      (r) => s(r.id)
+    )
+    const logs = taskIds.flatMap((tid) => runSessionLogs(db, 'task_id = ?', tid))
+    const delRuns = db.prepare('DELETE FROM runs WHERE task_id = ?')
+    const delReviewBase = db.prepare('DELETE FROM task_review_bases WHERE task_id = ?')
+    taskIds.forEach((tid) => delRuns.run(tid))
+    taskIds.forEach((tid) => delReviewBase.run(tid))
+    const delDeps = db.prepare('DELETE FROM task_dependencies WHERE task_id = ? OR depends_on_id = ?')
+    taskIds.forEach((tid) => delDeps.run(tid, tid))
+    db.prepare('DELETE FROM tasks WHERE project_id = ?').run(id)
+    db.prepare('DELETE FROM task_rules WHERE project_id = ?').run(id)
+    releaseSessionLogs(db, logs)
 
-  const ts = nowIso()
-  db.prepare('UPDATE projects SET deleted_at = ?, import_since = ?, updated_at = ? WHERE id = ?')
-    .run(ts, ts, ts, id)
+    const ts = nowIso()
+    db.prepare('UPDATE projects SET deleted_at = ?, import_since = ?, updated_at = ? WHERE id = ?')
+      .run(ts, ts, ts, id)
+  })
 }
 
 /**
@@ -1348,7 +1420,9 @@ export function deleteTask(db: Db, id: string, emitLifecycle = true): void {
   return inTransaction(db, () => {
     const task = getTask(db, id)
     if (task && emitLifecycle) lifecycle(db, task, 'deleted')
+    const logs = runSessionLogs(db, 'task_id = ?', id)
     if (!emitLifecycle) {
+      logs.push(...hookSessionLogs(db, 'task_id = ?', id))
       db.prepare('DELETE FROM hook_runs WHERE task_id = ?').run(id)
       removeHookReport(db, id)
     }
@@ -1358,6 +1432,8 @@ export function deleteTask(db: Db, id: string, emitLifecycle = true): void {
     // Drop dependency edges in both directions, so a task that was waiting never stalls forever.
     db.prepare('DELETE FROM task_dependencies WHERE task_id = ? OR depends_on_id = ?').run(id, id)
     db.prepare('DELETE FROM tasks WHERE id = ?').run(id)
+    // The run history is the conversations too. Last, so what the deleted rows named no longer counts as wanted.
+    releaseSessionLogs(db, logs)
   })
 }
 
