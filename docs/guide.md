@@ -298,6 +298,7 @@ The flip side: quitting Quuu does not stop the agents. To stop one, **cancel** t
 | `QUUU_AGY_DIR` | Everything the Antigravity CLI wrote (default: `~/.gemini/antigravity-cli`) |
 | `QUUU_PI_SESSIONS_DIR` | Root of Pi sessions (default: `~/.pi/agent/sessions`; also honors `PI_CODING_AGENT_DIR` and `PI_CODING_AGENT_SESSION_DIR`) |
 | `QUUU_OPENCODE_DB` | The one store opencode keeps every session in (default: `~/.local/share/opencode/opencode.db`) |
+| `QUUU_SCRATCH_DIRS` | Directories whose contents import never turns into projects (`:`-separated; default: the system temp directories) |
 | `QUUU_APPLICATION_DIRS` | Where to look for IDEs / editors (`:`-separated; default: `/Applications` and `~/Applications`, plus `JetBrains Toolbox` under them) |
 | `QUUU_OTEL` | `1` turns on OpenTelemetry export, `0` keeps it off whatever `quuu app set-telemetry` saved ([telemetry](telemetry.md)) |
 
@@ -614,9 +615,27 @@ what is running now and what has been done" holds.
 | Consistency | Stopped sessions fall to Done on the next sync. **States a human has touched are never overwritten** |
 | Safety | Import records external sessions as Running or Done without queueing them. The import agent is always disabled |
 | Exclusions | Sessions Quuu itself launched, and subagents (launched by another agent), are not imported |
+| Machine workspaces | A session never creates a project in a workspace a machine made for itself (an orchestrator's disposable checkout); the session is not imported. See below |
 
 Configured in **Settings › General › Session import** (enable, auto-create, days to
 look back, manual run).
+
+### Directories that never become projects
+
+An orchestrator gives each agent its own disposable checkout, and every one of them would
+otherwise become a project. Only Claude Code and Codex record that a program started a
+session, so for every CLI the working directory decides. No project is created, and the
+session is not imported, when the directory is any of:
+
+| Directory | Examples |
+|---|---|
+| Under a scratch directory (`QUUU_SCRATCH_DIRS`) | `/tmp/…`, the per-user temp directory |
+| Ignored by a git repository that encloses it (a repository at the home directory does not count) | `.expl/worktrees/node-7`, `.claude/worktrees/x`, `target/` |
+| A linked git worktree kept under a hidden directory | `~/.codex/worktrees/…` |
+
+This is only asked before creating a project. To see such a directory's sessions anyway, add
+it as a project: a project that exists keeps receiving them. A worktree an orchestrator
+places in plain sight cannot be told from one a person made, and still becomes a project.
 
 ### What Quuu keeps
 

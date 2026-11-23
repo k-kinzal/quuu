@@ -190,6 +190,8 @@ export function isolateSessionDirs(root: string): {
   process.env.QUUU_AGY_DIR = dirs.agy
   process.env.QUUU_OPENCODE_DB = dirs.opencodeDb
   process.env.QUUU_PI_SESSIONS_DIR = dirs.pi
+  // Tests work under the system temp directory, which import otherwise never makes a project of
+  process.env.QUUU_SCRATCH_DIRS = join(root, 'scratch')
   return dirs
 }
 
@@ -206,4 +208,5 @@ export function releaseSessionDirs(): void {
   delete process.env.QUUU_AGY_DIR
   delete process.env.QUUU_OPENCODE_DB
   delete process.env.QUUU_PI_SESSIONS_DIR
+  delete process.env.QUUU_SCRATCH_DIRS
 }

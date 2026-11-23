@@ -120,7 +120,7 @@ function writeClaude(
   title: string,
   ageMs: number,
   /** `entrypoint` is who started it (cli = typed by a human / sdk-* = started by a program). */
-  over: { entrypoint?: string; startedAt?: string } = {}
+  over: { entrypoint?: string; startedAt?: string; cwd?: string } = {}
 ): string {
   const dir = join(claudeDir, '-work')
   mkdirSync(dir, { recursive: true })
@@ -132,7 +132,7 @@ function writeClaude(
         type: 'user',
         uuid: 'u1',
         sessionId,
-        cwd: work,
+        cwd: over.cwd ?? work,
         timestamp: over.startedAt ?? new Date(Date.now() - ageMs - 1000).toISOString(),
         ...(over.entrypoint ? { entrypoint: over.entrypoint } : {}),
         message: { role: 'user', content: title }
@@ -791,6 +791,131 @@ describe('importing external sessions', () => {
 
     expect(repo.getTask(db, taskId)?.status).toBe('running')
     expect(repo.getRun(db, runId)?.errorKind).toBeNull()
+  })
+
+  /*
+   * An orchestrator's disposable checkouts are not projects.
+   *
+   * Who started a session is only written down by Claude Code and Codex. A headless Cursor run
+   * looks typed, and one orchestrator's worktrees became 25 projects in a day — so where the
+   * session ran decides, for every CLI. The sessions below are all "typed by a human" on record.
+   */
+  describe('a machine\'s workspace', () => {
+    const git = (cwd: string, ...args: string[]): void => {
+      const done = spawnSync('/usr/bin/git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd, stdio: 'ignore' })
+      if (done.status !== 0) throw new Error(`git ${args.join(' ')} failed`)
+    }
+
+    /** A repository a person works in, keeping an orchestrator's state in an ignored directory. */
+    function repository(): string {
+      const repoDir = join(root, 'repo')
+      mkdirSync(repoDir, { recursive: true })
+      git(repoDir, 'init', '-q', '-b', 'main')
+      writeFileSync(join(repoDir, '.gitignore'), '/.orchestrator/\n')
+      git(repoDir, 'add', '-A')
+      git(repoDir, 'commit', '-q', '-m', 'init')
+      return repoDir
+    }
+
+    const typed = (cwd: string): void => {
+      mkdirSync(cwd, { recursive: true })
+      writeClaude('d0d0d0d0-1111-1111-1111-111111111111', '仮説を検証する', 60 * 60 * 1000, { entrypoint: 'cli', cwd })
+    }
+
+    const skipped = (db: Db): void => {
+      const result = new SessionImporter(db).sync(settings)
+      expect(result.createdProjects).toBe(0)
+      expect(result.createdTasks).toBe(0)
+      expect(result.skipped).toBe(1)
+      expect(repo.listProjects(db)).toHaveLength(0)
+    }
+
+    it('does not make a project of a directory the enclosing repository ignores', () => {
+      const db = memoryDb()
+      typed(join(repository(), '.orchestrator', 'clones', 'node-7'))
+      skipped(db)
+    })
+
+    it('does not make a project of a worktree the enclosing repository ignores', () => {
+      const db = memoryDb()
+      const repoDir = repository()
+      git(repoDir, 'worktree', 'add', '-q', join(repoDir, '.orchestrator', 'worktrees', 'node-7'))
+      typed(join(repoDir, '.orchestrator', 'worktrees', 'node-7'))
+      skipped(db)
+    })
+
+    it('does not make a project of a subdirectory inside such a checkout', () => {
+      const db = memoryDb()
+      const repoDir = repository()
+      const clone = join(repoDir, '.orchestrator', 'clones', 'node-7')
+      mkdirSync(clone, { recursive: true })
+      git(clone, 'init', '-q')
+      typed(join(clone, 'packages', 'core'))
+      skipped(db)
+    })
+
+    it('does not make a project of a linked worktree kept under a hidden directory', () => {
+      const db = memoryDb()
+      const worktree = join(root, '.agents', 'worktrees', 'node-7')
+      git(repository(), 'worktree', 'add', '-q', worktree)
+      typed(worktree)
+      skipped(db)
+    })
+
+    it('does not make a project of a scratch directory', () => {
+      const db = memoryDb()
+      typed(join(root, 'scratch', 'session-1', 'scratchpad'))
+      skipped(db)
+    })
+
+    it('keeps skipping it on every later sync', () => {
+      const db = memoryDb()
+      typed(join(repository(), '.orchestrator', 'clones', 'node-7'))
+      const importer = new SessionImporter(db)
+      importer.sync(settings)
+      const again = importer.sync(settings)
+      expect(again.skipped).toBe(1)
+      expect(repo.listProjects(db)).toHaveLength(0)
+    })
+
+    it('still makes a project of a linked worktree a person placed in plain sight', () => {
+      const db = memoryDb()
+      const worktree = join(root, 'repo-hotfix')
+      git(repository(), 'worktree', 'add', '-q', worktree)
+      typed(worktree)
+      const result = new SessionImporter(db).sync(settings)
+      expect(result.createdProjects).toBe(1)
+      expect(repo.listProjects(db)[0].path).toBe(worktree)
+    })
+
+    it('still makes a project of a directory the enclosing repository tracks', () => {
+      const db = memoryDb()
+      const pkg = join(repository(), 'packages', 'core')
+      typed(pkg)
+      const result = new SessionImporter(db).sync(settings)
+      expect(result.createdProjects).toBe(1)
+      expect(repo.listProjects(db)[0].path).toBe(pkg)
+    })
+
+    it('still makes a project of a repository kept under a hidden directory', () => {
+      const db = memoryDb()
+      const dotfiles = join(root, '.dotfiles')
+      mkdirSync(dotfiles, { recursive: true })
+      git(dotfiles, 'init', '-q')
+      typed(dotfiles)
+      const result = new SessionImporter(db).sync(settings)
+      expect(result.createdProjects).toBe(1)
+    })
+
+    it('keeps importing into a project a person registered at such a directory', () => {
+      const db = memoryDb()
+      const clone = join(repository(), '.orchestrator', 'clones', 'node-7')
+      typed(clone)
+      makeProject(db, { name: 'node-7', targetId: makeAgent(db, { name: 'Agent' }), path: clone })
+      const result = new SessionImporter(db).sync(settings)
+      expect(result.createdTasks).toBe(1)
+      expect(result.skipped).toBe(0)
+    })
   })
 
   it('does nothing when import is disabled', () => {

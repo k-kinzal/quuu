@@ -18,6 +18,7 @@ import { discoverSessions, discoverSessionsInBackground, startedByProgram } from
 import type { DiscoverOptions } from '../agent-adapters/external.js'
 import type { LivenessProbe } from './liveness.js'
 import { probeLiveSessions } from './liveness.js'
+import { isMachineWorkspace } from './machineWorkspace.js'
 import { t } from '../i18n/index.js'
 
 /**
@@ -64,6 +65,15 @@ export interface ImportResult {
 }
 
 export class SessionImporter {
+  /**
+   * Directories already judged to be a machine's workspace.
+   *
+   * A session skipped for this reason leaves no record, so every sync meets it again, and the
+   * judgement can cost a git process. Only "yes" needs remembering: "no" creates the project, and
+   * from then on the directory is matched before the question is asked.
+   */
+  private machineWorkspaces = new Set<string>()
+
   constructor(private db: Db) { }
 
   sync(settings: AppSettings, now = Date.now()): ImportResult {
@@ -274,6 +284,17 @@ export class SessionImporter {
 
     if (!settings.importCreateProjects) return null
     if (!existsSync(session.cwd)) return null
+    /*
+     * An orchestrator's disposable checkout is not a project.
+     *
+     * The session is dropped rather than filed under the repository it was cut from: that is what
+     * already happens to the same orchestrator's Claude Code and Codex runs (started by a program),
+     * and hundreds of machine-made tasks in a person's project are the same noise one level down.
+     */
+    if (this.inMachineWorkspace(session.cwd)) {
+      result.skipped += 1
+      return null
+    }
 
     const projects = repo.listProjects(this.db)
     const group = repo.getDefaultGroup(this.db)
@@ -291,6 +312,13 @@ export class SessionImporter {
     })
     result.createdProjects += 1
     return created
+  }
+
+  private inMachineWorkspace(cwd: string): boolean {
+    if (this.machineWorkspaces.has(cwd)) return true
+    if (!isMachineWorkspace(cwd)) return false
+    this.machineWorkspaces.add(cwd)
+    return true
   }
 
   /**
